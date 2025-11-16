@@ -107,6 +107,16 @@ if plan['decision'] == 'GO':
     result = udo.execute_plan(plan)
 ```
 
+## 🧪 Testing
+
+To run the test suite, use the `run_tests.py` script in the root directory:
+
+```bash
+python run_tests.py
+```
+
+This will discover and run all tests in the `tests/` directory.
+
 ## 📈 Phase Workflow
 
 ### 1. Ideation (60% confidence required)

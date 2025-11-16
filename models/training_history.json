@@ -1,0 +1,70 @@
+[
+  {
+    "model": "uncertainty_predictor",
+    "timestamp": "2025-11-17T02:07:59.451291",
+    "metrics": {
+      "accuracy": 0.0,
+      "mse": 0.0006968533490141987,
+      "r2": 0.8916498892975436,
+      "cross_val_scores": [
+        0.8971117104112418,
+        0.9018561425839338,
+        0.8688177592389514,
+        0.8952709093146032,
+        0.8994044019552018
+      ],
+      "feature_importance": {
+        "phase": 0.0024809765445096246,
+        "timeline_weeks": 0.005476071911380633,
+        "team_size": 0.004117824069450765,
+        "budget_scaled": 0.005398203900074098,
+        "tech_uncertainty": 0.044422254051581414,
+        "market_uncertainty": 0.031623165241083724,
+        "resource_uncertainty": 0.024785836273921655,
+        "timeline_uncertainty": 0.036146228029345986,
+        "quality_uncertainty": 0.03335427533523579,
+        "code_complexity": 0.006528585499763431,
+        "test_coverage": 0.6161571205855559,
+        "architecture_quality": 0.17917359794471063,
+        "file_count": 0.004842301977772738,
+        "dependency_count": 0.005493558635613652
+      },
+      "training_time": 3.489016
+    },
+    "data_size": 1000
+  },
+  {
+    "model": "confidence_predictor",
+    "timestamp": "2025-11-17T02:08:05.595264",
+    "metrics": {
+      "accuracy": 0.0,
+      "mse": 0.0006857262717121243,
+      "r2": 0.8933799807998376,
+      "cross_val_scores": [
+        0.8995680535676931,
+        0.9033865069743159,
+        0.8699150330774598,
+        0.8959526306002787,
+        0.9003511291261334
+      ],
+      "feature_importance": {
+        "phase": 0.0028581960623308518,
+        "timeline_weeks": 0.006307778747237493,
+        "team_size": 0.004738831871000009,
+        "budget_scaled": 0.00634445510307894,
+        "tech_uncertainty": 0.04531063729366853,
+        "market_uncertainty": 0.03282301417369488,
+        "resource_uncertainty": 0.02524552073187987,
+        "timeline_uncertainty": 0.03677853691490047,
+        "quality_uncertainty": 0.0333582056203042,
+        "code_complexity": 0.007453143357019081,
+        "test_coverage": 0.6078534427294219,
+        "architecture_quality": 0.17880046826367718,
+        "file_count": 0.005940784136822215,
+        "dependency_count": 0.006186984994964559
+      },
+      "training_time": 6.143612
+    },
+    "data_size": 1000
+  }
+]
