@@ -10,7 +10,7 @@ Mirror this layout when you add modules or datasets, and keep generated assets o
 - `python -m venv .venv && .\.venv\Scripts\activate` -- create and activate the repository virtual environment on Windows shells.
 - `pip install -r requirements.txt` -- install runtime and tooling dependencies.
 - `python src\unified_development_orchestrator_v2.py` -- run the orchestrator demo to validate end-to-end wiring.
-- `pytest tests` or `pytest --maxfail=1 --disable-warnings - q` -- execute the automated suite; use the strict flag set before a pull request.
+- `pytest tests` or `pytest --maxfail=1 --disable-warnings -q` -- execute the automated suite; use the strict flag set before a pull request.
 - `python tests\run_udo_phase1.py` -- replay the phase drill scenario for targeted debugging.
 - `black src tests` and `flake8 src tests` -- enforce formatting and linting prior to review.
 
@@ -20,7 +20,7 @@ Use PascalCase for classes and dataclasses (`UnifiedDevelopmentOrchestratorV2`),
 Favor `@dataclass` payloads and explicit enums over loosely typed dicts, and guard Windows specific encoding logic similar to the orchestrator module.
 
 ## Testing Guidelines
-Place new tests beneath `tests/` using the `test_* .py` pattern and realistic multi-phase fixtures.
+Place new tests beneath `tests/` using the `test_*.py` pattern and realistic multi-phase fixtures.
 Persist any synthetic state in `data/` rather than embedding JSON blobs in code or tests.
 Always run `pytest` plus any scenario scripts touched by the change, and capture CLI output when triaging regressions.
 
@@ -34,3 +34,4 @@ Flag schema, data, or docs updates explicitly so reviewers can verify downstream
 Never commit real credentials or proprietary datasets; the JSON files in `data/` are placeholders only.
 Store secrets in a local `.env` that remains untracked, and scrub logs before sharing them with other agents.
 Review generated plans and artifacts before committing, especially when they include sanitized client context.
+
