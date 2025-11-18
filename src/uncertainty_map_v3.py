@@ -397,9 +397,60 @@ class UncertaintyMapV3:
             'testing': 0.3
         }.get(phase, 0.5)
 
-    def predict_evolution(self, vector: UncertaintyVector, hours: int = 24) -> PredictiveModel:
+    def add_observation(self, phase: str, vector: UncertaintyVector, outcome: bool):
+        """
+        Add observation for ML learning
+
+        Args:
+            phase: Current development phase
+            vector: Uncertainty vector
+            outcome: Success (True) or failure (False)
+        """
+        # Store observation for future training
+        observation = {
+            'timestamp': datetime.now().isoformat(),
+            'phase': phase,
+            'vector': asdict(vector),
+            'outcome': outcome
+        }
+
+        # Add to patterns for learning
+        phase_key = f'observations_{phase}'
+        if phase_key not in self.patterns:
+            self.patterns[phase_key] = []
+        self.patterns[phase_key].append(observation)
+
+        logger.debug("Added observation for phase %s: outcome=%s", phase, outcome)
+
+    def classify_state(self, magnitude: float) -> UncertaintyState:
+        """
+        Classify uncertainty state based on magnitude
+
+        Args:
+            magnitude: Uncertainty magnitude (0-1)
+
+        Returns:
+            UncertaintyState enum value
+        """
+        if magnitude < 0.1:
+            return UncertaintyState.DETERMINISTIC
+        elif magnitude < 0.3:
+            return UncertaintyState.PROBABILISTIC
+        elif magnitude < 0.6:
+            return UncertaintyState.QUANTUM
+        elif magnitude < 0.8:
+            return UncertaintyState.CHAOTIC
+        else:
+            return UncertaintyState.VOID
+
+    def predict_evolution(self, vector: UncertaintyVector, phase: Optional[str] = None, hours: int = 24) -> PredictiveModel:
         """
         Predict how uncertainty will evolve
+
+        Args:
+            vector: Current uncertainty vector
+            phase: Development phase (optional, for context)
+            hours: Hours ahead to predict (default: 24)
         """
         # Analyze historical patterns
         pattern = self._match_pattern(vector)
