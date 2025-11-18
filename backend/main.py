@@ -32,7 +32,68 @@ except ImportError:
     UDO_AVAILABLE = False
     logger.warning("UDO system not available")
 
-# FastAPI app
+# ============================================================
+# CRITICAL: Enable mock service BEFORE importing routers
+# This ensures global variables are set when routers load
+# ============================================================
+try:
+    from app.services.project_context_service import enable_mock_service
+    enable_mock_service()
+    logger.info("✅ Mock service enabled (BEFORE router imports)")
+except Exception as e:
+    logger.error(f"Failed to enable mock service before router imports: {e}")
+
+# Import routers
+try:
+    from app.routers import version_history_router, quality_metrics_router
+    ROUTERS_AVAILABLE = True
+except ImportError as e:
+    ROUTERS_AVAILABLE = False
+    logger.warning(f"Routers not available: {e}")
+
+# Import project context routers separately (optional)
+try:
+    from app.routers import project_context_router, projects_router
+    PROJECT_CONTEXT_AVAILABLE = True
+except ImportError as e:
+    PROJECT_CONTEXT_AVAILABLE = False
+    logger.info(f"Project context routers not available (optional): {e}")
+
+# Import modules router for Standard Level MDO
+try:
+    from app.routers.modules import router as modules_router
+    MODULES_ROUTER_AVAILABLE = True
+except ImportError as e:
+    MODULES_ROUTER_AVAILABLE = False
+    logger.info(f"Modules router not available (optional): {e}")
+
+# Import WebSocket handler and SessionManagerV2
+try:
+    from app.routers import websocket_handler
+    from app.services.session_manager_v2 import get_session_manager
+    WEBSOCKET_AVAILABLE = True
+except ImportError as e:
+    WEBSOCKET_AVAILABLE = False
+    logger.warning(f"WebSocket/SessionManager not available: {e}")
+
+# Import Redis client
+try:
+    from app.services.redis_client import get_redis_client, cleanup_redis
+    REDIS_AVAILABLE = True
+except ImportError as e:
+    REDIS_AVAILABLE = False
+    logger.warning(f"Redis client not available: {e}")
+
+# Import async database and project context service
+try:
+    from async_database import async_db, initialize_async_database, close_async_database
+    from app.services.project_context_service import init_project_context_service, enable_mock_service
+    ASYNC_DB_AVAILABLE = True
+except ImportError as e:
+    ASYNC_DB_AVAILABLE = False
+    logger.warning(f"Async database not available: {e}")
+
+# FastAPI app - with updated MockProjectService
 app = FastAPI(
     title="UDO Development Platform API",
     version="3.0.0",
@@ -47,6 +108,27 @@ app.add_middleware(
     allow_methods=["*"],
     allow_headers=["*"],
 )
+
+# Include routers
+if ROUTERS_AVAILABLE:
+    app.include_router(version_history_router)
+    logger.info("✅ Version History router included")
+    app.include_router(quality_metrics_router)
+    logger.info("✅ Quality Metrics router included")
+
+    if PROJECT_CONTEXT_AVAILABLE:
+        app.include_router(project_context_router)
+        logger.info("✅ Project Context router included")
+        app.include_router(projects_router)
+        logger.info("✅ Projects router included")
+
+    if MODULES_ROUTER_AVAILABLE:
+        app.include_router(modules_router)
+        logger.info("✅ Modules router included (Standard Level MDO)")
+
+    if WEBSOCKET_AVAILABLE:
+        app.include_router(websocket_handler.router)
+        logger.info("✅ WebSocket handler included")
 
 # Global UDO instance
 udo_system = None
@@ -76,6 +158,49 @@ class DashboardMetrics(BaseModel):
 @app.on_event("startup")
 async def startup_event():
     global udo_system
+
+    # Initialize Redis client
+    if REDIS_AVAILABLE:
+        try:
+            redis_client = await get_redis_client()
+            if await redis_client.ensure_connected():
+                logger.info("✅ Redis client initialized")
+            else:
+                logger.warning("⚠️ Redis not available, distributed features disabled")
+        except Exception as e:
+            logger.warning(f"⚠️ Redis initialization failed: {e}")
+
+    # Initialize SessionManagerV2
+    if WEBSOCKET_AVAILABLE:
+        try:
+            session_manager = await get_session_manager()
+            logger.info("✅ SessionManagerV2 initialized")
+        except Exception as e:
+            logger.warning(f"⚠️ SessionManager initialization failed: {e}")
+
+    # Initialize async database and project context service
+    if ASYNC_DB_AVAILABLE:
+        try:
+            await initialize_async_database()
+            logger.info("✅ Async database initialized")
+
+            # Initialize project context service with database pool
+            db_pool = async_db.get_pool()
+            project_context_service = init_project_context_service(db_pool)
+
+            # Initialize default project
+            await project_context_service.initialize_default_project()
+            logger.info("✅ Project context service initialized")
+        except Exception as e:
+            logger.warning(f"⚠️  Database not available, project context features disabled: {e}")
+            logger.info("💡 To enable project context features, ensure PostgreSQL is running and database is created")
+            # Mock service already enabled before router imports
+    else:
+        # If async database module is not available at all
+        logger.warning("⚠️ Async database module not available, using mock service")
+        # Mock service already enabled before router imports
+
+    # Initialize UDO system
     if UDO_AVAILABLE:
         try:
             udo_system = IntegratedUDOSystem(project_name="UDO-Dashboard")
@@ -85,14 +210,62 @@ async def startup_event():
     else:
         logger.warning("Running in mock mode - UDO not available")
 
+
+# Shutdown event
+@app.on_event("shutdown")
+async def shutdown_event():
+    """Cleanup on shutdown"""
+
+    # Cleanup SessionManager
+    if WEBSOCKET_AVAILABLE:
+        try:
+            session_manager = await get_session_manager()
+            await session_manager.cleanup()
+            logger.info("✅ SessionManagerV2 cleaned up")
+        except Exception as e:
+            logger.error(f"❌ Failed to cleanup SessionManager: {e}")
+
+    # Cleanup Redis
+    if REDIS_AVAILABLE:
+        try:
+            await cleanup_redis()
+            logger.info("✅ Redis client cleaned up")
+        except Exception as e:
+            logger.error(f"❌ Failed to cleanup Redis: {e}")
+
+    # Cleanup async database
+    if ASYNC_DB_AVAILABLE:
+        try:
+            await close_async_database()
+            logger.info("✅ Async database closed")
+        except Exception as e:
+            logger.error(f"❌ Failed to close async database: {e}")
+
 # Health check
 @app.get("/api/health")
 async def health_check():
-    return {
+    """Comprehensive health check for all services"""
+    health_status = {
         "status": "healthy",
         "udo_available": UDO_AVAILABLE,
+        "database_available": False,
+        "project_context_available": PROJECT_CONTEXT_AVAILABLE if ROUTERS_AVAILABLE else False,
         "timestamp": datetime.now().isoformat()
     }
+
+    # Check async database health
+    if ASYNC_DB_AVAILABLE:
+        try:
+            health_status["database_available"] = await async_db.health_check()
+        except Exception as e:
+            logger.error(f"Database health check failed: {e}")
+            health_status["database_available"] = False
+
+    # Overall status
+    if not health_status["database_available"] and PROJECT_CONTEXT_AVAILABLE:
+        health_status["status"] = "degraded"
+
+    return health_status
 
 # Get system status
 @app.get("/api/status")
