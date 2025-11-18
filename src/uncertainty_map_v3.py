@@ -26,6 +26,8 @@ from datetime import datetime, timedelta
 from enum import Enum
 import hashlib
 import math
+import logging
+from filelock import FileLock
 
 # Windows Unicode 인코딩 문제 근본 해결
 if sys.platform == 'win32':
@@ -37,13 +39,25 @@ if sys.platform == 'win32':
         sys.stderr.reconfigure(encoding='utf-8')
 
 # ML imports for prediction
+logger = logging.getLogger(__name__)
+
+
+def _get_storage_dir() -> Path:
+    env_dir = os.environ.get('UDO_STORAGE_DIR') or os.environ.get('UDO_HOME')
+    base_dir = Path(env_dir).expanduser() if env_dir else Path.home() / '.udo'
+    base_dir.mkdir(parents=True, exist_ok=True)
+    return base_dir
+
+
+DEFAULT_STORAGE_DIR = _get_storage_dir()
+
 try:
     from sklearn.ensemble import RandomForestRegressor
     from sklearn.preprocessing import StandardScaler
     ML_AVAILABLE = True
-except:
+except Exception:
     ML_AVAILABLE = False
-    print("⚠️ ML libraries not available, using fallback prediction")
+    logger.warning("ML libraries not available, using fallback prediction")
 
 
 class UncertaintyState(Enum):
@@ -141,7 +155,8 @@ class UncertaintyMapV3:
         self.patterns: Dict[str, Any] = {}
 
         # Historical data for learning
-        self.history_file = Path(f"uncertainty_history_{project_name}.json")
+        self.storage_dir = DEFAULT_STORAGE_DIR
+        self.history_file = self.storage_dir / f"uncertainty_history_{project_name}.json"
         self.load_history()
 
         # ML models for prediction
@@ -149,9 +164,102 @@ class UncertaintyMapV3:
             self.predictor = RandomForestRegressor(n_estimators=100)
             self.scaler = StandardScaler()
             self.is_trained = False
-
+            self._predictor_feature_count = 0
+        else:
+            self.predictor = None
+            self.scaler = None
+            self.is_trained = False
+            self._predictor_feature_count = 0
+        
         # Pattern database
         self.known_patterns = self._load_known_patterns()
+
+    def train_predictor(self, features: np.ndarray, labels: np.ndarray) -> None:
+        """Train the ML predictor with validation."""
+        if not ML_AVAILABLE:
+            raise RuntimeError("ML libraries are not available for training")
+
+        if features.ndim != 2:
+            raise ValueError("Features must be a 2D array")
+        if labels.ndim != 1:
+            raise ValueError("Labels must be a 1D array")
+        if features.shape[0] == 0:
+            raise ValueError("Training data cannot be empty")
+        if features.shape[0] != labels.shape[0]:
+            raise ValueError("Features and labels must have the same number of samples")
+
+        self.scaler.fit(features)
+        scaled_features = self.scaler.transform(features)
+        self.predictor.fit(scaled_features, labels)
+        self.is_trained = True
+        self._predictor_feature_count = features.shape[1]
+
+    def _predict_with_ml(self, vector: UncertaintyVector, hours: int) -> Optional[Tuple[str, float, datetime, float]]:
+        """Use the trained ML model for predictions if available."""
+        if not (ML_AVAILABLE and getattr(self, 'is_trained', False)):
+            return None
+
+        try:
+            feature_vector = np.array([
+                [
+                    vector.technical,
+                    vector.market,
+                    vector.resource,
+                    vector.timeline,
+                    vector.quality,
+                    hours
+                ]
+            ])
+
+            if self._predictor_feature_count and feature_vector.shape[1] != self._predictor_feature_count:
+                raise ValueError("Feature vector does not match trained model shape")
+
+            scaled_features = self.scaler.transform(feature_vector)
+            predicted_magnitude = float(self.predictor.predict(scaled_features)[0])
+            current_magnitude = vector.magnitude()
+            delta = predicted_magnitude - current_magnitude
+
+            if abs(delta) < 0.01:
+                trend = "stable"
+            elif delta > 0:
+                trend = "increasing"
+            else:
+                trend = "decreasing"
+
+            velocity = delta / max(hours, 1)
+            predicted_resolution = datetime.now() + timedelta(hours=hours)
+            return trend, velocity, predicted_resolution, predicted_magnitude
+        except Exception as ml_error:
+            logger.warning("ML prediction failed, falling back to heuristics: %s", ml_error)
+            return None
+
+    def _predict_with_rules(
+        self,
+        vector: UncertaintyVector,
+        pattern: Optional[Dict],
+        hours: int
+    ) -> Tuple[str, float, datetime, float]:
+        """Heuristic prediction used when ML is unavailable."""
+        if pattern:
+            typical = pattern['typical_vector']
+            diff = vector.magnitude() - typical.magnitude()
+
+            if abs(diff) < 0.1:
+                trend = "stable"
+                velocity = 0.0
+            elif diff > 0:
+                trend = "increasing"
+                velocity = diff / 24
+            else:
+                trend = "decreasing"
+                velocity = diff / 24
+        else:
+            trend = "decreasing"
+            velocity = -0.01
+
+        predicted_resolution = datetime.now() + timedelta(hours=hours * 3)
+        predicted_magnitude = max(0.0, min(1.0, vector.magnitude() + velocity * hours))
+        return trend, velocity, predicted_resolution, predicted_magnitude
 
     def _load_known_patterns(self) -> Dict:
         """Load known uncertainty patterns"""
@@ -186,10 +294,16 @@ class UncertaintyMapV3:
         """
         Analyze context and return uncertainty vector and state
         """
-        phase = context.get('phase', 'unknown')
+        phase = context.get('phase')
+        if not phase:
+            raise ValueError("Context must include a phase")
         has_code = len(context.get('files', [])) > 0
         team_size = context.get('team_size', 1)
+        if team_size <= 0:
+            raise ValueError("team_size must be greater than zero")
         timeline = context.get('timeline_weeks', 12)
+        if timeline <= 0:
+            raise ValueError("timeline_weeks must be greater than zero")
 
         # Calculate uncertainty dimensions
         technical = self._calc_technical_uncertainty(phase, has_code)
@@ -290,24 +404,18 @@ class UncertaintyMapV3:
         # Analyze historical patterns
         pattern = self._match_pattern(vector)
 
-        # Calculate trend
-        if pattern:
-            typical = pattern['typical_vector']
-            diff = vector.magnitude() - typical.magnitude()
-
-            if abs(diff) < 0.1:
-                trend = "stable"
-                velocity = 0.0
-            elif diff > 0:
-                trend = "increasing"
-                velocity = diff / 24  # per hour
-            else:
-                trend = "decreasing"
-                velocity = diff / 24
+        ml_prediction = self._predict_with_ml(vector, hours)
+        if ml_prediction:
+            trend, velocity, predicted_resolution, predicted_level = ml_prediction
         else:
-            # Default prediction
-            trend = "decreasing"
-            velocity = -0.01  # Slow improvement
+            trend, velocity, predicted_resolution, predicted_level = self._predict_with_rules(
+                vector,
+                pattern,
+                hours
+            )
+
+        lower_bound = max(0, min(vector.magnitude(), predicted_level) - 0.2)
+        upper_bound = min(1, max(vector.magnitude(), predicted_level) + 0.2)
 
         # Create predictive model
         model = PredictiveModel(
@@ -315,11 +423,8 @@ class UncertaintyMapV3:
             velocity=velocity,
             acceleration=-0.0001,  # Tend toward stability
             inflection_points=[],
-            confidence_interval=(
-                max(0, vector.magnitude() - 0.2),
-                min(1, vector.magnitude() + 0.2)
-            ),
-            predicted_resolution=datetime.now() + timedelta(hours=hours*3)
+            confidence_interval=(lower_bound, upper_bound),
+            predicted_resolution=predicted_resolution
         )
 
         return model
@@ -459,42 +564,51 @@ class UncertaintyMapV3:
         """
         mag = vector.magnitude()
 
-        # Create bar chart
+        def render_bar(value: float, length: int = 10) -> str:
+            filled = max(0, min(length, int(round(value * length))))
+            empty = length - filled
+            return f"[{'=' * filled}{'.' * empty}]"
+
         bars = {
-            'Technical': '█' * int(vector.technical * 10),
-            'Market': '█' * int(vector.market * 10),
-            'Resource': '█' * int(vector.resource * 10),
-            'Timeline': '█' * int(vector.timeline * 10),
-            'Quality': '█' * int(vector.quality * 10)
+            'Technical': render_bar(vector.technical),
+            'Market': render_bar(vector.market),
+            'Resource': render_bar(vector.resource),
+            'Timeline': render_bar(vector.timeline),
+            'Quality': render_bar(vector.quality)
         }
 
-        # State indicator
         state_icons = {
-            UncertaintyState.DETERMINISTIC: "🟢",
-            UncertaintyState.PROBABILISTIC: "🟡",
-            UncertaintyState.QUANTUM: "🟠",
-            UncertaintyState.CHAOTIC: "🔴",
-            UncertaintyState.VOID: "⚫"
+            UncertaintyState.DETERMINISTIC: "OK",
+            UncertaintyState.PROBABILISTIC: "VAR",
+            UncertaintyState.QUANTUM: "QNT",
+            UncertaintyState.CHAOTIC: "RISK",
+            UncertaintyState.VOID: "UNK"
         }
 
-        viz = f"""
-╔══════════════════════════════════════════════════╗
-║         UNCERTAINTY MAP v3.0                     ║
-╠══════════════════════════════════════════════════╣
-║ State: {state_icons[state]} {state.value:20}          ║
-║ Magnitude: {mag:.1%} {'█' * int(mag * 20):20}      ║
-╠══════════════════════════════════════════════════╣
-║ Dimensions:                                      ║
-║  Technical : {bars['Technical']:10} ({vector.technical:.1%})   ║
-║  Market    : {bars['Market']:10} ({vector.market:.1%})      ║
-║  Resource  : {bars['Resource']:10} ({vector.resource:.1%})    ║
-║  Timeline  : {bars['Timeline']:10} ({vector.timeline:.1%})    ║
-║  Quality   : {bars['Quality']:10} ({vector.quality:.1%})     ║
-╚══════════════════════════════════════════════════╝
-        """
-        return viz
+        border = "+" + "-" * 52 + "+"
 
-    def save_state(self):
+        def pad(content: str) -> str:
+            return f"| {content.ljust(50)} |"
+
+        lines = [
+            border,
+            pad("UNCERTAINTY MAP v3.0"),
+            border,
+            pad(f"State: {state_icons[state]} {state.value}"),
+            pad(f"Magnitude: {mag:.1%} {render_bar(mag, 20)}"),
+            border,
+            pad("Dimensions"),
+            pad(f"Technical : {bars['Technical']} ({vector.technical:.0%})"),
+            pad(f"Market    : {bars['Market']} ({vector.market:.0%})"),
+            pad(f"Resource  : {bars['Resource']} ({vector.resource:.0%})"),
+            pad(f"Timeline  : {bars['Timeline']} ({vector.timeline:.0%})"),
+            pad(f"Quality   : {bars['Quality']} ({vector.quality:.0%})"),
+            border
+        ]
+
+        return "\n".join(lines)
+
+    def save_state(self, filepath: Optional[Path] = None):
         """Save current state to file"""
         state = {
             'project': self.project_name,
@@ -503,22 +617,29 @@ class UncertaintyMapV3:
             'patterns': self.patterns
         }
 
-        with open(self.history_file, 'w') as f:
-            json.dump(state, f, indent=2)
+        target = Path(filepath).expanduser() if filepath else self.history_file
+        target.parent.mkdir(parents=True, exist_ok=True)
+        lock = FileLock(str(target) + '.lock')
+        with lock:
+            with open(target, 'w', encoding='utf-8') as f:
+                json.dump(state, f, indent=2, ensure_ascii=False)
 
     def load_history(self):
         """Load historical data"""
         if self.history_file.exists():
-            with open(self.history_file, 'r') as f:
-                data = json.load(f)
-                self.patterns = data.get('patterns', {})
+            lock = FileLock(str(self.history_file) + '.lock')
+            with lock:
+                with open(self.history_file, 'r', encoding='utf-8') as f:
+                    data = json.load(f)
+                    self.patterns = data.get('patterns', {})
 
 
 def demo():
     """Demo the Uncertainty Map v3"""
-    print("="*60)
-    print("🗺️ Uncertainty Map v3.0 Demo")
-    print("="*60)
+    logging.basicConfig(level=logging.INFO)
+    logger.info("%s", "=" * 60)
+    logger.info("Uncertainty Map v3.0 Demo")
+    logger.info("%s", "=" * 60)
 
     # Create map
     umap = UncertaintyMapV3("2025-Revenue-App")
@@ -544,28 +665,33 @@ def demo():
     ]
 
     for ctx in contexts:
-        print(f"\n📍 Context: {ctx['name']}")
-        print("-"*50)
+        logger.info("Context: %s", ctx['name'])
+        logger.info("%s", "-" * 50)
 
         # Analyze
         vector, state = umap.analyze_context(ctx)
 
         # Visualize
-        print(umap.visualize_map(vector, state))
+        logger.info("\n%s", umap.visualize_map(vector, state))
 
         # Predict
         prediction = umap.predict_evolution(vector)
-        print(f"\n📈 Prediction:")
-        print(f"  Trend: {prediction.trend}")
-        print(f"  24h forecast: {prediction.predict_future(24):.1%}")
-        print(f"  Resolution: {prediction.predicted_resolution}")
+        logger.info("Prediction:")
+        logger.info("Trend: %s", prediction.trend)
+        logger.info("24h forecast: %.1f%%", prediction.predict_future(24) * 100)
+        logger.info("Resolution: %s", prediction.predicted_resolution)
 
         # Mitigations
         mitigations = umap.generate_mitigations(vector, state)
-        print(f"\n💡 Top Mitigation Strategies:")
+        logger.info("Top mitigation strategies:")
         for i, mit in enumerate(mitigations, 1):
-            print(f"  {i}. {mit.action}")
-            print(f"     Impact: {mit.estimated_impact:.1%}, Cost: {mit.estimated_cost}h, ROI: {mit.roi():.1f}")
+            logger.info("%d. %s", i, mit.action)
+            logger.info(
+                "Impact: %.1f%%, Cost: %sh, ROI: %.1f",
+                mit.estimated_impact * 100,
+                mit.estimated_cost,
+                mit.roi()
+            )
 
 
 if __name__ == "__main__":

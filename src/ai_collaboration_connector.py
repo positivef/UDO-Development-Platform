@@ -347,36 +347,36 @@ class AICollaborationConnector:
 
 def demo():
     """데모 실행"""
-    print("=" * 60)
-    print("🤖 AI Collaboration Connector Demo")
-    print("=" * 60)
+    logger.info("%s", "=" * 60)
+    logger.info("AI Collaboration Connector Demo")
+    logger.info("%s", "=" * 60)
 
     # 커넥터 초기화
     connector = AICollaborationConnector()
 
     # 상태 보고
-    print("\n📊 Service Status:")
+    logger.info("Service status:")
     status = connector.get_status_report()
     for service, info in status["services"].items():
-        print(f"  {service}: {info['status']}")
+        logger.info("%s: %s", service, info['status'])
 
     # Phase별 협업 테스트
     phases = ["ideation", "design", "implementation", "testing"]
 
     for phase in phases:
-        print(f"\n🎯 Testing {phase.upper()} phase:")
+        logger.info("Testing %s phase", phase.upper())
         result = connector.orchestrate_collaboration(
             task=f"Test task for {phase}",
             phase=phase
         )
 
-        print(f"  Services used: {', '.join(result['services_used'])}")
+        logger.info("Services used: %s", ', '.join(result['services_used']))
         for service, res in result['results'].items():
             status = "✅" if res['success'] else "❌"
-            print(f"    {service}: {status} ({res['time']:.2f}s)")
+            logger.info("%s: %s (%.2fs)", service, status, res['time'])
 
-    print("\n" + "=" * 60)
-    print("Demo completed!")
+    logger.info("%s", "=" * 60)
+    logger.info("Demo completed!")
 
 
 if __name__ == "__main__":

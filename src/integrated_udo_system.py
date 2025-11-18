@@ -415,19 +415,19 @@ class IntegratedUDOSystem:
 
 def demo():
     """통합 시스템 데모"""
-    print("=" * 80)
-    print("🚀 Integrated UDO System v3.0 Demo")
-    print("=" * 80)
+    logger.info("%s", "=" * 80)
+    logger.info("Integrated UDO System v3.0 Demo")
+    logger.info("%s", "=" * 80)
 
     # 시스템 초기화
     system = IntegratedUDOSystem(project_name="AI-SaaS-Platform")
 
     # 상태 보고
-    print("\n📊 System Status:")
+    logger.info("System status:")
     report = system.get_system_report()
     for component, ready in report['status'].items():
         status = "✅" if ready else "❌"
-        print(f"  {component}: {status}")
+        logger.info("%s: %s", component, status)
 
     # Phase별 테스트
     phases = [
@@ -439,37 +439,37 @@ def demo():
     ]
 
     for phase, task in phases:
-        print(f"\n🎯 Testing {phase.upper()} phase:")
-        print(f"  Task: {task}")
+        logger.info("Testing %s phase", phase.upper())
+        logger.info("Task: %s", task)
 
         result = system.execute_development_cycle(task, phase)
 
-        print(f"  Components used: {', '.join(result['components_used'])}")
+        logger.info("Components used: %s", ', '.join(result['components_used']))
 
         if 'plan' in result and result['plan']:
-            print(f"  Decision: {result['plan'].get('decision', 'N/A')}")
-            print(f"  Confidence: {result['plan'].get('confidence', 0):.1%}")
+            logger.info("Decision: %s", result['plan'].get('decision', 'N/A'))
+            logger.info("Confidence: %.1f%%", result['plan'].get('confidence', 0) * 100)
 
         if 'uncertainty' in result:
-            print(f"  Uncertainty: {result['uncertainty']['state']}")
+            logger.info("Uncertainty: %s", result['uncertainty']['state'])
 
         if 'ml_prediction' in result and result['ml_prediction']:
-            print(f"  ML Confidence: {result['ml_prediction']['confidence']:.1%}")
+            logger.info("ML Confidence: %.1f%%", result['ml_prediction']['confidence'] * 100)
 
     # ML 모델 훈련 (선택사항)
     if system.components.get('ml_system'):
-        print("\n🤖 Training ML models...")
+        logger.info("Training ML models...")
         training_results = system.train_ml_models()
         if training_results:
             for model, metrics in training_results.items():
-                print(f"  {model}: R²={metrics['r2']:.3f}")
+                logger.info("%s: R²=%.3f", model, metrics['r2'])
 
     # 상태 저장
     system.save_state("demo_system_state.json")
 
-    print("\n" + "=" * 80)
-    print("✅ Demo completed successfully!")
-    print("=" * 80)
+    logger.info("%s", "=" * 80)
+    logger.info("Demo completed successfully!")
+    logger.info("%s", "=" * 80)
 
 
 if __name__ == "__main__":
