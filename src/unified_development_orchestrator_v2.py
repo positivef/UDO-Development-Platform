@@ -17,14 +17,17 @@ Version: 2.0.0 (Performance Upgrade)
 
 import sys
 import os
+import logging
 from pathlib import Path
 from typing import Dict, List, Optional, Any, Tuple
 from dataclasses import dataclass, asdict, field
 from datetime import datetime
 from enum import Enum
+from copy import deepcopy
 import json
 import yaml
 import math
+from filelock import FileLock
 
 # Windows Unicode 인코딩 문제 근본 해결
 if sys.platform == 'win32':
@@ -40,6 +43,39 @@ obsidian_scripts = github_root / "obsidian-vibe-coding-docs" / "scripts"
 if obsidian_scripts.exists():
     sys.path.append(str(obsidian_scripts))
 
+CONFIG_PATH = script_dir.parent / "config" / "config.yaml"
+logger = logging.getLogger(__name__)
+
+
+def _get_default_storage_dir() -> Path:
+    env_dir = os.environ.get('UDO_STORAGE_DIR') or os.environ.get('UDO_HOME')
+    base_dir = Path(env_dir).expanduser() if env_dir else Path.home() / '.udo'
+    base_dir.mkdir(parents=True, exist_ok=True)
+    return base_dir
+
+
+DEFAULT_STORAGE_DIR = _get_default_storage_dir()
+
+
+def _resolve_storage_file(filename: str, directory: Optional[Path] = None) -> Path:
+    base_dir = Path(directory).expanduser() if directory else DEFAULT_STORAGE_DIR
+    base_dir.mkdir(parents=True, exist_ok=True)
+    return base_dir / filename
+
+
+def _load_udo_config() -> Dict[str, Any]:
+    try:
+        with open(CONFIG_PATH, 'r', encoding='utf-8') as config_file:
+            return yaml.safe_load(config_file) or {}
+    except FileNotFoundError:
+        logger.warning("Configuration file not found at %s", CONFIG_PATH)
+    except yaml.YAMLError as config_error:
+        logger.error("Failed to parse configuration file: %s", config_error)
+    return {}
+
+
+UDO_CONFIG = _load_udo_config()
+
 # Import with graceful fallback
 try:
     from adaptive_system_selector_v2 import (
@@ -48,8 +84,9 @@ try:
         DevelopmentStage
     )
     SELECTOR_AVAILABLE = True
-except:
+except Exception as selector_error:
     SELECTOR_AVAILABLE = False
+    logger.warning("AdaptiveSystemSelector import failed: %s", selector_error)
     # Define fallback enums
     class SystemType(Enum):
         CREATIVE_THINKING = "creative-thinking"
@@ -67,24 +104,25 @@ except:
 try:
     from three_ai_collaboration_bridge import ThreeAICollaborationBridge
     AI_BRIDGE_AVAILABLE = True
-except:
+except Exception as bridge_error:
     AI_BRIDGE_AVAILABLE = False
+    logger.warning("ThreeAICollaborationBridge import failed: %s", bridge_error)
 
 try:
     # 최신 v3 사용 (예측 모델링 포함)
     from uncertainty_map_v3 import UncertaintyMapV3, UncertaintyVector, UncertaintyState
     UNCERTAINTY_AVAILABLE = True
-    print("✅ Using UncertaintyMap v3.0 with predictive modeling")
+    logger.info("Using UncertaintyMap v3.0 with predictive modeling")
 except ImportError:
     try:
         # v2 fallback
         from uncertainty_map_generator_v2 import UncertaintyMapGeneratorV2
         UncertaintyMapV3 = UncertaintyMapGeneratorV2  # 호환성
         UNCERTAINTY_AVAILABLE = True
-        print("⚠️ Using UncertaintyMap v2 (fallback)")
-    except:
+        logger.warning("Using UncertaintyMap v2 (fallback)")
+    except Exception:
         UNCERTAINTY_AVAILABLE = False
-        print("❌ No uncertainty map available")
+        logger.error("No uncertainty map available")
 
 
 @dataclass
@@ -135,9 +173,16 @@ class UnifiedDevelopmentOrchestratorV2:
     """
 
     def __init__(self, project_context: ProjectContext):
+        if not project_context.project_name:
+            raise ValueError("project_name is required")
+        if not project_context.current_phase:
+            raise ValueError("current_phase is required")
         self.context = project_context
         self.decision_history = []
         self.uncertainty_tracker = UncertaintyTracking()
+        self.config = deepcopy(UDO_CONFIG)
+        self.storage_dir = DEFAULT_STORAGE_DIR
+        self.learning_data_path = _resolve_storage_file('udo_learning_data.json', self.storage_dir)
 
         # 컴포넌트 초기화
         self.selector = AdaptiveSystemSelectorV2() if SELECTOR_AVAILABLE else None
@@ -148,15 +193,15 @@ class UnifiedDevelopmentOrchestratorV2:
             try:
                 # v3 requires project_name parameter
                 self.uncertainty = UncertaintyMapV3(project_name=project_context.project_name)
-                print("   📊 UncertaintyMap v3.0 with predictive modeling initialized")
+                logger.info("UncertaintyMap v3.0 with predictive modeling initialized")
             except Exception as e:
                 # v2 fallback
                 try:
                     self.uncertainty = UncertaintyMapV3()  # v2 doesn't need params
-                    print("   📊 UncertaintyMap v2.0 initialized (fallback)")
-                except:
+                    logger.info("UncertaintyMap v2.0 initialized (fallback)")
+                except Exception as fallback_error:
                     self.uncertainty = None
-                    print(f"   ⚠️ UncertaintyMap initialization failed: {e}")
+                    logger.warning("UncertaintyMap initialization failed: %s", fallback_error)
         else:
             self.uncertainty = None
 
@@ -164,11 +209,11 @@ class UnifiedDevelopmentOrchestratorV2:
         self.phase_metrics = self._init_phase_metrics()
 
         # 학습 데이터
-        self.learning_data = self._load_learning_data()
+        self.learning_data = self._load_learning_data(self.learning_data_path)
 
-        print(f"🚀 UDO v2 초기화 완료: {project_context.project_name}")
-        print(f"   Phase: {self.context.current_phase}")
-        print(f"   Mode: Phase-Aware + Bayesian + Active Learning")
+        logger.info("UDO v2 initialized for project %s", project_context.project_name)
+        logger.info("Phase: %s", self.context.current_phase)
+        logger.info("Mode: Phase-Aware + Bayesian + Active Learning")
 
     def _init_phase_metrics(self) -> Dict[str, PhaseMetrics]:
         """Phase별 평가 메트릭 정의"""
@@ -237,12 +282,14 @@ class UnifiedDevelopmentOrchestratorV2:
             )
         }
 
-    def _load_learning_data(self) -> Dict:
+    def _load_learning_data(self, path: Optional[Path] = None) -> Dict:
         """학습 데이터 로드 (실제 구현)"""
-        learning_file = script_dir / "udo_learning_data.json"
+        learning_file = path or _resolve_storage_file('udo_learning_data.json', self.storage_dir)
         if learning_file.exists():
-            with open(learning_file, 'r', encoding='utf-8') as f:
-                return json.load(f)
+            lock = FileLock(str(learning_file) + '.lock')
+            with lock:
+                with open(learning_file, 'r', encoding='utf-8') as f:
+                    return json.load(f)
         return {
             "overrides": [],
             "success_patterns": [],
@@ -250,11 +297,14 @@ class UnifiedDevelopmentOrchestratorV2:
             "phase_performance": {}
         }
 
-    def _save_learning_data(self):
+    def _save_learning_data(self, path: Optional[Path] = None) -> Path:
         """학습 데이터 저장"""
-        learning_file = script_dir / "udo_learning_data.json"
-        with open(learning_file, 'w', encoding='utf-8') as f:
-            json.dump(self.learning_data, f, indent=2)
+        learning_file = path or self.learning_data_path
+        lock = FileLock(str(learning_file) + '.lock')
+        with lock:
+            with open(learning_file, 'w', encoding='utf-8') as f:
+                json.dump(self.learning_data, f, indent=2)
+        return learning_file
 
     def calculate_phase_aware_confidence(
         self,
@@ -342,31 +392,28 @@ class UnifiedDevelopmentOrchestratorV2:
 
         개선: 곱셈으로 인한 급격한 하락 방지
         """
-        # Phase별 가중치
-        phase_weights = {
-            "ideation": (0.3, 0.2, 0.5),  # (system, uncertainty, phase_bonus)
-            "design": (0.4, 0.3, 0.3),
-            "mvp": (0.5, 0.3, 0.2),
-            "implementation": (0.5, 0.4, 0.1),
-            "testing": (0.4, 0.5, 0.1)
-        }
+        phase_weight_config = self.config.get('phase_weights', {})
+        default_weights = phase_weight_config.get('default', {
+            'system': 0.5,
+            'uncertainty': 0.4,
+            'bonus': 0.1
+        })
+        weights_for_phase = phase_weight_config.get(phase, default_weights)
 
-        weights = phase_weights.get(phase, (0.5, 0.4, 0.1))
+        system_weight = weights_for_phase.get('system', default_weights.get('system', 0.5))
+        uncertainty_weight = weights_for_phase.get('uncertainty', default_weights.get('uncertainty', 0.4))
+        bonus_weight = weights_for_phase.get('bonus', default_weights.get('bonus', 0.1))
 
-        # Phase bonus (early phases get confidence boost)
-        phase_bonus = {
-            "ideation": 0.8,
-            "design": 0.7,
-            "mvp": 0.6,
-            "implementation": 0.5,
-            "testing": 0.5
-        }.get(phase, 0.5)
+        phase_bonus = self.config.get('phase_bonus', {}).get(
+            phase,
+            self.config.get('phase_bonus', {}).get('default', 0.5)
+        )
 
         # 가중 평균 계산
         weighted_confidence = (
-            system_confidence * weights[0] +
-            uncertainty_confidence * weights[1] +
-            phase_bonus * weights[2]
+            system_confidence * system_weight +
+            uncertainty_confidence * uncertainty_weight +
+            phase_bonus * bonus_weight
         )
 
         # 최소값 보장 (Phase별)
@@ -436,27 +483,32 @@ class UnifiedDevelopmentOrchestratorV2:
             )
 
             if prediction:
-                print(f"   📈 불확실성 예측: {prediction.trend} trend")
-                print(f"      24h 예측: {prediction.uncertainty_24h:.1%}")
+                logger.info("Uncertainty trend: %s", prediction.trend)
+                logger.info("24h forecast: %.1f%%", prediction.uncertainty_24h * 100)
 
                 # 자동 완화 전략 생성
                 state = self.uncertainty.classify_state(vector.magnitude())
                 mitigations = self.uncertainty.generate_mitigations(vector, state)
 
                 if mitigations and decision.get('confidence', 0) < 0.6:
-                    print(f"   💡 추천 완화 전략:")
+                    logger.info("Recommended mitigation strategies:")
                     for mit in mitigations[:2]:
-                        print(f"      - {mit.action} (Impact: {mit.estimated_impact:.0%})")
+                        logger.info("- %s (Impact: %.0f%%)", mit.action, mit.estimated_impact * 100)
 
     def start_development_cycle(self, user_request: str) -> Dict:
         """
         개선된 개발 사이클 - Phase-Aware
         """
-        print(f"\n{'='*60}")
-        print(f"🎯 UDO v2 개발 사이클 시작")
-        print(f"{'='*60}")
-        print(f"요청: {user_request[:100]}...")
-        print(f"현재 Phase: {self.context.current_phase}")
+        if not isinstance(user_request, str) or not user_request.strip():
+            raise ValueError("user_request must be a non-empty string")
+        if not self.context.current_phase:
+            raise ValueError("current_phase must be defined before starting the cycle")
+
+        logger.info("%s", "=" * 60)
+        logger.info("UDO v2 development cycle starting")
+        logger.info("%s", "=" * 60)
+        logger.info("Request: %s...", user_request[:100])
+        logger.info("Current phase: %s", self.context.current_phase)
 
         # Phase 컨텍스트 생성
         phase_context = {
@@ -609,11 +661,11 @@ class UnifiedDevelopmentOrchestratorV2:
                 uncertainty_level = 0.4
                 confidence = 0.6
 
-        print(f"\n🗺️ 불확실성 평가 v2:")
-        print(f"   Phase: {phase}")
-        print(f"   불확실성 수준: {uncertainty_level:.0%}")
-        print(f"   신뢰도: {confidence:.0%}")
-        print(f"   주요 불확실성: {', '.join(uncertainties[:3])}")
+        logger.info("Uncertainty evaluation (v2)")
+        logger.info("Phase: %s", phase)
+        logger.info("Uncertainty level: %.0f%%", uncertainty_level * 100)
+        logger.info("Confidence: %.0f%%", confidence * 100)
+        logger.info("Key uncertainties: %s", ", ".join(uncertainties[:3]))
 
         return {
             "overall_confidence": confidence,
@@ -643,10 +695,10 @@ class UnifiedDevelopmentOrchestratorV2:
 
         pattern = phase_patterns.get(phase, "balanced")
 
-        print(f"\n🤝 AI 협업 패턴 v2:")
-        print(f"   Phase: {phase}")
-        print(f"   패턴: {pattern}")
-        print(f"   최적화: Phase-specific")
+        logger.info("AI collaboration pattern (v2)")
+        logger.info("Phase: %s", phase)
+        logger.info("Pattern: %s", pattern)
+        logger.info("Optimization: Phase-specific")
 
         return {
             "pattern": pattern,
@@ -672,16 +724,11 @@ class UnifiedDevelopmentOrchestratorV2:
             phase
         )
 
-        # Phase별 임계값
-        phase_thresholds = {
-            "ideation": 0.5,      # 낮은 임계값
-            "design": 0.55,
-            "mvp": 0.6,
-            "implementation": 0.65,
-            "testing": 0.7
-        }
-
-        threshold = phase_thresholds.get(phase, 0.6)
+        phase_thresholds = self.config.get('phase_thresholds', {})
+        threshold = phase_thresholds.get(
+            phase,
+            phase_thresholds.get('default', 0.6)
+        )
 
         # 의사결정
         if confidence > threshold + 0.15:
@@ -697,11 +744,11 @@ class UnifiedDevelopmentOrchestratorV2:
             decision = "NEED_MORE_INFO"
             approach = "RESEARCH"
 
-        print(f"\n🚦 Go/No-Go 결정 v2:")
-        print(f"   결정: {decision}")
-        print(f"   신뢰도: {confidence:.0%}")
-        print(f"   임계값: {threshold:.0%}")
-        print(f"   접근: {approach}")
+        logger.info("Go/No-Go decision (v2)")
+        logger.info("Decision: %s", decision)
+        logger.info("Confidence: %.0f%%", confidence * 100)
+        logger.info("Threshold: %.0f%%", threshold * 100)
+        logger.info("Approach: %s", approach)
 
         return {
             "decision": decision,
@@ -719,9 +766,9 @@ class UnifiedDevelopmentOrchestratorV2:
                 "recommendation": plan.get('approach', 'RESEARCH')
             }
 
-        print(f"\n{'='*60}")
-        print(f"⚡ 실행 시작 (v2)")
-        print(f"{'='*60}")
+        logger.info("%s", "=" * 60)
+        logger.info("Execution starting (v2)")
+        logger.info("%s", "=" * 60)
 
         # 성공 시뮬레이션 (실제 구현 시 AI 협업 실행)
         return {
@@ -767,11 +814,11 @@ class UnifiedDevelopmentOrchestratorV2:
             # 학습 데이터 저장
             self._save_learning_data()
 
-            print(f"\n✅ 결과 기록 완료 (Phase: {phase}, Success: {success})")
+            logger.info("Result recorded (Phase: %s, Success: %s)", phase, success)
         except Exception as e:
-            print(f"\n⚠️ 결과 기록 중 오류 (무시하고 계속): {e}")
+            logger.warning("Result recording failed but continuing: %s", e)
 
-    def save_state(self, path: Path):
+    def save_state(self, path: Optional[Path] = None) -> Path:
         """상태 저장"""
         state = {
             "project_context": asdict(self.context),
@@ -781,10 +828,17 @@ class UnifiedDevelopmentOrchestratorV2:
             "timestamp": datetime.now().isoformat()
         }
 
-        with open(path, 'w', encoding='utf-8') as f:
-            json.dump(state, f, indent=2, ensure_ascii=False)
+        target_path = path or _resolve_storage_file(
+            f"udo_state_{self.context.project_name}.json",
+            self.storage_dir
+        )
+        lock = FileLock(str(target_path) + '.lock')
+        with lock:
+            with open(target_path, 'w', encoding='utf-8') as f:
+                json.dump(state, f, indent=2, ensure_ascii=False)
 
-        print(f"💾 상태 저장 완료: {path}")
+        logger.info("State saved to %s", target_path)
+        return target_path
 
     def _create_execution_plan_v2(
         self,
@@ -809,10 +863,10 @@ class UnifiedDevelopmentOrchestratorV2:
             "learning_enabled": True
         }
 
-        print(f"\n📋 실행 계획 v2 생성 완료")
-        print(f"   버전: 2.0 (Phase-Aware)")
-        print(f"   신뢰도: {plan['confidence']:.0%}")
-        print(f"   Phase 최적화: ✅")
+        logger.info("Execution plan v2 ready")
+        logger.info("Version: 2.0 Phase-Aware")
+        logger.info("Confidence: %.0f%%", plan['confidence'] * 100)
+        logger.info("Phase optimized: %s", plan.get('phase_optimized', False))
 
         return plan
 
@@ -823,9 +877,10 @@ UnifiedDevelopmentOrchestrator = UnifiedDevelopmentOrchestratorV2
 
 def main():
     """테스트 실행"""
-    print("="*80)
-    print("🚀 UDO v2.0 테스트 - Phase-Aware System")
-    print("="*80)
+    logging.basicConfig(level=logging.INFO)
+    logger.info("%s", "=" * 80)
+    logger.info("UDO v2.0 test - Phase-Aware System")
+    logger.info("%s", "=" * 80)
 
     # Ideation phase 테스트
     project = ProjectContext(
@@ -846,17 +901,17 @@ def main():
     request = "2025년 한국 시장 수익형 앱 아이디어"
     plan = udo.start_development_cycle(request)
 
-    print("\n" + "="*80)
-    print("📊 테스트 결과")
-    print("="*80)
-    print(f"결정: {plan['decision']}")
-    print(f"신뢰도: {plan['confidence']:.0%}")
-    print(f"Phase 최적화: {plan.get('phase_optimized', False)}")
+    logger.info("%s", "\n" + "=" * 80)
+    logger.info("Test results")
+    logger.info("%s", "=" * 80)
+    logger.info("Decision: %s", plan['decision'])
+    logger.info("Confidence: %.0f%%", plan['confidence'] * 100)
+    logger.info("Phase optimized: %s", plan.get('phase_optimized', False))
 
     if plan['confidence'] > 0.5:
-        print("\n✅ SUCCESS: Ideation phase에서 적절한 신뢰도!")
+        logger.info("SUCCESS: Ideation phase confidence acceptable")
     else:
-        print("\n❌ FAIL: 여전히 신뢰도가 낮음")
+        logger.error("FAIL: Confidence remains low")
 
 
 if __name__ == "__main__":

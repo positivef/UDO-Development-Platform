@@ -34,7 +34,7 @@ def print_section(title: str, char: str = "="):
     print(f"  {title}")
     print(line)
 
-def test_phase(udo, phase_name: str, request: str, expected_files: list = None):
+def run_phase_test(udo, phase_name: str, request: str, expected_files: list = None):
     """특정 Phase 테스트"""
     print_section(f"PHASE TEST: {phase_name.upper()}", "=")
 
@@ -101,14 +101,14 @@ def main():
     udo = UnifiedDevelopmentOrchestrator(project)
 
     # Phase 1: Ideation
-    phase1_result = test_phase(
+    phase1_result = run_phase_test(
         udo,
         "ideation",
         "AI 기반 코드 리뷰 자동화 SaaS 플랫폼 아이디어 검증"
     )
 
     # Phase 2: Design
-    phase2_result = test_phase(
+    phase2_result = run_phase_test(
         udo,
         "design",
         "마이크로서비스 아키텍처 설계 with API Gateway, Auth Service, Review Service",
@@ -116,7 +116,7 @@ def main():
     )
 
     # Phase 3: MVP
-    phase3_result = test_phase(
+    phase3_result = run_phase_test(
         udo,
         "mvp",
         "핵심 기능 MVP 구현: GitHub 연동, 기본 리뷰 엔진, 대시보드",
@@ -128,7 +128,7 @@ def main():
     )
 
     # Phase 4: Implementation
-    phase4_result = test_phase(
+    phase4_result = run_phase_test(
         udo,
         "implementation",
         "전체 기능 구현 with ML 모델 통합, 실시간 알림, 팀 협업 기능",
@@ -142,7 +142,7 @@ def main():
     )
 
     # Phase 5: Testing
-    phase5_result = test_phase(
+    phase5_result = run_phase_test(
         udo,
         "testing",
         "종합 테스트: 단위 테스트, 통합 테스트, 부하 테스트, 보안 테스트",

@@ -21,6 +21,7 @@ from sklearn.model_selection import train_test_split, cross_val_score
 from sklearn.preprocessing import StandardScaler
 from sklearn.metrics import mean_squared_error, accuracy_score, r2_score
 import joblib
+from filelock import FileLock
 
 # Windows Unicode 인코딩 문제 해결
 if sys.platform == 'win32':
@@ -32,6 +33,13 @@ if sys.platform == 'win32':
 # 로깅 설정
 logging.basicConfig(level=logging.INFO)
 logger = logging.getLogger(__name__)
+
+
+def _resolve_model_dir(custom_dir: Optional[Any] = None) -> Path:
+    base = custom_dir if custom_dir is not None else os.environ.get('UDO_MODEL_DIR')
+    target = Path(base).expanduser() if base is not None else Path.home() / '.udo' / 'models'
+    target.mkdir(parents=True, exist_ok=True)
+    return target
 
 
 @dataclass
@@ -61,9 +69,8 @@ class ModelMetrics:
 class MLTrainingSystem:
     """ML 훈련 시스템"""
 
-    def __init__(self, model_dir: str = "../models"):
-        self.model_dir = Path(model_dir)
-        self.model_dir.mkdir(exist_ok=True, parents=True)
+    def __init__(self, model_dir: Optional[Any] = None):
+        self.model_dir = _resolve_model_dir(model_dir)
 
         self.models = {}
         self.scalers = {}
@@ -319,23 +326,31 @@ class MLTrainingSystem:
             metadata={'synthetic': True, 'size': size}
         )
 
-    def save_models(self):
+    def save_models(self, directory: Optional[Any] = None) -> Dict[str, Path]:
         """모든 모델 저장"""
+        target_dir = _resolve_model_dir(directory or self.model_dir)
+        saved_paths: Dict[str, Path] = {}
         for model_name, model in self.models.items():
-            model_path = self.model_dir / f"{model_name}.pkl"
-            joblib.dump(model, model_path)
+            model_path = target_dir / f"{model_name}.pkl"
+            lock = FileLock(str(model_path) + '.lock')
+            with lock:
+                joblib.dump(model, model_path)
+            saved_paths[model_name] = model_path
 
-            # 스케일러도 저장
             if model_name in self.scalers:
-                scaler_path = self.model_dir / f"{model_name}_scaler.pkl"
-                joblib.dump(self.scalers[model_name], scaler_path)
+                scaler_path = target_dir / f"{model_name}_scaler.pkl"
+                scaler_lock = FileLock(str(scaler_path) + '.lock')
+                with scaler_lock:
+                    joblib.dump(self.scalers[model_name], scaler_path)
 
-        # 훈련 히스토리 저장
-        history_path = self.model_dir / "training_history.json"
-        with open(history_path, 'w') as f:
-            json.dump(self.training_history, f, indent=2)
+        history_path = target_dir / "training_history.json"
+        history_lock = FileLock(str(history_path) + '.lock')
+        with history_lock:
+            with open(history_path, 'w', encoding='utf-8') as f:
+                json.dump(self.training_history, f, indent=2)
 
-        logger.info(f"Saved {len(self.models)} models to {self.model_dir}")
+        logger.info("Saved %d models to %s", len(self.models), target_dir)
+        return saved_paths
 
     def load_models(self):
         """저장된 모델 로드"""
@@ -383,28 +398,28 @@ class MLTrainingSystem:
 
 def demo():
     """데모 실행"""
-    print("=" * 60)
-    print("🤖 ML Training System Demo")
-    print("=" * 60)
+    logger.info("%s", "=" * 60)
+    logger.info("ML Training System Demo")
+    logger.info("%s", "=" * 60)
 
     # 시스템 초기화
     ml_system = MLTrainingSystem()
 
     # 합성 데이터 생성
-    print("\n📊 Generating synthetic training data...")
+    logger.info("Generating synthetic training data...")
     training_data = ml_system.generate_synthetic_data(size=500)
-    print(f"  Generated {len(training_data.features)} samples")
+    logger.info("Generated %d samples", len(training_data.features))
 
     # 각 모델 훈련
     models_to_train = ['uncertainty_predictor', 'confidence_predictor']
 
     for model_name in models_to_train:
-        print(f"\n🎯 Training {model_name}...")
+        logger.info("Training %s", model_name)
         metrics = ml_system.train_model(model_name, training_data)
 
-        print(f"  R² Score: {metrics.r2:.3f}")
-        print(f"  MSE: {metrics.mse:.3f}")
-        print(f"  Training time: {metrics.training_time:.2f}s")
+        logger.info("R² Score: %.3f", metrics.r2)
+        logger.info("MSE: %.3f", metrics.mse)
+        logger.info("Training time: %.2fs", metrics.training_time)
 
         # Top 3 중요 특징
         if metrics.feature_importance:
@@ -413,12 +428,12 @@ def demo():
                 key=lambda x: x[1],
                 reverse=True
             )[:3]
-            print("  Top features:")
+            logger.info("Top features:")
             for feat, imp in sorted_features:
-                print(f"    - {feat}: {imp:.3f}")
+                logger.info("%s: %.3f", feat, imp)
 
     # 예측 테스트
-    print("\n🔮 Testing predictions...")
+    logger.info("Testing predictions...")
     test_input = {
         'phase': 'ideation',
         'timeline_weeks': 12,
@@ -433,21 +448,21 @@ def demo():
 
     for model_name in models_to_train:
         prediction, metadata = ml_system.predict(model_name, test_input)
-        print(f"  {model_name}: {prediction:.3f}")
+        logger.info("%s: %.3f", model_name, prediction)
 
     # 모델 저장
-    print("\n💾 Saving models...")
+    logger.info("Saving models...")
     ml_system.save_models()
 
     # 상태 보고
-    print("\n📈 Model Report:")
+    logger.info("Model report:")
     report = ml_system.get_model_report()
     for model_name, info in report['models'].items():
         status = "✅ Trained" if info['trained'] else "⚠️ Not trained"
-        print(f"  {model_name}: {status} ({info['type']})")
+        logger.info("%s: %s (%s)", model_name, status, info['type'])
 
-    print("\n" + "=" * 60)
-    print("Demo completed!")
+    logger.info("%s", "=" * 60)
+    logger.info("Demo completed!")
 
 
 if __name__ == "__main__":

@@ -65,6 +65,13 @@ UDO-Development-Platform/
 └── README.md
 ```
 
+## 📌 버전 선택 가이드
+
+- 현재 PR과 문서는 **UDO v2 + Uncertainty Map v3** 구성을 표준으로 사용합니다.
+- 버전 1 대비 개선 지표와 선택 근거는 [`docs/pr_version_selection.md`](docs/pr_version_selection.md)에서 요약합니다.
+- 향후 v3 전환 계획은 `docs/UDO_V3_INTEGRATION_REPORT.md`와 `FINAL_REPORT.md`를 참조하세요.
+- Codex 리팩토링 8단계(로깅 정비~타입 검증)는 위 문서 4장에서 세부 내역과 테스트 결과를 확인할 수 있습니다.
+
 ## 🔧 Installation
 
 ```bash

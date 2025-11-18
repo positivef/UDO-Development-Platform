@@ -1,0 +1,39 @@
+phase_weights:
+  default:
+    system: 0.5
+    uncertainty: 0.4
+    bonus: 0.1
+  ideation:
+    system: 0.3
+    uncertainty: 0.2
+    bonus: 0.5
+  design:
+    system: 0.4
+    uncertainty: 0.3
+    bonus: 0.3
+  mvp:
+    system: 0.5
+    uncertainty: 0.3
+    bonus: 0.2
+  implementation:
+    system: 0.5
+    uncertainty: 0.4
+    bonus: 0.1
+  testing:
+    system: 0.4
+    uncertainty: 0.5
+    bonus: 0.1
+phase_bonus:
+  default: 0.5
+  ideation: 0.8
+  design: 0.7
+  mvp: 0.6
+  implementation: 0.5
+  testing: 0.5
+phase_thresholds:
+  default: 0.6
+  ideation: 0.5
+  design: 0.55
+  mvp: 0.6
+  implementation: 0.65
+  testing: 0.7

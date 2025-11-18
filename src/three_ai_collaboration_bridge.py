@@ -24,6 +24,22 @@ from enum import Enum
 from datetime import datetime
 import tempfile
 import yaml
+import logging
+from filelock import FileLock
+
+
+logger = logging.getLogger(__name__)
+
+
+def _get_storage_dir() -> Path:
+    env_dir = os.environ.get('UDO_STORAGE_DIR') or os.environ.get('UDO_HOME')
+    base_dir = Path(env_dir).expanduser() if env_dir else Path.home() / '.udo'
+    base_dir.mkdir(parents=True, exist_ok=True)
+    return base_dir
+
+
+DEFAULT_STORAGE_DIR = _get_storage_dir()
+GEMINI_USAGE_FILE = DEFAULT_STORAGE_DIR / "gemini_usage.json"
 
 
 class AIRole(Enum):
@@ -298,25 +314,29 @@ class GeminiInterface:
 
     def _load_usage_count(self) -> int:
         """Load today's usage count"""
-        usage_file = Path.home() / ".gemini_usage.json"
+        usage_file = GEMINI_USAGE_FILE
         if usage_file.exists():
-            try:
-                with open(usage_file, 'r') as f:
-                    data = json.load(f)
-                    if data['date'] == datetime.now().strftime('%Y-%m-%d'):
-                        return data['count']
-            except:
-                pass
+            lock = FileLock(str(usage_file) + '.lock')
+            with lock:
+                try:
+                    with open(usage_file, 'r', encoding='utf-8') as f:
+                        data = json.load(f)
+                        if data.get('date') == datetime.now().strftime('%Y-%m-%d'):
+                            return data.get('count', 0)
+                except Exception:
+                    return 0
         return 0
 
     def _save_usage_count(self):
         """Save usage count"""
-        usage_file = Path.home() / ".gemini_usage.json"
-        with open(usage_file, 'w') as f:
-            json.dump({
-                'date': datetime.now().strftime('%Y-%m-%d'),
-                'count': self.usage_count
-            }, f)
+        usage_file = GEMINI_USAGE_FILE
+        lock = FileLock(str(usage_file) + '.lock')
+        with lock:
+            with open(usage_file, 'w', encoding='utf-8') as f:
+                json.dump({
+                    'date': datetime.now().strftime('%Y-%m-%d'),
+                    'count': self.usage_count
+                }, f)
 
     def execute(self, task: str, role: AIRole, context: AIContext) -> AIResponse:
         """Execute Gemini with specific role"""
@@ -444,7 +464,7 @@ class ThreeAICollaborationBridge:
     def __init__(self):
         self.codex = CodexInterface()
         self.gemini = GeminiInterface()
-        self.context_store = Path.home() / ".ai_collaboration_context"
+        self.context_store = DEFAULT_STORAGE_DIR / "ai_collaboration_context"
         self.context_store.mkdir(exist_ok=True)
 
         # Collaboration patterns
@@ -488,6 +508,12 @@ class ThreeAICollaborationBridge:
                    pattern: str = "implementation",
                    max_iterations: int = 3) -> Dict[str, Any]:
         """Execute 3-AI collaboration"""
+        if not isinstance(task, str) or not task.strip():
+            raise ValueError("task must be a non-empty string")
+        if not pattern:
+            raise ValueError("pattern is required")
+        if max_iterations < 1:
+            raise ValueError("max_iterations must be at least 1")
 
         # Initialize context
         context = AIContext(
@@ -525,7 +551,7 @@ class ThreeAICollaborationBridge:
         results = []
 
         for role, ai_name in sequence:
-            print(f"\n🤖 Executing {ai_name} in role: {role.value}")
+            logger.info("Executing %s as %s", ai_name, role.value)
 
             if ai_name == "claude":
                 # Current context (simulated)
@@ -552,7 +578,7 @@ class ThreeAICollaborationBridge:
 
             # Check for critical issues
             if response.issues_found and "critical" in str(response.issues_found).lower():
-                print(f"⚠️ Critical issues found by {ai_name}, stopping sequence")
+                logger.warning("Critical issues found by %s, stopping sequence", ai_name)
                 break
 
         return self._compile_results(results, context)
@@ -569,7 +595,7 @@ class ThreeAICollaborationBridge:
 
         while iteration < max_iterations and not converged:
             iteration += 1
-            print(f"\n🔄 Iteration {iteration}/{max_iterations}")
+            logger.info("Iteration %d/%d", iteration, max_iterations)
 
             iteration_results = []
             issues_count = 0
@@ -599,7 +625,7 @@ class ThreeAICollaborationBridge:
             # Check convergence (no issues found)
             if issues_count == 0:
                 converged = True
-                print("✅ Converged - no issues found")
+                logger.info("Converged - no issues found")
 
         return self._compile_results(results, context)
 
@@ -609,7 +635,7 @@ class ThreeAICollaborationBridge:
                         context: AIContext) -> Dict[str, Any]:
         """Execute AIs in parallel (simulated)"""
         # In production, use threading or async
-        print("🚀 Executing AIs in parallel")
+        logger.info("Executing AIs in parallel")
 
         results = []
         for role, ai_name in sequence:
@@ -647,7 +673,10 @@ class ThreeAICollaborationBridge:
 
         # Adapt based on confidence
         if response.confidence < 0.7:
-            print(f"⚠️ Low confidence ({response.confidence:.0%}), engaging additional AI")
+            logger.warning(
+                "Low confidence (%.0f%%), engaging additional AI",
+                response.confidence * 100
+            )
             # Engage the most appropriate AI based on issues
             if response.issues_found:
                 # Use Codex for debugging
@@ -726,8 +755,10 @@ Output: [Implementation would go here]
     def _save_context(self, context: AIContext):
         """Save context to disk for persistence"""
         context_file = self.context_store / f"{context.task_id}.yaml"
-        with open(context_file, 'w') as f:
-            f.write(context.to_yaml())
+        lock = FileLock(str(context_file) + '.lock')
+        with lock:
+            with open(context_file, 'w', encoding='utf-8') as f:
+                f.write(context.to_yaml())
 
     def _compile_results(self, responses: List[AIResponse], context: AIContext) -> Dict[str, Any]:
         """Compile results from all AIs"""
@@ -770,17 +801,18 @@ Output: [Implementation would go here]
 
 def main():
     """Demo of 3-AI Collaboration"""
-    print("="*80)
-    print("🤝 3-AI Collaboration Bridge Demo")
-    print("="*80)
+    logging.basicConfig(level=logging.INFO)
+    logger.info("%s", "=" * 80)
+    logger.info("3-AI Collaboration Bridge Demo")
+    logger.info("%s", "=" * 80)
 
     bridge = ThreeAICollaborationBridge()
 
     # Check AI availability
-    print("\n📊 AI Availability:")
-    print(f"  - Claude: ✅ (current context)")
-    print(f"  - Codex: {'✅' if bridge.codex.available else '❌'}")
-    print(f"  - Gemini: {'✅' if bridge.gemini.available else '❌'}")
+    logger.info("AI availability:")
+    logger.info("Claude: available in current context")
+    logger.info("Codex: %s", "available" if bridge.codex.available else "unavailable")
+    logger.info("Gemini: %s", "available" if bridge.gemini.available else "unavailable")
 
     # Test patterns
     test_tasks = [
@@ -791,33 +823,33 @@ def main():
     ]
 
     for task, pattern in test_tasks:
-        print(f"\n{'='*60}")
-        print(f"📝 Task: {task}")
-        print(f"🎯 Pattern: {pattern}")
-        print(f"{'='*60}")
+        logger.info("%s", "=" * 60)
+        logger.info("Task: %s", task)
+        logger.info("Pattern: %s", pattern)
+        logger.info("%s", "=" * 60)
 
         # Execute collaboration
         result = bridge.collaborate(task, pattern)
 
         # Display results
-        print(f"\n📊 Results:")
-        print(f"  - Status: {result['status']}")
-        print(f"  - Confidence: {result['overall_confidence']:.0%}")
-        print(f"  - Time: {result['total_execution_time']:.1f}s")
-        print(f"  - Issues Found: {len(result['aggregated_issues'])}")
-        print(f"  - Suggestions: {len(result['aggregated_suggestions'])}")
+        logger.info("Results:")
+        logger.info("Status: %s", result['status'])
+        logger.info("Confidence: %.0f%%", result['overall_confidence'] * 100)
+        logger.info("Time: %.1fs", result['total_execution_time'])
+        logger.info("Issues Found: %d", len(result['aggregated_issues']))
+        logger.info("Suggestions: %d", len(result['aggregated_suggestions']))
 
         if result['aggregated_issues']:
-            print(f"\n⚠️ Issues to Address:")
+            logger.warning("Issues to address:")
             for issue in result['aggregated_issues'][:3]:
-                print(f"  - {issue}")
+                logger.warning("- %s", issue)
 
         if result['aggregated_suggestions']:
-            print(f"\n💡 Suggestions:")
+            logger.info("Suggestions:")
             for suggestion in result['aggregated_suggestions'][:3]:
-                print(f"  - {suggestion}")
+                logger.info("- %s", suggestion)
 
-        print(f"\n✅ Collaboration Complete!")
+        logger.info("Collaboration complete!")
         time.sleep(1)  # Brief pause between tests
 
 

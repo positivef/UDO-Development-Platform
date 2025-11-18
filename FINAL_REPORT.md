@@ -4,6 +4,9 @@
 **Version**: 3.0.0
 **Status**: Production Ready (Beta)
 
+> **PR 기준 버전**: 모든 분석과 테스트는 `UDO v2` + `Uncertainty Map v3` 조합을 기준으로 하며, 비교 결과는 [`docs/pr_version_selection.md`](docs/pr_version_selection.md)에 정리했습니다.
+> **Codex 개선 요약**: 동일 문서 4장에 로깅 전환, 설정 분리, ASCII 출력, ML 분기, 파일 잠금, Import 처리, 테스트, 타입 검증 등 8단계 개선 내역을 명시했습니다.
+
 ---
 
 ## 🎯 Project Achievement Summary
