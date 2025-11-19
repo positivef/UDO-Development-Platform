@@ -70,7 +70,7 @@ class TestUDOv2EndToEnd:
         assert "system" in result
         assert "confidence" in result
         assert "decision" in result
-        assert result["decision"] in ["GO", "NO-GO", "CONDITIONAL-GO"]
+        assert result["decision"] in ["GO", "GO_WITH_MONITORING", "PROTOTYPE_FIRST", "NEED_MORE_INFO"]
 
         # Verify phase-aware confidence
         assert 0.0 <= result["confidence"] <= 1.0
@@ -94,7 +94,7 @@ class TestUDOv2EndToEnd:
 
         assert "system" in result
         assert "decision" in result
-        assert result["decision"] in ["GO", "NO-GO", "CONDITIONAL-GO"]
+        assert result["decision"] in ["GO", "GO_WITH_MONITORING", "PROTOTYPE_FIRST", "NEED_MORE_INFO"]
         assert "confidence" in result
 
         print(f"✅ Design phase E2E test passed")
@@ -277,7 +277,7 @@ class TestUDOv2EndToEnd:
 
             assert "system" in result
             assert "decision" in result
-            assert result["decision"] in ["GO", "NO-GO", "CONDITIONAL-GO"]
+            assert result["decision"] in ["GO", "GO_WITH_MONITORING", "PROTOTYPE_FIRST", "NEED_MORE_INFO"]
 
         print(f"✅ Full lifecycle E2E test passed")
         print(f"   Tested {len(phases)} phases successfully")
