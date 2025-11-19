@@ -479,12 +479,13 @@ class UnifiedDevelopmentOrchestratorV2:
             prediction = self.uncertainty.predict_evolution(
                 vector,
                 self.context.current_phase,
-                hours_ahead=24
+                hours=24
             )
 
             if prediction:
                 logger.info("Uncertainty trend: %s", prediction.trend)
-                logger.info("24h forecast: %.1f%%", prediction.uncertainty_24h * 100)
+                future_uncertainty = prediction.predict_future(24)
+                logger.info("24h forecast: %.1f%%", future_uncertainty * 100)
 
                 # 자동 완화 전략 생성
                 state = self.uncertainty.classify_state(vector.magnitude())
