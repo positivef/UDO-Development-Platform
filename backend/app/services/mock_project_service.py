@@ -114,7 +114,7 @@ class MockProjectService:
             # Create new project
             project = {
                 "id": str(project_id),
-                "name": f"Project-{project_id[:8]}",
+                "name": f"Project-{str(project_id)[:8]}",
                 "description": "Auto-created project",
                 "is_active": True,
                 "has_context": True,
