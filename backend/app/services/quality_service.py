@@ -11,6 +11,7 @@ from pathlib import Path
 from typing import Dict, List, Optional
 from datetime import datetime
 import logging
+import os
 
 logger = logging.getLogger(__name__)
 
@@ -23,11 +24,35 @@ class QualityMetricsService:
         Initialize Quality Metrics Service
 
         Args:
-            project_root: Root directory of the project (defaults to current working directory)
+            project_root: Root directory of the project (defaults to finding UDO-Development-Platform)
         """
-        self.project_root = project_root or Path.cwd()
+        if project_root:
+            self.project_root = Path(project_root).resolve()
+        else:
+            # Find project root by looking for UDO-Development-Platform directory
+            current_path = Path(__file__).resolve()
+            for parent in current_path.parents:
+                if parent.name == "UDO-Development-Platform":
+                    self.project_root = parent
+                    break
+                # Also check if backend/web-dashboard directories exist
+                if (parent / "backend").exists() and (parent / "web-dashboard").exists():
+                    self.project_root = parent
+                    break
+            else:
+                # Fallback to current working directory
+                self.project_root = Path.cwd()
+
         self.backend_dir = self.project_root / "backend"
         self.frontend_dir = self.project_root / "web-dashboard"
+
+        # Validate directories exist
+        if not self.backend_dir.exists():
+            logger.warning(f"Backend directory not found: {self.backend_dir}")
+        if not self.frontend_dir.exists():
+            logger.warning(f"Frontend directory not found: {self.frontend_dir}")
+
+        logger.info(f"QualityMetricsService initialized with project_root: {self.project_root}")
 
     def get_pylint_metrics(self, target_dir: Optional[Path] = None) -> Dict:
         """
@@ -41,13 +66,38 @@ class QualityMetricsService:
         """
         target = target_dir or (self.backend_dir / "app")
 
+        # Validate target directory exists
+        if not target.exists():
+            logger.warning(f"Target directory does not exist: {target}")
+            return {
+                "score": 0.0,
+                "total_issues": 0,
+                "issues_by_type": {},
+                "messages": [],
+                "analyzed_at": datetime.now().isoformat(),
+                "error": f"Directory not found: {target}"
+            }
+
         try:
+            # Ensure backend directory exists for cwd
+            if not self.backend_dir.exists():
+                logger.error(f"Backend directory does not exist: {self.backend_dir}")
+                return {
+                    "score": 0.0,
+                    "total_issues": 0,
+                    "issues_by_type": {},
+                    "messages": [],
+                    "analyzed_at": datetime.now().isoformat(),
+                    "error": f"Backend directory not found: {self.backend_dir}"
+                }
+
             # Run Pylint with JSON output
             result = subprocess.run(
                 ["pylint", str(target), "--output-format=json"],
                 capture_output=True,
                 text=True,
-                cwd=str(self.backend_dir)
+                cwd=str(self.backend_dir.resolve()),  # Use resolved path
+                shell=True  # Use shell on Windows to find pylint in PATH
             )
 
             # Parse Pylint score from stdout
@@ -118,13 +168,26 @@ class QualityMetricsService:
         """
         target = target_dir or self.frontend_dir
 
+        # Validate target directory exists
+        if not target.exists():
+            logger.warning(f"Target directory does not exist: {target}")
+            return {
+                "score": 0.0,
+                "total_errors": 0,
+                "total_warnings": 0,
+                "total_files": 0,
+                "messages": [],
+                "analyzed_at": datetime.now().isoformat(),
+                "error": f"Directory not found: {target}"
+            }
+
         try:
             # Run ESLint with JSON output
             result = subprocess.run(
                 ["npx", "eslint", ".", "--format=json"],
                 capture_output=True,
                 text=True,
-                cwd=str(target),
+                cwd=str(target.resolve()),  # Use resolved path
                 shell=True  # Required for npx on Windows
             )
 
@@ -201,13 +264,27 @@ class QualityMetricsService:
         Returns:
             Dict containing test coverage metrics
         """
+        # Validate backend directory exists
+        if not self.backend_dir.exists():
+            logger.warning(f"Backend directory does not exist: {self.backend_dir}")
+            return {
+                "coverage_percentage": 0.0,
+                "tests_total": 0,
+                "tests_passed": 0,
+                "tests_failed": 0,
+                "success_rate": 0.0,
+                "analyzed_at": datetime.now().isoformat(),
+                "error": f"Backend directory not found: {self.backend_dir}"
+            }
+
         try:
             # Run pytest with coverage
             result = subprocess.run(
                 ["pytest", "--cov=app", "--cov-report=json", "--cov-report=term"],
                 capture_output=True,
                 text=True,
-                cwd=str(self.backend_dir)
+                cwd=str(self.backend_dir.resolve()),  # Use resolved path
+                shell=True  # Use shell on Windows to find pytest in PATH
             )
 
             # Try to read coverage JSON report

@@ -93,6 +93,14 @@ except ImportError as e:
     ASYNC_DB_AVAILABLE = False
     logger.warning(f"Async database not available: {e}")
 
+# Import error handler
+try:
+    from app.core.error_handler import setup_error_handlers, error_handler
+    ERROR_HANDLER_AVAILABLE = True
+except ImportError as e:
+    ERROR_HANDLER_AVAILABLE = False
+    logger.warning(f"Error handler not available: {e}")
+
 # FastAPI app - with updated MockProjectService
 app = FastAPI(
     title="UDO Development Platform API",
@@ -108,6 +116,11 @@ app.add_middleware(
     allow_methods=["*"],
     allow_headers=["*"],
 )
+
+# Setup global error handlers
+if ERROR_HANDLER_AVAILABLE:
+    setup_error_handlers(app)
+    logger.info("✅ Global error handlers configured")
 
 # Include routers
 if ROUTERS_AVAILABLE:
@@ -240,6 +253,13 @@ async def shutdown_event():
             logger.info("✅ Async database closed")
         except Exception as e:
             logger.error(f"❌ Failed to close async database: {e}")
+
+# Error statistics endpoint (if error handler available)
+if ERROR_HANDLER_AVAILABLE:
+    @app.get("/api/errors/stats")
+    async def get_error_statistics():
+        """Get error statistics and history"""
+        return error_handler.get_error_statistics()
 
 # Health check
 @app.get("/api/health")
