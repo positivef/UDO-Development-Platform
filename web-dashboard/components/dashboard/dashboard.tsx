@@ -3,6 +3,7 @@
 import { useState, useEffect } from "react"
 import { useQuery } from "@tanstack/react-query"
 import { motion, AnimatePresence } from "framer-motion"
+import Link from "next/link"
 import {
   Activity,
   Brain,
@@ -14,7 +15,8 @@ import {
   AlertCircle,
   CheckCircle2,
   Clock,
-  Loader2
+  Loader2,
+  BarChart3
 } from "lucide-react"
 import { SystemStatus } from "./system-status"
 import { PhaseProgress } from "./phase-progress"
@@ -141,6 +143,12 @@ export function Dashboard() {
             </p>
           </div>
           <div className="flex items-center gap-4">
+            <Link href="/quality">
+              <button className="flex items-center gap-2 px-4 py-2 rounded-lg bg-blue-500/20 text-blue-400 hover:bg-blue-500/30 transition-colors">
+                <BarChart3 className="h-5 w-5" />
+                <span>Quality Metrics</span>
+              </button>
+            </Link>
             <div className={cn(
               "flex items-center gap-2 px-4 py-2 rounded-lg",
               isConnected ? "bg-green-500/20 text-green-400" : "bg-red-500/20 text-red-400"
