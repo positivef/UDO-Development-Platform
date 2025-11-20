@@ -45,11 +45,34 @@ except Exception as e:
 
 # Import routers
 try:
-    from app.routers import version_history_router, quality_metrics_router
+    from app.routers import (
+        version_history_router,
+        quality_metrics_router,
+        constitutional_router,
+        time_tracking_router,
+        gi_formula_router,
+        ck_theory_router
+    )
     ROUTERS_AVAILABLE = True
+    CONSTITUTIONAL_ROUTER_AVAILABLE = True
+    TIME_TRACKING_ROUTER_AVAILABLE = True
+    GI_FORMULA_ROUTER_AVAILABLE = True
+    CK_THEORY_ROUTER_AVAILABLE = True
 except ImportError as e:
     ROUTERS_AVAILABLE = False
+    CONSTITUTIONAL_ROUTER_AVAILABLE = False
+    TIME_TRACKING_ROUTER_AVAILABLE = False
+    GI_FORMULA_ROUTER_AVAILABLE = False
+    CK_THEORY_ROUTER_AVAILABLE = False
     logger.warning(f"Routers not available: {e}")
+
+# Import auth router separately
+try:
+    from app.routers.auth import router as auth_router
+    AUTH_ROUTER_AVAILABLE = True
+except ImportError as e:
+    AUTH_ROUTER_AVAILABLE = False
+    logger.warning(f"Auth router not available: {e}")
 
 # Import project context routers separately (optional)
 try:
@@ -66,6 +89,22 @@ try:
 except ImportError as e:
     MODULES_ROUTER_AVAILABLE = False
     logger.info(f"Modules router not available (optional): {e}")
+
+# Import tasks router for Task Management
+try:
+    from app.routers.tasks import router as tasks_router
+    TASKS_ROUTER_AVAILABLE = True
+except ImportError as e:
+    TASKS_ROUTER_AVAILABLE = False
+    logger.info(f"Tasks router not available: {e}")
+
+# Import Obsidian router for Knowledge Management
+try:
+    from app.routers.obsidian import router as obsidian_router
+    OBSIDIAN_ROUTER_AVAILABLE = True
+except ImportError as e:
+    OBSIDIAN_ROUTER_AVAILABLE = False
+    logger.info(f"Obsidian router not available: {e}")
 
 # Import WebSocket handler and SessionManagerV2
 try:
@@ -101,6 +140,33 @@ except ImportError as e:
     ERROR_HANDLER_AVAILABLE = False
     logger.warning(f"Error handler not available: {e}")
 
+# Import security components
+try:
+    from app.core.security import (
+        setup_security,
+        JWTManager,
+        PasswordHasher,
+        SecureUserCreate,
+        SecureProjectCreate,
+        security
+    )
+    SECURITY_AVAILABLE = True
+except ImportError as e:
+    SECURITY_AVAILABLE = False
+    logger.warning(f"Security components not available: {e}")
+
+# Import monitoring components
+try:
+    from app.core.monitoring import (
+        setup_monitoring,
+        performance_monitor,
+        monitor_performance
+    )
+    MONITORING_AVAILABLE = True
+except ImportError as e:
+    MONITORING_AVAILABLE = False
+    logger.warning(f"Monitoring components not available: {e}")
+
 # FastAPI app - with updated MockProjectService
 app = FastAPI(
     title="UDO Development Platform API",
@@ -122,11 +188,23 @@ if ERROR_HANDLER_AVAILABLE:
     setup_error_handlers(app)
     logger.info("✅ Global error handlers configured")
 
+# Setup security middleware
+if SECURITY_AVAILABLE:
+    setup_security(app)
+    logger.info("✅ Security middleware configured")
+
+# Setup performance monitoring
+if MONITORING_AVAILABLE:
+    setup_monitoring(app)
+    logger.info("✅ Performance monitoring configured")
+
 # Include routers
 if ROUTERS_AVAILABLE:
     app.include_router(version_history_router)
     logger.info("✅ Version History router included")
     app.include_router(quality_metrics_router)
+    app.include_router(constitutional_router)
+    logger.info("✅ Constitutional router included (AI Governance)")
     logger.info("✅ Quality Metrics router included")
 
     if PROJECT_CONTEXT_AVAILABLE:
@@ -135,13 +213,38 @@ if ROUTERS_AVAILABLE:
         app.include_router(projects_router)
         logger.info("✅ Projects router included")
 
-    if MODULES_ROUTER_AVAILABLE:
-        app.include_router(modules_router)
-        logger.info("✅ Modules router included (Standard Level MDO)")
+# Include auth router
+if AUTH_ROUTER_AVAILABLE:
+    app.include_router(auth_router)
+    logger.info("✅ Authentication router included")
 
-    if WEBSOCKET_AVAILABLE:
-        app.include_router(websocket_handler.router)
-        logger.info("✅ WebSocket handler included")
+if MODULES_ROUTER_AVAILABLE:
+    app.include_router(modules_router)
+    logger.info("✅ Modules router included (Standard Level MDO)")
+
+if TASKS_ROUTER_AVAILABLE:
+    app.include_router(tasks_router)
+    logger.info("✅ Tasks router included (Task Management)")
+
+if OBSIDIAN_ROUTER_AVAILABLE:
+    app.include_router(obsidian_router)
+    logger.info("✅ Obsidian router included (Knowledge Management)")
+
+if TIME_TRACKING_ROUTER_AVAILABLE:
+    app.include_router(time_tracking_router)
+    logger.info("✅ Time Tracking router included (ROI Measurement)")
+
+if GI_FORMULA_ROUTER_AVAILABLE:
+    app.include_router(gi_formula_router)
+    logger.info("✅ GI Formula router included (Genius Insight Formula)")
+
+if CK_THEORY_ROUTER_AVAILABLE:
+    app.include_router(ck_theory_router)
+    logger.info("✅ C-K Theory router included (Design Alternatives)")
+
+if WEBSOCKET_AVAILABLE:
+    app.include_router(websocket_handler.router)
+    logger.info("✅ WebSocket handler included")
 
 # Global UDO instance
 udo_system = None
@@ -223,6 +326,17 @@ async def startup_event():
     else:
         logger.warning("Running in mock mode - UDO not available")
 
+    # Start background Obsidian sync (periodic backup every 1-2 hours)
+    try:
+        from app.background_tasks import start_background_sync
+
+        # Get sync interval from environment or use default (1 hour)
+        sync_interval = int(os.getenv("OBSIDIAN_SYNC_INTERVAL_HOURS", "1"))
+        await start_background_sync(sync_interval_hours=sync_interval)
+        logger.info(f"✅ Background Obsidian sync started (every {sync_interval}h)")
+    except Exception as e:
+        logger.warning(f"⚠️ Background sync not available: {e}")
+
 
 # Shutdown event
 @app.on_event("shutdown")
@@ -253,6 +367,14 @@ async def shutdown_event():
             logger.info("✅ Async database closed")
         except Exception as e:
             logger.error(f"❌ Failed to close async database: {e}")
+
+    # Stop background sync
+    try:
+        from app.background_tasks import stop_background_sync
+        await stop_background_sync()
+        logger.info("✅ Background sync stopped")
+    except Exception as e:
+        logger.error(f"❌ Failed to stop background sync: {e}")
 
 # Error statistics endpoint (if error handler available)
 if ERROR_HANDLER_AVAILABLE:
