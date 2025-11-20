@@ -4,3 +4,14 @@ websockets==14.1
 python-multipart==0.0.18
 pydantic==2.10.3
 python-dotenv==1.0.1
+
+# Database (PostgreSQL)
+psycopg2-binary==2.9.9
+SQLAlchemy==2.0.35
+alembic==1.13.3
+
+# Redis
+redis==5.0.8
+
+# YAML parsing
+PyYAML==6.0.1
