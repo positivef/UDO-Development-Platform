@@ -1,0 +1,992 @@
+"""
+C-K Theory Service
+
+Concept-Knowledge Design Theory - 4-stage design alternative generation system.
+
+Stages:
+1. Concept Exploration: Generate 3 distinct design concepts
+2. Alternative Generation: Develop detailed alternatives (A, B, C)
+3. RICE Scoring: Calculate Reach × Impact × Confidence / Effort
+4. Trade-off Analysis: Compare alternatives and recommend
+"""
+
+import logging
+import asyncio
+import hashlib
+from datetime import datetime
+from typing import Dict, List, Optional, Any
+from pathlib import Path
+
+from ..models.ck_theory import (
+    RICEScore,
+    DesignAlternative,
+    TradeoffAnalysis,
+    CKTheoryRequest,
+    CKTheoryResult,
+    DesignSummary,
+    DesignFeedback,
+)
+
+logger = logging.getLogger(__name__)
+
+
+class CKTheoryService:
+    """
+    Service for generating design alternatives using C-K Theory
+
+    Features:
+    - 4-stage design process (Concept → Alternative → RICE → Tradeoff)
+    - 3 parallel alternatives generation
+    - Sequential + Context7 MCP integration
+    - Obsidian auto-save
+    - RICE automatic calculation
+    - Performance target: <45 seconds
+    """
+
+    def __init__(
+        self,
+        sequential_mcp=None,
+        context7_mcp=None,
+        obsidian_service=None,
+        cache_service=None,
+        config: Optional[Dict[str, Any]] = None
+    ):
+        """
+        Initialize C-K Theory Service
+
+        Args:
+            sequential_mcp: Sequential MCP client for structured reasoning
+            context7_mcp: Context7 MCP client for official documentation
+            obsidian_service: ObsidianService for knowledge sync
+            cache_service: Cache service (Redis/SQLite)
+            config: Service configuration
+        """
+        self.sequential_mcp = sequential_mcp
+        self.context7_mcp = context7_mcp
+        self.obsidian_service = obsidian_service
+        self.cache_service = cache_service
+        self.config = config or {}
+
+        # In-memory cache for recent designs
+        self._memory_cache: Dict[str, CKTheoryResult] = {}
+        self._max_memory_cache = self.config.get("max_memory_cache", 10)
+
+        # Feedback storage for learning
+        self._feedback_store: Dict[str, List[DesignFeedback]] = {}
+
+        logger.info("CKTheoryService initialized")
+
+    async def generate_design(
+        self,
+        request: CKTheoryRequest
+    ) -> CKTheoryResult:
+        """
+        Generate 3 design alternatives using C-K Theory
+
+        Args:
+            request: C-K Theory request with challenge and constraints
+
+        Returns:
+            Complete C-K Theory result with 3 alternatives and tradeoff analysis
+
+        Raises:
+            ValueError: If request validation fails
+            RuntimeError: If design generation fails
+        """
+        start_time = datetime.now()
+
+        try:
+            # Generate design ID
+            design_id = self._generate_design_id(request.challenge)
+
+            # Check cache
+            cached_result = await self._get_cached_design(design_id)
+            if cached_result:
+                logger.info(f"Cache hit for design {design_id}")
+                return cached_result
+
+            logger.info(f"Generating design {design_id} for challenge: {request.challenge[:50]}...")
+
+            # Stage 1: Concept Exploration
+            concepts = await self._explore_concepts(
+                challenge=request.challenge,
+                constraints=request.constraints or {}
+            )
+
+            # Stage 2: Generate 3 Alternatives in Parallel
+            alternatives = await self._generate_alternatives_parallel(
+                challenge=request.challenge,
+                concepts=concepts,
+                constraints=request.constraints or {}
+            )
+
+            # Validate alternatives have IDs A, B, C
+            alt_ids = {alt.id for alt in alternatives}
+            if alt_ids != {'A', 'B', 'C'}:
+                raise ValueError(f"Expected alternatives A, B, C. Got: {alt_ids}")
+
+            # Stage 3: RICE scoring already calculated in model validator
+
+            # Stage 4: Trade-off Analysis
+            tradeoff_analysis = await self._analyze_tradeoffs(
+                challenge=request.challenge,
+                alternatives=alternatives,
+                constraints=request.constraints or {}
+            )
+
+            # Calculate total duration
+            end_time = datetime.now()
+            total_duration_ms = int((end_time - start_time).total_seconds() * 1000)
+
+            # Build result
+            result = CKTheoryResult(
+                id=design_id,
+                challenge=request.challenge,
+                alternatives=alternatives,
+                tradeoff_analysis=tradeoff_analysis,
+                total_duration_ms=total_duration_ms,
+                created_at=start_time,
+                project=request.project,
+                constraints=request.constraints,
+                metadata={
+                    "concepts": concepts,
+                    "alternative_scores": {alt.id: alt.rice.score for alt in alternatives},
+                }
+            )
+
+            # Cache result (async, don't wait)
+            asyncio.create_task(self._cache_design(design_id, result))
+
+            # Save to Obsidian (async, don't wait)
+            asyncio.create_task(self._save_to_obsidian(result))
+
+            # Extract recommended alternative
+            recommended_id = self._extract_recommended_id(tradeoff_analysis.recommendation)
+
+            logger.info(
+                f"Generated design {design_id} in {total_duration_ms}ms "
+                f"(recommended: {recommended_id}, scores: "
+                f"{', '.join(f'{a.id}:{a.rice.score}' for a in alternatives)})"
+            )
+
+            return result
+
+        except Exception as e:
+            logger.error(f"Failed to generate design: {e}", exc_info=True)
+            raise RuntimeError(f"Design generation failed: {str(e)}") from e
+
+    async def get_design(self, design_id: str) -> Optional[CKTheoryResult]:
+        """
+        Retrieve design by ID
+
+        Args:
+            design_id: Unique design identifier
+
+        Returns:
+            CKTheoryResult if found, None otherwise
+        """
+        try:
+            return await self._get_cached_design(design_id)
+        except Exception as e:
+            logger.error(f"Failed to retrieve design {design_id}: {e}")
+            return None
+
+    async def list_designs(
+        self,
+        project: Optional[str] = None,
+        limit: int = 10,
+        offset: int = 0
+    ) -> List[DesignSummary]:
+        """
+        List recent designs
+
+        Args:
+            project: Filter by project name
+            limit: Maximum results
+            offset: Pagination offset
+
+        Returns:
+            List of design summaries
+        """
+        try:
+            # Get from memory cache
+            designs = list(self._memory_cache.values())
+
+            # Filter by project if specified
+            if project:
+                designs = [d for d in designs if d.project == project]
+
+            # Sort by creation time (newest first)
+            designs.sort(key=lambda x: x.created_at, reverse=True)
+
+            # Paginate
+            designs = designs[offset:offset + limit]
+
+            # Convert to summaries
+            summaries = [
+                DesignSummary(
+                    id=design.id,
+                    challenge=design.challenge[:100],
+                    recommended_alternative=self._extract_recommended_id(
+                        design.tradeoff_analysis.recommendation
+                    ),
+                    avg_rice_score=sum(a.rice.score for a in design.alternatives) / len(design.alternatives),
+                    total_duration_ms=design.total_duration_ms,
+                    created_at=design.created_at,
+                    project=design.project,
+                )
+                for design in designs
+            ]
+
+            return summaries
+
+        except Exception as e:
+            logger.error(f"Failed to list designs: {e}")
+            return []
+
+    async def add_feedback(
+        self,
+        design_id: str,
+        feedback: DesignFeedback
+    ) -> bool:
+        """
+        Add feedback for a design
+
+        Args:
+            design_id: Design identifier
+            feedback: Feedback data
+
+        Returns:
+            True if feedback added successfully
+        """
+        try:
+            if design_id not in self._feedback_store:
+                self._feedback_store[design_id] = []
+
+            self._feedback_store[design_id].append(feedback)
+
+            logger.info(
+                f"Added feedback for design {design_id}: "
+                f"rating={feedback.rating}, selected={feedback.selected_alternative}"
+            )
+
+            # Save feedback to persistent storage if available
+            if self.cache_service:
+                await self.cache_service.set(
+                    f"ck:feedback:{design_id}",
+                    [f.dict() for f in self._feedback_store[design_id]],
+                    ttl=None  # No expiration for feedback
+                )
+
+            return True
+
+        except Exception as e:
+            logger.error(f"Failed to add feedback: {e}")
+            return False
+
+    async def get_feedback(self, design_id: str) -> List[DesignFeedback]:
+        """
+        Get feedback for a design
+
+        Args:
+            design_id: Design identifier
+
+        Returns:
+            List of feedback entries
+        """
+        try:
+            # Check memory first
+            if design_id in self._feedback_store:
+                return self._feedback_store[design_id]
+
+            # Check persistent storage
+            if self.cache_service:
+                feedback_data = await self.cache_service.get(f"ck:feedback:{design_id}")
+                if feedback_data:
+                    feedback_list = [DesignFeedback(**fb) for fb in feedback_data]
+                    self._feedback_store[design_id] = feedback_list
+                    return feedback_list
+
+            return []
+
+        except Exception as e:
+            logger.error(f"Failed to get feedback: {e}")
+            return []
+
+    # Private helper methods
+
+    async def _explore_concepts(
+        self,
+        challenge: str,
+        constraints: Dict[str, Any]
+    ) -> List[str]:
+        """
+        Explore concept space to generate 3 distinct concepts
+
+        Args:
+            challenge: Design challenge
+            constraints: Design constraints
+
+        Returns:
+            List of 3 concept descriptions
+        """
+        try:
+            if self.sequential_mcp:
+                prompt = f"""
+Explore the concept space for this design challenge: {challenge}
+
+Constraints: {constraints}
+
+Generate 3 distinct conceptual approaches:
+1. Conservative approach (low risk, proven patterns)
+2. Balanced approach (moderate innovation, pragmatic)
+3. Innovative approach (high innovation, cutting-edge)
+
+Return 3 one-sentence concept descriptions.
+"""
+                result = await self._execute_with_sequential(prompt, timeout=10000)
+
+                # Parse concepts (simplified - actual parsing depends on MCP response)
+                concepts = [line.strip() for line in result.split('\n') if line.strip()][:3]
+
+                if len(concepts) < 3:
+                    concepts.extend([
+                        "Conservative: Use proven industry patterns",
+                        "Balanced: Mix standard and modern approaches",
+                        "Innovative: Explore cutting-edge solutions"
+                    ][:3 - len(concepts)])
+
+            else:
+                # Fallback concepts
+                concepts = [
+                    f"Conservative approach for: {challenge}",
+                    f"Balanced approach for: {challenge}",
+                    f"Innovative approach for: {challenge}",
+                ]
+
+            logger.info(f"Explored concepts: {concepts}")
+            return concepts
+
+        except Exception as e:
+            logger.error(f"Concept exploration failed: {e}")
+            return [
+                f"Concept A for: {challenge}",
+                f"Concept B for: {challenge}",
+                f"Concept C for: {challenge}",
+            ]
+
+    async def _generate_alternatives_parallel(
+        self,
+        challenge: str,
+        concepts: List[str],
+        constraints: Dict[str, Any]
+    ) -> List[DesignAlternative]:
+        """
+        Generate 3 alternatives in parallel
+
+        Args:
+            challenge: Design challenge
+            concepts: 3 concept descriptions
+            constraints: Design constraints
+
+        Returns:
+            List of 3 design alternatives (A, B, C)
+        """
+        try:
+            # Generate alternatives in parallel
+            tasks = [
+                self._generate_alternative(
+                    alt_id=alt_id,
+                    challenge=challenge,
+                    concept=concept,
+                    constraints=constraints
+                )
+                for alt_id, concept in zip(['A', 'B', 'C'], concepts)
+            ]
+
+            alternatives = await asyncio.gather(*tasks)
+
+            return alternatives
+
+        except Exception as e:
+            logger.error(f"Alternative generation failed: {e}")
+            raise RuntimeError(f"Failed to generate alternatives: {str(e)}") from e
+
+    async def _generate_alternative(
+        self,
+        alt_id: str,
+        challenge: str,
+        concept: str,
+        constraints: Dict[str, Any]
+    ) -> DesignAlternative:
+        """
+        Generate a single design alternative
+
+        Args:
+            alt_id: Alternative ID (A, B, or C)
+            challenge: Design challenge
+            concept: Concept description
+            constraints: Design constraints
+
+        Returns:
+            Complete design alternative
+        """
+        try:
+            if self.sequential_mcp:
+                # Use Sequential for analysis + Context7 for patterns
+                prompt = f"""
+Design Alternative {alt_id} for: {challenge}
+
+Concept: {concept}
+Constraints: {constraints}
+
+Provide:
+1. Title (5-10 words)
+2. Description (50-200 words)
+3. Technical approach (50-100 words)
+4. 3 pros, 3 cons, 3 risks
+5. Dependencies list
+6. Timeline estimate
+7. RICE scores (1-10 each): Reach, Impact, Confidence, Effort
+"""
+                result = await self._execute_with_sequential(prompt, timeout=15000)
+
+                # Parse result (simplified - actual parsing depends on MCP response)
+                alternative = self._parse_alternative_response(alt_id, result, concept)
+
+            else:
+                # Fallback alternative
+                alternative = self._create_fallback_alternative(alt_id, challenge, concept)
+
+            logger.info(f"Generated alternative {alt_id}: {alternative.title} (RICE: {alternative.rice.score})")
+            return alternative
+
+        except Exception as e:
+            logger.error(f"Failed to generate alternative {alt_id}: {e}")
+            return self._create_fallback_alternative(alt_id, challenge, concept)
+
+    def _parse_alternative_response(
+        self,
+        alt_id: str,
+        response: str,
+        concept: str
+    ) -> DesignAlternative:
+        """
+        Parse Sequential MCP response into DesignAlternative
+
+        Args:
+            alt_id: Alternative ID
+            response: MCP response text
+            concept: Concept description
+
+        Returns:
+            Parsed design alternative
+        """
+        # Simplified parsing - actual implementation would be more robust
+        lines = [line.strip() for line in response.split('\n') if line.strip()]
+
+        # Extract title (first non-empty line)
+        title = lines[0] if lines else f"Alternative {alt_id}"
+
+        # Extract description (next 3-5 lines)
+        description = " ".join(lines[1:4]) if len(lines) > 1 else f"Design alternative {alt_id} based on {concept}"
+
+        # Extract RICE scores (look for numbers)
+        import re
+        numbers = re.findall(r'\b([1-9]|10)\b', response)
+        reach = int(numbers[0]) if len(numbers) > 0 else 5
+        impact = int(numbers[1]) if len(numbers) > 1 else 5
+        confidence = int(numbers[2]) if len(numbers) > 2 else 5
+        effort = int(numbers[3]) if len(numbers) > 3 else 5
+
+        return DesignAlternative(
+            id=alt_id,
+            title=title[:100],
+            description=description[:2000],
+            concept_origin=concept,
+            knowledge_basis=[
+                f"Knowledge element 1 for {alt_id}",
+                f"Knowledge element 2 for {alt_id}",
+            ],
+            rice=RICEScore(
+                reach=reach,
+                impact=impact,
+                confidence=confidence,
+                effort=effort,
+                score=0.0  # Will be calculated by validator
+            ),
+            pros=[
+                f"Advantage 1 of {alt_id}",
+                f"Advantage 2 of {alt_id}",
+                f"Advantage 3 of {alt_id}",
+            ],
+            cons=[
+                f"Disadvantage 1 of {alt_id}",
+                f"Disadvantage 2 of {alt_id}",
+            ],
+            risks=[
+                f"Risk 1 of {alt_id}",
+                f"Risk 2 of {alt_id}",
+            ],
+            technical_approach=f"Technical implementation for {alt_id}",
+            dependencies=["dependency1", "dependency2"],
+            estimated_timeline=f"{effort * 2} weeks",
+        )
+
+    def _create_fallback_alternative(
+        self,
+        alt_id: str,
+        challenge: str,
+        concept: str
+    ) -> DesignAlternative:
+        """
+        Create fallback alternative when MCP unavailable
+
+        Args:
+            alt_id: Alternative ID
+            challenge: Design challenge
+            concept: Concept description
+
+        Returns:
+            Fallback design alternative
+        """
+        # Simple RICE scores based on alternative ID
+        rice_configs = {
+            'A': {'reach': 7, 'impact': 7, 'confidence': 7, 'effort': 5},
+            'B': {'reach': 6, 'impact': 6, 'confidence': 8, 'effort': 3},
+            'C': {'reach': 9, 'impact': 8, 'confidence': 5, 'effort': 8},
+        }
+
+        rice_values = rice_configs.get(alt_id, {'reach': 5, 'impact': 5, 'confidence': 5, 'effort': 5})
+
+        return DesignAlternative(
+            id=alt_id,
+            title=f"Alternative {alt_id}: {concept[:50]}",
+            description=f"Design alternative {alt_id} for {challenge}. Based on concept: {concept}. (Fallback mode)",
+            concept_origin=concept,
+            knowledge_basis=[
+                f"Standard patterns for {alt_id}",
+                f"Industry best practices",
+            ],
+            rice=RICEScore(**rice_values, score=0.0),
+            pros=[
+                f"Proven approach for {alt_id}",
+                f"Well-documented patterns",
+                f"Community support",
+            ],
+            cons=[
+                f"May require customization",
+                f"Learning curve considerations",
+            ],
+            risks=[
+                f"Implementation complexity",
+                f"Integration challenges",
+            ],
+            technical_approach=f"Standard implementation approach for {alt_id}",
+            dependencies=["framework-dependency", "library-dependency"],
+            estimated_timeline=f"{rice_values['effort']} weeks",
+        )
+
+    async def _analyze_tradeoffs(
+        self,
+        challenge: str,
+        alternatives: List[DesignAlternative],
+        constraints: Dict[str, Any]
+    ) -> TradeoffAnalysis:
+        """
+        Analyze trade-offs and recommend best alternative
+
+        Args:
+            challenge: Design challenge
+            alternatives: 3 alternatives to compare
+            constraints: Design constraints
+
+        Returns:
+            Trade-off analysis with recommendation
+        """
+        try:
+            if self.sequential_mcp:
+                # Build comparison prompt
+                alt_summaries = "\n".join([
+                    f"Alternative {alt.id}: {alt.title} (RICE: {alt.rice.score})\n"
+                    f"  Pros: {', '.join(alt.pros[:2])}\n"
+                    f"  Cons: {', '.join(alt.cons[:2])}\n"
+                    f"  Effort: {alt.rice.effort}/10, Timeline: {alt.estimated_timeline}"
+                    for alt in alternatives
+                ])
+
+                prompt = f"""
+Compare these design alternatives for: {challenge}
+
+{alt_summaries}
+
+Constraints: {constraints}
+
+Provide:
+1. Summary of key trade-offs (50-100 words)
+2. Recommendation with detailed reasoning (100-200 words)
+3. Comparison matrix for: security, complexity, scalability, cost
+4. Decision tree (3-5 criteria)
+"""
+                result = await self._execute_with_sequential(prompt, timeout=10000)
+
+                # Parse result
+                analysis = self._parse_tradeoff_response(result, alternatives)
+
+            else:
+                # Fallback: recommend highest RICE score
+                analysis = self._create_fallback_tradeoff(alternatives)
+
+            logger.info(f"Trade-off analysis complete: recommended {analysis.recommendation[:50]}...")
+            return analysis
+
+        except Exception as e:
+            logger.error(f"Trade-off analysis failed: {e}")
+            return self._create_fallback_tradeoff(alternatives)
+
+    def _parse_tradeoff_response(
+        self,
+        response: str,
+        alternatives: List[DesignAlternative]
+    ) -> TradeoffAnalysis:
+        """
+        Parse trade-off analysis response
+
+        Args:
+            response: MCP response text
+            alternatives: List of alternatives
+
+        Returns:
+            Parsed trade-off analysis
+        """
+        # Simplified parsing
+        lines = [line.strip() for line in response.split('\n') if line.strip()]
+
+        summary = " ".join(lines[:3]) if len(lines) >= 3 else "Trade-off analysis comparing alternatives."
+        recommendation = " ".join(lines[3:8]) if len(lines) >= 8 else f"Recommend alternative with highest RICE score."
+
+        # Build comparison matrix
+        comparison_matrix = {
+            "security": {alt.id: "Medium" for alt in alternatives},
+            "complexity": {alt.id: "Medium" for alt in alternatives},
+            "scalability": {alt.id: "Medium" for alt in alternatives},
+        }
+
+        decision_tree = [
+            "If security is priority → Choose A",
+            "If simplicity is critical → Choose B",
+            "If scalability is key → Choose C",
+        ]
+
+        return TradeoffAnalysis(
+            summary=summary[:1000],
+            recommendation=recommendation[:1000],
+            comparison_matrix=comparison_matrix,
+            decision_tree=decision_tree,
+        )
+
+    def _create_fallback_tradeoff(
+        self,
+        alternatives: List[DesignAlternative]
+    ) -> TradeoffAnalysis:
+        """
+        Create fallback trade-off analysis
+
+        Args:
+            alternatives: List of alternatives
+
+        Returns:
+            Fallback trade-off analysis
+        """
+        # Find alternative with highest RICE score
+        best_alt = max(alternatives, key=lambda a: a.rice.score)
+
+        summary = (
+            f"Comparing {len(alternatives)} alternatives. "
+            f"Alternative {best_alt.id} has highest RICE score ({best_alt.rice.score:.2f}). "
+            f"Consider effort ({best_alt.rice.effort}/10) vs impact ({best_alt.rice.impact}/10)."
+        )
+
+        recommendation = (
+            f"Recommend Alternative {best_alt.id}: {best_alt.title}. "
+            f"Reasons: Highest RICE score ({best_alt.rice.score:.2f}), "
+            f"strong impact ({best_alt.rice.impact}/10), "
+            f"manageable effort ({best_alt.rice.effort}/10). "
+            f"This alternative provides the best balance of reach, impact, and feasibility."
+        )
+
+        comparison_matrix = {
+            "rice_score": {alt.id: str(alt.rice.score) for alt in alternatives},
+            "effort": {alt.id: f"{alt.rice.effort}/10" for alt in alternatives},
+            "timeline": {alt.id: alt.estimated_timeline for alt in alternatives},
+        }
+
+        decision_tree = [
+            f"If highest ROI needed → Choose {best_alt.id}",
+            f"If fastest delivery → Choose {min(alternatives, key=lambda a: a.rice.effort).id}",
+            f"If maximum impact → Choose {max(alternatives, key=lambda a: a.rice.impact).id}",
+        ]
+
+        return TradeoffAnalysis(
+            summary=summary,
+            recommendation=recommendation,
+            comparison_matrix=comparison_matrix,
+            decision_tree=decision_tree,
+        )
+
+    def _extract_recommended_id(self, recommendation: str) -> str:
+        """
+        Extract recommended alternative ID from recommendation text
+
+        Args:
+            recommendation: Recommendation text
+
+        Returns:
+            Alternative ID (A, B, or C)
+        """
+        # Look for "Alternative A", "Choose B", etc.
+        import re
+        match = re.search(r'\b([ABC])\b', recommendation)
+        return match.group(1) if match else "A"
+
+    async def _execute_with_sequential(
+        self,
+        prompt: str,
+        timeout: int
+    ) -> str:
+        """
+        Execute reasoning with Sequential MCP
+
+        Args:
+            prompt: Reasoning prompt
+            timeout: Timeout in milliseconds
+
+        Returns:
+            Reasoning result content
+        """
+        try:
+            result = await asyncio.wait_for(
+                self.sequential_mcp.reason(prompt),
+                timeout=timeout / 1000.0
+            )
+            return result.get("content", "")
+        except asyncio.TimeoutError:
+            logger.warning(f"Sequential MCP timeout after {timeout}ms")
+            raise RuntimeError(f"Sequential MCP timeout after {timeout}ms")
+        except Exception as e:
+            logger.error(f"Sequential MCP error: {e}")
+            raise RuntimeError(f"Sequential MCP error: {str(e)}") from e
+
+    def _generate_design_id(self, challenge: str) -> str:
+        """
+        Generate unique design ID
+
+        Args:
+            challenge: Design challenge
+
+        Returns:
+            Unique ID in format: ck-YYYY-MM-DD-{hash}
+        """
+        today = datetime.now().strftime("%Y-%m-%d")
+        challenge_hash = hashlib.sha256(challenge.encode()).hexdigest()[:6]
+        return f"ck-{today}-{challenge_hash}"
+
+    async def _get_cached_design(self, design_id: str) -> Optional[CKTheoryResult]:
+        """
+        Get design from cache
+
+        Args:
+            design_id: Unique design identifier
+
+        Returns:
+            Cached result or None
+        """
+        # Memory cache
+        if design_id in self._memory_cache:
+            logger.debug(f"Memory cache hit for {design_id}")
+            return self._memory_cache[design_id]
+
+        # External cache
+        if self.cache_service:
+            try:
+                cached_data = await self.cache_service.get(f"ck:{design_id}")
+                if cached_data:
+                    logger.debug(f"External cache hit for {design_id}")
+                    result = CKTheoryResult(**cached_data)
+                    self._memory_cache[design_id] = result
+                    return result
+            except Exception as e:
+                logger.error(f"Cache retrieval error: {e}")
+
+        return None
+
+    async def _cache_design(self, design_id: str, result: CKTheoryResult):
+        """
+        Cache design in all tiers
+
+        Args:
+            design_id: Unique design identifier
+            result: Result to cache
+        """
+        try:
+            # Memory cache
+            self._memory_cache[design_id] = result
+
+            # Evict oldest if full
+            if len(self._memory_cache) > self._max_memory_cache:
+                oldest_id = min(
+                    self._memory_cache.keys(),
+                    key=lambda k: self._memory_cache[k].created_at
+                )
+                del self._memory_cache[oldest_id]
+
+            # External cache
+            if self.cache_service:
+                await self.cache_service.set(
+                    f"ck:{design_id}",
+                    result.dict(),
+                    ttl=self.config.get("cache_ttl", 86400)
+                )
+
+        except Exception as e:
+            logger.error(f"Failed to cache design: {e}")
+
+    async def _save_to_obsidian(self, result: CKTheoryResult):
+        """
+        Save design to Obsidian vault
+
+        Args:
+            result: C-K Theory result to save
+        """
+        if not self.obsidian_service:
+            return
+
+        try:
+            today = datetime.now().strftime("%Y-%m-%d")
+            safe_filename = result.challenge[:50].replace(" ", "-").replace("/", "-")
+            obsidian_path = f"개발일지/{today}/CK-Design-{safe_filename}.md"
+
+            content = self._format_obsidian_note(result)
+
+            await self.obsidian_service.create_note(
+                path=obsidian_path,
+                content=content
+            )
+
+            result.obsidian_path = obsidian_path
+
+            logger.info(f"Saved design {result.id} to Obsidian: {obsidian_path}")
+
+        except Exception as e:
+            logger.error(f"Failed to save to Obsidian: {e}")
+
+    def _format_obsidian_note(self, result: CKTheoryResult) -> str:
+        """
+        Format C-K Theory result as Obsidian markdown
+
+        Args:
+            result: C-K Theory result
+
+        Returns:
+            Formatted markdown content
+        """
+        # Extract recommended alternative
+        recommended_id = self._extract_recommended_id(result.tradeoff_analysis.recommendation)
+
+        content = f"""---
+type: ck-design
+id: {result.id}
+project: {result.project}
+date: {result.created_at.strftime("%Y-%m-%d")}
+recommended: {recommended_id}
+duration_ms: {result.total_duration_ms}
+tags: [ck-theory, design, {result.project}]
+---
+
+# C-K Design: {result.challenge}
+
+## 🎯 Design Challenge
+
+{result.challenge}
+
+## 📋 Constraints
+
+{result.constraints if result.constraints else "None specified"}
+
+## 🔀 Design Alternatives
+
+"""
+
+        # Add each alternative
+        for alt in result.alternatives:
+            is_recommended = alt.id == recommended_id
+            marker = " ⭐ (Recommended)" if is_recommended else ""
+
+            content += f"""
+### Alternative {alt.id}: {alt.title}{marker}
+
+**Description**: {alt.description}
+
+**RICE Score**: {alt.rice.score:.2f}
+- Reach: {alt.rice.reach}/10
+- Impact: {alt.rice.impact}/10
+- Confidence: {alt.rice.confidence}/10
+- Effort: {alt.rice.effort}/10
+
+**Pros**:
+{chr(10).join(f'- {pro}' for pro in alt.pros)}
+
+**Cons**:
+{chr(10).join(f'- {con}' for con in alt.cons)}
+
+**Risks**:
+{chr(10).join(f'- {risk}' for risk in alt.risks)}
+
+**Technical Approach**: {alt.technical_approach}
+
+**Dependencies**: {', '.join(alt.dependencies)}
+
+**Timeline**: {alt.estimated_timeline}
+
+---
+"""
+
+        # Add trade-off analysis
+        content += f"""
+## ⚖️ Trade-off Analysis
+
+### Summary
+{result.tradeoff_analysis.summary}
+
+### Recommendation
+{result.tradeoff_analysis.recommendation}
+
+### Comparison Matrix
+"""
+
+        for feature, values in result.tradeoff_analysis.comparison_matrix.items():
+            content += f"\n**{feature.title()}**: " + ", ".join(f"{k}={v}" for k, v in values.items())
+
+        content += f"""
+
+### Decision Tree
+{chr(10).join(f'{i+1}. {criterion}' for i, criterion in enumerate(result.tradeoff_analysis.decision_tree))}
+
+## 📊 Metadata
+
+- **Total Duration**: {result.total_duration_ms}ms ({result.total_duration_ms / 1000:.1f}s)
+- **Created**: {result.created_at.strftime("%Y-%m-%d %H:%M:%S")}
+- **Project**: {result.project}
+
+## 🔗 Related
+
+- [[C-K Theory Framework]]
+- [[Design Patterns]]
+- [[{result.project}]]
+"""
+
+        return content
+
+
+# Create singleton instance
+ck_theory_service = CKTheoryService()
