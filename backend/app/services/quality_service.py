@@ -7,8 +7,9 @@ Collects code quality metrics using Pylint, ESLint, and pytest-cov.
 import subprocess
 import json
 import re
+import sys
 from pathlib import Path
-from typing import Dict, List, Optional
+from typing import Any, Dict, List, Optional
 from datetime import datetime
 import logging
 import os
@@ -79,39 +80,22 @@ class QualityMetricsService:
             }
 
         try:
-            # Ensure backend directory exists for cwd
-            if not self.backend_dir.exists():
-                logger.error(f"Backend directory does not exist: {self.backend_dir}")
-                return {
-                    "score": 0.0,
-                    "total_issues": 0,
-                    "issues_by_type": {},
-                    "messages": [],
-                    "analyzed_at": datetime.now().isoformat(),
-                    "error": f"Backend directory not found: {self.backend_dir}"
-                }
-
-            # Run Pylint with JSON output
-            result = subprocess.run(
-                ["pylint", str(target), "--output-format=json"],
-                capture_output=True,
-                text=True,
-                cwd=str(self.backend_dir.resolve()),  # Use resolved path
-                shell=True  # Use shell on Windows to find pylint in PATH
+            result = self._run_command(
+                [sys.executable, "-m", "pylint", str(target), "--output-format=json"],
+                cwd=self.backend_dir
             )
 
-            # Parse Pylint score from stdout
-            score_match = re.search(r"Your code has been rated at ([\d.]+)/10", result.stdout)
+            stdout = result.stdout or ""
+            stderr = result.stderr or ""
+            score_match = re.search(r"Your code has been rated at ([\d.]+)/10", f"{stderr}\n{stdout}")
             score = float(score_match.group(1)) if score_match else 0.0
 
-            # Parse JSON messages
-            messages = []
-            if result.stdout.strip():
+            messages: List[Dict[str, Any]] = []
+            if stdout.strip():
                 try:
-                    messages = json.loads(result.stdout)
+                    messages = json.loads(stdout)
                 except json.JSONDecodeError:
-                    # If JSON parsing fails, look for messages in stderr
-                    pass
+                    logger.debug("Failed to parse Pylint JSON output; stdout preserved for troubleshooting")
 
             # Count issues by type
             issues_by_type = {
@@ -127,13 +111,16 @@ class QualityMetricsService:
                 if msg_type in issues_by_type:
                     issues_by_type[msg_type] += 1
 
-            return {
+            metrics = {
                 "score": score,
                 "total_issues": len(messages),
                 "issues_by_type": issues_by_type,
                 "messages": messages[:10],  # Only keep first 10 for performance
                 "analyzed_at": datetime.now().isoformat()
             }
+            if result.returncode != 0 and not messages:
+                metrics["error"] = f"Pylint exited with {result.returncode}: {stderr.strip()}"
+            return metrics
 
         except FileNotFoundError:
             logger.warning("Pylint not found. Install with: pip install pylint")
@@ -181,20 +168,40 @@ class QualityMetricsService:
                 "error": f"Directory not found: {target}"
             }
 
+        if not self.backend_dir.exists():
+            logger.warning(f"Backend directory does not exist: {self.backend_dir}")
+            return {
+                "score": 0.0,
+                "total_issues": 0,
+                "issues_by_type": {},
+                "messages": [],
+                "analyzed_at": datetime.now().isoformat(),
+                "error": f"Backend directory not found: {self.backend_dir}"
+            }
+
         try:
-            # Run ESLint with JSON output
-            result = subprocess.run(
+            result = self._run_command(
                 ["npx", "eslint", ".", "--format=json"],
-                capture_output=True,
-                text=True,
-                cwd=str(target.resolve()),  # Use resolved path
-                shell=True  # Required for npx on Windows
+                cwd=target,
+                use_shell_on_windows=True
             )
 
-            # Parse JSON output
-            eslint_results = json.loads(result.stdout) if result.stdout.strip() else []
+            stdout = result.stdout or ""
+            stderr = result.stderr or ""
+            if not stdout.strip():
+                return {
+                    "score": 0.0,
+                    "total_files": 0,
+                    "total_errors": 0,
+                    "total_warnings": 0,
+                    "total_issues": 0,
+                    "messages": [],
+                    "analyzed_at": datetime.now().isoformat(),
+                    "error": f"ESLint produced no output (exit {result.returncode}): {stderr.strip()}"
+                }
 
-            # Aggregate metrics
+            eslint_results = json.loads(stdout)
+
             total_errors = 0
             total_warnings = 0
             total_files = len(eslint_results)
@@ -205,12 +212,11 @@ class QualityMetricsService:
                 total_warnings += file_result.get("warningCount", 0)
                 all_messages.extend(file_result.get("messages", []))
 
-            # Calculate score (10 if no issues, decreases with errors/warnings)
             total_issues = total_errors + total_warnings
             score = max(0.0, 10.0 - (total_errors * 0.5) - (total_warnings * 0.1))
             score = min(10.0, score)  # Cap at 10.0
 
-            return {
+            metrics = {
                 "score": round(score, 2),
                 "total_files": total_files,
                 "total_errors": total_errors,
@@ -219,6 +225,9 @@ class QualityMetricsService:
                 "messages": all_messages[:10],  # Only keep first 10
                 "analyzed_at": datetime.now().isoformat()
             }
+            if result.returncode != 0:
+                metrics["error"] = f"ESLint exited with {result.returncode}: {stderr.strip()}"
+            return metrics
 
         except FileNotFoundError:
             logger.warning("ESLint not found. Install with: npm install eslint")
@@ -278,32 +287,29 @@ class QualityMetricsService:
             }
 
         try:
-            # Run pytest with coverage
-            result = subprocess.run(
+            result = self._run_command(
                 ["pytest", "--cov=app", "--cov-report=json", "--cov-report=term"],
-                capture_output=True,
-                text=True,
-                cwd=str(self.backend_dir.resolve()),  # Use resolved path
-                shell=True  # Use shell on Windows to find pytest in PATH
+                cwd=self.backend_dir
             )
 
-            # Try to read coverage JSON report
             coverage_file = self.backend_dir / "coverage.json"
+            stdout = result.stdout or ""
+            stderr = result.stderr or ""
+
             if coverage_file.exists():
-                with open(coverage_file, 'r') as f:
+                with open(coverage_file, 'r', encoding="utf-8") as f:
                     coverage_data = json.load(f)
 
                 total_coverage = coverage_data.get("totals", {}).get("percent_covered", 0.0)
 
-                # Count test results from output
-                test_match = re.search(r"(\d+) passed", result.stdout)
-                failed_match = re.search(r"(\d+) failed", result.stdout)
+                test_match = re.search(r"(\d+) passed", stdout)
+                failed_match = re.search(r"(\d+) failed", stdout)
 
                 tests_passed = int(test_match.group(1)) if test_match else 0
                 tests_failed = int(failed_match.group(1)) if failed_match else 0
                 tests_total = tests_passed + tests_failed
 
-                return {
+                metrics = {
                     "coverage_percentage": round(total_coverage, 2),
                     "tests_total": tests_total,
                     "tests_passed": tests_passed,
@@ -312,20 +318,36 @@ class QualityMetricsService:
                     "files_covered": len(coverage_data.get("files", {})),
                     "analyzed_at": datetime.now().isoformat()
                 }
+                if result.returncode != 0:
+                    metrics["error"] = f"Pytest exited with {result.returncode}: {stderr.strip()}"
+                return metrics
             else:
-                # Fallback: parse from stdout
-                coverage_match = re.search(r"TOTAL\s+\d+\s+\d+\s+(\d+)%", result.stdout)
+                coverage_match = re.search(r"TOTAL\s+\d+\s+\d+\s+(\d+)%", stdout)
                 coverage = float(coverage_match.group(1)) if coverage_match else 0.0
 
-                test_match = re.search(r"(\d+) passed", result.stdout)
+                test_match = re.search(r"(\d+) passed", stdout)
+                failed_match = re.search(r"(\d+) failed", stdout)
                 tests_passed = int(test_match.group(1)) if test_match else 0
+                tests_failed = int(failed_match.group(1)) if failed_match else 0
+                tests_total = tests_passed + tests_failed
+
+                if tests_total == 0 and result.returncode != 0:
+                    return {
+                        "coverage_percentage": 0.0,
+                        "tests_total": 0,
+                        "tests_passed": 0,
+                        "tests_failed": 0,
+                        "success_rate": 0.0,
+                        "analyzed_at": datetime.now().isoformat(),
+                        "error": f"Pytest exited with {result.returncode}: {stderr.strip()}"
+                    }
 
                 return {
                     "coverage_percentage": coverage,
-                    "tests_total": tests_passed,
+                    "tests_total": tests_total,
                     "tests_passed": tests_passed,
-                    "tests_failed": 0,
-                    "success_rate": 100.0 if tests_passed > 0 else 0.0,
+                    "tests_failed": tests_failed,
+                    "success_rate": round((tests_passed / tests_total * 100) if tests_total > 0 else 0, 2),
                     "analyzed_at": datetime.now().isoformat()
                 }
 
@@ -387,6 +409,21 @@ class QualityMetricsService:
             "test_metrics": coverage_metrics,
             "collected_at": datetime.now().isoformat()
         }
+
+    @staticmethod
+    def _run_command(cmd: List[str], cwd: Path, use_shell_on_windows: bool = False) -> subprocess.CompletedProcess:
+        """Run external command with consistent settings."""
+        shell_flag = use_shell_on_windows and os.name == "nt"
+        return subprocess.run(
+            cmd,
+            capture_output=True,
+            text=True,
+            encoding='utf-8',  # Windows 한글 인코딩 문제 해결
+            errors='replace',  # 디코딩 에러 시 대체 문자 사용
+            cwd=str(cwd.resolve()),
+            shell=shell_flag,
+            check=False
+        )
 
 
 # Create singleton instance
