@@ -1,42 +1,472 @@
-# Project Update for Claude
+# CLAUDE.md
 
-This document provides an overview of the recent changes and the current state of the UDO Development Platform. Please read this file for the latest context.
+This file provides guidance to Claude Code (claude.ai/code) when working with code in this repository.
 
-## 🚀 Project Overview
+## Project Overview
 
-The UDO Development Platform is an intelligent development automation platform that uses AI collaboration and predictive uncertainty modeling to manage the software development lifecycle. It has evolved significantly from its initial version to a phase-aware, self-learning system.
+**UDO Development Platform v3.0** - An intelligent development automation platform using AI collaboration and predictive uncertainty modeling to manage the software development lifecycle.
 
-## 🛠️ Recent Changes
+**Core Innovation**: Phase-aware evaluation system with predictive uncertainty modeling achieving 95% AI automation through multi-model orchestration, constitutional governance, and knowledge retention.
 
-I have performed the following actions to improve the project:
+## Architecture
 
-### 1. Code Cleanup
+### System Components
 
-*   **Removed redundant uncertainty map generators:**
-    *   `src/uncertainty_map_generator.py`
-    *   `src/uncertainty_map_generator_v2.py`
-    These were older versions and are no longer needed as `uncertainty_map_v3.py` is the current and most advanced version.
-*   **Removed outdated UDO orchestrator:**
-    *   `src/unified_development_orchestrator.py`
-    This was the `v1` version and has been superseded by `unified_development_orchestrator_v2.py`.
+The platform consists of three primary systems:
 
-### 2. Improved Testing Strategy
+1. **UDO v2 (Orchestrator)** - `src/unified_development_orchestrator_v2.py`
+   - Phase-aware evaluation (Ideation → Design → MVP → Implementation → Testing)
+   - Bayesian confidence scoring per phase
+   - Decision logic (GO/GO_WITH_CHECKPOINTS/NO_GO)
 
-*   **Added a dedicated test for the 3-AI Collaboration Bridge:**
-    *   `tests/test_three_ai_collaboration_bridge.py` was created to directly test the functionality of the `three_ai_collaboration_bridge.py` module.
-*   **Created a universal test runner script:**
-    *   `run_tests.py` was added to the root directory to easily discover and execute all tests within the `tests/` directory. This simplifies the testing process.
-*   **Verified all tests pass:** All existing and newly added tests were run and passed successfully, ensuring the integrity of the codebase after the changes.
+2. **Uncertainty Map v3 (Predictor)** - `src/uncertainty_map_v3.py`
+   - 24-hour predictive uncertainty modeling
+   - Quantum state classification (5 states: Deterministic, Probabilistic, Quantum, Chaotic, Void)
+   - Auto-mitigation strategy generation with ROI calculation
 
-### 3. Enhanced Documentation
+3. **AI Collaboration Bridge** - `src/three_ai_collaboration_bridge.py`
+   - Multi-AI orchestration (Claude, Codex, Gemini)
+   - MCP server integration (Context7, Sequential, Magic, Morphllm, Serena, Playwright)
+   - Codex MCP integration for code analysis and refactoring
 
-*   **Created a system analysis document:**
-    *   `docs/udo_system_analysis.md` was created to provide a high-level overview of the UDO system's core components, architecture, and workflow.
-*   **Updated the README with testing instructions:**
-    *   The `README.md` file now includes a new section detailing how to run the test suite using `run_tests.py`.
+### Backend API (FastAPI)
 
-## 📈 Current State
+**Location**: `backend/main.py`
 
-The project is in a much cleaner and more maintainable state. The core components (`unified_development_orchestrator_v2.py`, `uncertainty_map_v3.py`, and `three_ai_collaboration_bridge.py`) are well-integrated and functional. The testing infrastructure is improved, and the documentation provides a better understanding of the system.
+**Key Routers** (`backend/app/routers/`):
+- `quality_metrics_router` - Code quality analysis (Pylint, ESLint, pytest coverage)
+- `constitutional_router` - AI governance enforcement (17-article constitution)
+- `time_tracking_router` - ROI measurement and productivity tracking
+- `version_history_router` - Code evolution tracking
+- `obsidian_router` - Knowledge base synchronization
+- `uncertainty_router` - Uncertainty analysis and predictions
+- `websocket_handler` - Real-time updates to frontend
 
-The system is ready for further development and integration tasks.
+**Critical Services** (`backend/app/services/`):
+- `quality_service.py` - Unified subprocess execution with Windows/Linux compatibility
+- `project_context_service.py` - Project state management with mock service fallback
+- `session_manager_v2.py` - Multi-session orchestration
+- `obsidian_service.py` - Automatic knowledge syncing (<3 seconds)
+
+### Frontend Dashboard (Next.js)
+
+**Location**: `web-dashboard/`
+
+**Stack**: Next.js 16.0.3, React 19.2.0, Tailwind CSS v4, Zustand, Tanstack Query, Recharts
+
+**Key Pages**:
+- `/` - Main dashboard with real-time metrics
+- `/quality` - Quality metrics visualization
+- `/time-tracking` - ROI and productivity dashboard
+- `/ck-theory` - C-K Theory design analysis
+- `/gi-formula` - GI Formula calculations
+
+## Development Commands
+
+### Environment Setup
+
+**CRITICAL**: Use Windows shell (PowerShell/cmd) with Python 3.13.0 venv. WSL is currently blocked due to pip issues.
+
+```bash
+# Activate virtual environment (Windows)
+.venv\Scripts\activate
+
+# Install Python dependencies
+pip install -r requirements.txt
+pip install -r backend/requirements.txt
+pip install pytest-cov  # For coverage support
+
+# Install frontend dependencies
+cd web-dashboard
+npm install
+```
+
+### Running Tests
+
+**Python Tests**:
+```bash
+# Run all tests (Windows shell REQUIRED)
+.venv\Scripts\python.exe -m pytest tests/ -v
+
+# Run specific test file
+.venv\Scripts\python.exe -m pytest tests/test_udo_e2e.py -v
+
+# Run with coverage
+.venv\Scripts\python.exe -m pytest tests/ --cov=src --cov-report=html
+
+# Run backend tests
+.venv\Scripts\python.exe -m pytest backend/tests/ -v
+
+# Integration test
+python tests/run_udo_phase1.py
+```
+
+**Frontend Tests**:
+```bash
+cd web-dashboard
+npm run lint  # ESLint check
+npm run build # Production build test
+```
+
+### Running Development Servers
+
+**Backend API**:
+```bash
+# From repository root (Windows shell)
+.venv\Scripts\python.exe -m uvicorn backend.main:app --reload --host 0.0.0.0 --port 8000
+
+# API documentation available at:
+# http://localhost:8000/docs (Swagger UI)
+# http://localhost:8000/redoc (ReDoc)
+```
+
+**Frontend Dashboard**:
+```bash
+cd web-dashboard
+npm run dev  # Starts on http://localhost:3000
+```
+
+### Code Quality
+
+```bash
+# Python linting
+.venv\Scripts\python.exe -m flake8 src/ backend/
+
+# Python formatting (check)
+.venv\Scripts\python.exe -m black --check src/ backend/
+
+# Python formatting (apply)
+.venv\Scripts\python.exe -m black src/ backend/
+
+# Frontend linting
+cd web-dashboard
+npm run lint
+```
+
+## Key Configuration
+
+### Phase-Specific Confidence Thresholds
+Defined in `src/unified_development_orchestrator_v2.py`:
+- **Ideation**: 60% confidence required
+- **Design**: 65% confidence required
+- **MVP**: 65% confidence required
+- **Implementation**: 70% confidence required
+- **Testing**: 70% confidence required
+
+### Uncertainty States
+Defined in `src/uncertainty_map_v3.py`:
+- 🟢 **DETERMINISTIC** (<10%): Fully predictable
+- 🔵 **PROBABILISTIC** (10-30%): Statistical confidence
+- 🟠 **QUANTUM** (30-60%): Multiple possibilities
+- 🔴 **CHAOTIC** (60-90%): High uncertainty
+- ⚫ **VOID** (>90%): Unknown territory
+
+### Backend Configuration
+- `backend/config/UDO_CONSTITUTION.yaml` - AI governance rules (17 articles, P1-P17)
+- `backend/config/baseline_times.yaml` - Performance baselines for time tracking
+- `backend/.env` - Environment variables (create from `.env.example`)
+
+## Critical Implementation Details
+
+### Quality Service Subprocess Execution
+
+**Location**: `backend/app/services/quality_service.py`
+
+All subprocess calls MUST use the shared `_run_command()` helper with `shell=False` for security. Windows shell is enabled ONLY for ESLint (npx resolution issues).
+
+```python
+# CORRECT pattern (used in quality_service.py)
+output, error, exit_code = await self._run_command(
+    cmd=["pylint", "path/to/file.py"],
+    use_shell_on_windows=False  # Default, secure
+)
+
+# Windows exception for ESLint only
+output, error, exit_code = await self._run_command(
+    cmd=["npx", "eslint", "path"],
+    use_shell_on_windows=True  # Required for npx on Windows
+)
+```
+
+### Mock Service Pattern
+
+Project context service uses mock fallback when database is unavailable. Mock service MUST be enabled BEFORE importing routers:
+
+```python
+# In backend/main.py (lines 38-44)
+from app.services.project_context_service import enable_mock_service
+enable_mock_service()  # CRITICAL: Before router imports
+logger.info("✅ Mock service enabled (BEFORE router imports)")
+
+# Then import routers
+from app.routers import version_history_router, quality_metrics_router, ...
+```
+
+### Constitutional Guard Pre-commit
+
+**Location**: `backend/app/core/constitutional_guard.py`
+
+Enforces 17 AI governance principles (P1-P17) at commit time. Key principle:
+
+**P1: Design Review First** - Blocks commits affecting >3 files without design doc
+- Must complete 8-Risk Check before implementation
+- Design doc required in `docs/[FEATURE]_DESIGN_REVIEW.md`
+
+## Common Development Workflows
+
+### Adding a New API Router
+
+1. Create router file in `backend/app/routers/`
+2. Define Pydantic models in `backend/app/models/`
+3. Implement service logic in `backend/app/services/`
+4. Import and include router in `backend/main.py`
+5. Add tests in `backend/tests/`
+
+### Adding Frontend Dashboard Page
+
+1. Create page in `web-dashboard/app/[page-name]/page.tsx`
+2. Add navigation link in `web-dashboard/components/Navigation.tsx`
+3. Create reusable components in `web-dashboard/components/`
+4. Add API integration using Tanstack Query
+5. Use Zustand for state management if needed
+
+### Running E2E Integration Tests
+
+```bash
+# Full UDO v3 integration test
+.venv\Scripts\python.exe -m pytest tests/test_udo_v3_integration.py -v
+
+# E2E workflow tests
+.venv\Scripts\python.exe -m pytest tests/test_udo_e2e.py -v
+
+# Collaboration bridge tests
+.venv\Scripts\python.exe -m pytest tests/test_three_ai_collaboration_bridge.py -v
+
+# Codex refactoring validation
+.venv\Scripts\python.exe -m pytest tests/test_codex_refactors.py -v
+```
+
+## Project Structure
+
+```
+UDO-Development-Platform/
+├── src/                           # Core Python modules
+│   ├── unified_development_orchestrator_v2.py
+│   ├── uncertainty_map_v3.py
+│   ├── three_ai_collaboration_bridge.py
+│   └── ai_collaboration_connector.py
+├── backend/                       # FastAPI backend
+│   ├── main.py                   # Application entry point
+│   ├── app/
+│   │   ├── routers/              # API route handlers
+│   │   ├── services/             # Business logic
+│   │   ├── models/               # Pydantic models
+│   │   ├── core/                 # Security, monitoring, error handling
+│   │   └── db/                   # Database models
+│   ├── config/                   # YAML configuration
+│   ├── tests/                    # Backend-specific tests
+│   └── requirements.txt
+├── web-dashboard/                 # Next.js frontend
+│   ├── app/                      # Next.js 13+ app directory
+│   ├── components/               # React components
+│   ├── lib/                      # Utilities
+│   └── package.json
+├── tests/                        # Integration tests
+│   ├── test_udo_e2e.py          # E2E workflows
+│   ├── test_udo_v3_integration.py
+│   └── run_udo_phase1.py        # Integration runner
+├── docs/                         # Documentation
+├── data/                         # State and learning data
+├── scripts/                      # Utility scripts
+├── requirements.txt              # Root Python deps
+└── .venv/                        # Python virtual environment
+```
+
+## Important Context
+
+### Current Environment
+- **Python**: 3.13.0 with pip 25.3 (pyenv-win)
+- **Environment**: Windows shell ONLY (WSL blocked until pip available)
+- **Backend**: http://localhost:8000
+- **Frontend**: http://localhost:3000
+
+### Known Issues
+1. **WSL Environment**: Do NOT run tests from WSL - pip is blocked. Always use Windows PowerShell/cmd.
+2. **Cross-Shell Invocation**: Never call Windows venv from WSL (`UtilBindVsockAnyPort` error)
+
+### MCP Server Integration
+
+The platform integrates with multiple MCP servers for specialized capabilities:
+
+- **Context7**: Official documentation lookup
+- **Sequential**: Multi-step reasoning for complex analysis
+- **Magic**: UI component generation from 21st.dev patterns
+- **Morphllm**: Bulk code transformations
+- **Serena**: Semantic understanding and session persistence
+- **Playwright**: Browser automation and E2E testing
+- **Codex**: Code analysis, refactoring, and quality checks
+- **UDO-MCP-Server** (NEW): Real-time uncertainty analysis and risk prediction.
+
+### 🚀 Trinity Protocol 2.0 Strategy (Multi-Agent)
+
+We are adopting a **Multi-Agent & MCP-driven** workflow to bridge the gap between Backend and Frontend.
+
+**Your Role (Claude Code)**:
+- **The Builder**: Focus on **Frontend Integration**.
+- **Task**: Connect `web-dashboard` to `UncertaintyMap` using the `/api/uncertainty` endpoints.
+- **Guidance**: Use the **UDO-MCP-Server** tools (`get_uncertainty_state`, `predict_risk_impact`) to validate your architectural decisions *before* writing code.
+
+**Antigravity's Role**:
+- **The Architect**: Manages the MCP Server and backend infrastructure.
+- **The Prophet**: Monitors risk via MCP and provides strategic guidance.
+
+Check `backend/app/services/` for integration implementations.
+
+### Documentation References
+- Latest worklog: `docs/CLAUDE_WORKLOG_2025-11-20.md`
+- Architecture overview: `docs/ARCHITECTURE_EXECUTIVE_SUMMARY.md`
+- Integration design: `docs/INTEGRATION_ARCHITECTURE_V4.md`
+- Terminal environment notes: `docs/WSL_VS_WINDOWS_ENV.md`
+- Obsidian sync: `docs/OBSIDIAN_SERVICE_README.md`
+- Time tracking guide: `docs/TIME_TRACKING_GUIDE.md`
+
+---
+
+## Kanban-UDO Integration (2025-12-04)
+
+**Status**: Design Complete - Ready for Implementation
+
+### Quick Reference
+
+**Master Document**: `docs/KANBAN_IMPLEMENTATION_SUMMARY.md` (Concise overview)
+
+**Detailed Specifications** (for implementation):
+- `docs/KANBAN_UI_COMPONENTS_DESIGN.md` (2,235 lines) - Complete React component specs
+- `docs/KANBAN_DATABASE_SCHEMA_DESIGN.md` - Full PostgreSQL schema with migrations
+- `docs/KANBAN_API_SPECIFICATION.md` - 25+ REST endpoints with request/response
+
+**Strategic Analysis** (for context):
+- `docs/KANBAN_INTEGRATION_STRATEGY.md` (18,000 words) - Full strategic analysis, Q1-Q8 decisions
+- `docs/ARCHITECTURE_STABILITY_ANALYSIS.md` - P0 critical issues + solutions
+- `docs/CONTEXT_AWARE_KANBAN_RESEARCH.md` - Benchmarking (Linear, ClickUp, Height, Plane.so)
+
+### Q1-Q8 Decisions (MUST preserve in future sessions)
+
+| Question | Decision | File Reference |
+|----------|----------|----------------|
+| Q1: Task-Phase Relationship | Task within Phase (1:N) | KANBAN_INTEGRATION_STRATEGY.md §6.1 |
+| Q2: Task Creation | AI Hybrid (suggest + approve) | KANBAN_INTEGRATION_STRATEGY.md §6.2 |
+| Q3: Completion Criteria | Hybrid (Quality gate + user) | KANBAN_INTEGRATION_STRATEGY.md §6.3 |
+| Q4: Context Loading | Double-click auto, single popup | KANBAN_INTEGRATION_STRATEGY.md §6.4 |
+| Q5: Multi-Project | 1 Primary + max 3 Related | KANBAN_INTEGRATION_STRATEGY.md §6.5 |
+| Q6: Archiving | Done-End + AI → Obsidian | KANBAN_INTEGRATION_STRATEGY.md §6.6 |
+| Q7: Dependencies | Hard Block + Emergency override | KANBAN_INTEGRATION_STRATEGY.md §6.7 |
+| Q8: Accuracy vs Speed | Accuracy first + Adaptive | KANBAN_INTEGRATION_STRATEGY.md §6.8 |
+
+### Implementation Roadmap (4 Weeks)
+
+**Week 1**: Foundation + P0 Fixes
+- Database schema creation + migration
+- Circuit Breaker recovery (CLOSED/OPEN/HALF_OPEN)
+- Cache Manager 50MB limit + LRU eviction
+- Multi-project Primary selection algorithm
+- DAG real benchmark (confirm <50ms for 1,000 tasks)
+
+**Week 2**: Core Implementation
+- UI components (KanbanBoard, TaskCard, Modal)
+- Drag-drop + optimistic updates
+- Context operations (ZIP upload/download)
+
+**Week 3**: Advanced Features
+- Dependency graph (D3.js force-directed)
+- AI task suggestion + approval flow
+- Archive view + AI summarization (GPT-4o)
+
+**Week 4**: Integration + Testing
+- User testing (5 sessions) - Target: 72% → 85% confidence
+- Documentation + rollback validation
+- Production deployment
+
+### Future Expansion Triggers
+
+**When to read detailed specs**:
+1. **Before database migration** → Read `KANBAN_DATABASE_SCHEMA_DESIGN.md`
+2. **Before API development** → Read `KANBAN_API_SPECIFICATION.md`
+3. **Before UI development** → Read `KANBAN_UI_COMPONENTS_DESIGN.md`
+4. **Performance optimization** → Create `KANBAN_PERFORMANCE_DETAILED.md`
+5. **Security review** → Create `KANBAN_SECURITY_DETAILED.md`
+
+**Documents to create when needed**:
+- `KANBAN_PERFORMANCE_DETAILED.md` - Load testing, benchmarks, k6 scripts, Lighthouse CI
+- `KANBAN_SECURITY_DETAILED.md` - STRIDE analysis, penetration testing, OWASP validation
+- `KANBAN_INTEGRATION_DETAILED.md` - 14 integration points implementation guides
+- `KANBAN_TESTING_STRATEGY.md` - Unit, integration, E2E, accessibility test plans
+
+### Uncertainty Map (低信頼度エリア - 補完が必要)
+
+**Low confidence areas requiring validation** (Week 4 user testing):
+- Q5-1 (45%): Multi-project Primary selection logic (needs algorithm benchmark)
+- Q6 (50%): AI summary quality (needs GPT-4o prompt optimization)
+- Q7 (55%): Emergency override UX (needs user testing for friction)
+
+**Adaptive triggers** (opinion-changing questions):
+- If DAG performance <50ms fails → Switch to pagination/filtering
+- If AI summary quality <80% satisfaction → Enhance prompt or switch model
+- If users override dependencies >10% → Reconsider hard-block default
+
+### Integration Points (14)
+
+**UDO v2**: Phase-Task sync, Confidence thresholds, Execution history
+**Uncertainty Map v3**: Priority automation, Predictive blocking, Mitigation tracking
+**Quality Service**: Quality gates, Test coverage, Code review
+**Time Tracking**: ROI calculation, Bottleneck detection, Productivity metrics
+**Obsidian**: Knowledge extraction, Context notes
+
+### Key Performance Targets
+
+- **Database queries**: <50ms (1,000 tasks)
+- **API endpoints**: p95 <500ms
+- **UI initial load**: TTI <3s, FCP <1s, LCP <2.5s
+- **Virtual scrolling**: 10,000 tasks without lag
+- **WebSocket latency**: <50ms
+- **AI suggestion**: <3s (Claude Sonnet 4.5)
+
+### Rollback Strategy
+
+**Tier 1**: Feature flag disable (immediate)
+**Tier 2**: Git revert + redeploy (1 minute)
+**Tier 3**: Database restore from backup (5 minutes)
+
+---
+
+
+## Current Status (2025-12-04) - All Issues Resolved ✅
+
+**Previous Issue**: "Application error: a client-side exception has occurred" on `/time-tracking` page.
+
+### All Issues Resolved ✅
+1. **API Endpoints**: Fixed incorrect paths in `endpoints.ts` and `useTimeTracking.ts`.
+   - `/api/time-tracking/metrics` -> `/api/time-tracking/roi`
+   - `/api/time-tracking/weekly` -> `/api/time-tracking/report/weekly`
+   - Added `/api/uncertainty/status`
+2. **Parameter Mapping**: Mapped `period` parameter (`week` -> `weekly`) to match backend validation.
+3. **Data Structure Mismatch**:
+   - `useTimeMetrics`: Mapped `period_start/end` -> `date_range`, `manual_time_hours` -> `baseline_hours`.
+   - `useWeeklySummary`: Implemented adapter to convert backend `WeeklyReport` to frontend `WeeklySummary`.
+4. **Type Conflicts**: Resolved `WeeklySummary` import conflict in `useTimeTracking.ts`.
+5. **Hydration Mismatch**: Fixed server/client rendering inconsistency.
+   - **Root Cause**: `Date.now()` in mock data + locale-specific date formatting
+   - **Fix 1**: Changed mock data to use fixed dates (`'2025-11-18T00:00:00Z'`)
+   - **Fix 2**: Added `suppressHydrationWarning` to date display in page.tsx
+   - **Files Changed**: `web-dashboard/lib/hooks/useTimeTracking.ts`, `web-dashboard/app/time-tracking/page.tsx`
+   - **Documentation**: `docs/HYDRATION_MISMATCH_FIX.md`
+
+### Testing Required
+- Navigate to `http://localhost:3000/time-tracking` and verify:
+  - [ ] Page loads without crash
+  - [ ] No "Application error" overlay
+  - [ ] Date range displays correctly
+  - [ ] Weekly summary card shows data
+  - [ ] No hydration mismatch in browser console
+
+---

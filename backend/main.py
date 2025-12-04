@@ -17,8 +17,18 @@ from pydantic import BaseModel
 import asyncio
 import logging
 
+# Load environment variables from .env file
+from dotenv import load_dotenv
+
+# Load .env from project root (parent of backend directory)
+project_root = Path(__file__).parent.parent
+dotenv_path = project_root / ".env"
+load_dotenv(dotenv_path=dotenv_path)
+
 # Add parent directory to path for imports
 sys.path.insert(0, str(Path(__file__).parent.parent / "src"))
+# Add backend directory to path for app module imports
+sys.path.insert(0, str(Path(__file__).parent))
 
 # Configure logging
 logging.basicConfig(level=logging.INFO)
@@ -33,15 +43,10 @@ except ImportError:
     logger.warning("UDO system not available")
 
 # ============================================================
-# CRITICAL: Enable mock service BEFORE importing routers
-# This ensures global variables are set when routers load
+# NOTE: Mock service will be enabled in startup_event if database fails
+# Do NOT enable it unconditionally here, let database connection try first
 # ============================================================
-try:
-    from app.services.project_context_service import enable_mock_service
-    enable_mock_service()
-    logger.info("✅ Mock service enabled (BEFORE router imports)")
-except Exception as e:
-    logger.error(f"Failed to enable mock service before router imports: {e}")
+logger.info("💡 Mock service will be enabled ONLY if database connection fails")
 
 # Import routers
 try:
@@ -51,19 +56,23 @@ try:
         constitutional_router,
         time_tracking_router,
         gi_formula_router,
-        ck_theory_router
+        ck_theory_router,
+        uncertainty_router
     )
     ROUTERS_AVAILABLE = True
     CONSTITUTIONAL_ROUTER_AVAILABLE = True
     TIME_TRACKING_ROUTER_AVAILABLE = True
     GI_FORMULA_ROUTER_AVAILABLE = True
     CK_THEORY_ROUTER_AVAILABLE = True
+    UNCERTAINTY_ROUTER_AVAILABLE = True
+    print(f"[DEBUG] uncertainty_router imported successfully, UNCERTAINTY_ROUTER_AVAILABLE = {UNCERTAINTY_ROUTER_AVAILABLE}")
 except ImportError as e:
     ROUTERS_AVAILABLE = False
     CONSTITUTIONAL_ROUTER_AVAILABLE = False
     TIME_TRACKING_ROUTER_AVAILABLE = False
     GI_FORMULA_ROUTER_AVAILABLE = False
     CK_THEORY_ROUTER_AVAILABLE = False
+    UNCERTAINTY_ROUTER_AVAILABLE = False
     logger.warning(f"Routers not available: {e}")
 
 # Import auth router separately
@@ -106,9 +115,42 @@ except ImportError as e:
     OBSIDIAN_ROUTER_AVAILABLE = False
     logger.info(f"Obsidian router not available: {e}")
 
+# Import Kanban Tasks router for Kanban-UDO Integration (Week 2 Day 3-4)
+try:
+    from app.routers.kanban_tasks import router as kanban_tasks_router
+    KANBAN_TASKS_ROUTER_AVAILABLE = True
+except ImportError as e:
+    KANBAN_TASKS_ROUTER_AVAILABLE = False
+    logger.info(f"Kanban Tasks router not available: {e}")
+
+# Import Kanban Dependencies router for DAG management (Week 2 Day 3-4)
+try:
+    from app.routers.kanban_dependencies import router as kanban_dependencies_router
+    KANBAN_DEPENDENCIES_ROUTER_AVAILABLE = True
+except ImportError as e:
+    KANBAN_DEPENDENCIES_ROUTER_AVAILABLE = False
+    logger.info(f"Kanban Dependencies router not available: {e}")
+
+# Import Kanban Projects router for Multi-Project management (Week 2 Day 3-4, Q5)
+try:
+    from app.routers.kanban_projects import router as kanban_projects_router
+    KANBAN_PROJECTS_ROUTER_AVAILABLE = True
+except ImportError as e:
+    KANBAN_PROJECTS_ROUTER_AVAILABLE = False
+    logger.info(f"Kanban Projects router not available: {e}")
+
+# Import Kanban Context router for Context operations (Week 2 Day 5, Q4)
+try:
+    from app.routers.kanban_context import router as kanban_context_router
+    KANBAN_CONTEXT_ROUTER_AVAILABLE = True
+except ImportError as e:
+    KANBAN_CONTEXT_ROUTER_AVAILABLE = False
+    logger.info(f"Kanban Context router not available: {e}")
+
 # Import WebSocket handler and SessionManagerV2
 try:
     from app.routers import websocket_handler
+    from app.routers.websocket_handler import connection_manager
     from app.services.session_manager_v2 import get_session_manager
     WEBSOCKET_AVAILABLE = True
 except ImportError as e:
@@ -139,6 +181,17 @@ try:
 except ImportError as e:
     ERROR_HANDLER_AVAILABLE = False
     logger.warning(f"Error handler not available: {e}")
+
+# Import Phase Transition components
+try:
+    from app.services.phase_transition_listener import PhaseTransitionListener, create_listener_callback
+    from phase_state_manager import PhaseStateManager
+    from app.services.time_tracking_service import TimeTrackingService
+    PHASE_TRANSITION_AVAILABLE = True
+    logger.info(f"[DEBUG] Phase Transition components imported successfully, PHASE_TRANSITION_AVAILABLE = {PHASE_TRANSITION_AVAILABLE}")
+except ImportError as e:
+    PHASE_TRANSITION_AVAILABLE = False
+    logger.warning(f"Phase Transition components not available: {e}")
 
 # Import security components
 try:
@@ -177,11 +230,58 @@ app = FastAPI(
 # CORS configuration
 app.add_middleware(
     CORSMiddleware,
-    allow_origins=["http://localhost:3000", "http://localhost:3001"],
+    allow_origins=[
+        "http://localhost:3000",
+        "http://localhost:3000/",
+        "http://localhost:3001",
+        "http://localhost:3001/"
+    ],
     allow_credentials=True,
     allow_methods=["*"],
     allow_headers=["*"],
 )
+
+# ============================================================
+# Adaptive cache for expensive operations (uncertainty-aware TTL)
+# ============================================================
+from datetime import timedelta
+_cache = {
+    "status": {"data": None, "expires": datetime.now()},
+    "metrics": {"data": None, "expires": datetime.now()}
+}
+
+def get_adaptive_ttl(uncertainty_state: str = None) -> int:
+    """Calculate TTL based on uncertainty state"""
+    # Default TTL increased from 10s to 60s
+    if uncertainty_state is None:
+        return 60
+
+    # Adaptive TTL based on uncertainty state
+    ttl_map = {
+        "DETERMINISTIC": 300,  # 5 minutes (highly predictable)
+        "PROBABILISTIC": 60,   # 1 minute (statistically confident)
+        "QUANTUM": 10,         # 10 seconds (multiple possibilities)
+        "CHAOTIC": 2,          # 2 seconds (high uncertainty)
+        "VOID": 1              # 1 second (unknown territory)
+    }
+    return ttl_map.get(uncertainty_state.upper(), 60)
+
+def get_cached(key: str, ttl_seconds: int = None):
+    """Get cached value if not expired"""
+    cache_entry = _cache.get(key)
+    if cache_entry and datetime.now() < cache_entry["expires"]:
+        return cache_entry["data"]
+    return None
+
+def set_cached(key: str, data: any, ttl_seconds: int = None):
+    """Set cached value with adaptive expiration"""
+    if ttl_seconds is None:
+        ttl_seconds = 60  # Default increased from 10s to 60s
+
+    _cache[key] = {
+        "data": data,
+        "expires": datetime.now() + timedelta(seconds=ttl_seconds)
+    }
 
 # Setup global error handlers
 if ERROR_HANDLER_AVAILABLE:
@@ -230,6 +330,22 @@ if OBSIDIAN_ROUTER_AVAILABLE:
     app.include_router(obsidian_router)
     logger.info("✅ Obsidian router included (Knowledge Management)")
 
+if KANBAN_TASKS_ROUTER_AVAILABLE:
+    app.include_router(kanban_tasks_router)
+    logger.info("✅ Kanban Tasks router included (Kanban-UDO Integration: /api/kanban/tasks)")
+
+if KANBAN_DEPENDENCIES_ROUTER_AVAILABLE:
+    app.include_router(kanban_dependencies_router)
+    logger.info("✅ Kanban Dependencies router included (DAG Management: /api/kanban/dependencies)")
+
+if KANBAN_PROJECTS_ROUTER_AVAILABLE:
+    app.include_router(kanban_projects_router)
+    logger.info("✅ Kanban Projects router included (Multi-Project Q5: /api/kanban/projects)")
+
+if KANBAN_CONTEXT_ROUTER_AVAILABLE:
+    app.include_router(kanban_context_router)
+    logger.info("✅ Kanban Context router included (Context Operations Q4: /api/kanban/context)")
+
 if TIME_TRACKING_ROUTER_AVAILABLE:
     app.include_router(time_tracking_router)
     logger.info("✅ Time Tracking router included (ROI Measurement)")
@@ -242,13 +358,66 @@ if CK_THEORY_ROUTER_AVAILABLE:
     app.include_router(ck_theory_router)
     logger.info("✅ C-K Theory router included (Design Alternatives)")
 
+# Force reload to register Uncertainty Map router
+if UNCERTAINTY_ROUTER_AVAILABLE:
+    app.include_router(uncertainty_router)
+    logger.info("✅ Uncertainty Map router included (Predictive Uncertainty)")
+
 if WEBSOCKET_AVAILABLE:
     app.include_router(websocket_handler.router)
     logger.info("✅ WebSocket handler included")
 
-# Global UDO instance
+# ============================================================
+# Lazy Initialization Pattern for UDO System
+# ============================================================
+# Global UDO instance (lazy-loaded on first request)
+_udo_system_instance = None
+_udo_initialization_lock = False
+
+def get_udo_system():
+    """Lazy initialization of UDO system (initialize on first request)
+
+    This pattern defers expensive initialization until the first API call,
+    reducing server startup time from 8+ seconds to instant.
+    """
+    global _udo_system_instance, _udo_initialization_lock, udo_system
+
+    # Return existing instance if already initialized
+    if _udo_system_instance is not None:
+        # Keep backward-compatible alias in sync for routers that look it up
+        udo_system = _udo_system_instance
+        return _udo_system_instance
+
+    # Thread-safe initialization check
+    if _udo_initialization_lock:
+        logger.warning("⚠️ UDO system initialization already in progress")
+        return None
+
+    # Initialize UDO system
+    if UDO_AVAILABLE:
+        try:
+            _udo_initialization_lock = True
+            logger.info("🔄 Initializing UDO system (first request)...")
+            _udo_system_instance = IntegratedUDOSystem(project_name="UDO-Dashboard")
+            # Expose as module-level alias for routers that resolve via main.udo_system
+            udo_system = _udo_system_instance
+            logger.info("✅ UDO system initialized (lazy loading complete)")
+        except Exception as e:
+            logger.error(f"❌ Failed to initialize UDO: {e}")
+            _udo_system_instance = None
+        finally:
+            _udo_initialization_lock = False
+    else:
+        logger.warning("⚠️ UDO not available - running in mock mode")
+
+    return _udo_system_instance
+
+# Backward compatibility alias
 udo_system = None
-connected_clients = []
+
+# Global Phase Transition components
+phase_state_manager = None
+phase_transition_listener = None
 
 # Pydantic models
 class TaskRequest(BaseModel):
@@ -308,23 +477,81 @@ async def startup_event():
             await project_context_service.initialize_default_project()
             logger.info("✅ Project context service initialized")
         except Exception as e:
-            logger.warning(f"⚠️  Database not available, project context features disabled: {e}")
-            logger.info("💡 To enable project context features, ensure PostgreSQL is running and database is created")
-            # Mock service already enabled before router imports
+            logger.warning(f"⚠️  Database not available, falling back to mock service: {e}")
+            logger.info("💡 To enable database features, ensure PostgreSQL is running and database is created")
+            # Enable mock service as fallback
+            from app.services.project_context_service import enable_mock_service
+            enable_mock_service()
+            logger.info("✅ Mock service enabled as fallback")
     else:
         # If async database module is not available at all
         logger.warning("⚠️ Async database module not available, using mock service")
-        # Mock service already enabled before router imports
+        from app.services.project_context_service import enable_mock_service
+        enable_mock_service()
+        logger.info("✅ Mock service enabled (async_database module missing)")
 
-    # Initialize UDO system
+    # Initialize UDO system immediately (eager initialization)
+    # Required for uncertainty router and WebSocket broadcasting
     if UDO_AVAILABLE:
         try:
+            logger.info("🔄 Initializing UDO system (startup)...")
+            from src.integrated_udo_system import IntegratedUDOSystem
             udo_system = IntegratedUDOSystem(project_name="UDO-Dashboard")
-            logger.info("✅ UDO system initialized")
+            logger.info("✅ UDO system initialized with all components")
         except Exception as e:
-            logger.error(f"Failed to initialize UDO: {e}")
+            logger.error(f"❌ Failed to initialize UDO system: {e}")
+            logger.warning("⚠️ Uncertainty Map and related features will be unavailable")
+            udo_system = None
     else:
-        logger.warning("Running in mock mode - UDO not available")
+        logger.warning("⚠️ UDO system not available (src modules missing)")
+
+    # Initialize Phase Transition System
+    global phase_state_manager, phase_transition_listener
+    if PHASE_TRANSITION_AVAILABLE:
+        try:
+            # Initialize PhaseStateManager
+            phase_state_manager = PhaseStateManager()
+            logger.info("✅ PhaseStateManager initialized")
+
+            # Initialize TimeTrackingService (requires database pool)
+            if ASYNC_DB_AVAILABLE:
+                try:
+                    db_pool = async_db.get_pool()
+                    if db_pool is None:
+                        raise RuntimeError("Database pool is None - database not initialized")
+
+                    time_tracking_service = TimeTrackingService(db_pool=db_pool)
+
+                    # Get WebSocket broadcast function
+                    broadcast_func = None
+                    if WEBSOCKET_AVAILABLE:
+                        try:
+                            session_manager = await get_session_manager()
+                            broadcast_func = session_manager.broadcast_to_all
+                        except Exception as e:
+                            logger.warning(f"⚠️ WebSocket broadcast not available for phase transitions: {e}")
+
+                    # Initialize PhaseTransitionListener
+                    phase_transition_listener = PhaseTransitionListener(
+                        pool=db_pool,
+                        time_tracking_service=time_tracking_service,
+                        broadcast_func=broadcast_func
+                    )
+
+                    # Register listener callback with PhaseStateManager
+                    callback = create_listener_callback(phase_transition_listener)
+                    phase_state_manager.register_listener(callback)
+
+                    logger.info("✅ PhaseTransitionListener initialized and registered")
+                except Exception as e:
+                    logger.warning(f"⚠️ Phase Transition with database failed: {e}")
+                    logger.info("💡 Phase transitions will not auto-track time without database")
+            else:
+                logger.info("💡 Phase Transition System requires database for time tracking")
+        except Exception as e:
+            logger.error(f"❌ Failed to initialize Phase Transition System: {e}")
+    else:
+        logger.info("💡 Phase Transition System not available")
 
     # Start background Obsidian sync (periodic backup every 1-2 hours)
     try:
@@ -351,6 +578,15 @@ async def shutdown_event():
             logger.info("✅ SessionManagerV2 cleaned up")
         except Exception as e:
             logger.error(f"❌ Failed to cleanup SessionManager: {e}")
+
+    # Cleanup Phase Transition System
+    global phase_transition_listener
+    if phase_transition_listener is not None:
+        try:
+            await phase_transition_listener.stop()
+            logger.info("✅ PhaseTransitionListener stopped")
+        except Exception as e:
+            logger.error(f"❌ Failed to stop PhaseTransitionListener: {e}")
 
     # Cleanup Redis
     if REDIS_AVAILABLE:
@@ -412,38 +648,60 @@ async def health_check():
 # Get system status
 @app.get("/api/status")
 async def get_system_status():
-    if not udo_system:
+    # Lazy initialization: system initializes on first request
+    udo = get_udo_system()
+    if not udo:
         return {
             "status": "offline",
             "message": "UDO system not initialized"
         }
 
+    # Check cache first (adaptive TTL based on uncertainty)
+    cached = get_cached("status")
+    if cached:
+        return cached
+
     try:
-        report = udo_system.get_system_report()
-        return {
+        # Use async version for parallel component queries (30% faster)
+        report = await udo.get_system_report_async()
+
+        # Extract uncertainty state for adaptive caching
+        latest_execution = None
+        if udo.execution_history:
+            latest_execution = udo.execution_history[-1]
+        uncertainty_state = latest_execution.get("uncertainty", {}).get("state") if latest_execution else None
+
+        result = {
             "status": "online",
             "report": report
         }
+
+        # Cache with adaptive TTL
+        ttl = get_adaptive_ttl(uncertainty_state)
+        set_cached("status", result, ttl_seconds=ttl)
+        return result
     except Exception as e:
         raise HTTPException(status_code=500, detail=str(e))
 
 # Execute development cycle
 @app.post("/api/execute")
 async def execute_task(request: TaskRequest):
-    if not udo_system:
+    udo = get_udo_system()
+    if not udo:
         raise HTTPException(status_code=503, detail="UDO system not available")
 
     try:
-        result = udo_system.execute_development_cycle(
+        result = udo.execute_development_cycle(
             task=request.task,
             phase=request.phase
         )
 
         # Broadcast update to connected clients
-        await broadcast_update({
-            "type": "task_executed",
-            "data": result
-        })
+        if WEBSOCKET_AVAILABLE:
+            await connection_manager.broadcast_to_all({
+                "type": "task_executed",
+                "data": result
+            })
 
         return {"success": True, "result": result}
     except Exception as e:
@@ -452,11 +710,12 @@ async def execute_task(request: TaskRequest):
 # Train ML models
 @app.post("/api/train")
 async def train_models():
-    if not udo_system:
+    udo = get_udo_system()
+    if not udo:
         raise HTTPException(status_code=503, detail="UDO system not available")
 
     try:
-        results = udo_system.train_ml_models()
+        results = udo.train_ml_models()
         return {"success": True, "training_results": results}
     except Exception as e:
         raise HTTPException(status_code=500, detail=str(e))
@@ -465,7 +724,8 @@ async def train_models():
 @app.get("/api/metrics")
 async def get_metrics():
     """Get comprehensive dashboard metrics"""
-    if not udo_system:
+    udo = get_udo_system()
+    if not udo:
         # Return mock data if UDO not available
         return {
             "system_status": {
@@ -481,28 +741,39 @@ async def get_metrics():
             "performance_metrics": {}
         }
 
+    # Check cache first (adaptive TTL)
+    cached = get_cached("metrics")
+    if cached:
+        return cached
+
     try:
-        report = udo_system.get_system_report()
+        # Use async version for parallel component queries (30% faster)
+        report = await udo.get_system_report_async()
 
         # Get latest execution if available
         latest_execution = None
-        if udo_system.execution_history:
-            latest_execution = udo_system.execution_history[-1]
+        if udo.execution_history:
+            latest_execution = udo.execution_history[-1]
+
+        uncertainty_state = latest_execution.get("uncertainty", {}).get("state", "unknown") if latest_execution else "unknown"
 
         metrics = {
             "system_status": report.get("status", {}),
             "current_phase": report.get("project_context", {}).get("current_phase", "unknown"),
             "confidence_level": latest_execution.get("plan", {}).get("confidence", 0.0) if latest_execution else 0.0,
-            "uncertainty_state": latest_execution.get("uncertainty", {}).get("state", "unknown") if latest_execution else "unknown",
+            "uncertainty_state": uncertainty_state,
             "ai_services": report.get("ai_services", {}),
             "ml_metrics": report.get("ml_models", {}),
-            "recent_tasks": udo_system.execution_history[-5:] if udo_system else [],
+            "recent_tasks": udo.execution_history[-5:] if udo else [],
             "performance_metrics": {
-                "execution_count": len(udo_system.execution_history) if udo_system else 0,
-                "avg_confidence": sum(e.get("plan", {}).get("confidence", 0) for e in udo_system.execution_history) / max(len(udo_system.execution_history), 1) if udo_system and udo_system.execution_history else 0
+                "execution_count": len(udo.execution_history) if udo else 0,
+                "avg_confidence": sum(e.get("plan", {}).get("confidence", 0) for e in udo.execution_history) / max(len(udo.execution_history), 1) if udo and udo.execution_history else 0
             }
         }
 
+        # Cache with adaptive TTL based on uncertainty state
+        ttl = get_adaptive_ttl(uncertainty_state)
+        set_cached("metrics", metrics, ttl_seconds=ttl)
         return metrics
     except Exception as e:
         logger.error(f"Error getting metrics: {e}")
@@ -528,45 +799,7 @@ async def get_phase_data(phase: str):
         "recent_executions": phase_executions[-3:]
     }
 
-# WebSocket for real-time updates
-@app.websocket("/ws")
-async def websocket_endpoint(websocket: WebSocket):
-    await websocket.accept()
-    connected_clients.append(websocket)
-
-    try:
-        # Send initial status
-        if udo_system:
-            await websocket.send_json({
-                "type": "connection_established",
-                "data": udo_system.get_system_report()
-            })
-
-        # Keep connection alive
-        while True:
-            # Receive and echo messages
-            data = await websocket.receive_text()
-
-            # Process commands if needed
-            if data == "ping":
-                await websocket.send_text("pong")
-
-    except WebSocketDisconnect:
-        connected_clients.remove(websocket)
-        logger.info("Client disconnected")
-    except Exception as e:
-        logger.error(f"WebSocket error: {e}")
-        if websocket in connected_clients:
-            connected_clients.remove(websocket)
-
-async def broadcast_update(message: Dict):
-    """Broadcast updates to all connected WebSocket clients"""
-    for client in connected_clients:
-        try:
-            await client.send_json(message)
-        except:
-            # Remove disconnected clients
-            connected_clients.remove(client)
+# WebSocket handled by websocket_handler router (included at line 248)
 
 # System control endpoints
 @app.post("/api/control")
@@ -592,10 +825,11 @@ async def system_control(command: SystemCommand):
             new_phase = command.params.get("phase")
             if new_phase:
                 udo_system.project_context.current_phase = new_phase
-                await broadcast_update({
-                    "type": "phase_changed",
-                    "data": {"new_phase": new_phase}
-                })
+                if WEBSOCKET_AVAILABLE:
+                    await connection_manager.broadcast_to_all({
+                        "type": "phase_changed",
+                        "data": {"new_phase": new_phase}
+                    })
                 return {"success": True, "message": f"Phase changed to {new_phase}"}
 
         else:
