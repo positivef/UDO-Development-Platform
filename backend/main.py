@@ -147,6 +147,14 @@ except ImportError as e:
     KANBAN_CONTEXT_ROUTER_AVAILABLE = False
     logger.info(f"Kanban Context router not available: {e}")
 
+# Import Kanban AI router for AI Task Suggestions (Week 3 Day 3, Q2)
+try:
+    from app.routers.kanban_ai import router as kanban_ai_router
+    KANBAN_AI_ROUTER_AVAILABLE = True
+except ImportError as e:
+    KANBAN_AI_ROUTER_AVAILABLE = False
+    logger.info(f"Kanban AI router not available: {e}")
+
 # Import WebSocket handler and SessionManagerV2
 try:
     from app.routers import websocket_handler
@@ -345,6 +353,10 @@ if KANBAN_PROJECTS_ROUTER_AVAILABLE:
 if KANBAN_CONTEXT_ROUTER_AVAILABLE:
     app.include_router(kanban_context_router)
     logger.info("✅ Kanban Context router included (Context Operations Q4: /api/kanban/context)")
+
+if KANBAN_AI_ROUTER_AVAILABLE:
+    app.include_router(kanban_ai_router)
+    logger.info("✅ Kanban AI router included (AI Task Suggestions Q2: /api/kanban/ai)")
 
 if TIME_TRACKING_ROUTER_AVAILABLE:
     app.include_router(time_tracking_router)

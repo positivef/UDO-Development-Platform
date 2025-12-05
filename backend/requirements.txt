@@ -5,8 +5,13 @@ python-multipart==0.0.18
 pydantic==2.10.3
 python-dotenv==1.0.1
 
+# JWT Authentication
+PyJWT==2.8.0
+cryptography==41.0.7
+
 # Database (PostgreSQL)
-psycopg2-binary==2.9.9
+psycopg2-binary==2.9.11
+asyncpg==0.29.0
 SQLAlchemy==2.0.35
 alembic==1.13.3
 
@@ -14,4 +19,10 @@ alembic==1.13.3
 redis==5.0.8
 
 # YAML parsing
-PyYAML==6.0.1
+PyYAML==6.0.3
+
+# HTTP client (TestClient dependency)
+httpx==0.27.2
+
+# AI Integration (Claude Sonnet 4.5)
+anthropic==0.39.0
