@@ -155,6 +155,14 @@ except ImportError as e:
     KANBAN_AI_ROUTER_AVAILABLE = False
     logger.info(f"Kanban AI router not available: {e}")
 
+# Import Kanban Archive router for Done-End Archive (Week 3 Day 4-5, Q6)
+try:
+    from app.routers.kanban_archive import router as kanban_archive_router
+    KANBAN_ARCHIVE_ROUTER_AVAILABLE = True
+except ImportError as e:
+    KANBAN_ARCHIVE_ROUTER_AVAILABLE = False
+    logger.info(f"Kanban Archive router not available: {e}")
+
 # Import WebSocket handler and SessionManagerV2
 try:
     from app.routers import websocket_handler
@@ -357,6 +365,10 @@ if KANBAN_CONTEXT_ROUTER_AVAILABLE:
 if KANBAN_AI_ROUTER_AVAILABLE:
     app.include_router(kanban_ai_router)
     logger.info("✅ Kanban AI router included (AI Task Suggestions Q2: /api/kanban/ai)")
+
+if KANBAN_ARCHIVE_ROUTER_AVAILABLE:
+    app.include_router(kanban_archive_router)
+    logger.info("✅ Kanban Archive router included (Done-End Archive Q6: /api/kanban/archive)")
 
 if TIME_TRACKING_ROUTER_AVAILABLE:
     app.include_router(time_tracking_router)
