@@ -2,6 +2,93 @@
 
 This file provides guidance to Claude Code (claude.ai/code) when working with code in this repository.
 
+## 🎯 Current Development Roadmap (2025-12-06)
+
+> **하이브리드 접근**: 영역별 성숙도에 맞춘 목표 설정
+
+### 📌 Claude Code 핵심 요약
+
+```yaml
+현재 상태 (실측):
+  Backend: 95% ✅ → 높은 목표 적용
+  Frontend: 50% ⚠️ → 점진적 개발
+  AI Bridge: 30% ⚠️ → 점진적 개발
+  테스트: 85% 통과 (일부 실패 수정 필요)
+
+즉시 해야 할 일 (P0):
+  1. 테스트 실패 수정 (Uncertainty predict() 파라미터)
+  2. Uncertainty UI 기본 (web-dashboard/app/uncertainty/)
+  3. Confidence Dashboard 기본 (web-dashboard/app/confidence/)
+  4. CI Pipeline 생성 (.github/workflows/)
+```
+
+### 참고 문서
+
+| 문서 | 위치 | 내용 |
+|------|------|------|
+| **RL 기반 지식 재사용** | `docs/RL_GUIDED_KNOWLEDGE_REUSE.md` | Training-free GRPO 이론 + 실무 통합 (NEW 🆕) |
+| **종합 최종 로드맵 v6.0** | `docs/COMPREHENSIVE_ROADMAP_V6.md` | 3개 모델 통합 계획 ⭐ |
+| **기술 인계 가이드** | `docs/HANDOFF_TO_CLAUDE.md` | **Facade 패턴 설명 및 실행 가이드** 👈 |
+| **Pre-mortem 분석** | `docs/PREMORTEM_ANALYSIS_2025-12-06.md` | 위험 분석 및 단순화 근거 |
+| **개발 로드맵 v6.0** | `docs/DEVELOPMENT_ROADMAP_V6.md` | 하이브리드 상세 계획 |
+
+### 하이브리드 목표
+
+**성숙 영역 (Backend) - 높은 목표**:
+| 지표 | 현재 | 목표 |
+|------|------|------|
+| 테스트 통과율 | 85% | **98%** |
+| API 응답 시간 | 미측정 | **<200ms** |
+
+**신규 영역 (Frontend/AI) - 점진적 목표**:
+| 지표 | MVP (2주) | Prototype | Beta | Production |
+|------|-----------|-----------|------|------------|
+| 예측 정확도 | 40% | 55% | 65% | 70% |
+| 오류율 | 15% | 10% | 8% | 5% |
+| 자동화율 | 65% | 75% | 80% | 85% |
+
+### 현재 Stage: MVP (2주)
+
+```yaml
+MVP Task (P0):
+  1. Uncertainty UI 기본 (3일)
+     파일: web-dashboard/app/uncertainty/page.tsx
+     
+  2. Confidence Dashboard 기본 (2일)
+     파일: web-dashboard/app/confidence/page.tsx
+     
+  3. CI Pipeline (1일)
+     파일: .github/workflows/backend-test.yml
+
+MVP 성공 기준:
+  - 예측 화면 표시
+  - CI 자동 실행
+  - 테스트 통과율 95%+
+```
+
+### 검증 완료
+
+- [x] 5 Whys 본질 분석 완료
+- [x] 현재 상태 테스트 실행 (85% 통과)
+- [x] 영역별 성숙도 분석 완료
+- [x] 하이브리드 접근법 정의
+- [x] 단계별 보완점 체크리스트
+
+### 명령어 참조
+
+```bash
+# 테스트 실행
+.venv\Scripts\python.exe -m pytest tests/ -v
+
+# 백엔드 시작
+.venv\Scripts\python.exe -m uvicorn backend.main:app --reload
+
+# 프론트엔드 시작
+cd web-dashboard && npm run dev
+```
+
+---
+
 ## Project Overview
 
 **UDO Development Platform v3.0** - An intelligent development automation platform using AI collaboration and predictive uncertainty modeling to manage the software development lifecycle.
@@ -332,15 +419,27 @@ Check `backend/app/services/` for integration implementations.
 
 ---
 
-## Kanban-UDO Integration (2025-12-04)
+## Kanban-UDO Integration (2025-12-05)
 
-**Status**: Design Complete - Ready for Implementation
+**Status**: Week 3 Complete ✅ - Week 4 Testing Preparation
 
 ### Quick Reference
 
 **Master Document**: `docs/KANBAN_IMPLEMENTATION_SUMMARY.md` (Concise overview)
 
-**Detailed Specifications** (for implementation):
+**Implementation Documents** (Week 3 Complete):
+- `backend/app/models/kanban_archive.py` - Archive models with AI summarization
+- `backend/app/services/kanban_archive_service.py` - Archive service (GPT-4o integration)
+- `backend/app/routers/kanban_archive.py` - Archive API endpoints
+- `backend/tests/test_kanban_archive.py` - 15/15 tests passing (100%)
+
+**Week 4 Testing Documents** (NEW):
+- `docs/WEEK4_USER_TESTING_GUIDE.md` - Comprehensive testing scenarios
+- `docs/WEEK4_TESTING_CHECKLIST.md` - Quick reference checklist
+- `docs/WEEK4_FEEDBACK_TEMPLATE.md` - User feedback collection template
+- `docs/WEEK4_ROLLBACK_PROCEDURES.md` - 3-Tier rollback validation
+
+**Detailed Specifications** (for future implementation):
 - `docs/KANBAN_UI_COMPONENTS_DESIGN.md` (2,235 lines) - Complete React component specs
 - `docs/KANBAN_DATABASE_SCHEMA_DESIGN.md` - Full PostgreSQL schema with migrations
 - `docs/KANBAN_API_SPECIFICATION.md` - 25+ REST endpoints with request/response
@@ -442,6 +541,37 @@ Check `backend/app/services/` for integration implementations.
 
 ## Current Status (2025-12-04) - All Issues Resolved ✅
 
+## Refactoring Validation & Next Steps
+
+### Priority‑ordered Improvements
+1. **Backend Router Modularization** – Move all router imports to a lazy registration helper (`app/routers/__init__.py`). Reduces `main.py` clutter and eases future router additions.
+2. **Central Configuration Module** – Consolidate CORS, logging, DB URL, and feature flags in `app/config.py`. Enables environment‑specific overrides.
+3. **Service Container & Dependency Injection** – Provide services (e.g., `KanbanTaskService`, `TimeTrackingService`) via FastAPI `Depends`. Improves testability.
+4. **Typed Pydantic Schemas Alignment** – Ensure API contracts match frontend TypeScript interfaces (`web-dashboard/lib/types`).
+5. **Comprehensive Test Suite** – Add integration tests for each new Kanban router (`kanban_dependencies`, `kanban_projects`, `kanban_context`) targeting ≥85 % coverage.
+6. **CI/CD Enhancements** – Pre‑commit hooks, GitHub Actions for lint, security (`bandit`), and performance benchmarks.
+7. **Documentation Automation** – Generate OpenAPI spec, architecture diagrams, and update `README` with onboarding scripts.
+8. **Frontend Kanban Integration** – Introduce typed API client, Zustand store for Kanban state, and lazy‑loaded UI components.
+9. **Performance Benchmarking** – Validate DAG processing < 50 ms for 1 000 tasks, DB query latency < 50 ms, and API p95 < 500 ms.
+10. **Uncertainty Map Gap Mitigation** – Address low‑confidence areas (Q5‑1, Q6, Q7) with targeted experiments (algorithm benchmark, AI summary quality testing, UX studies).
+
+### Multi‑Agent & MCP‑Driven Strategy
+- **Architect (Antigravity)** – Manages backend modularization, config, and service container.
+- **Builder (Claude Code)** – Implements frontend Kanban components, API client, and state store.
+- **Prophet (MCP‑Sequential)** – Runs risk analysis via the Uncertainty Map, flags low‑confidence decisions.
+- **Reviewer (MCP‑Codex)** – Performs static code analysis, suggests refactorings, and ensures style compliance.
+- **Tester (MCP‑Playwright)** – Executes end‑to‑end performance and UI tests across browsers.
+
+### Benchmarking & Stability
+- **Reference Platforms**: ClickUp, Linear, Height, Plane.so – measured for API latency, DB query patterns, and UI load times.
+- **Target Metrics**: DB < 50 ms, API p95 < 500 ms, UI TTI < 3 s, LCP < 2.5 s, WebSocket < 50 ms, AI suggestion < 3 s.
+- **Adaptive Triggers**: If any metric exceeds threshold, fallback to pagination, increase cache size, or toggle feature flags.
+
+### Documentation Updates
+- Added this section to `CLAUDE.md` for quick reference.
+- Summarized the same information in the Obsidian log (see below).
+
+
 **Previous Issue**: "Application error: a client-side exception has occurred" on `/time-tracking` page.
 
 ### All Issues Resolved ✅
@@ -461,6 +591,17 @@ Check `backend/app/services/` for integration implementations.
    - **Files Changed**: `web-dashboard/lib/hooks/useTimeTracking.ts`, `web-dashboard/app/time-tracking/page.tsx`
    - **Documentation**: `docs/HYDRATION_MISMATCH_FIX.md`
 
+### Testing Checklist
+
+### Refactoring Validation Checklist
+- [ ] Verify router modularization (`app/routers/__init__.py`) is functional and all routers are included.
+- [ ] Confirm central config values are loaded from `app/config.py`.
+- [ ] Run integration tests for `kanban_dependencies`, `kanban_projects`, `kanban_context` (≥85 % coverage).
+- [ ] Execute performance benchmark script (`scripts/benchmark_kanban.py`) and ensure DAG < 50 ms for 1 000 tasks.
+- [ ] Validate low‑confidence uncertainty map items (Q5‑1, Q6, Q7) with targeted experiments.
+- [ ] Review generated OpenAPI spec (`docs/openapi.yaml`) for completeness.
+- [ ] Ensure CI pipeline passes all lint, security, and test stages.
+- [ ] Confirm frontend Kanban UI loads without hydration warnings and meets performance targets.
 ### Testing Required
 - Navigate to `http://localhost:3000/time-tracking` and verify:
   - [ ] Page loads without crash
