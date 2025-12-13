@@ -126,7 +126,7 @@ class SystemRulesValidator:
 
         # Check 3: 트리거 조건 검증
         expected_triggers = [
-            r"FILES_CHANGED.*>=\s*3",  # 3+ files
+            r"FILES_CHANGED.*(>=\s*3|-ge\s+3)",  # 3+ files (supports >= or -ge syntax)
             r"feat|feature|fix|bug|docs|refactor",  # Commit message patterns
         ]
 
