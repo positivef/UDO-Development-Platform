@@ -27,15 +27,17 @@ class TestKnowledgeReuseTracking:
 
     def test_statistics_initialization(self):
         """Resolver initializes with zero statistics"""
-        resolver = UnifiedErrorResolver()
+        with tempfile.TemporaryDirectory() as tmpdir:
+            stats_file = Path(tmpdir) / "test_stats.json"
+            resolver = UnifiedErrorResolver(stats_file=stats_file)
 
-        stats = resolver.get_statistics()
-        assert stats["total"] == 0
-        assert stats["tier1"] == 0
-        assert stats["tier2"] == 0
-        assert stats["tier3"] == 0
-        assert stats["automation_rate"] == 0.0
-        assert stats["knowledge_reuse_rate"] == 0.0
+            stats = resolver.get_statistics()
+            assert stats["total"] == 0
+            assert stats["tier1"] == 0
+            assert stats["tier2"] == 0
+            assert stats["tier3"] == 0
+            assert stats["automation_rate"] == 0.0
+            assert stats["knowledge_reuse_rate"] == 0.0
 
     def test_knowledge_reuse_rate_calculation(self):
         """Knowledge reuse rate = (tier1_hits / total_attempts) × 100%"""
@@ -71,70 +73,80 @@ class TestPatternBasedSolutions:
 
     def test_module_not_found_high_confidence(self):
         """ModuleNotFoundError → pip install (95% confidence)"""
-        resolver = UnifiedErrorResolver()
+        with tempfile.TemporaryDirectory() as tmpdir:
+            stats_file = Path(tmpdir) / "test_stats.json"
+            resolver = UnifiedErrorResolver(stats_file=stats_file)
 
-        result = resolver.resolve_error(
-            error_message="ModuleNotFoundError: No module named 'pandas'",
-            context={"tool": "Python", "script": "analyzer.py"}
-        )
+            result = resolver.resolve_error(
+                error_message="ModuleNotFoundError: No module named 'pandas'",
+                context={"tool": "Python", "script": "analyzer.py"}
+            )
 
-        # Should return Tier 2 solution (Obsidian not integrated yet)
-        assert result.tier == 2
-        assert result.solution == "pip install pandas"
-        assert result.confidence >= 0.95  # HIGH confidence
-        assert result.source == "context7"
+            # Should return Tier 2 solution (Obsidian not integrated yet)
+            assert result.tier == 2
+            assert result.solution == "pip install pandas"
+            assert result.confidence >= 0.95  # HIGH confidence
+            assert result.source == "context7"
 
     def test_permission_denied_write_high_confidence(self):
         """PermissionError (write) → chmod +w (95% confidence)"""
-        resolver = UnifiedErrorResolver()
+        with tempfile.TemporaryDirectory() as tmpdir:
+            stats_file = Path(tmpdir) / "test_stats.json"
+            resolver = UnifiedErrorResolver(stats_file=stats_file)
 
-        result = resolver.resolve_error(
-            error_message="PermissionError: [Errno 13] Permission denied: 'scripts/deploy.sh'",
-            context={"tool": "Write", "file": "scripts/deploy.sh"}
-        )
+            result = resolver.resolve_error(
+                error_message="PermissionError: [Errno 13] Permission denied: 'scripts/deploy.sh'",
+                context={"tool": "Write", "file": "scripts/deploy.sh"}
+            )
 
-        assert result.tier == 2
-        assert result.solution == "chmod +w scripts/deploy.sh"
-        assert result.confidence >= 0.95
+            assert result.tier == 2
+            assert result.solution == "chmod +w scripts/deploy.sh"
+            assert result.confidence >= 0.95
 
     def test_permission_denied_execute_high_confidence(self):
         """PermissionError (execute) → chmod +x (95% confidence)"""
-        resolver = UnifiedErrorResolver()
+        with tempfile.TemporaryDirectory() as tmpdir:
+            stats_file = Path(tmpdir) / "test_stats.json"
+            resolver = UnifiedErrorResolver(stats_file=stats_file)
 
-        result = resolver.resolve_error(
-            error_message="Permission denied when executing 'tests/smoke_test.sh'",
-            context={"tool": "Bash", "command": "bash tests/smoke_test.sh"}
-        )
+            result = resolver.resolve_error(
+                error_message="Permission denied when executing 'tests/smoke_test.sh'",
+                context={"tool": "Bash", "command": "bash tests/smoke_test.sh"}
+            )
 
-        assert result.tier == 2
-        assert "chmod +x" in result.solution
-        assert result.confidence >= 0.95
+            assert result.tier == 2
+            assert "chmod +x" in result.solution
+            assert result.confidence >= 0.95
 
     def test_file_not_found_medium_confidence(self):
         """FileNotFoundError → None (70% confidence, user confirmation)"""
-        resolver = UnifiedErrorResolver()
+        with tempfile.TemporaryDirectory() as tmpdir:
+            stats_file = Path(tmpdir) / "test_stats.json"
+            resolver = UnifiedErrorResolver(stats_file=stats_file)
 
-        result = resolver.resolve_error(
-            error_message="FileNotFoundError: [Errno 2] No such file or directory: 'config.yaml'",
-            context={"tool": "Read"}
-        )
+            result = resolver.resolve_error(
+                error_message="FileNotFoundError: [Errno 2] No such file or directory: 'config.yaml'",
+                context={"tool": "Read"}
+            )
 
-        # MEDIUM confidence patterns return None (user confirmation needed)
-        assert result.solution is None
-        assert result.tier == 3  # Escalates to user
+            # MEDIUM confidence patterns return None (user confirmation needed)
+            assert result.solution is None
+            assert result.tier == 3  # Escalates to user
 
     def test_unknown_error_escalates(self):
         """Unknown errors escalate to Tier 3 (user)"""
-        resolver = UnifiedErrorResolver()
+        with tempfile.TemporaryDirectory() as tmpdir:
+            stats_file = Path(tmpdir) / "test_stats.json"
+            resolver = UnifiedErrorResolver(stats_file=stats_file)
 
-        result = resolver.resolve_error(
-            error_message="CustomBusinessLogicError: Payment method not supported",
-            context={"tool": "Python"}
-        )
+            result = resolver.resolve_error(
+                error_message="CustomBusinessLogicError: Payment method not supported",
+                context={"tool": "Python"}
+            )
 
-        assert result.tier == 3
-        assert result.solution is None
-        assert result.source == "none"
+            assert result.tier == 3
+            assert result.solution is None
+            assert result.source == "none"
 
 
 class TestConfidenceScoring:
@@ -142,44 +154,50 @@ class TestConfidenceScoring:
 
     def test_high_confidence_auto_apply(self):
         """≥95% confidence → auto-apply (Tier 2)"""
-        resolver = UnifiedErrorResolver()
+        with tempfile.TemporaryDirectory() as tmpdir:
+            stats_file = Path(tmpdir) / "test_stats.json"
+            resolver = UnifiedErrorResolver(stats_file=stats_file)
 
-        result = resolver.resolve_error(
-            error_message="ModuleNotFoundError: No module named 'requests'",
-            context={"tool": "Python"}
-        )
+            result = resolver.resolve_error(
+                error_message="ModuleNotFoundError: No module named 'requests'",
+                context={"tool": "Python"}
+            )
 
-        # HIGH confidence → auto-applied
-        assert result.confidence >= 0.95
-        stats = resolver.get_statistics()
-        assert stats["tier2_auto"] == 1  # Auto-applied
+            # HIGH confidence → auto-applied
+            assert result.confidence >= 0.95
+            stats = resolver.get_statistics()
+            assert stats["tier2_auto"] == 1  # Auto-applied
 
     def test_medium_confidence_user_confirmation(self):
         """70-95% confidence → return for user confirmation"""
-        resolver = UnifiedErrorResolver()
+        with tempfile.TemporaryDirectory() as tmpdir:
+            stats_file = Path(tmpdir) / "test_stats.json"
+            resolver = UnifiedErrorResolver(stats_file=stats_file)
 
-        # File not found is MEDIUM confidence (70%)
-        result = resolver.resolve_error(
-            error_message="No such file or directory: 'missing.txt'",
-            context={"tool": "Read"}
-        )
+            # File not found is MEDIUM confidence (70%)
+            result = resolver.resolve_error(
+                error_message="No such file or directory: 'missing.txt'",
+                context={"tool": "Read"}
+            )
 
-        # MEDIUM confidence → not auto-applied, escalates
-        assert result.tier == 3  # No auto-apply
-        stats = resolver.get_statistics()
-        assert stats["tier2_auto"] == 0
+            # MEDIUM confidence → not auto-applied, escalates
+            assert result.tier == 3  # No auto-apply
+            stats = resolver.get_statistics()
+            assert stats["tier2_auto"] == 0
 
     def test_low_confidence_escalates(self):
         """<70% confidence → escalate to user (Tier 3)"""
-        resolver = UnifiedErrorResolver()
+        with tempfile.TemporaryDirectory() as tmpdir:
+            stats_file = Path(tmpdir) / "test_stats.json"
+            resolver = UnifiedErrorResolver(stats_file=stats_file)
 
-        result = resolver.resolve_error(
-            error_message="UnknownError: Something went wrong",
-            context={"tool": "Unknown"}
-        )
+            result = resolver.resolve_error(
+                error_message="UnknownError: Something went wrong",
+                context={"tool": "Unknown"}
+            )
 
-        assert result.tier == 3
-        assert result.confidence == 0.0
+            assert result.tier == 3
+            assert result.confidence == 0.0
 
 
 class TestStatisticsPersistence:
@@ -208,17 +226,19 @@ class TestStatisticsPersistence:
 
     def test_resolution_history_tracking(self):
         """Resolution history tracks last 100 resolutions"""
-        resolver = UnifiedErrorResolver()
+        with tempfile.TemporaryDirectory() as tmpdir:
+            stats_file = Path(tmpdir) / "test_stats.json"
+            resolver = UnifiedErrorResolver(stats_file=stats_file)
 
-        for i in range(105):
-            resolver.resolve_error(
-                error_message=f"ModuleNotFoundError: No module named 'lib{i}'",
-                context={"tool": "Python"}
-            )
+            for i in range(105):
+                resolver.resolve_error(
+                    error_message=f"ModuleNotFoundError: No module named 'lib{i}'",
+                    context={"tool": "Python"}
+                )
 
-        # Should keep only last 100
-        assert len(resolver.stats["resolution_history"]) == 100
-        assert resolver.stats["total_attempts"] == 105
+            # Should keep only last 100
+            assert len(resolver.stats["resolution_history"]) == 100
+            assert resolver.stats["total_attempts"] == 105
 
 
 class TestUserSolutionSaving:
@@ -226,20 +246,22 @@ class TestUserSolutionSaving:
 
     def test_save_user_solution(self):
         """User solutions are recorded with 100% confidence"""
-        resolver = UnifiedErrorResolver()
+        with tempfile.TemporaryDirectory() as tmpdir:
+            stats_file = Path(tmpdir) / "test_stats.json"
+            resolver = UnifiedErrorResolver(stats_file=stats_file)
 
-        resolver.save_user_solution(
-            error_message="CustomError: API key missing",
-            user_solution="export API_KEY=your_key_here",
-            context={"tool": "Bash", "command": "run_api.sh"}
-        )
+            resolver.save_user_solution(
+                error_message="CustomError: API key missing",
+                user_solution="export API_KEY=your_key_here",
+                context={"tool": "Bash", "command": "run_api.sh"}
+            )
 
-        # Should be recorded in history
-        assert len(resolver.stats["resolution_history"]) == 1
-        history = resolver.stats["resolution_history"][0]
-        assert history["tier"] == 3
-        assert history["source"] == "user"
-        assert history["confidence"] == 1.0
+            # Should be recorded in history
+            assert len(resolver.stats["resolution_history"]) == 1
+            history = resolver.stats["resolution_history"][0]
+            assert history["tier"] == 3
+            assert history["source"] == "user"
+            assert history["confidence"] == 1.0
 
 
 class TestErrorKeywordExtraction:
@@ -247,31 +269,39 @@ class TestErrorKeywordExtraction:
 
     def test_extract_error_type(self):
         """Extracts error type (e.g., ModuleNotFoundError)"""
-        resolver = UnifiedErrorResolver()
+        with tempfile.TemporaryDirectory() as tmpdir:
+            stats_file = Path(tmpdir) / "test_stats.json"
+            resolver = UnifiedErrorResolver(stats_file=stats_file)
 
-        keywords = resolver._extract_error_keywords("ModuleNotFoundError: No module named 'pandas'")
-        assert "ModuleNotFoundError" in keywords
+            keywords = resolver._extract_error_keywords("ModuleNotFoundError: No module named 'pandas'")
+            assert "ModuleNotFoundError" in keywords
 
     def test_extract_module_name(self):
         """Extracts module name from ModuleNotFoundError"""
-        resolver = UnifiedErrorResolver()
+        with tempfile.TemporaryDirectory() as tmpdir:
+            stats_file = Path(tmpdir) / "test_stats.json"
+            resolver = UnifiedErrorResolver(stats_file=stats_file)
 
-        keywords = resolver._extract_error_keywords("No module named 'requests'")
-        assert "requests" in keywords
+            keywords = resolver._extract_error_keywords("No module named 'requests'")
+            assert "requests" in keywords
 
     def test_extract_error_code(self):
         """Extracts HTTP error codes (401, 404, 500)"""
-        resolver = UnifiedErrorResolver()
+        with tempfile.TemporaryDirectory() as tmpdir:
+            stats_file = Path(tmpdir) / "test_stats.json"
+            resolver = UnifiedErrorResolver(stats_file=stats_file)
 
-        keywords = resolver._extract_error_keywords("HTTPError: 404 Not Found")
-        assert "404" in keywords
+            keywords = resolver._extract_error_keywords("HTTPError: 404 Not Found")
+            assert "404" in keywords
 
     def test_extract_file_path(self):
         """Extracts file names from error messages"""
-        resolver = UnifiedErrorResolver()
+        with tempfile.TemporaryDirectory() as tmpdir:
+            stats_file = Path(tmpdir) / "test_stats.json"
+            resolver = UnifiedErrorResolver(stats_file=stats_file)
 
-        keywords = resolver._extract_error_keywords("No such file: 'config.yaml'")
-        assert "config.yaml" in keywords
+            keywords = resolver._extract_error_keywords("No such file: 'config.yaml'")
+            assert "config.yaml" in keywords
 
 
 class TestRealWorldScenarios:
@@ -279,54 +309,61 @@ class TestRealWorldScenarios:
 
     def test_pandas_import_error(self):
         """Real scenario: Missing pandas dependency"""
-        resolver = UnifiedErrorResolver()
+        with tempfile.TemporaryDirectory() as tmpdir:
+            stats_file = Path(tmpdir) / "test_stats.json"
+            resolver = UnifiedErrorResolver(stats_file=stats_file)
 
-        result = resolver.resolve_error(
-            error_message="""
-            Traceback (most recent call last):
-              File "analysis.py", line 3, in <module>
-                import pandas as pd
-            ModuleNotFoundError: No module named 'pandas'
-            """,
-            context={"tool": "Python", "file": "analysis.py"}
-        )
+            result = resolver.resolve_error(
+                error_message="""
+                Traceback (most recent call last):
+                  File "analysis.py", line 3, in <module>
+                    import pandas as pd
+                ModuleNotFoundError: No module named 'pandas'
+                """,
+                context={"tool": "Python", "file": "analysis.py"}
+            )
 
-        assert result.solution == "pip install pandas"
-        assert result.confidence >= 0.95
-        assert resolver.get_statistics()["tier2_auto"] == 1
+            assert result.solution == "pip install pandas"
+            assert result.confidence >= 0.95
+            assert resolver.get_statistics()["tier2_auto"] == 1
 
     def test_permission_error_chmod(self):
         """Real scenario: Permission denied when running script"""
-        resolver = UnifiedErrorResolver()
+        with tempfile.TemporaryDirectory() as tmpdir:
+            stats_file = Path(tmpdir) / "test_stats.json"
+            resolver = UnifiedErrorResolver(stats_file=stats_file)
 
-        result = resolver.resolve_error(
-            error_message="bash: ./deploy.sh: Permission denied",
-            context={"tool": "Bash", "command": "./deploy.sh"}
-        )
+            result = resolver.resolve_error(
+                error_message="bash: ./deploy.sh: Permission denied",
+                context={"tool": "Bash", "command": "./deploy.sh"}
+            )
 
-        assert "chmod +x" in result.solution
-        assert result.confidence >= 0.95
+            assert result.solution is not None, "Solution should not be None for permission denied"
+            assert "chmod +x" in result.solution
+            assert result.confidence >= 0.95
 
     def test_accumulate_statistics(self):
         """Real scenario: Multiple errors accumulate statistics"""
-        resolver = UnifiedErrorResolver()
+        with tempfile.TemporaryDirectory() as tmpdir:
+            stats_file = Path(tmpdir) / "test_stats.json"
+            resolver = UnifiedErrorResolver(stats_file=stats_file)
 
-        # 5 pandas errors (same error → should reuse knowledge if Tier 1 worked)
-        for _ in range(5):
-            resolver.resolve_error("ModuleNotFoundError: No module named 'pandas'")
+            # 5 pandas errors (same error → should reuse knowledge if Tier 1 worked)
+            for _ in range(5):
+                resolver.resolve_error("ModuleNotFoundError: No module named 'pandas'")
 
-        # 3 numpy errors
-        for _ in range(3):
-            resolver.resolve_error("ModuleNotFoundError: No module named 'numpy'")
+            # 3 numpy errors
+            for _ in range(3):
+                resolver.resolve_error("ModuleNotFoundError: No module named 'numpy'")
 
-        # 2 permission errors
-        for _ in range(2):
-            resolver.resolve_error("Permission denied: 'script.sh'", context={"tool": "Bash"})
+            # 2 permission errors
+            for _ in range(2):
+                resolver.resolve_error("Permission denied: 'script.sh'", context={"tool": "Bash"})
 
-        stats = resolver.get_statistics()
-        assert stats["total"] == 10
-        assert stats["tier2_auto"] == 10  # All HIGH confidence
-        assert stats["automation_rate"] == 1.0  # 100% automated
+            stats = resolver.get_statistics()
+            assert stats["total"] == 10
+            assert stats["tier2_auto"] == 10  # All HIGH confidence
+            assert stats["automation_rate"] == 1.0  # 100% automated
 
 
 class TestResetStatistics:
@@ -334,21 +371,23 @@ class TestResetStatistics:
 
     def test_reset_clears_all_stats(self):
         """Reset clears all statistics"""
-        resolver = UnifiedErrorResolver()
+        with tempfile.TemporaryDirectory() as tmpdir:
+            stats_file = Path(tmpdir) / "test_stats.json"
+            resolver = UnifiedErrorResolver(stats_file=stats_file)
 
-        # Record some data
-        resolver.resolve_error("ModuleNotFoundError: No module named 'test'")
-        assert resolver.get_statistics()["total"] > 0
+            # Record some data
+            resolver.resolve_error("ModuleNotFoundError: No module named 'test'")
+            assert resolver.get_statistics()["total"] > 0
 
-        # Reset
-        resolver.reset_statistics()
+            # Reset
+            resolver.reset_statistics()
 
-        # Should be zero
-        stats = resolver.get_statistics()
-        assert stats["total"] == 0
-        assert stats["tier1"] == 0
-        assert stats["tier2"] == 0
-        assert len(resolver.stats["resolution_history"]) == 0
+            # Should be zero
+            stats = resolver.get_statistics()
+            assert stats["total"] == 0
+            assert stats["tier1"] == 0
+            assert stats["tier2"] == 0
+            assert len(resolver.stats["resolution_history"]) == 0
 
 
 # Run tests

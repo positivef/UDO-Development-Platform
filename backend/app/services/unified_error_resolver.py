@@ -263,10 +263,15 @@ class UnifiedErrorResolver:
         if module_match:
             keywords.append(module_match.group(1))
 
-        # File paths
-        file_match = re.search(r"'([^']+\.(py|js|ts|sh))'", error_message)
+        # File paths (support multiple extensions and non-quoted paths)
+        file_match = re.search(r"'([^']+\.(py|js|ts|sh|yaml|yml|json|md|txt|cfg|conf|env))'", error_message)
         if file_match:
             keywords.append(Path(file_match.group(1)).name)
+        else:
+            # Also try to match non-quoted file paths like ./deploy.sh or config.yaml
+            non_quoted_match = re.search(r"(?:^|[:\s])([./\w-]+\.(py|js|ts|sh|yaml|yml|json|md|txt|cfg|conf|env))(?:[:\s]|$)", error_message)
+            if non_quoted_match:
+                keywords.append(Path(non_quoted_match.group(1)).name)
 
         # Error codes (401, 404, 500, etc.)
         code_match = re.search(r"\b(\d{3})\b", error_message)
@@ -312,12 +317,19 @@ class UnifiedErrorResolver:
 
         # Pattern 2: Permission denied - chmod (HIGH confidence)
         if "Permission denied" in error or "PermissionError" in error:
+            # Try quoted path first
             file_match = re.search(r"'([^']+)'", error)
+            if not file_match:
+                # Try non-quoted path (e.g., "bash: ./deploy.sh: Permission denied")
+                file_match = re.search(r"(?:^|[:\s])([./\w-]+\.\w+)(?::|$)", error)
             if file_match:
                 file_path = file_match.group(1)
                 if error_ctx.tool == "Edit" or error_ctx.tool == "Write":
                     return f"chmod +w {file_path}", 0.95  # HIGH confidence
                 elif error_ctx.tool == "Bash":
+                    return f"chmod +x {file_path}", 0.95  # HIGH confidence
+                else:
+                    # Default to +x for script-like paths
                     return f"chmod +x {file_path}", 0.95  # HIGH confidence
 
         # Pattern 3: File not found - check path (MEDIUM confidence)

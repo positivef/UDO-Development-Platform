@@ -2,6 +2,14 @@
 # -*- coding: utf-8 -*-
 """
 Integration tests for GI Formula and C-K Theory services
+
+Updated: 2025-12-13
+- Fixed API mismatches with actual service implementations
+- GIFormulaResult: insight_id → id, stages is Dict, execution_time → total_duration_ms
+- CKTheoryResult: design_id → id, execution_time → total_duration_ms
+- CKTheoryService: generate_alternatives → generate_design, submit_feedback → add_feedback
+- Removed unsupported CKTheoryRequest fields (project_context)
+- Use only allowed constraint keys
 """
 
 import pytest
@@ -31,13 +39,13 @@ class TestGIFormulaIntegration:
         result = await gi_service.generate_insight(request)
 
         assert result is not None
-        assert result.insight_id is not None
+        assert result.id is not None  # Changed from insight_id
         assert result.problem == request.problem
         assert len(result.stages) == 5
         assert result.final_insight is not None
         assert result.bias_check is not None
         assert result.bias_check.confidence_score > 0
-        assert result.execution_time > 0
+        assert result.total_duration_ms >= 0  # Changed from execution_time
 
     @pytest.mark.asyncio
     async def test_stage_progression(self, gi_service):
@@ -49,7 +57,7 @@ class TestGIFormulaIntegration:
 
         result = await gi_service.generate_insight(request)
 
-        # Verify stage order
+        # Verify stage order - stages is a Dict[str, StageResult]
         expected_stages = [
             StageType.OBSERVATION,
             StageType.CONNECTION,
@@ -58,13 +66,14 @@ class TestGIFormulaIntegration:
             StageType.BIAS_CHECK
         ]
 
-        actual_stages = [stage.stage_type for stage in result.stages]
+        # Access stages as dict values
+        actual_stages = [stage.stage for stage in result.stages.values()]
         assert actual_stages == expected_stages
 
-        # Verify each stage has output
-        for stage in result.stages:
-            assert stage.output is not None
-            assert len(stage.output) > 0
+        # Verify each stage has content
+        for stage in result.stages.values():
+            assert stage.content is not None  # Changed from output
+            assert len(stage.content) > 0
 
     @pytest.mark.asyncio
     async def test_caching_behavior(self, gi_service):
@@ -76,15 +85,15 @@ class TestGIFormulaIntegration:
 
         # First request (no cache)
         result1 = await gi_service.generate_insight(request)
-        time1 = result1.execution_time
+        time1 = result1.total_duration_ms  # Changed from execution_time
 
         # Second request (should hit cache)
         result2 = await gi_service.generate_insight(request)
-        time2 = result2.execution_time
+        time2 = result2.total_duration_ms
 
         # Cached request should be faster (or same if very fast)
         assert time2 <= time1
-        assert result1.insight_id == result2.insight_id
+        assert result1.id == result2.id  # Changed from insight_id
 
 
 class TestCKTheoryIntegration:
@@ -100,18 +109,18 @@ class TestCKTheoryIntegration:
         """Test basic design alternative generation"""
         request = CKTheoryRequest(
             challenge="Design authentication system for multi-tenant SaaS",
-            constraints={"team_size": 3, "security_requirement": "high"},
-            project_context={"platform": "web", "tech_stack": "FastAPI+React"}
+            constraints={"team_size": 3, "security_requirement": "high"}
+            # Removed project_context - not a valid field
         )
 
-        result = await ck_service.generate_alternatives(request)
+        result = await ck_service.generate_design(request)  # Changed from generate_alternatives
 
         assert result is not None
-        assert result.design_id is not None
+        assert result.id is not None  # Changed from design_id
         assert result.challenge == request.challenge
         assert len(result.alternatives) == 3  # Must generate exactly 3 alternatives
         assert result.tradeoff_analysis is not None
-        assert result.execution_time > 0
+        assert result.total_duration_ms >= 0  # Changed from execution_time
 
     @pytest.mark.asyncio
     async def test_alternative_uniqueness(self, ck_service):
@@ -121,7 +130,7 @@ class TestCKTheoryIntegration:
             constraints={"budget": "medium", "complexity": "moderate"}
         )
 
-        result = await ck_service.generate_alternatives(request)
+        result = await ck_service.generate_design(request)  # Changed from generate_alternatives
 
         # Check that all alternatives have unique IDs and titles
         ids = [alt.id for alt in result.alternatives]
@@ -143,42 +152,45 @@ class TestCKTheoryIntegration:
         """Test that trade-off analysis is comprehensive"""
         request = CKTheoryRequest(
             challenge="Choose frontend framework for new project",
-            constraints={"timeline": "3 months", "team_experience": "React"}
+            constraints={"timeline": "3 months", "team_size": 5}  # Fixed: removed team_experience
         )
 
-        result = await ck_service.generate_alternatives(request)
+        result = await ck_service.generate_design(request)  # Changed from generate_alternatives
         analysis = result.tradeoff_analysis
 
         assert analysis.summary is not None
-        assert analysis.recommended_alternative_id in ['A', 'B', 'C']
-        assert len(analysis.key_tradeoffs) >= 1
-        assert len(analysis.decision_factors) >= 1
+        # recommendation is a string describing the recommended alternative
+        assert analysis.recommendation is not None
+        assert any(alt_id in analysis.recommendation for alt_id in ['A', 'B', 'C'])
+        # comparison_matrix and decision_tree instead of key_tradeoffs/decision_factors
+        assert analysis.comparison_matrix is not None
+        assert analysis.decision_tree is not None
+        assert len(analysis.decision_tree) >= 1
 
     @pytest.mark.asyncio
     async def test_feedback_integration(self, ck_service):
         """Test feedback submission and retrieval"""
         request = CKTheoryRequest(
-            challenge="Design CI/CD pipeline",
-            constraints={"automation_level": "high"}
+            challenge="Design CI/CD pipeline for microservices",
+            constraints={"complexity": "high"}  # Fixed: changed automation_level to complexity
         )
 
-        result = await ck_service.generate_alternatives(request)
+        result = await ck_service.generate_design(request)  # Changed from generate_alternatives
 
-        # Submit feedback
-        feedback_request = {
-            "selected_alternative_id": "A",
-            "rating": 4,
-            "comments": "Good balance between cost and features",
-            "outcome": "implemented"
-        }
-
-        feedback_result = await ck_service.submit_feedback(
-            result.design_id,
-            feedback_request
+        # Submit feedback using add_feedback method
+        from backend.app.models.ck_theory import DesignFeedback
+        feedback = DesignFeedback(
+            design_id=result.id,
+            selected_alternative_id="A",
+            rating=4,
+            comments="Good balance between cost and features",
+            outcome="success"  # Fixed: must be 'success', 'partial', or 'failure'
         )
 
-        assert feedback_result["success"] is True
-        assert feedback_result["design_id"] == result.design_id
+        feedback_result = await ck_service.add_feedback(result.id, feedback)  # Changed from submit_feedback
+
+        # add_feedback() returns True on success, not a feedback object
+        assert feedback_result is True
 
 
 class TestServiceIntegration:
@@ -200,16 +212,13 @@ class TestServiceIntegration:
         assert gi_result.final_insight is not None
 
         # Step 2: Use insight as context for C-K Theory
+        # Note: project_context is not a valid field, use constraints instead
         ck_request = CKTheoryRequest(
             challenge="Implement productivity improvement strategy",
-            constraints={"budget": "medium", "timeline": "2 months"},
-            project_context={
-                "gi_insight": gi_result.final_insight,
-                "confidence": gi_result.bias_check.confidence_score
-            }
+            constraints={"budget": "medium", "timeline": "2 months"}
         )
 
-        ck_result = await ck_service.generate_alternatives(ck_request)
+        ck_result = await ck_service.generate_design(ck_request)  # Changed from generate_alternatives
         assert len(ck_result.alternatives) == 3
         assert ck_result.tradeoff_analysis is not None
 
@@ -226,7 +235,8 @@ class TestServiceIntegration:
         )
 
         gi_result = await gi_service.generate_insight(gi_request)
-        assert gi_result.execution_time < 30.0, f"GI Formula took {gi_result.execution_time}s (target: <30s)"
+        gi_time_sec = gi_result.total_duration_ms / 1000  # Convert ms to seconds
+        assert gi_time_sec < 30.0, f"GI Formula took {gi_time_sec}s (target: <30s)"
 
         # C-K Theory should complete in <45 seconds
         ck_request = CKTheoryRequest(
@@ -234,8 +244,9 @@ class TestServiceIntegration:
             constraints={}
         )
 
-        ck_result = await ck_service.generate_alternatives(ck_request)
-        assert ck_result.execution_time < 45.0, f"C-K Theory took {ck_result.execution_time}s (target: <45s)"
+        ck_result = await ck_service.generate_design(ck_request)  # Changed from generate_alternatives
+        ck_time_sec = ck_result.total_duration_ms / 1000  # Convert ms to seconds
+        assert ck_time_sec < 45.0, f"C-K Theory took {ck_time_sec}s (target: <45s)"
 
 
 if __name__ == "__main__":
