@@ -745,5 +745,90 @@ def demo():
             )
 
 
+
+class Uncertainty:
+    """
+    Facade for UncertaintyMapV3 to match simple test API.
+    Used for MVP testing and backward compatibility.
+    """
+    def __init__(self):
+        self.engine = UncertaintyMapV3("default_project")
+        # Initialize with a default context to have a baseline vector
+        self.default_vector = UncertaintyVector(0.5, 0.5, 0.5, 0.5, 0.5)
+
+    def predict(self, hours_ahead: int) -> Dict[str, Any]:
+        """
+        Simple prediction API for testing.
+        Returns dictionary of {area: Prediction(level=...)}
+        """
+        if hours_ahead < 0:
+            raise ValueError("hours_ahead must be non-negative")
+
+        # Create a dummy result structure
+        # In a real scenario, we would predict for each area separately if tracked separately.
+        # Here we simulate it based on dimensions.
+
+        # Use V3 evolution logic
+        model = self.engine.predict_evolution(self.default_vector, hours=hours_ahead)
+        future_level = model.predict_future(hours_ahead)
+
+        # Structure matching test expectations (dict of objects with .level)
+        @dataclass
+        class SimplePrediction:
+            level: float
+            trend: str
+
+        result = {
+            "global": SimplePrediction(level=future_level, trend=model.trend),
+            "technical": SimplePrediction(level=self.default_vector.technical, trend="stable"),  # Simplified
+            "market": SimplePrediction(level=self.default_vector.market, trend="stable")
+        }
+
+        # Week 0 Day 3: Log predictions for ground truth validation
+        self._log_prediction_for_validation(hours_ahead, result)
+
+        return result
+
+    def _log_prediction_for_validation(self, hours_ahead: int, result: Dict[str, Any]) -> None:
+        """Log prediction for future ground truth validation (Week 0 Day 3)"""
+        try:
+            prediction_timestamp = datetime.now()
+            validation_timestamp = prediction_timestamp + timedelta(hours=hours_ahead)
+
+            # Helper to determine state from level
+            def level_to_state(level: float) -> str:
+                if level < 0.10:
+                    return "DETERMINISTIC"
+                elif level < 0.30:
+                    return "PROBABILISTIC"
+                elif level < 0.60:
+                    return "QUANTUM"
+                elif level < 0.90:
+                    return "CHAOTIC"
+                else:
+                    return "VOID"
+
+            log_entry = {
+                "prediction_timestamp": prediction_timestamp.isoformat(),
+                "validation_timestamp": validation_timestamp.isoformat(),
+                "hours_ahead": hours_ahead,
+                "predicted_global_level": result["global"].level,
+                "predicted_global_trend": result["global"].trend,
+                "predicted_global_state": level_to_state(result["global"].level),
+                "previous_level": self.default_vector.magnitude()  # For trend calculation
+            }
+
+            # Write to predictions log
+            log_file = DEFAULT_STORAGE_DIR / "predictions_log.jsonl"
+
+            with open(log_file, "a", encoding="utf-8") as f:
+                f.write(json.dumps(log_entry) + "\n")
+
+            logger.debug(f"Logged prediction: {hours_ahead}h ahead, level={result['global'].level:.2%}")
+
+        except Exception as e:
+            # Don't fail prediction if logging fails
+            logger.warning(f"Failed to log prediction for validation: {e}")
+
 if __name__ == "__main__":
     demo()
