@@ -1,4 +1,5 @@
-fastapi==0.115.5
+# MED-05: FastAPI security update (starlette CVE-2025-54121, CVE-2025-62727)
+fastapi>=0.115.5
 uvicorn[standard]==0.32.1
 websockets==14.1
 python-multipart==0.0.18
@@ -7,7 +8,8 @@ python-dotenv==1.0.1
 
 # JWT Authentication
 PyJWT==2.8.0
-cryptography==41.0.7
+# MED-05: Upgraded from 41.0.7 to fix CVE-2023-50782, CVE-2024-0727, PYSEC-2024-225, GHSA-h4gh-qq45-vh27
+cryptography>=43.0.1
 
 # Password Hashing (CRIT-02: bcrypt for secure password hashing)
 bcrypt==4.2.1
