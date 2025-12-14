@@ -1,0 +1,51 @@
+{
+  "project_context": {
+    "project_name": "2025-Revenue-App",
+    "goal": "2025년 Q1 상용화 부수익 앱",
+    "team_size": 5,
+    "timeline_weeks": 12,
+    "budget": 50000,
+    "tech_stack": [
+      "Next.js 15",
+      "Flutter",
+      "Supabase"
+    ],
+    "constraints": [
+      "3개월 내 출시",
+      "초기 투자 최소화"
+    ],
+    "success_metrics": [
+      "DAU 1000+",
+      "MRR $1,000+"
+    ],
+    "current_phase": "ideation",
+    "files": [],
+    "metadata": {
+      "ai_tools": [
+        "Claude Code",
+        "v0.dev",
+        "Cursor",
+        "Codex"
+      ],
+      "target_launch": "2025-02-01",
+      "quality_standard": "v0/Lovable 수준 UI + 프로덕션급 백엔드"
+    }
+  },
+  "current_phase": "ideation",
+  "confidence_history": [
+    0.8013
+  ],
+  "learning_data": {
+    "overrides": [],
+    "success_patterns": [],
+    "failure_patterns": [],
+    "phase_performance": {
+      "ideation": {
+        "total": 2,
+        "success": 2,
+        "success_rate": 1.0
+      }
+    }
+  },
+  "timestamp": "2025-11-20T23:26:00.490263"
+}

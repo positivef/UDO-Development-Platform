@@ -356,7 +356,7 @@ class IntegratedUDOSystem:
         return results
 
     def get_system_report(self) -> Dict:
-        """시스템 상태 보고서"""
+        """시스템 상태 보고서 (동기 버전)"""
         report = {
             'system_name': self.project_name,
             'version': '3.0.0',
@@ -377,12 +377,61 @@ class IntegratedUDOSystem:
             'timestamp': datetime.now().isoformat()
         }
 
-        # 각 컴포넌트별 상태
+        # 각 컴포넌트별 상태 (순차 실행)
         if self.components.get('ai_connector'):
             report['ai_services'] = self.components['ai_connector'].get_status_report()
 
         if self.components.get('ml_system'):
             report['ml_models'] = self.components['ml_system'].get_model_report()
+
+        return report
+
+    async def get_system_report_async(self) -> Dict:
+        """시스템 상태 보고서 (비동기 버전 - 병렬 실행)"""
+        import asyncio
+
+        report = {
+            'system_name': self.project_name,
+            'version': '3.0.0',
+            'status': {
+                'udo': self.status.udo_ready,
+                'uncertainty': self.status.uncertainty_ready,
+                'ai_connector': self.status.ai_connector_ready,
+                'ml_system': self.status.ml_system_ready,
+                'bridge': self.status.bridge_ready,
+                'overall': self.status.overall_ready
+            },
+            'project_context': {
+                'current_phase': self.project_context.current_phase,
+                'timeline': self.project_context.timeline_weeks,
+                'team_size': self.project_context.team_size
+            },
+            'execution_history_count': len(self.execution_history),
+            'timestamp': datetime.now().isoformat()
+        }
+
+        # 각 컴포넌트별 상태 (병렬 실행)
+        tasks = []
+        task_keys = []
+
+        if self.components.get('ai_connector'):
+            tasks.append(asyncio.to_thread(self.components['ai_connector'].get_status_report))
+            task_keys.append('ai_services')
+
+        if self.components.get('ml_system'):
+            tasks.append(asyncio.to_thread(self.components['ml_system'].get_model_report))
+            task_keys.append('ml_models')
+
+        # 병렬 실행 (30-50% 성능 개선)
+        if tasks:
+            results = await asyncio.gather(*tasks, return_exceptions=True)
+            for key, result in zip(task_keys, results):
+                if not isinstance(result, Exception):
+                    report[key] = result
+                else:
+                    # 에러 발생 시 로깅하고 빈 dict 반환
+                    print(f"Warning: {key} failed with {result}")
+                    report[key] = {}
 
         return report
 

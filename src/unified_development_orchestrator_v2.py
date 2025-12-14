@@ -124,6 +124,13 @@ except ImportError:
         UNCERTAINTY_AVAILABLE = False
         logger.error("No uncertainty map available")
 
+try:
+    from udo_bayesian_integration import UDOBayesianIntegration
+    BAYESIAN_AVAILABLE = True
+except Exception as e:
+    BAYESIAN_AVAILABLE = False
+    logger.warning("Bayesian integration not available: %s", e)
+
 
 @dataclass
 class ProjectContext:
@@ -187,6 +194,7 @@ class UnifiedDevelopmentOrchestratorV2:
         # 컴포넌트 초기화
         self.selector = AdaptiveSystemSelectorV2() if SELECTOR_AVAILABLE else None
         self.ai_bridge = ThreeAICollaborationBridge() if AI_BRIDGE_AVAILABLE else None
+        self.bayesian_integration = UDOBayesianIntegration(project_context.project_name) if BAYESIAN_AVAILABLE else None
 
         # Uncertainty Map v3 초기화 (예측 모델링 포함)
         if UNCERTAINTY_AVAILABLE:
@@ -731,6 +739,13 @@ class UnifiedDevelopmentOrchestratorV2:
             phase_thresholds.get('default', 0.6)
         )
 
+        bayes_meta = None
+        if self.bayesian_integration:
+            try:
+                threshold, bayes_meta = self.bayesian_integration.get_adaptive_threshold(phase, confidence)
+            except Exception as e:
+                logger.warning("Bayesian threshold adjustment failed: %s", e)
+
         # 의사결정
         if confidence > threshold + 0.15:
             decision = "GO"
@@ -755,7 +770,8 @@ class UnifiedDevelopmentOrchestratorV2:
             "decision": decision,
             "confidence": confidence,
             "approach": approach,
-            "threshold": threshold
+            "threshold": threshold,
+            "bayesian": bayes_meta
         }
 
     def execute_plan(self, plan: Dict) -> Dict:

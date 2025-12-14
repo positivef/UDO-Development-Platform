@@ -1,206 +1,80 @@
-#!/usr/bin/env python3
 """
-Install Git Post-Commit Hook for Obsidian Auto-Sync
+Install a non-blocking Git hook to append commit context to Obsidian daily notes.
 
-This script installs a git hook that automatically syncs to Obsidian
-whenever you commit code changes.
+Balanced mode:
+- Opt-in per developer
+- Best-effort: hook never blocks commit on failure
+- Explicit vault/path configuration via env or defaults
+
+Usage (PowerShell/cmd from repo root):
+  python scripts\install_obsidian_git_hook.py --vault "C:\Users\user\Documents\Obsidian Vault"
+
+Uninstall:
+  delete .git/hooks/post-commit (if created by this script)
 """
 
+import argparse
 import os
-import sys
 from pathlib import Path
-import subprocess
 
+HOOK_NAME = "post-commit"
 
-def find_project_root() -> Path:
-    """Find UDO-Development-Platform project root"""
-    current = Path(__file__).resolve()
-    for parent in current.parents:
-        if parent.name == "UDO-Development-Platform":
-            return parent
-        if (parent / ".git").exists():
-            return parent
-    print("❌ Could not find project root with .git directory")
-    sys.exit(1)
-
-
-def create_post_commit_hook(project_root: Path) -> bool:
-    """Create post-commit hook"""
-    hooks_dir = project_root / ".git" / "hooks"
-    hook_path = hooks_dir / "post-commit"
-
-    # Create hooks directory if it doesn't exist
-    hooks_dir.mkdir(parents=True, exist_ok=True)
-
-    # Post-commit hook script
-    hook_script = '''#!/usr/bin/env python3
-"""
-Post-Commit Hook: Obsidian Auto-Sync
-
-Automatically syncs development logs to Obsidian after each commit.
-"""
-
-import subprocess
+TEMPLATE = """#!/usr/bin/env python
 import sys
 from pathlib import Path
 from datetime import datetime
-import json
 
-def get_commit_info():
-    """Get information about the latest commit"""
-    try:
-        # Get commit hash
-        commit_hash = subprocess.check_output(
-            ["git", "rev-parse", "--short", "HEAD"],
-            encoding='utf-8',
-            errors='replace'
-        ).strip()
-
-        # Get commit message
-        commit_msg = subprocess.check_output(
-            ["git", "log", "-1", "--pretty=%B"],
-            encoding='utf-8',
-            errors='replace'
-        ).strip()
-
-        # Get changed files count
-        files_changed = subprocess.check_output(
-            ["git", "diff-tree", "--no-commit-id", "--name-only", "-r", "HEAD"],
-            encoding='utf-8',
-            errors='replace'
-        ).strip().split('\\n')
-
-        return {
-            "hash": commit_hash,
-            "message": commit_msg,
-            "files_count": len([f for f in files_changed if f]),
-            "files": files_changed[:10]  # First 10 files
-        }
-    except Exception as e:
-        print(f"Warning: Failed to get commit info: {e}")
-        return None
-
-
-def trigger_obsidian_sync(commit_info):
-    """Trigger Obsidian sync via backend API"""
-    try:
-        import requests
-
-        # Try to sync via backend API (if running)
-        response = requests.post(
-            "http://localhost:8000/api/obsidian/sync",
-            json={
-                "event_type": "git_commit",
-                "data": commit_info,
-                "timestamp": datetime.now().isoformat()
-            },
-            timeout=5
-        )
-
-        if response.status_code == 200:
-            print("✅ Obsidian sync triggered successfully")
-            return True
-    except Exception:
-        pass  # Backend not running, use MCP directly
-
-    # Fallback: Use MCP directly (if available in Python environment)
-    try:
-        # This assumes Claude Code is available
-        # If not, we just skip silently
-        pass
-    except Exception:
-        pass
-
-    return False
-
+# Config
+VAULT = Path(r"{vault}")
+DAILY_DIR = VAULT / "개발일지"
+REPO_ROOT = Path("{repo_root}")
+APPEND_FILE = REPO_ROOT / "tmp" / "obsidian_append.txt"
 
 def main():
-    """Main post-commit hook logic"""
-    commit_info = get_commit_info()
+    try:
+        DAILY_DIR.mkdir(parents=True, exist_ok=True)
+        today = datetime.now().strftime("%Y-%m-%d")
+        note = DAILY_DIR / f"{today}.md"
+        if not note.exists():
+            note.write_text(f"# Daily Log {today}\\n\\n", encoding="utf-8")
 
-    if not commit_info:
-        sys.exit(0)  # Don't fail commit on error
+        if not APPEND_FILE.exists():
+            return 0  # nothing to append
 
-    print(f"\\n📝 Git Commit: {commit_info['hash']}")
-    print(f"   Files changed: {commit_info['files_count']}")
-
-    # Only sync if 3+ files changed OR contains "feat:", "fix:", etc.
-    should_sync = False
-
-    if commit_info['files_count'] >= 3:
-        should_sync = True
-        print("   → Significant changes detected (3+ files)")
-
-    commit_msg_lower = commit_info['message'].lower()
-    sync_keywords = ['feat:', 'feature:', 'fix:', 'bug:', 'refactor:', 'docs:']
-
-    if any(keyword in commit_msg_lower for keyword in sync_keywords):
-        should_sync = True
-        print(f"   → Important commit type detected")
-
-    if should_sync:
-        print("   🔄 Triggering Obsidian sync...")
-        if trigger_obsidian_sync(commit_info):
-            print("   ✅ Development log synced to Obsidian")
-        else:
-            print("   ⚠️  Backend not running - sync will happen on next periodic backup")
-    else:
-        print("   ℹ️  Skipping sync (not significant enough)")
-
-    print()  # Empty line for readability
-
+        text = APPEND_FILE.read_text(encoding="utf-8")
+        with open(note, "a", encoding="utf-8") as f:
+            f.write("\\n" + text + "\\n")
+    except Exception as e:
+        # Best-effort: never block commit
+        sys.stderr.write(f"[obsidian-hook] skipped: {e}\\n")
+    return 0
 
 if __name__ == "__main__":
-    main()
-'''
+    sys.exit(main())
+"""
 
-    # Write the hook
-    hook_path.write_text(hook_script, encoding='utf-8')
 
-    # Make it executable (Windows: not needed, but doesn't hurt)
-    try:
-        import stat
-        hook_path.chmod(hook_path.stat().st_mode | stat.S_IEXEC)
-    except Exception:
-        pass  # Windows doesn't need chmod
+def install_hook(repo_root: Path, vault_path: Path):
+    hooks_dir = repo_root / ".git" / "hooks"
+    hooks_dir.mkdir(parents=True, exist_ok=True)
+    hook_path = hooks_dir / HOOK_NAME
 
-    return True
+    content = TEMPLATE.format(vault=str(vault_path), repo_root=str(repo_root))
+    hook_path.write_text(content, encoding="utf-8")
+    hook_path.chmod(0o755)
+    print(f"Installed hook: {hook_path}")
+    print("Best-effort: hook will not block commits on failure.")
 
 
 def main():
-    """Main installation logic"""
-    print("=" * 60)
-    print("Obsidian Git Hook Installer")
-    print("=" * 60)
-    print()
+    parser = argparse.ArgumentParser(description="Install a best-effort Obsidian post-commit hook.")
+    parser.add_argument("--vault", required=True, help="Path to Obsidian Vault (absolute)")
+    args = parser.parse_args()
 
-    project_root = find_project_root()
-    print(f"[+] Project root: {project_root}")
+    repo_root = Path(__file__).resolve().parents[1]
+    vault_path = Path(args.vault).resolve()
 
-    # Check if .git exists
-    if not (project_root / ".git").exists():
-        print("[X] No .git directory found. Is this a git repository?")
-        sys.exit(1)
-
-    print()
-    print("Installing post-commit hook...")
-
-    if create_post_commit_hook(project_root):
-        print("[OK] Post-commit hook installed successfully!")
-        print()
-        print("==> Git hook is now active!")
-        print()
-        print("How it works:")
-        print("  1. You commit code: git commit -m 'feat: new feature'")
-        print("  2. Hook automatically triggers")
-        print("  3. Development log synced to Obsidian")
-        print()
-        print("Combined with periodic sync (every 1-2 hours):")
-        print("  -> You'll never lose context!")
-        print()
-    else:
-        print("[X] Failed to install hook")
-        sys.exit(1)
+    install_hook(repo_root, vault_path)
 
 
 if __name__ == "__main__":

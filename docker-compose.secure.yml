@@ -1,0 +1,366 @@
+version: '3.8'
+
+# ============================================================================
+# Docker Secrets (Production-Ready Secret Management)
+# ============================================================================
+secrets:
+  db_password:
+    file: ./secrets/db_password.txt
+  openai_api_key:
+    file: ./secrets/openai_api_key.txt
+  anthropic_api_key:
+    file: ./secrets/anthropic_api_key.txt
+  gemini_api_key:
+    file: ./secrets/gemini_api_key.txt
+
+# ============================================================================
+# Network Isolation
+# ============================================================================
+networks:
+  # Internal network (backend services only)
+  internal:
+    driver: bridge
+    internal: true
+    ipam:
+      config:
+        - subnet: 172.28.1.0/24
+
+  # External network (exposed services)
+  external:
+    driver: bridge
+    ipam:
+      config:
+        - subnet: 172.28.2.0/24
+
+services:
+  # ==========================================================================
+  # PostgreSQL with Security Hardening
+  # ==========================================================================
+  db:
+    image: pgvector/pgvector:pg16
+    container_name: udo_postgres
+    ports:
+      - "5432:5432"
+    environment:
+      POSTGRES_USER: udo_dev
+      POSTGRES_PASSWORD_FILE: /run/secrets/db_password
+      POSTGRES_DB: udo_v3
+    secrets:
+      - db_password
+    volumes:
+      - postgres_data:/var/lib/postgresql/data
+      - ./scripts/init_db.sql:/docker-entrypoint-initdb.d/01-init.sql:ro
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U udo_dev -d udo_v3"]
+      interval: 5s
+      timeout: 5s
+      retries: 5
+    networks:
+      - internal
+    # Security Options
+    security_opt:
+      - no-new-privileges:true
+    # Resource Limits
+    deploy:
+      resources:
+        limits:
+          cpus: '1.0'
+          memory: 1g
+        reservations:
+          cpus: '0.5'
+          memory: 512m
+    # User (non-root)
+    user: postgres
+    restart: unless-stopped
+
+  # ==========================================================================
+  # Redis with Security Hardening
+  # ==========================================================================
+  redis:
+    image: redis:7-alpine
+    container_name: udo_redis
+    ports:
+      - "6379:6379"
+    command: >
+      redis-server
+      --maxmemory 256mb
+      --maxmemory-policy allkeys-lru
+      --appendonly yes
+      --requirepass ${REDIS_PASSWORD:-change_me_redis_password}
+    volumes:
+      - redis_data:/data
+    healthcheck:
+      test: ["CMD", "redis-cli", "--raw", "incr", "ping"]
+      interval: 5s
+      timeout: 5s
+      retries: 5
+    networks:
+      - internal
+    # Security Options
+    security_opt:
+      - no-new-privileges:true
+    # Resource Limits
+    deploy:
+      resources:
+        limits:
+          cpus: '0.5'
+          memory: 512m
+        reservations:
+          cpus: '0.25'
+          memory: 256m
+    # User (non-root)
+    user: redis
+    restart: unless-stopped
+
+  # ==========================================================================
+  # FastAPI Backend with Security Hardening
+  # ==========================================================================
+  api:
+    build:
+      context: ./backend
+      dockerfile: Dockerfile
+    container_name: udo_api
+    ports:
+      - "8000:8000"
+    environment:
+      DATABASE_URL: postgresql://udo_dev:${DB_PASSWORD:-dev_password_123}@db:5432/udo_v3
+      REDIS_URL: redis://:${REDIS_PASSWORD:-change_me_redis_password}@redis:6379/0
+      ENVIRONMENT: ${ENVIRONMENT:-development}
+      LOG_LEVEL: ${LOG_LEVEL:-INFO}
+    secrets:
+      - openai_api_key
+      - anthropic_api_key
+      - gemini_api_key
+    depends_on:
+      db:
+        condition: service_healthy
+      redis:
+        condition: service_healthy
+    volumes:
+      - ./backend:/app:ro  # Read-only mount
+      - ./logs:/app/logs
+    command: uvicorn app.main:app --host 0.0.0.0 --port 8000 --reload
+    networks:
+      - internal
+      - external
+    # Security Options
+    security_opt:
+      - no-new-privileges:true
+    # Resource Limits
+    deploy:
+      resources:
+        limits:
+          cpus: '2.0'
+          memory: 2g
+        reservations:
+          cpus: '1.0'
+          memory: 1g
+    # Healthcheck
+    healthcheck:
+      test: ["CMD", "curl", "-f", "http://localhost:8000/health"]
+      interval: 30s
+      timeout: 10s
+      retries: 3
+    restart: unless-stopped
+
+  # ==========================================================================
+  # Celery Worker with Security Hardening
+  # ==========================================================================
+  worker:
+    build:
+      context: ./backend
+      dockerfile: Dockerfile
+    container_name: udo_worker
+    environment:
+      DATABASE_URL: postgresql://udo_dev:${DB_PASSWORD:-dev_password_123}@db:5432/udo_v3
+      REDIS_URL: redis://:${REDIS_PASSWORD:-change_me_redis_password}@redis:6379/0
+      CELERY_BROKER_URL: redis://:${REDIS_PASSWORD:-change_me_redis_password}@redis:6379/0
+      CELERY_RESULT_BACKEND: redis://:${REDIS_PASSWORD:-change_me_redis_password}@redis:6379/1
+    secrets:
+      - openai_api_key
+      - anthropic_api_key
+      - gemini_api_key
+    depends_on:
+      db:
+        condition: service_healthy
+      redis:
+        condition: service_healthy
+    volumes:
+      - ./backend:/app:ro  # Read-only mount
+      - ./logs:/app/logs
+    command: celery -A app.worker worker --loglevel=info --concurrency=4
+    networks:
+      - internal
+    # Security Options
+    security_opt:
+      - no-new-privileges:true
+    # Resource Limits
+    deploy:
+      resources:
+        limits:
+          cpus: '1.0'
+          memory: 1g
+        reservations:
+          cpus: '0.5'
+          memory: 512m
+    restart: unless-stopped
+
+  # ==========================================================================
+  # Prometheus with Security Hardening
+  # ==========================================================================
+  prometheus:
+    image: prom/prometheus:latest
+    container_name: udo_prometheus
+    ports:
+      - "9090:9090"
+    volumes:
+      - ./monitoring/prometheus/prometheus.yml:/etc/prometheus/prometheus.yml:ro
+      - prometheus_data:/prometheus
+    command:
+      - '--config.file=/etc/prometheus/prometheus.yml'
+      - '--storage.tsdb.path=/prometheus'
+      - '--storage.tsdb.retention.time=30d'
+      - '--web.enable-lifecycle'
+    networks:
+      - internal
+      - external
+    # Security Options
+    security_opt:
+      - no-new-privileges:true
+    # Resource Limits
+    deploy:
+      resources:
+        limits:
+          cpus: '0.5'
+          memory: 512m
+        reservations:
+          cpus: '0.25'
+          memory: 256m
+    # User (non-root)
+    user: nobody
+    restart: unless-stopped
+
+  # ==========================================================================
+  # Grafana with Security Hardening
+  # ==========================================================================
+  grafana:
+    image: grafana/grafana:latest
+    container_name: udo_grafana
+    ports:
+      - "3000:3000"
+    environment:
+      GF_SECURITY_ADMIN_PASSWORD: ${GRAFANA_PASSWORD:-admin123}
+      GF_INSTALL_PLUGINS: grafana-piechart-panel
+      GF_SERVER_ROOT_URL: http://localhost:3000
+      GF_SECURITY_COOKIE_SECURE: "true"
+      GF_SECURITY_COOKIE_SAMESITE: "lax"
+      GF_USERS_ALLOW_SIGN_UP: "false"
+    volumes:
+      - ./monitoring/grafana/provisioning:/etc/grafana/provisioning:ro
+      - ./monitoring/grafana/dashboards:/var/lib/grafana/dashboards:ro
+      - grafana_data:/var/lib/grafana
+    depends_on:
+      - prometheus
+    networks:
+      - internal
+      - external
+    # Security Options
+    security_opt:
+      - no-new-privileges:true
+    # Resource Limits
+    deploy:
+      resources:
+        limits:
+          cpus: '0.5'
+          memory: 512m
+        reservations:
+          cpus: '0.25'
+          memory: 256m
+    # User (non-root)
+    user: "472:472"  # Grafana user
+    restart: unless-stopped
+
+  # ==========================================================================
+  # Next.js Frontend (Development) with Security Hardening
+  # ==========================================================================
+  frontend:
+    build:
+      context: ./web-dashboard
+      dockerfile: Dockerfile.dev
+    container_name: udo_frontend
+    ports:
+      - "3001:3000"
+    environment:
+      NEXT_PUBLIC_API_URL: http://localhost:8000
+      NODE_ENV: development
+    volumes:
+      - ./web-dashboard:/app:ro
+      - /app/node_modules
+      - /app/.next
+    command: npm run dev
+    networks:
+      - external
+    # Security Options
+    security_opt:
+      - no-new-privileges:true
+    # Resource Limits
+    deploy:
+      resources:
+        limits:
+          cpus: '1.0'
+          memory: 1g
+        reservations:
+          cpus: '0.5'
+          memory: 512m
+    # User (non-root)
+    user: node
+    restart: unless-stopped
+
+  # ==========================================================================
+  # pgAdmin (Optional - Development Only)
+  # ==========================================================================
+  pgadmin:
+    image: dpage/pgadmin4:latest
+    container_name: udo_pgadmin
+    ports:
+      - "5050:80"
+    environment:
+      PGADMIN_DEFAULT_EMAIL: ${PGADMIN_EMAIL:-admin@udo.dev}
+      PGADMIN_DEFAULT_PASSWORD: ${PGADMIN_PASSWORD:-admin123}
+      PGADMIN_CONFIG_ENHANCED_COOKIE_PROTECTION: "True"
+      PGADMIN_CONFIG_CONSOLE_LOG_LEVEL: 40  # ERROR
+    volumes:
+      - pgadmin_data:/var/lib/pgadmin
+    networks:
+      - internal
+      - external
+    # Security Options
+    security_opt:
+      - no-new-privileges:true
+    # Resource Limits
+    deploy:
+      resources:
+        limits:
+          cpus: '0.5'
+          memory: 512m
+        reservations:
+          cpus: '0.25'
+          memory: 256m
+    profiles:
+      - tools
+    restart: unless-stopped
+
+# ============================================================================
+# Volumes
+# ============================================================================
+volumes:
+  postgres_data:
+    driver: local
+  redis_data:
+    driver: local
+  prometheus_data:
+    driver: local
+  grafana_data:
+    driver: local
+  pgadmin_data:
+    driver: local

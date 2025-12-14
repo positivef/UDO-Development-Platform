@@ -19,8 +19,11 @@ if sys.platform == 'win32':
         sys.stderr.reconfigure(encoding='utf-8')
 
 # 경로 추가
+ROOT_DIR = Path(__file__).resolve().parent.parent  # repository root
+SRC_DIR = ROOT_DIR / "src"
 sys.path.append(str(Path(__file__).parent))
-sys.path.append(str(Path(__file__).parent.parent.parent / "obsidian-vibe-coding-docs" / "scripts"))
+sys.path.append(str(SRC_DIR))
+sys.path.append(str(ROOT_DIR.parent / "obsidian-vibe-coding-docs" / "scripts"))
 
 from unified_development_orchestrator_v2 import (
     UnifiedDevelopmentOrchestratorV2 as UnifiedDevelopmentOrchestrator,

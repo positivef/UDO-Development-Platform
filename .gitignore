@@ -21,6 +21,7 @@ eggs/
 .eggs/
 lib/
 lib64/
+!web-dashboard/lib/
 parts/
 sdist/
 var/
@@ -35,6 +36,7 @@ wheels/
 htmlcov/
 .tox/
 .hypothesis/
+.mypy_cache/
 
 # IDE
 .idea/
@@ -50,6 +52,13 @@ htmlcov/
 temp/
 tmp/
 output/
+coverage.json
+coverage.xml
+
+# Frontend build artifacts
+node_modules/
+web-dashboard/node_modules/
+web-dashboard/.next/
 
 # Data files (keep structure, ignore content)
 data/*.json
@@ -58,6 +67,10 @@ data/*.json
 # Environment variables
 .env
 .env.local
+
+# Docker secrets (NEVER commit!)
+secrets/*.txt
+!secrets/README.md
 
 # Jupyter Notebook
 .ipynb_checkpoints
