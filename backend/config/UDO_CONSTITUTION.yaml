@@ -1,0 +1,1675 @@
+# ═══════════════════════════════════════════════════
+# UDO Development Platform Constitution v1.0.0
+# ═══════════════════════════════════════════════════
+#
+# Purpose: Ensure consistent AI governance across all AI agents
+# Applies to: Claude, Codex, Gemini
+# Enforcement: ConstitutionalGuard + Pre-commit hooks + API validation
+#
+# Last Updated: 2025-11-20
+# ═══════════════════════════════════════════════════
+
+version: "1.0.0"
+effective_date: "2025-11-20"
+applies_to:
+  - claude
+  - codex
+  - gemini
+  - all_ai_agents
+
+# ═══════════════════════════════════════════════════
+# P1: Design Review First (CRITICAL)
+# ═══════════════════════════════════════════════════
+P1_design_review_first:
+  title: "설계 검토 우선 (Design Review First)"
+  priority: CRITICAL
+  applies_to:
+    - all_ais
+    - all_phases
+
+  description: |
+    모든 구현 전에 반드시 설계 검토를 수행해야 합니다.
+    아이디어를 받으면 즉시 구현하지 않고, 8가지 위험 체크를 완료한 후 승인을 받아야 합니다.
+
+  rules:
+    - "모든 구현 전 8-Risk Check 필수 수행"
+    - "위험 발견 시 구현 즉시 중단"
+    - "완화 전략 수립 후에만 구현 재개"
+    - "설계 문서 작성 없이 코드 작성 금지"
+    - "사용자 승인 없이 구현 시작 금지"
+
+  risk_checks:
+    existing_system_impact:
+      name: "기존 시스템 영향도"
+      description: "기존 워크플로우, 통합, 의존성에 미치는 영향 분석"
+      required: true
+      checklist:
+        - "기존 API 호환성 확인"
+        - "데이터베이스 스키마 변경 영향"
+        - "의존성 변경으로 인한 영향"
+
+    git_conflict_risk:
+      name: "Git 충돌 가능성"
+      description: "멀티세션 환경에서의 Git 충돌 위험 평가"
+      required: true
+      checklist:
+        - "동시 편집 가능성 확인"
+        - "브랜치 전략 정의"
+        - "충돌 해결 방안 수립"
+
+    multi_session_issue:
+      name: "멀티세션 동시성 문제"
+      description: "경쟁 조건, 파일 잠금, 세션 간 충돌 분석"
+      required: true
+      checklist:
+        - "Lock 메커니즘 필요성 확인"
+        - "세션 격리 전략 수립"
+        - "동시성 테스트 계획"
+
+    performance_impact:
+      name: "성능 영향"
+      description: "세션 시작 지연, API 응답 시간 영향 측정"
+      required: true
+      thresholds:
+        session_start: "< 0.5초"
+        api_response: "< 100ms"
+        database_query: "< 50ms"
+      checklist:
+        - "벤치마크 계획 수립"
+        - "성능 회귀 테스트 정의"
+
+    complexity_increase:
+      name: "복잡도 증가"
+      description: "폴더 구조, 학습 곡선, 유지보수성 평가"
+      required: true
+      thresholds:
+        cyclomatic_complexity: "< 10"
+        max_nesting_depth: "< 4"
+      checklist:
+        - "코드 복잡도 측정"
+        - "문서화 계획 수립"
+
+    workflow_change:
+      name: "사용자 워크플로우 변경"
+      description: "기존 사용자 습관, 추가 단계, UX 변경 분석"
+      required: true
+      checklist:
+        - "사용자 영향 평가"
+        - "마이그레이션 가이드 작성"
+        - "하위 호환성 유지"
+
+    rollback_plan:
+      name: "롤백 가능성"
+      description: "즉시/1분/5분 3단계 롤백 전략"
+      required: true
+      rollback_tiers:
+        immediate: "기능 플래그 토글로 즉시 비활성화"
+        one_minute: "Git revert + 재배포"
+        five_minute: "데이터베이스 롤백 + 전체 복구"
+      checklist:
+        - "롤백 스크립트 준비"
+        - "데이터 백업 전략"
+        - "복구 테스트 수행"
+
+    test_method:
+      name: "테스트 방법"
+      description: "단위/통합 테스트 전략 정의"
+      required: true
+      coverage_threshold: 80
+      checklist:
+        - "단위 테스트 작성"
+        - "통합 테스트 작성"
+        - "E2E 테스트 계획"
+
+  enforcement:
+    pre_commit_hook: true
+    api_validation: true
+    mandatory_approval: true
+    blocking: true
+
+  violations:
+    severity: CRITICAL
+    action: BLOCK_EXECUTION
+    notification: true
+
+  exemptions:
+    - "10줄 미만 버그 수정"
+    - "오타 수정"
+    - "주석 추가"
+    - "로그 메시지 변경"
+
+# ═══════════════════════════════════════════════════
+# P2: Uncertainty Disclosure (CRITICAL)
+# ═══════════════════════════════════════════════════
+P2_uncertainty_disclosure:
+  title: "불확실성 공개 의무 (Uncertainty Disclosure)"
+  priority: CRITICAL
+  applies_to:
+    - all_ais
+    - all_responses
+
+  description: |
+    모든 AI 응답에는 신뢰도를 명시해야 합니다.
+    Bayesian Confidence Modeling을 사용하여 불확실성을 정량화합니다.
+
+  rules:
+    - "모든 AI 응답에 confidence_level 필수 포함"
+    - "LOW 신뢰도 시 사용자 확인 필수"
+    - "MEDIUM 신뢰도 시 사용자 확인 권장"
+    - "신뢰도 계산 근거 제공"
+    - "대안 제시 (특히 LOW/MEDIUM일 때)"
+
+  confidence_levels:
+    HIGH:
+      threshold: ">= 0.95"
+      description: "95% 이상 확신 - 자동 적용 가능"
+      action: AUTO_APPLY
+      requirements:
+        - "공식 문서 기반"
+        - "과거 성공 사례 존재"
+        - "테스트 커버리지 충분"
+
+    MEDIUM:
+      threshold: "0.70 - 0.95"
+      description: "70-95% 확신 - 사용자 확인 권장"
+      action: RECOMMEND_WITH_CONFIRMATION
+      requirements:
+        - "논리적 추론 가능"
+        - "유사 사례 존재"
+        - "대안 제시 필수"
+
+    LOW:
+      threshold: "< 0.70"
+      description: "70% 미만 - 사용자 확인 필수"
+      action: REQUIRE_USER_CONFIRMATION
+      requirements:
+        - "불확실성 명시"
+        - "복수 대안 제시 필수 (최소 2개)"
+        - "위험 요인 설명"
+
+  response_format:
+    required_fields:
+      - recommendation: "AI의 제안 내용"
+      - confidence: "신뢰도 정보 객체 (level, score, rationale, evidence 포함)"
+      - alternatives: "대안 (LOW/MEDIUM일 때 필수)"
+      - risks: "잠재적 위험 요인"
+
+    response_template: |
+      {
+        "recommendation": "구체적인 제안",
+        "confidence": {
+          "level": "HIGH|MEDIUM|LOW",
+          "score": 0.95,
+          "rationale": "신뢰도 판단 근거",
+          "evidence": ["증거1", "증거2"]
+        },
+        "alternatives": [
+          {
+            "option": "대안1",
+            "pros": ["장점"],
+            "cons": ["단점"]
+          }
+        ],
+        "risks": ["위험1", "위험2"]
+      }
+
+  enforcement:
+    api_validation: true
+    response_schema_check: true
+    mandatory: true
+
+  violations:
+    severity: CRITICAL
+    action: BLOCK_RESPONSE
+    notification: true
+
+# ═══════════════════════════════════════════════════
+# P3: Evidence-Based Decision (HIGH)
+# ═══════════════════════════════════════════════════
+P3_evidence_based:
+  title: "증거 기반 결정 (Evidence-Based Decision)"
+  priority: HIGH
+  applies_to:
+    - all_ais
+    - optimization_tasks
+    - performance_claims
+
+  description: |
+    모든 최적화와 성능 개선은 측정 가능한 증거에 기반해야 합니다.
+    추측이나 가정이 아닌, 실제 벤치마크와 테스트 결과로 입증해야 합니다.
+
+  rules:
+    - "모든 최적화는 벤치마크 후 실행"
+    - "추측 금지, A/B 테스트 필수"
+    - "성능 개선 주장은 측정 결과 필수"
+    - "Before/After 비교 데이터 제공"
+    - "통계적 유의성 검증"
+
+  evidence_types:
+    benchmark_results:
+      required_metrics:
+        - execution_time
+        - memory_usage
+        - cpu_utilization
+        - database_queries
+      format: "JSON with timestamps"
+      retention: "30 days"
+
+    ab_test_metrics:
+      required_fields:
+        - variant_a: "기존 방식"
+        - variant_b: "새 방식"
+        - sample_size: "최소 100회"
+        - statistical_significance: "p-value < 0.05"
+      duration: "최소 24시간"
+
+    user_feedback:
+      collection_method:
+        - surveys
+        - analytics
+        - error_reports
+      minimum_sample: 10
+
+    automated_tests:
+      coverage_threshold: 80
+      performance_regression_check: true
+      required_test_types:
+        - unit_tests
+        - integration_tests
+        - performance_tests
+
+  optimization_protocol:
+    steps:
+      - measure_baseline: "현재 성능 측정"
+      - identify_bottleneck: "병목 지점 파악"
+      - propose_solution: "개선 방안 제안"
+      - implement_change: "변경 사항 구현"
+      - measure_improvement: "개선 효과 측정"
+      - validate_regression: "회귀 없음 확인"
+      - document_results: "결과 문서화"
+
+  enforcement:
+    pre_optimization_check: true
+    benchmark_required: true
+    documentation_mandatory: true
+
+  violations:
+    severity: HIGH
+    action: REQUIRE_EVIDENCE
+    notification: true
+
+# ═══════════════════════════════════════════════════
+# P4: Phase-Aware Compliance (HIGH)
+# ═══════════════════════════════════════════════════
+P4_phase_aware_compliance:
+  title: "단계별 규칙 준수 (Phase-Aware Compliance)"
+  priority: HIGH
+  applies_to:
+    - all_ais
+    - all_phases
+
+  description: |
+    UDO의 5단계 개발 프로세스(Ideation → Design → MVP → Implementation → Testing)에 따라
+    각 단계별 요구사항을 준수해야 합니다.
+
+  phases:
+    ideation:
+      name: "아이디어 단계"
+      focus: "창의성, 탐색, 가능성 검토"
+      allowed_actions:
+        - brainstorming
+        - feasibility_analysis
+        - requirement_gathering
+      prohibited_actions:
+        - implementation
+        - deployment
+      quality_threshold: 0.5
+      uncertainty_tolerance: HIGH
+      required_deliverables:
+        - "문제 정의서"
+        - "요구사항 목록"
+        - "제약사항 분석"
+
+    design:
+      name: "설계 단계"
+      focus: "아키텍처, 인터페이스, 데이터 모델"
+      allowed_actions:
+        - architecture_design
+        - api_design
+        - database_schema
+        - ui_mockups
+      prohibited_actions:
+        - production_deployment
+      quality_threshold: 0.55
+      uncertainty_tolerance: MEDIUM
+      required_deliverables:
+        - "아키텍처 문서"
+        - "API 스펙"
+        - "데이터베이스 스키마"
+        - "위험 분석 보고서"
+
+    mvp:
+      name: "MVP 단계"
+      focus: "핵심 기능, 빠른 검증"
+      allowed_actions:
+        - core_feature_implementation
+        - basic_testing
+        - prototype_deployment
+      prohibited_actions:
+        - production_deployment
+        - optimization_without_evidence
+      quality_threshold: 0.6
+      uncertainty_tolerance: MEDIUM
+      required_deliverables:
+        - "핵심 기능 구현"
+        - "기본 테스트"
+        - "사용자 피드백"
+
+    implementation:
+      name: "구현 단계"
+      focus: "전체 기능, 품질, 안정성"
+      allowed_actions:
+        - full_implementation
+        - comprehensive_testing
+        - code_review
+        - documentation
+      prohibited_actions:
+        - skipping_tests
+        - incomplete_features
+      quality_threshold: 0.65
+      uncertainty_tolerance: LOW
+      required_deliverables:
+        - "완전한 기능 구현"
+        - "80% 이상 테스트 커버리지"
+        - "코드 리뷰 완료"
+        - "API 문서"
+
+    testing:
+      name: "테스트 단계"
+      focus: "품질 보증, 버그 제거, 성능 검증"
+      allowed_actions:
+        - comprehensive_testing
+        - performance_testing
+        - security_testing
+        - bug_fixes
+      prohibited_actions:
+        - new_features
+        - architectural_changes
+      quality_threshold: 0.7
+      uncertainty_tolerance: VERY_LOW
+      required_deliverables:
+        - "90% 이상 테스트 커버리지"
+        - "성능 벤치마크"
+        - "보안 감사 완료"
+        - "배포 준비 완료"
+
+  phase_transition_rules:
+    approval_required: true
+    validation_checks:
+      - "현재 단계 deliverables 완료"
+      - "quality_threshold 충족"
+      - "위험 요인 완화"
+      - "다음 단계 준비 완료"
+
+    rollback_condition:
+      - "critical_bug_discovered"
+      - "quality_threshold_not_met"
+      - "architectural_flaw_found"
+
+  enforcement:
+    phase_gate_validation: true
+    automatic_phase_detection: true
+    transition_approval_required: true
+
+  violations:
+    severity: HIGH
+    action: BLOCK_PHASE_TRANSITION
+    notification: true
+
+# ═══════════════════════════════════════════════════
+# P5: Multi-AI Consistency (HIGH)
+# ═══════════════════════════════════════════════════
+P5_multi_ai_consistency:
+  title: "AI 간 일관성 (Multi-AI Consistency)"
+  priority: HIGH
+  applies_to:
+    - claude
+    - codex
+    - gemini
+
+  description: |
+    3-AI 협업 환경에서 모든 AI는 동일한 헌법을 준수하며,
+    일관된 결정을 내려야 합니다.
+
+  rules:
+    - "동일한 입력에 대해 일관된 출력"
+    - "AI 간 의견 불일치 시 투표 메커니즘"
+    - "결정 근거 공유 및 로깅"
+    - "다수결 원칙 (2/3 이상)"
+    - "소수 의견 기록"
+
+  consistency_checks:
+    code_style:
+      description: "코드 스타일 가이드 준수"
+      enforcement: "linter + formatter"
+      rules:
+        - "Python: PEP 8"
+        - "TypeScript: ESLint + Prettier"
+        - "Naming: camelCase (TS), snake_case (Python)"
+
+    api_design:
+      description: "API 설계 일관성"
+      rules:
+        - "RESTful 원칙 준수"
+        - "HTTP 상태 코드 표준 사용"
+        - "일관된 에러 응답 형식"
+
+    database_operations:
+      description: "데이터베이스 작업 일관성"
+      rules:
+        - "트랜잭션 사용 원칙"
+        - "인덱스 명명 규칙"
+        - "마이그레이션 버전 관리"
+
+    error_handling:
+      description: "에러 처리 일관성"
+      rules:
+        - "모든 에러 로깅"
+        - "사용자 친화적 메시지"
+        - "stack trace 보존"
+
+  voting_mechanism:
+    trigger:
+      - "AI 간 의견 불일치"
+      - "confidence_level이 모두 MEDIUM 이하"
+
+    process:
+      - collect_recommendations: "각 AI의 제안 수집"
+      - calculate_confidence: "각 제안의 신뢰도 계산"
+      - weighted_voting: "신뢰도 가중 투표"
+      - select_winner: "2/3 이상 득표 시 채택"
+      - record_minority: "소수 의견 기록"
+
+    decision_format:
+      winner:
+        recommendation: "채택된 제안"
+        confidence_score: 0.95
+        supporting_ais: ["claude", "codex"]
+      minority:
+        recommendation: "소수 의견"
+        confidence_score: 0.75
+        supporting_ais: ["gemini"]
+        rationale: "다른 접근법 선호"
+
+  enforcement:
+    consistency_validation: true
+    voting_required: true
+    decision_logging: true
+
+  violations:
+    severity: HIGH
+    action: REQUIRE_CONSENSUS
+    notification: true
+
+# ═══════════════════════════════════════════════════
+# P6: Error Handling Standards (HIGH)
+# ═══════════════════════════════════════════════════
+P6_error_handling_standards:
+  title: "에러 처리 표준 (Error Handling Standards)"
+  priority: HIGH
+  applies_to:
+    - all_ais
+    - all_code
+
+  description: |
+    모든 에러는 일관된 방식으로 처리하고 기록해야 합니다.
+
+  rules:
+    - "모든 에러 catch 및 로깅"
+    - "사용자 친화적 에러 메시지"
+    - "에러 컨텍스트 보존"
+    - "자동 복구 시도 (가능한 경우)"
+    - "에러 메트릭 수집"
+
+  error_categories:
+    validation_error:
+      http_status: 400
+      user_message: "입력 데이터를 확인해주세요"
+      log_level: WARNING
+      retry: false
+
+    authentication_error:
+      http_status: 401
+      user_message: "인증이 필요합니다"
+      log_level: WARNING
+      retry: false
+
+    authorization_error:
+      http_status: 403
+      user_message: "권한이 없습니다"
+      log_level: WARNING
+      retry: false
+
+    not_found_error:
+      http_status: 404
+      user_message: "요청한 리소스를 찾을 수 없습니다"
+      log_level: INFO
+      retry: false
+
+    conflict_error:
+      http_status: 409
+      user_message: "리소스 충돌이 발생했습니다"
+      log_level: WARNING
+      retry: true
+
+    internal_error:
+      http_status: 500
+      user_message: "서버 오류가 발생했습니다"
+      log_level: ERROR
+      retry: true
+
+    service_unavailable:
+      http_status: 503
+      user_message: "서비스를 일시적으로 사용할 수 없습니다"
+      log_level: ERROR
+      retry: true
+
+  error_response_format:
+    required_fields:
+      - error_code: "ERROR_CODE"
+      - message: "사용자 친화적 메시지"
+      - details: "상세 정보 (개발 환경)"
+      - timestamp: "ISO 8601 형식"
+      - request_id: "추적용 UUID"
+
+    example: |
+      {
+        "error_code": "VALIDATION_ERROR",
+        "message": "입력 데이터를 확인해주세요",
+        "details": {
+          "field": "email",
+          "reason": "유효하지 않은 이메일 형식"
+        },
+        "timestamp": "2025-11-20T15:30:00Z",
+        "request_id": "550e8400-e29b-41d4-a716-446655440000"
+      }
+
+  logging_requirements:
+    log_format: JSON
+    required_fields:
+      - timestamp
+      - level
+      - error_type
+      - message
+      - stack_trace
+      - context
+      - request_id
+
+    retention:
+      ERROR: "90 days"
+      WARNING: "30 days"
+      INFO: "7 days"
+
+  enforcement:
+    error_handler_required: true
+    logging_mandatory: true
+    user_message_required: true
+
+  violations:
+    severity: HIGH
+    action: REQUIRE_ERROR_HANDLING
+    notification: true
+
+# ═══════════════════════════════════════════════════
+# P7: Code Quality Gates (HIGH)
+# ═══════════════════════════════════════════════════
+P7_code_quality_gates:
+  title: "코드 품질 게이트 (Code Quality Gates)"
+  priority: HIGH
+  applies_to:
+    - all_ais
+    - all_code_changes
+
+  description: |
+    모든 코드 변경은 품질 게이트를 통과해야 합니다.
+
+  quality_metrics:
+    test_coverage:
+      threshold: 80
+      measurement: "line coverage"
+      tools:
+        - pytest-cov
+        - jest
+
+    code_complexity:
+      cyclomatic_complexity: 10
+      max_function_length: 50
+      max_nesting_depth: 4
+      tools:
+        - pylint
+        - eslint
+
+    code_style:
+      compliance: 100
+      tools:
+        - black
+        - prettier
+        - pylint
+        - eslint
+
+    static_analysis:
+      critical_issues: 0
+      high_issues: 0
+      medium_issues: 5
+      tools:
+        - mypy
+        - pylint
+        - typescript
+
+    security_scan:
+      critical_vulnerabilities: 0
+      high_vulnerabilities: 0
+      tools:
+        - bandit
+        - safety
+        - npm audit
+
+  quality_gates:
+    pre_commit:
+      checks:
+        - linting
+        - formatting
+        - type_checking
+      blocking: true
+
+    pre_push:
+      checks:
+        - unit_tests
+        - code_coverage
+        - static_analysis
+      blocking: true
+
+    pre_merge:
+      checks:
+        - integration_tests
+        - code_review
+        - security_scan
+        - documentation
+      blocking: true
+
+    pre_deploy:
+      checks:
+        - e2e_tests
+        - performance_tests
+        - smoke_tests
+      blocking: true
+
+  enforcement:
+    automated_checks: true
+    manual_review: true
+    blocking_on_failure: true
+
+  violations:
+    severity: HIGH
+    action: BLOCK_COMMIT
+    notification: true
+
+# ═══════════════════════════════════════════════════
+# P8: Security First (CRITICAL)
+# ═══════════════════════════════════════════════════
+P8_security_first:
+  title: "보안 우선 (Security First)"
+  priority: CRITICAL
+  applies_to:
+    - all_ais
+    - all_code
+
+  description: |
+    보안은 모든 결정에서 최우선 순위입니다.
+
+  security_principles:
+    - "최소 권한 원칙 (Least Privilege)"
+    - "심층 방어 (Defense in Depth)"
+    - "기본 거부 (Deny by Default)"
+    - "암호화 우선 (Encryption First)"
+    - "입력 검증 (Input Validation)"
+
+  mandatory_controls:
+    authentication:
+      method: JWT
+      token_expiry: "1 hour"
+      refresh_token_expiry: "7 days"
+      password_policy:
+        min_length: 12
+        require_uppercase: true
+        require_lowercase: true
+        require_digits: true
+        require_special_chars: true
+
+    authorization:
+      model: RBAC
+      roles:
+        - admin
+        - developer
+        - viewer
+      default_role: viewer
+
+    data_encryption:
+      at_rest:
+        algorithm: AES-256
+        key_rotation: "90 days"
+      in_transit:
+        protocol: TLS 1.3
+        min_version: TLS 1.2
+
+    input_validation:
+      all_inputs: true
+      sanitization: true
+      parameterized_queries: true
+      no_eval: true
+
+    secrets_management:
+      storage: environment_variables
+      rotation: "90 days"
+      no_hardcoding: true
+      no_version_control: true
+
+  prohibited_practices:
+    - "비밀번호 평문 저장"
+    - "SQL Injection 취약점"
+    - "XSS 취약점"
+    - "CSRF 미보호"
+    - "민감정보 로깅"
+    - "하드코딩된 비밀키"
+
+  security_testing:
+    static_analysis:
+      tools:
+        - bandit
+        - safety
+      frequency: "every commit"
+
+    dynamic_analysis:
+      tools:
+        - OWASP ZAP
+      frequency: "weekly"
+
+    dependency_scanning:
+      tools:
+        - npm audit
+        - pip-audit
+      frequency: "daily"
+
+    penetration_testing:
+      frequency: "quarterly"
+      scope: "full application"
+
+  enforcement:
+    security_scan_required: true
+    vulnerability_blocking: true
+    mandatory_encryption: true
+
+  violations:
+    severity: CRITICAL
+    action: BLOCK_IMMEDIATELY
+    notification: true
+    escalation: true
+
+# ═══════════════════════════════════════════════════
+# P9: Performance Thresholds (MEDIUM)
+# ═══════════════════════════════════════════════════
+P9_performance_thresholds:
+  title: "성능 임계값 (Performance Thresholds)"
+  priority: MEDIUM
+  applies_to:
+    - all_ais
+    - all_services
+
+  description: |
+    모든 서비스는 정의된 성능 임계값을 준수해야 합니다.
+
+  thresholds:
+    api_response_time:
+      p50: "< 100ms"
+      p95: "< 500ms"
+      p99: "< 1000ms"
+
+    database_query:
+      simple_query: "< 50ms"
+      complex_query: "< 200ms"
+      aggregation: "< 500ms"
+
+    page_load_time:
+      first_contentful_paint: "< 1.5s"
+      time_to_interactive: "< 3.5s"
+      largest_contentful_paint: "< 2.5s"
+
+    resource_usage:
+      cpu: "< 70%"
+      memory: "< 80%"
+      disk: "< 85%"
+
+    concurrent_users:
+      target: 1000
+      max: 5000
+      degradation_threshold: 10
+
+  monitoring:
+    metrics_collection:
+      interval: "1 minute"
+      retention: "30 days"
+
+    alerting:
+      threshold_breach:
+        action: NOTIFY
+        channels:
+          - email
+          - slack
+
+      critical_degradation:
+        action: AUTO_SCALE
+        threshold: "20% degradation"
+
+  enforcement:
+    performance_testing: true
+    regression_detection: true
+    auto_optimization: false
+
+  violations:
+    severity: MEDIUM
+    action: WARN
+    notification: true
+
+# ═══════════════════════════════════════════════════
+# P10: Testing Requirements (HIGH)
+# ═══════════════════════════════════════════════════
+P10_testing_requirements:
+  title: "테스트 요구사항 (Testing Requirements)"
+  priority: HIGH
+  applies_to:
+    - all_ais
+    - all_code
+
+  description: |
+    모든 코드는 적절한 테스트를 갖추어야 합니다.
+
+  test_types:
+    unit_tests:
+      coverage_threshold: 80
+      execution_time: "< 5 seconds"
+      required_for:
+        - all_functions
+        - all_classes
+        - edge_cases
+
+    integration_tests:
+      coverage_threshold: 70
+      execution_time: "< 30 seconds"
+      required_for:
+        - api_endpoints
+        - database_operations
+        - external_services
+
+    e2e_tests:
+      coverage_threshold: 50
+      execution_time: "< 5 minutes"
+      required_for:
+        - critical_user_journeys
+        - authentication_flows
+        - payment_flows
+
+    performance_tests:
+      required_scenarios:
+        - load_testing
+        - stress_testing
+        - spike_testing
+      execution_frequency: "weekly"
+
+    security_tests:
+      required_checks:
+        - authentication
+        - authorization
+        - input_validation
+        - sql_injection
+        - xss
+      execution_frequency: "every commit"
+
+  test_quality:
+    characteristics:
+      - independent: "각 테스트는 독립적"
+      - repeatable: "동일한 결과 보장"
+      - fast: "빠른 실행"
+      - isolated: "격리된 환경"
+      - self_checking: "자동 검증"
+
+    naming_convention:
+      pattern: "test_<function>_<scenario>_<expected_result>"
+      example: "test_create_user_with_valid_data_returns_201"
+
+    assertions:
+      min_per_test: 1
+      max_per_test: 5
+      clear_messages: true
+
+  test_automation:
+    ci_integration: true
+    pre_commit_hook: true
+    parallel_execution: true
+    failure_notification: true
+
+  enforcement:
+    minimum_coverage: true
+    blocking_on_failure: true
+    mandatory_for_merge: true
+
+  violations:
+    severity: HIGH
+    action: BLOCK_MERGE
+    notification: true
+
+# ═══════════════════════════════════════════════════
+# P11: Documentation Standards (MEDIUM)
+# ═══════════════════════════════════════════════════
+P11_documentation_standards:
+  title: "문서화 표준 (Documentation Standards)"
+  priority: MEDIUM
+  applies_to:
+    - all_ais
+    - all_code
+
+  description: |
+    모든 코드와 API는 적절히 문서화되어야 합니다.
+
+  code_documentation:
+    docstring_required:
+      - all_public_functions
+      - all_public_classes
+      - all_api_endpoints
+
+    docstring_format:
+      python: "Google Style"
+      typescript: "TSDoc"
+
+    required_sections:
+      - description: "함수/클래스 설명"
+      - args: "파라미터 설명"
+      - returns: "반환값 설명"
+      - raises: "발생 가능한 예외"
+      - example: "사용 예제 (선택)"
+
+  api_documentation:
+    format: OpenAPI 3.0
+    required_fields:
+      - endpoint_description
+      - request_schema
+      - response_schema
+      - error_responses
+      - authentication
+      - examples
+
+    tools:
+      - swagger
+      - redoc
+
+  architecture_documentation:
+    required_documents:
+      - system_architecture: "시스템 아키텍처 다이어그램"
+      - data_model: "데이터 모델"
+      - api_design: "API 설계 문서"
+      - deployment: "배포 가이드"
+      - runbook: "운영 가이드"
+
+    update_frequency:
+      - on_major_changes: "즉시"
+      - regular_review: "분기별"
+
+  user_documentation:
+    required_guides:
+      - getting_started: "시작 가이드"
+      - user_manual: "사용자 매뉴얼"
+      - troubleshooting: "문제 해결"
+      - faq: "자주 묻는 질문"
+
+    maintenance:
+      - version_sync: "코드 버전과 동기화"
+      - screenshot_update: "정기적 스크린샷 업데이트"
+
+  enforcement:
+    docstring_check: true
+    api_doc_generation: true
+    outdated_detection: true
+
+  violations:
+    severity: MEDIUM
+    action: WARN
+    notification: true
+
+# ═══════════════════════════════════════════════════
+# P12: Rollback Protocols (CRITICAL)
+# ═══════════════════════════════════════════════════
+P12_rollback_protocols:
+  title: "롤백 프로토콜 (Rollback Protocols)"
+  priority: CRITICAL
+  applies_to:
+    - all_ais
+    - all_deployments
+
+  description: |
+    모든 변경사항은 신속하게 롤백 가능해야 합니다.
+
+  rollback_tiers:
+    tier_1_immediate:
+      target_time: "< 30 seconds"
+      method: "Feature flag toggle"
+      use_cases:
+        - critical_bugs
+        - security_vulnerabilities
+        - data_corruption
+      automation: true
+      approval_required: false
+
+    tier_2_fast:
+      target_time: "< 5 minutes"
+      method: "Git revert + redeploy"
+      use_cases:
+        - performance_regression
+        - functional_bugs
+        - integration_failures
+      automation: true
+      approval_required: true
+
+    tier_3_full:
+      target_time: "< 30 minutes"
+      method: "Database rollback + full restore"
+      use_cases:
+        - schema_changes
+        - data_migration_failures
+        - multi_service_failures
+      automation: false
+      approval_required: true
+
+  rollback_requirements:
+    pre_deployment:
+      - backup_creation: "데이터베이스 백업"
+      - rollback_script: "롤백 스크립트 준비"
+      - smoke_tests: "스모크 테스트 정의"
+      - communication_plan: "커뮤니케이션 계획"
+
+    during_rollback:
+      - incident_logging: "인시던트 로깅"
+      - stakeholder_notification: "이해관계자 통보"
+      - progress_tracking: "진행 상황 추적"
+      - data_integrity_check: "데이터 무결성 검증"
+
+    post_rollback:
+      - root_cause_analysis: "근본 원인 분석"
+      - postmortem: "사후 분석 회의"
+      - documentation: "문서화"
+      - prevention_plan: "재발 방지 계획"
+
+  data_protection:
+    backup_strategy:
+      frequency: "every 6 hours"
+      retention: "30 days"
+      verification: "daily"
+
+    point_in_time_recovery:
+      supported: true
+      granularity: "1 minute"
+      retention: "7 days"
+
+  enforcement:
+    rollback_testing: true
+    backup_verification: true
+    mandatory_scripts: true
+
+  violations:
+    severity: CRITICAL
+    action: BLOCK_DEPLOYMENT
+    notification: true
+
+# ═══════════════════════════════════════════════════
+# P13: User Experience Priority (HIGH)
+# ═══════════════════════════════════════════════════
+P13_user_experience_priority:
+  title: "UX 우선순위 (User Experience Priority)"
+  priority: HIGH
+  applies_to:
+    - all_ais
+    - all_features
+
+  description: |
+    사용자 경험은 모든 기술적 결정의 중심입니다.
+
+  ux_principles:
+    - "사용자 중심 설계"
+    - "직관적 인터페이스"
+    - "즉각적인 피드백"
+    - "에러 복구 가능"
+    - "접근성 준수"
+
+  performance_impact:
+    user_visible_delays:
+      button_click: "< 100ms"
+      page_navigation: "< 1s"
+      data_loading: "< 3s"
+
+    loading_states:
+      required: true
+      types:
+        - skeleton_screen
+        - progress_indicator
+        - optimistic_updates
+
+  accessibility:
+    wcag_level: "AA"
+    required_features:
+      - keyboard_navigation
+      - screen_reader_support
+      - color_contrast
+      - focus_indicators
+      - alt_text
+
+    testing:
+      automated: true
+      manual: true
+      frequency: "every release"
+
+  error_messages:
+    characteristics:
+      - clear: "명확한 설명"
+      - actionable: "해결 방법 제시"
+      - friendly: "친화적인 톤"
+      - contextual: "상황에 맞는 안내"
+
+    examples:
+      bad: "Error 500"
+      good: "서버 오류가 발생했습니다. 잠시 후 다시 시도해주세요."
+
+  user_feedback:
+    collection_methods:
+      - in_app_surveys
+      - usage_analytics
+      - error_reports
+      - feature_requests
+
+    response_time:
+      critical_issues: "< 24 hours"
+      feature_requests: "< 7 days"
+
+  enforcement:
+    ux_review_required: true
+    accessibility_testing: true
+    user_testing: true
+
+  violations:
+    severity: HIGH
+    action: REQUIRE_UX_REVIEW
+    notification: true
+
+# ═══════════════════════════════════════════════════
+# P14: Technical Debt Management (MEDIUM)
+# ═══════════════════════════════════════════════════
+P14_technical_debt_management:
+  title: "기술부채 관리 (Technical Debt Management)"
+  priority: MEDIUM
+  applies_to:
+    - all_ais
+    - all_code
+
+  description: |
+    기술부채는 명시적으로 추적하고 관리해야 합니다.
+
+  debt_categorization:
+    intentional:
+      description: "의도적으로 생성한 부채"
+      examples:
+        - "MVP를 위한 임시 구현"
+        - "성능 최적화 연기"
+      management:
+        - tracking_required: true
+        - repayment_plan: true
+        - deadline: "명시 필수"
+
+    unintentional:
+      description: "실수로 누적된 부채"
+      examples:
+        - "레거시 코드"
+        - "미완성 리팩토링"
+      management:
+        - immediate_documentation: true
+        - prioritization: true
+        - gradual_improvement: true
+
+  debt_tracking:
+    required_information:
+      - description: "부채 설명"
+      - impact: "영향도 (HIGH/MEDIUM/LOW)"
+      - effort: "해결 노력 (시간)"
+      - created_date: "생성일"
+      - deadline: "해결 기한"
+      - responsible: "담당자"
+
+    tools:
+      - github_issues: "추적용"
+      - code_comments: "TODO, FIXME, HACK"
+      - technical_debt_register: "중앙 레지스트리"
+
+  debt_limits:
+    todo_comments:
+      max_per_file: 3
+      max_age: "30 days"
+
+    code_complexity:
+      max_cyclomatic: 10
+      max_cognitive: 15
+
+    test_coverage:
+      min_coverage: 80
+      no_skip_tests: true
+
+  repayment_strategy:
+    allocation:
+      new_features: "70%"
+      tech_debt: "20%"
+      bug_fixes: "10%"
+
+    prioritization:
+      - high_impact_low_effort: "우선순위 1"
+      - high_impact_high_effort: "우선순위 2"
+      - low_impact_low_effort: "우선순위 3"
+      - low_impact_high_effort: "우선순위 4"
+
+  enforcement:
+    debt_tracking_required: true
+    regular_review: true
+    repayment_monitoring: true
+
+  violations:
+    severity: MEDIUM
+    action: WARN
+    notification: true
+
+# ═══════════════════════════════════════════════════
+# P15: Knowledge Preservation (MEDIUM)
+# ═══════════════════════════════════════════════════
+P15_knowledge_preservation:
+  title: "지식 보존 (Knowledge Preservation)"
+  priority: MEDIUM
+  applies_to:
+    - all_ais
+    - all_decisions
+
+  description: |
+    모든 중요한 결정과 학습은 문서화하여 보존해야 합니다.
+
+  knowledge_types:
+    architectural_decisions:
+      format: ADR (Architecture Decision Record)
+      required_sections:
+        - context: "배경"
+        - decision: "결정 사항"
+        - rationale: "근거"
+        - consequences: "결과"
+        - alternatives: "고려한 대안"
+      storage: "docs/adr/"
+
+    lessons_learned:
+      capture_events:
+        - incident_resolution
+        - performance_optimization
+        - architecture_refactoring
+      format: Postmortem
+      required_sections:
+        - what_happened: "무엇이 발생했는가"
+        - root_cause: "근본 원인"
+        - what_went_well: "잘된 점"
+        - what_went_wrong: "잘못된 점"
+        - action_items: "개선 계획"
+      storage: "docs/postmortems/"
+
+    code_patterns:
+      examples:
+        - design_patterns
+        - best_practices
+        - anti_patterns
+      format: Wiki or Markdown
+      storage: "docs/patterns/"
+
+    troubleshooting_guides:
+      content:
+        - common_errors
+        - solutions
+        - prevention_tips
+      format: Runbook
+      storage: "docs/runbooks/"
+
+  obsidian_integration:
+    auto_sync:
+      triggers:
+        - major_implementation
+        - bug_resolution
+        - architecture_change
+      content:
+        - code_changes
+        - decision_rationale
+        - lessons_learned
+
+    structure:
+      root: "Obsidian Vault/"
+      folders:
+        - "1-Projects/UDO/"
+        - "2-Areas/Development/"
+        - "3-Resources/Knowledge-Base/"
+        - "4-Archives/"
+
+  knowledge_sharing:
+    methods:
+      - documentation
+      - code_reviews
+      - tech_talks
+      - pair_programming
+
+    frequency:
+      - daily: "code reviews"
+      - weekly: "knowledge sharing sessions"
+      - monthly: "tech talks"
+
+  enforcement:
+    decision_documentation: true
+    obsidian_sync: true
+    regular_updates: true
+
+  violations:
+    severity: MEDIUM
+    action: WARN
+    notification: true
+
+# ═══════════════════════════════════════════════════
+# P16: Continuous Improvement (MEDIUM)
+# ═══════════════════════════════════════════════════
+P16_continuous_improvement:
+  title: "지속적 개선 (Continuous Improvement)"
+  priority: MEDIUM
+  applies_to:
+    - all_ais
+    - all_processes
+
+  description: |
+    모든 프로세스와 시스템은 지속적으로 개선되어야 합니다.
+
+  improvement_cycle:
+    plan:
+      activities:
+        - identify_problems
+        - set_goals
+        - define_metrics
+      output: "개선 계획서"
+
+    do:
+      activities:
+        - implement_changes
+        - collect_data
+        - monitor_impact
+      output: "실행 결과"
+
+    check:
+      activities:
+        - analyze_results
+        - compare_to_baseline
+        - identify_gaps
+      output: "분석 보고서"
+
+    act:
+      activities:
+        - standardize_improvements
+        - document_learnings
+        - plan_next_cycle
+      output: "표준화 문서"
+
+  metrics_tracking:
+    development_metrics:
+      - lead_time: "아이디어 → 배포"
+      - deployment_frequency: "배포 빈도"
+      - change_failure_rate: "변경 실패율"
+      - mttr: "평균 복구 시간"
+
+    quality_metrics:
+      - code_coverage: "테스트 커버리지"
+      - bug_density: "버그 밀도"
+      - technical_debt_ratio: "기술부채 비율"
+      - code_quality_score: "코드 품질 점수"
+
+    performance_metrics:
+      - response_time: "응답 시간"
+      - throughput: "처리량"
+      - error_rate: "에러율"
+      - availability: "가용성"
+
+  retrospectives:
+    frequency: "매 스프린트 종료"
+    participants:
+      - ai_agents
+      - developers
+      - stakeholders
+
+    agenda:
+      - review_metrics
+      - discuss_challenges
+      - identify_improvements
+      - action_items
+
+    output:
+      - retrospective_notes
+      - action_items_tracker
+      - improvement_backlog
+
+  experimentation:
+    encouraged_practices:
+      - ab_testing
+      - feature_flags
+      - canary_releases
+      - chaos_engineering
+
+    failure_tolerance:
+      - safe_to_fail: "실패는 학습 기회"
+      - blameless_culture: "비난 없는 문화"
+      - rapid_recovery: "빠른 복구"
+
+  enforcement:
+    metrics_collection: true
+    retrospective_required: true
+    improvement_tracking: true
+
+  violations:
+    severity: MEDIUM
+    action: WARN
+    notification: true
+
+# ═══════════════════════════════════════════════════
+# P17: Constitutional Amendments (HIGH)
+# ═══════════════════════════════════════════════════
+P17_constitutional_amendments:
+  title: "헌법 수정 (Constitutional Amendments)"
+  priority: HIGH
+  applies_to:
+    - all_ais
+    - constitution_itself
+
+  description: |
+    헌법 자체도 지속적으로 개선되어야 하며, 수정 프로세스가 정의되어야 합니다.
+
+  amendment_process:
+    proposal:
+      who_can_propose:
+        - ai_agents
+        - developers
+        - stakeholders
+
+      required_information:
+        - current_problem: "현재 문제점"
+        - proposed_change: "제안하는 변경"
+        - rationale: "변경 이유"
+        - impact_analysis: "영향 분석"
+        - alternatives: "고려한 대안"
+
+      format: "GitHub Issue with template"
+
+    review:
+      reviewers:
+        - constitutional_committee
+        - ai_agents
+        - senior_developers
+
+      criteria:
+        - consistency: "기존 원칙과 일관성"
+        - necessity: "변경 필요성"
+        - clarity: "명확성"
+        - enforceability: "시행 가능성"
+
+      duration: "7 days minimum"
+
+    approval:
+      voting_mechanism:
+        - constitutional_committee: "2/3 찬성"
+        - ai_consensus: "전체 AI 동의"
+
+      required_documentation:
+        - amendment_text
+        - rationale_document
+        - migration_plan
+        - training_materials
+
+    implementation:
+      steps:
+        - update_yaml: "YAML 파일 업데이트"
+        - update_code: "ConstitutionalGuard 코드 업데이트"
+        - update_tests: "테스트 업데이트"
+        - update_docs: "문서 업데이트"
+        - train_ais: "AI 재학습"
+
+      rollout:
+        - phase_1: "개발 환경 (1주)"
+        - phase_2: "스테이징 환경 (1주)"
+        - phase_3: "프로덕션 환경 (점진적)"
+
+  version_control:
+    semantic_versioning: true
+    format: "MAJOR.MINOR.PATCH"
+    examples:
+      - major: "기존 원칙 폐기/추가"
+      - minor: "기존 원칙 수정"
+      - patch: "오타 수정, 명확화"
+
+    changelog:
+      required: true
+      format: "CHANGELOG.md"
+      sections:
+        - added: "추가된 원칙"
+        - changed: "변경된 원칙"
+        - deprecated: "폐기 예정 원칙"
+        - removed: "제거된 원칙"
+        - fixed: "수정된 내용"
+
+  backward_compatibility:
+    policy: "최소 1버전 호환성 유지"
+    deprecation_notice: "3개월 사전 공지"
+    migration_guide: "필수 제공"
+
+  enforcement:
+    amendment_tracking: true
+    version_control: true
+    documentation_required: true
+
+  violations:
+    severity: HIGH
+    action: BLOCK_AMENDMENT
+    notification: true
+
+# ═══════════════════════════════════════════════════
+# Enforcement Configuration
+# ═══════════════════════════════════════════════════
+enforcement:
+  global_settings:
+    enabled: true
+    strict_mode: true
+    logging: true
+    notification: true
+
+  validation_layers:
+    pre_commit:
+      enabled: true
+      blocking: true
+      checks:
+        - P1_design_review_first
+        - P7_code_quality_gates
+        - P8_security_first
+
+    api_request:
+      enabled: true
+      blocking: true
+      checks:
+        - P2_uncertainty_disclosure
+        - P5_multi_ai_consistency
+        - P6_error_handling_standards
+
+    phase_transition:
+      enabled: true
+      blocking: true
+      checks:
+        - P4_phase_aware_compliance
+        - P12_rollback_protocols
+
+    deployment:
+      enabled: true
+      blocking: true
+      checks:
+        - P8_security_first
+        - P9_performance_thresholds
+        - P10_testing_requirements
+
+  notification_channels:
+    critical:
+      - email
+      - slack
+      - dashboard
+
+    high:
+      - slack
+      - dashboard
+
+    medium:
+      - dashboard
+
+    low:
+      - log_only
+
+# ═══════════════════════════════════════════════════
+# Metrics and Reporting
+# ═══════════════════════════════════════════════════
+metrics:
+  violation_tracking:
+    enabled: true
+    retention: "90 days"
+    aggregation:
+      - by_article
+      - by_severity
+      - by_ai_agent
+      - by_phase
+
+  compliance_score:
+    calculation: "1 - (violations / total_checks)"
+    target: "> 0.95"
+    reporting: "daily"
+
+  improvement_tracking:
+    baseline_date: "2025-11-20"
+    metrics:
+      - violation_reduction_rate
+      - compliance_score_trend
+      - automation_rate
+      - decision_consistency
+
+# ═══════════════════════════════════════════════════
+# End of Constitution
+# ═══════════════════════════════════════════════════

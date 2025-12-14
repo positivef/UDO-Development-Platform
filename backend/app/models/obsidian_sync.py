@@ -1,0 +1,253 @@
+"""
+Obsidian Sync Models
+
+Database models for tracking Obsidian vault synchronization history.
+"""
+
+from datetime import datetime
+from typing import Optional
+from pydantic import BaseModel, Field
+from uuid import UUID, uuid4
+
+
+class ObsidianSyncRecord(BaseModel):
+    """
+    Record of a single Obsidian sync operation
+
+    Used to track sync history and debugging.
+    """
+    id: UUID = Field(default_factory=uuid4, description="Unique sync record ID")
+    event_type: str = Field(..., description="Type of event synced")
+    filepath: Optional[str] = Field(None, description="Relative path in Obsidian vault")
+    content_preview: str = Field(..., max_length=500, description="Preview of synced content")
+    synced_at: datetime = Field(default_factory=datetime.utcnow, description="Sync timestamp")
+    success: bool = Field(..., description="Whether sync succeeded")
+    error_message: Optional[str] = Field(None, description="Error message if sync failed")
+    project_id: Optional[UUID] = Field(None, description="Associated project ID")
+
+    class Config:
+        from_attributes = True
+        json_schema_extra = {
+            "example": {
+                "id": "550e8400-e29b-41d4-a716-446655440000",
+                "event_type": "phase_transition",
+                "filepath": "개발일지/2025-11-20/Phase-Transition-Design-Implementation.md",
+                "content_preview": "Phase transition from design to implementation...",
+                "synced_at": "2025-11-20T14:30:00",
+                "success": True,
+                "error_message": None,
+                "project_id": "660e8400-e29b-41d4-a716-446655440000"
+            }
+        }
+
+
+class ObsidianSyncCreate(BaseModel):
+    """Create new sync record"""
+    event_type: str
+    filepath: Optional[str] = None
+    content_preview: str
+    success: bool
+    error_message: Optional[str] = None
+    project_id: Optional[UUID] = None
+
+
+class ObsidianSyncResponse(BaseModel):
+    """Response for sync operations"""
+    success: bool
+    sync_record: Optional[ObsidianSyncRecord] = None
+    message: str
+
+    class Config:
+        json_schema_extra = {
+            "example": {
+                "success": True,
+                "sync_record": {
+                    "id": "550e8400-e29b-41d4-a716-446655440000",
+                    "event_type": "phase_transition",
+                    "filepath": "개발일지/2025-11-20/Phase-Transition.md",
+                    "synced_at": "2025-11-20T14:30:00",
+                    "success": True
+                },
+                "message": "Successfully synced to Obsidian"
+            }
+        }
+
+
+class ObsidianSearchRequest(BaseModel):
+    """Request to search Obsidian vault"""
+    query: str = Field(..., min_length=1, description="Search query")
+    max_results: int = Field(5, ge=1, le=20, description="Maximum results to return")
+
+
+class ObsidianSearchResult(BaseModel):
+    """Single search result from Obsidian vault"""
+    filepath: str = Field(..., description="Relative path in Obsidian vault")
+    title: str = Field(..., description="Note title")
+    date: str = Field(..., description="Note date")
+    event_type: str = Field(..., description="Event type")
+    excerpt: str = Field(..., description="Relevant excerpt")
+    relevance_score: int = Field(..., ge=0, description="Relevance score")
+
+    class Config:
+        json_schema_extra = {
+            "example": {
+                "filepath": "개발일지/2025-11-19/Error-Resolved-ModuleNotFound.md",
+                "title": "Error Resolved: ModuleNotFound",
+                "date": "2025-11-19",
+                "event_type": "error_resolution",
+                "excerpt": "...ModuleNotFoundError: No module named 'pandas'...",
+                "relevance_score": 3
+            }
+        }
+
+
+class ObsidianSearchResponse(BaseModel):
+    """Response with search results"""
+    query: str
+    results: list[ObsidianSearchResult]
+    total_found: int
+    search_time_ms: float
+
+    class Config:
+        json_schema_extra = {
+            "example": {
+                "query": "ModuleNotFoundError",
+                "results": [
+                    {
+                        "filepath": "개발일지/2025-11-19/Error-Resolved-ModuleNotFound.md",
+                        "title": "Error Resolved: ModuleNotFound",
+                        "date": "2025-11-19",
+                        "event_type": "error_resolution",
+                        "excerpt": "...pip install pandas...",
+                        "relevance_score": 3
+                    }
+                ],
+                "total_found": 1,
+                "search_time_ms": 8.5
+            }
+        }
+
+
+class ObsidianRecentNotesResponse(BaseModel):
+    """Response with recent notes"""
+    notes: list[dict]
+    days: int
+    total_found: int
+
+    class Config:
+        json_schema_extra = {
+            "example": {
+                "notes": [
+                    {
+                        "filepath": "개발일지/2025-11-20/Phase-Transition.md",
+                        "title": "Phase Transition",
+                        "date": "2025-11-20",
+                        "time": "14:30",
+                        "event_type": "phase_transition"
+                    }
+                ],
+                "days": 7,
+                "total_found": 15
+            }
+        }
+
+
+class ObsidianSyncStatisticsResponse(BaseModel):
+    """Sync statistics response with batching metrics"""
+    total_syncs: int
+    successful: int
+    failed: int
+    success_rate: float
+    by_event_type: dict[str, int]
+    vault_available: bool
+    vault_path: Optional[str]
+    # Batching metrics
+    total_events: int = Field(..., description="Total events processed")
+    avg_events_per_sync: float = Field(..., description="Average events per sync (batching efficiency)")
+    batching_syncs: int = Field(..., description="Number of syncs with batched events")
+    batching_rate: float = Field(..., description="Percentage of syncs that were batched")
+    tokens_saved_estimate: int = Field(..., description="Estimated tokens saved through batching")
+    pending_events: int = Field(..., description="Current pending events in queue")
+
+    class Config:
+        json_schema_extra = {
+            "example": {
+                "total_syncs": 45,
+                "successful": 43,
+                "failed": 2,
+                "success_rate": 95.56,
+                "by_event_type": {
+                    "phase_transition": 5,
+                    "error_resolution": 12,
+                    "task_completion": 28,
+                    "batch_sync": 15
+                },
+                "vault_available": True,
+                "vault_path": "C:\\Users\\user\\Documents\\Obsidian Vault",
+                "total_events": 87,
+                "avg_events_per_sync": 1.93,
+                "batching_syncs": 15,
+                "batching_rate": 33.33,
+                "tokens_saved_estimate": 4200,
+                "pending_events": 2
+            }
+        }
+
+
+class ObsidianAutoSyncRequest(BaseModel):
+    """Request for auto-sync operation"""
+    event_type: str = Field(..., description="Event type to sync")
+    data: dict = Field(..., description="Event data")
+
+    class Config:
+        json_schema_extra = {
+            "example": {
+                "event_type": "phase_transition",
+                "data": {
+                    "from_phase": "design",
+                    "to_phase": "implementation",
+                    "context": {
+                        "trigger": "User requested implementation start"
+                    },
+                    "changes": [
+                        "Updated project phase",
+                        "Initialized implementation tasks"
+                    ]
+                }
+            }
+        }
+
+
+class ObsidianErrorResolutionRequest(BaseModel):
+    """Request to save error resolution"""
+    error: str = Field(..., min_length=1, description="Error message")
+    solution: str = Field(..., min_length=1, description="Solution that worked")
+    context: Optional[dict] = Field(None, description="Additional context")
+
+    class Config:
+        json_schema_extra = {
+            "example": {
+                "error": "ModuleNotFoundError: No module named 'pandas'",
+                "solution": "pip install pandas",
+                "context": {
+                    "tool": "Python",
+                    "file": "scripts/data_analyzer.py",
+                    "command": "python scripts/data_analyzer.py"
+                }
+            }
+        }
+
+
+# Export all models
+__all__ = [
+    'ObsidianSyncRecord',
+    'ObsidianSyncCreate',
+    'ObsidianSyncResponse',
+    'ObsidianSearchRequest',
+    'ObsidianSearchResult',
+    'ObsidianSearchResponse',
+    'ObsidianRecentNotesResponse',
+    'ObsidianSyncStatisticsResponse',
+    'ObsidianAutoSyncRequest',
+    'ObsidianErrorResolutionRequest',
+]

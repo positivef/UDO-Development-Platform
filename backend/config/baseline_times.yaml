@@ -1,0 +1,178 @@
+# Baseline Time Configuration
+# Manual baseline times (in minutes) for ROI calculation
+# These represent average time to complete tasks WITHOUT AI automation
+
+baselines:
+  error_resolution:
+    manual_minutes: 30
+    description: "Average time to resolve error manually (researching, debugging, fixing)"
+    examples:
+      - "401 authentication errors"
+      - "Module import errors"
+      - "Permission denied errors"
+      - "Database connection issues"
+
+  design_task:
+    manual_minutes: 120
+    description: "Average design time without AI assistance"
+    examples:
+      - "API design and specification"
+      - "Database schema design"
+      - "Architecture planning"
+      - "UI/UX mockups"
+
+  implementation:
+    manual_minutes: 240
+    description: "Average implementation time manually (coding, testing, debugging)"
+    examples:
+      - "Feature development"
+      - "API endpoint creation"
+      - "Service implementation"
+      - "Frontend component development"
+
+  testing:
+    manual_minutes: 60
+    description: "Average testing time without automation"
+    examples:
+      - "Writing unit tests"
+      - "Integration testing"
+      - "Manual QA testing"
+      - "Test debugging"
+
+  documentation:
+    manual_minutes: 60
+    description: "Average documentation time manually"
+    examples:
+      - "API documentation"
+      - "README updates"
+      - "Code comments"
+      - "Architecture docs"
+
+  code_review:
+    manual_minutes: 30
+    description: "Average code review time manually"
+    examples:
+      - "Pull request review"
+      - "Security audit"
+      - "Style checking"
+      - "Logic verification"
+
+  refactoring:
+    manual_minutes: 180
+    description: "Average refactoring time manually"
+    examples:
+      - "Code restructuring"
+      - "Performance optimization"
+      - "Dependency updates"
+      - "Pattern improvements"
+
+  debugging:
+    manual_minutes: 45
+    description: "Average debugging time without AI assistance"
+    examples:
+      - "Runtime error investigation"
+      - "Logic bug fixing"
+      - "Performance bottleneck identification"
+      - "Memory leak detection"
+
+  phase_transition:
+    manual_minutes: 15
+    description: "Average phase transition overhead manually"
+    examples:
+      - "Planning next phase"
+      - "Status documentation"
+      - "Team coordination"
+      - "Resource allocation"
+
+  other:
+    manual_minutes: 30
+    description: "Default baseline for unclassified tasks"
+    examples:
+      - "General development tasks"
+      - "Research and exploration"
+      - "Tool setup"
+      - "Miscellaneous work"
+
+# ROI calculation settings
+roi_settings:
+  # Average hourly rate for developer time (USD)
+  hourly_rate: 100
+
+  # Work days per week
+  work_days_per_week: 5
+
+  # Work hours per day
+  work_hours_per_day: 8
+
+  # Weeks per year (accounting for vacation)
+  work_weeks_per_year: 48
+
+  # Bottleneck severity thresholds (percentage over baseline)
+  bottleneck_thresholds:
+    low: 10        # 10% over baseline
+    medium: 25     # 25% over baseline
+    high: 50       # 50% over baseline
+    critical: 100  # 100% over baseline (2x baseline)
+
+# Expected AI performance benchmarks
+ai_benchmarks:
+  claude:
+    expected_efficiency: 0.85  # 85% time reduction
+    strength_areas:
+      - "error_resolution"
+      - "code_review"
+      - "documentation"
+
+  codex:
+    expected_efficiency: 0.75  # 75% time reduction
+    strength_areas:
+      - "implementation"
+      - "refactoring"
+      - "testing"
+
+  gemini:
+    expected_efficiency: 0.70  # 70% time reduction
+    strength_areas:
+      - "design_task"
+      - "debugging"
+      - "documentation"
+
+  multi:
+    expected_efficiency: 0.90  # 90% time reduction (combined AI power)
+    strength_areas:
+      - "complex_implementation"
+      - "architecture"
+      - "integration"
+
+# Phase-specific multipliers
+phase_multipliers:
+  ideation:
+    complexity: 0.8   # Simpler tasks in ideation
+  design:
+    complexity: 1.2   # More complex in design
+  mvp:
+    complexity: 1.0   # Normal complexity
+  implementation:
+    complexity: 1.5   # Most complex phase
+  testing:
+    complexity: 0.9   # Testing is more straightforward
+
+# Time saved targets
+targets:
+  # Weekly targets
+  weekly:
+    min_hours_saved: 10
+    target_hours_saved: 20
+    stretch_hours_saved: 30
+
+  # Monthly targets
+  monthly:
+    min_hours_saved: 40
+    target_hours_saved: 80
+    stretch_hours_saved: 120
+
+  # Annual targets
+  annual:
+    min_hours_saved: 480   # 12 weeks saved
+    target_hours_saved: 960  # 24 weeks saved
+    stretch_hours_saved: 1440  # 36 weeks saved
