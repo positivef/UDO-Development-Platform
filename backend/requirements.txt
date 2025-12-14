@@ -9,6 +9,9 @@ python-dotenv==1.0.1
 PyJWT==2.8.0
 cryptography==41.0.7
 
+# Password Hashing (CRIT-02: bcrypt for secure password hashing)
+bcrypt==4.2.1
+
 # Database (PostgreSQL)
 psycopg2-binary==2.9.11
 asyncpg==0.29.0

@@ -11,9 +11,11 @@ import json
 from pathlib import Path
 from datetime import datetime
 from typing import Dict, List, Optional, Any
-from fastapi import FastAPI, HTTPException, WebSocket, WebSocketDisconnect
+from fastapi import FastAPI, HTTPException, WebSocket, WebSocketDisconnect, Request, Response
 from fastapi.middleware.cors import CORSMiddleware
+from starlette.middleware.base import BaseHTTPMiddleware
 from pydantic import BaseModel
+import secrets
 import asyncio
 import logging
 
@@ -243,6 +245,44 @@ app = FastAPI(
     description="Real-time development automation and monitoring"
 )
 
+# ============================================================
+# HIGH-03: Security Headers Middleware
+# ============================================================
+class SecurityHeadersMiddleware(BaseHTTPMiddleware):
+    """Add security headers to all responses (OWASP recommendations)"""
+
+    async def dispatch(self, request: Request, call_next):
+        response = await call_next(request)
+
+        # Prevent XSS attacks
+        response.headers["X-Content-Type-Options"] = "nosniff"
+        response.headers["X-Frame-Options"] = "DENY"
+        response.headers["X-XSS-Protection"] = "1; mode=block"
+
+        # Prevent information disclosure
+        response.headers["X-Permitted-Cross-Domain-Policies"] = "none"
+        response.headers["Referrer-Policy"] = "strict-origin-when-cross-origin"
+
+        # Content Security Policy (relaxed for API)
+        response.headers["Content-Security-Policy"] = "default-src 'self'; frame-ancestors 'none'"
+
+        # HSTS (only in production)
+        if os.environ.get("ENVIRONMENT") == "production":
+            response.headers["Strict-Transport-Security"] = "max-age=31536000; includeSubDomains"
+
+        # Remove server information
+        response.headers["Server"] = "UDO-API"
+
+        return response
+
+
+# ============================================================
+# HIGH-04: Debug Endpoint Protection
+# ============================================================
+IS_PRODUCTION = os.environ.get("ENVIRONMENT") == "production"
+DEBUG_ENABLED = os.environ.get("DEBUG", "false").lower() == "true" and not IS_PRODUCTION
+
+
 # CORS configuration
 app.add_middleware(
     CORSMiddleware,
@@ -256,6 +296,10 @@ app.add_middleware(
     allow_methods=["*"],
     allow_headers=["*"],
 )
+
+# Add security headers middleware
+app.add_middleware(SecurityHeadersMiddleware)
+logger.info("✅ Security headers middleware configured")
 
 # ============================================================
 # Adaptive cache for expensive operations (uncertainty-aware TTL)
@@ -637,10 +681,16 @@ async def shutdown_event():
         logger.error(f"❌ Failed to stop background sync: {e}")
 
 # Error statistics endpoint (if error handler available)
+# HIGH-04: Protected in production (internal debugging endpoint)
 if ERROR_HANDLER_AVAILABLE:
     @app.get("/api/errors/stats")
     async def get_error_statistics():
-        """Get error statistics and history"""
+        """Get error statistics and history (development only)"""
+        if IS_PRODUCTION:
+            raise HTTPException(
+                status_code=403,
+                detail="Error statistics endpoint is disabled in production"
+            )
         return error_handler.get_error_statistics()
 
 # Health check
@@ -862,10 +912,17 @@ async def system_control(command: SystemCommand):
     except Exception as e:
         raise HTTPException(status_code=500, detail=str(e))
 
-# Mock data endpoint for development
+# Mock data endpoint for development (HIGH-04: Protected in production)
 @app.get("/api/mock/generate")
 async def generate_mock_data():
-    """Generate mock data for UI development"""
+    """Generate mock data for UI development (disabled in production)"""
+    # HIGH-04: Block debug endpoints in production
+    if IS_PRODUCTION:
+        raise HTTPException(
+            status_code=403,
+            detail="Debug endpoints are disabled in production"
+        )
+
     import random
 
     phases = ["ideation", "design", "mvp", "implementation", "testing"]

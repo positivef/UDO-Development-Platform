@@ -8,8 +8,10 @@
  * - Priority color coding
  * - Tags display
  * - Click to view details
+ * - React.memo for performance optimization
  */
 
+import { memo, useMemo } from 'react'
 import { useSortable } from '@dnd-kit/sortable'
 import { CSS } from '@dnd-kit/utilities'
 import { Badge } from '@/components/ui/badge'
@@ -37,7 +39,7 @@ const priorityBorderColors = {
   critical: 'border-l-red-500',
 }
 
-export function TaskCard({ task, onClick }: TaskCardProps) {
+function TaskCardComponent({ task, onClick }: TaskCardProps) {
   const {
     attributes,
     listeners,
@@ -47,11 +49,22 @@ export function TaskCard({ task, onClick }: TaskCardProps) {
     isDragging,
   } = useSortable({ id: task.id })
 
-  const style = {
+  // Memoize style object to prevent unnecessary re-renders
+  const style = useMemo(() => ({
     transform: CSS.Transform.toString(transform),
     transition,
     opacity: isDragging ? 0.5 : 1,
-  }
+  }), [transform, transition, isDragging])
+
+  // Memoize visible tags to prevent unnecessary recalculation
+  const visibleTags = useMemo(
+    () => task.tags?.slice(0, 3) || [],
+    [task.tags]
+  )
+  const remainingTagsCount = useMemo(
+    () => (task.tags?.length || 0) - 3,
+    [task.tags]
+  )
 
   return (
     <div
@@ -87,16 +100,16 @@ export function TaskCard({ task, onClick }: TaskCardProps) {
         )}
 
         {/* Tags */}
-        {task.tags && task.tags.length > 0 && (
+        {visibleTags.length > 0 && (
           <div className="flex flex-wrap gap-1 mb-3">
-            {task.tags.slice(0, 3).map((tag) => (
+            {visibleTags.map((tag) => (
               <Badge key={tag} variant="secondary" className="text-xs">
                 {tag}
               </Badge>
             ))}
-            {task.tags.length > 3 && (
+            {remainingTagsCount > 0 && (
               <Badge variant="secondary" className="text-xs">
-                +{task.tags.length - 3}
+                +{remainingTagsCount}
               </Badge>
             )}
           </div>
@@ -137,3 +150,6 @@ export function TaskCard({ task, onClick }: TaskCardProps) {
     </div>
   )
 }
+
+// Memoize component to prevent unnecessary re-renders
+export const TaskCard = memo(TaskCardComponent)

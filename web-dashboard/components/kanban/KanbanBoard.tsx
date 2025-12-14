@@ -11,7 +11,7 @@
  * - Backend API integration
  */
 
-import { useState, useEffect } from 'react'
+import { useState, useCallback, useMemo } from 'react'
 import {
   DndContext,
   DragOverlay,
@@ -37,28 +37,36 @@ export function KanbanBoard() {
   const [isUpdating, setIsUpdating] = useState(false)
   const [isModalOpen, setIsModalOpen] = useState(false)
 
-  // Configure drag sensors
+  // Configure drag sensors (memoized to prevent re-creation)
+  const pointerSensorConfig = useMemo(() => ({
+    activationConstraint: {
+      distance: 8, // 8px movement before drag starts
+    },
+  }), [])
+
+  const keyboardSensorConfig = useMemo(() => ({
+    coordinateGetter: sortableKeyboardCoordinates,
+  }), [])
+
   const sensors = useSensors(
-    useSensor(PointerSensor, {
-      activationConstraint: {
-        distance: 8, // 8px movement before drag starts
-      },
-    }),
-    useSensor(KeyboardSensor, {
-      coordinateGetter: sortableKeyboardCoordinates,
-    })
+    useSensor(PointerSensor, pointerSensorConfig),
+    useSensor(KeyboardSensor, keyboardSensorConfig)
   )
 
-  const handleDragStart = (event: any) => {
+  // Memoize all tasks for efficient lookup
+  const allTasks = useMemo(() =>
+    columns.flatMap((col) => col.tasks),
+    [columns]
+  )
+
+  const handleDragStart = useCallback((event: any) => {
     const { active } = event
     // Find the task being dragged
-    const task = columns
-      .flatMap((col) => col.tasks)
-      .find((task) => task.id === active.id)
+    const task = allTasks.find((task) => task.id === active.id)
     setActiveTask(task || null)
-  }
+  }, [allTasks])
 
-  const handleDragEnd = async (event: DragEndEvent) => {
+  const handleDragEnd = useCallback(async (event: DragEndEvent) => {
     const { active, over } = event
     setActiveTask(null)
 
@@ -68,9 +76,7 @@ export function KanbanBoard() {
     const newStatus = over.id as TaskStatus
 
     // Find the original task to preserve state for rollback
-    const originalTask = columns
-      .flatMap((col) => col.tasks)
-      .find((task) => task.id === taskId)
+    const originalTask = allTasks.find((task) => task.id === taskId)
 
     if (!originalTask || originalTask.status === newStatus) return
 
@@ -104,17 +110,17 @@ export function KanbanBoard() {
     } finally {
       setIsUpdating(false)
     }
-  }
+  }, [allTasks, isUpdating, moveTask, updateTaskInStore])
 
-  const handleTaskClick = (task: KanbanTask) => {
+  const handleTaskClick = useCallback((task: KanbanTask) => {
     setSelectedTask(task)
     setIsModalOpen(true)
-  }
+  }, [setSelectedTask])
 
-  const handleModalClose = () => {
+  const handleModalClose = useCallback(() => {
     setIsModalOpen(false)
     setSelectedTask(null)
-  }
+  }, [setSelectedTask])
 
   return (
     <>

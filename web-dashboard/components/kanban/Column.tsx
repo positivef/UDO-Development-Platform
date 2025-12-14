@@ -8,8 +8,10 @@
  * - Task count display
  * - Scrollable task list
  * - Status-based color coding
+ * - React.memo for performance optimization
  */
 
+import { memo, useMemo, useCallback } from 'react'
 import { useDroppable } from '@dnd-kit/core'
 import { SortableContext, verticalListSortingStrategy } from '@dnd-kit/sortable'
 import { Card } from '@/components/ui/card'
@@ -37,12 +39,16 @@ const columnBadgeColors = {
   completed: 'bg-green-500/10 text-green-600 border-green-500/20',
 }
 
-export function Column({ column, onTaskClick }: ColumnProps) {
+function ColumnComponent({ column, onTaskClick }: ColumnProps) {
   const { setNodeRef, isOver } = useDroppable({
     id: column.id,
   })
 
-  const taskIds = column.tasks.map((task) => task.id)
+  // Memoize task IDs to prevent unnecessary re-renders
+  const taskIds = useMemo(
+    () => column.tasks.map((task) => task.id),
+    [column.tasks]
+  )
 
   return (
     <div className="flex-1 min-w-[300px]">
@@ -91,3 +97,6 @@ export function Column({ column, onTaskClick }: ColumnProps) {
     </div>
   )
 }
+
+// Memoize component to prevent unnecessary re-renders
+export const Column = memo(ColumnComponent)

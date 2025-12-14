@@ -2,10 +2,16 @@
 Global Error Handler and Recovery System
 
 포괄적인 에러 핸들링과 자동 복구 메커니즘을 제공합니다.
+
+Security improvements (MED-01):
+- Production environment hides detailed error messages
+- Stack traces only logged, never returned to client in production
+- Generic error messages for unknown errors
 """
 
 import logging
 import traceback
+import os
 from typing import Any, Dict, Optional, Callable
 from datetime import datetime
 from enum import Enum
@@ -17,6 +23,10 @@ from fastapi.responses import JSONResponse
 from starlette.exceptions import HTTPException as StarletteHTTPException
 
 logger = logging.getLogger(__name__)
+
+# MED-01: Environment-aware error detail level
+IS_PRODUCTION = os.environ.get("ENVIRONMENT") == "production"
+DEBUG_MODE = os.environ.get("DEBUG", "false").lower() == "true" and not IS_PRODUCTION
 
 
 class ErrorSeverity(Enum):
@@ -261,28 +271,42 @@ class GlobalErrorHandler:
         # HTTP 상태 코드 결정
         status_code = self._get_status_code(error, category)
 
-        # 응답 생성
-        response_data = {
-            "error": {
-                "message": self._get_user_friendly_message(error, category),
-                "category": category.value,
-                "severity": severity.value,
-                "timestamp": error_info["timestamp"],
-                "request_id": getattr(request.state, "request_id", None)
+        # MED-01: Production-safe response generation
+        # In production, hide all detailed error information
+        if IS_PRODUCTION:
+            response_data = {
+                "error": {
+                    "message": self._get_user_friendly_message(error, category),
+                    "code": self._get_error_code(category),
+                    "timestamp": error_info["timestamp"],
+                    "request_id": getattr(request.state, "request_id", None)
+                }
             }
-        }
+        else:
+            # Development: include more details for debugging
+            response_data = {
+                "error": {
+                    "message": self._get_user_friendly_message(error, category),
+                    "category": category.value,
+                    "severity": severity.value,
+                    "timestamp": error_info["timestamp"],
+                    "request_id": getattr(request.state, "request_id", None)
+                }
+            }
 
         # 복구 성공 시 정보 추가
         if recovery_result:
             response_data["recovery"] = {
                 "status": "success",
-                "action_taken": "Automatic recovery applied",
-                "result": recovery_result
+                "action_taken": "Automatic recovery applied"
             }
+            # Don't expose recovery result details in production
+            if not IS_PRODUCTION:
+                response_data["recovery"]["result"] = recovery_result
             status_code = 200  # 복구 성공 시 200 반환
 
-        # 개발 환경에서 상세 정보 추가
-        if getattr(request.app.state, "debug", False):
+        # Debug information only in development with DEBUG flag
+        if DEBUG_MODE and not IS_PRODUCTION:
             response_data["debug"] = {
                 "error_type": error_info["error_type"],
                 "traceback": error_info.get("traceback")
@@ -324,7 +348,17 @@ class GlobalErrorHandler:
 
     def _get_user_friendly_message(self, error: Exception, category: ErrorCategory) -> str:
         """사용자 친화적인 에러 메시지 생성"""
+        # In production, never expose raw error messages for unknown errors
+        if IS_PRODUCTION and category == ErrorCategory.UNKNOWN:
+            return "An unexpected error occurred. Please try again later."
+
         if isinstance(error, HTTPException) and error.detail:
+            # In production, sanitize HTTPException details
+            if IS_PRODUCTION:
+                detail = str(error.detail)
+                # Don't expose internal paths, stack traces, or technical details
+                if any(x in detail.lower() for x in ['traceback', 'line ', 'file ', '/app/', '\\app\\']):
+                    return "An error occurred while processing your request."
             return error.detail
 
         message_map = {
@@ -339,7 +373,22 @@ class GlobalErrorHandler:
             ErrorCategory.UNKNOWN: "예기치 않은 오류가 발생했습니다."
         }
 
-        return message_map.get(category, str(error))
+        return message_map.get(category, "An error occurred." if IS_PRODUCTION else str(error))
+
+    def _get_error_code(self, category: ErrorCategory) -> str:
+        """MED-01: Return generic error code for production (no internal details)"""
+        code_map = {
+            ErrorCategory.DATABASE: "ERR_DB",
+            ErrorCategory.NETWORK: "ERR_NET",
+            ErrorCategory.VALIDATION: "ERR_VAL",
+            ErrorCategory.AUTHENTICATION: "ERR_AUTH",
+            ErrorCategory.AUTHORIZATION: "ERR_PERM",
+            ErrorCategory.EXTERNAL_SERVICE: "ERR_EXT",
+            ErrorCategory.BUSINESS_LOGIC: "ERR_BIZ",
+            ErrorCategory.SYSTEM: "ERR_SYS",
+            ErrorCategory.UNKNOWN: "ERR_UNK"
+        }
+        return code_map.get(category, "ERR_UNK")
 
     def get_error_statistics(self) -> Dict[str, Any]:
         """에러 통계 반환"""
