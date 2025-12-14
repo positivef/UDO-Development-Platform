@@ -20,7 +20,13 @@ import {
 } from "recharts"
 
 interface MetricsChartProps {
-  metrics: any
+  metrics: {
+    confidence_level?: number
+    performance_metrics?: {
+      avg_confidence?: number
+      execution_count?: number
+    }
+  } | null | undefined
 }
 
 export function MetricsChart({ metrics }: MetricsChartProps) {

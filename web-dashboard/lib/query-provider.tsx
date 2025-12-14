@@ -1,18 +1,16 @@
 /**
- * Providers - Global providers for the application
- *
- * Updated with optimized React Query configuration:
- * - Longer staleTime (5 minutes) for better caching
- * - Retry logic with exponential backoff
- * - Graceful error handling
+ * React Query Provider - QueryClient configuration and provider
  */
 
-"use client"
+'use client';
 
-import { QueryClient, QueryClientProvider } from "@tanstack/react-query"
-import { ReactQueryDevtools } from "@tanstack/react-query-devtools"
-import { useState } from "react"
+import { QueryClient, QueryClientProvider } from '@tanstack/react-query';
+import { ReactQueryDevtools } from '@tanstack/react-query-devtools';
+import { useState, type ReactNode } from 'react';
 
+/**
+ * Create QueryClient with default options
+ */
 function makeQueryClient() {
   return new QueryClient({
     defaultOptions: {
@@ -25,7 +23,7 @@ function makeQueryClient() {
         retry: 2,
         // Retry delay with exponential backoff
         retryDelay: (attemptIndex) => Math.min(1000 * 2 ** attemptIndex, 30000),
-        // Refetch on window focus (disabled for stability)
+        // Refetch on window focus (disabled for now)
         refetchOnWindowFocus: false,
         // Refetch on mount if data is stale
         refetchOnMount: true,
@@ -35,24 +33,34 @@ function makeQueryClient() {
         retry: 1,
       },
     },
-  })
+  });
 }
 
-let browserQueryClient: QueryClient | undefined = undefined
+let browserQueryClient: QueryClient | undefined = undefined;
 
+/**
+ * Get QueryClient instance (singleton in browser, new instance in SSR)
+ */
 function getQueryClient() {
   if (typeof window === 'undefined') {
     // Server: always make a new query client
-    return makeQueryClient()
+    return makeQueryClient();
   } else {
     // Browser: make a new query client if we don't already have one
-    if (!browserQueryClient) browserQueryClient = makeQueryClient()
-    return browserQueryClient
+    if (!browserQueryClient) browserQueryClient = makeQueryClient();
+    return browserQueryClient;
   }
 }
 
-export function Providers({ children }: { children: React.ReactNode }) {
-  const [queryClient] = useState(() => getQueryClient())
+/**
+ * Query Provider Component
+ */
+export function QueryProvider({ children }: { children: ReactNode }) {
+  // NOTE: Avoid useState when initializing the query client if you don't
+  //       have a suspense boundary between this and the code that may
+  //       suspend because React will throw away the client on the initial
+  //       render if it suspends and there is no boundary
+  const [queryClient] = useState(() => getQueryClient());
 
   return (
     <QueryClientProvider client={queryClient}>
@@ -62,5 +70,5 @@ export function Providers({ children }: { children: React.ReactNode }) {
         <ReactQueryDevtools initialIsOpen={false} position="bottom" />
       )}
     </QueryClientProvider>
-  )
+  );
 }

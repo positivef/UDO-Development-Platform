@@ -4,18 +4,82 @@ import { motion } from "framer-motion"
 import { Layers, CheckCircle2, Circle, ArrowRight } from "lucide-react"
 import { cn } from "@/lib/utils"
 
+interface PhaseInfo {
+  id: string
+  name: string
+  description: string
+  whatToDo: string[]
+  expectedOutcome: string
+  estimatedDuration: string
+}
+
 interface PhaseProgressProps {
   currentPhase: string
   onPhaseChange: (phase: string) => void
 }
 
 export function PhaseProgress({ currentPhase, onPhaseChange }: PhaseProgressProps) {
-  const phases = [
-    { id: "ideation", name: "Ideation", description: "Concept & Requirements" },
-    { id: "design", name: "Design", description: "Architecture & Planning" },
-    { id: "mvp", name: "MVP", description: "Minimum Viable Product" },
-    { id: "implementation", name: "Implementation", description: "Full Development" },
-    { id: "testing", name: "Testing", description: "Quality Assurance" },
+  const phases: PhaseInfo[] = [
+    {
+      id: "ideation",
+      name: "💡 Ideation",
+      description: "아이디어 구상 및 요구사항 정의",
+      whatToDo: [
+        "문제 정의 및 목표 설정",
+        "사용자 요구사항 수집",
+        "초기 PRD 작성"
+      ],
+      expectedOutcome: "불확실성: VOID(5%) → QUANTUM(50%)",
+      estimatedDuration: "1-2주"
+    },
+    {
+      id: "design",
+      name: "📐 Design",
+      description: "시스템 설계 및 아키텍처",
+      whatToDo: [
+        "시스템 아키텍처 설계",
+        "데이터베이스 스키마 정의",
+        "API 스펙 작성"
+      ],
+      expectedOutcome: "불확실성: QUANTUM(50%) → PROBABILISTIC(30%)",
+      estimatedDuration: "1-2주"
+    },
+    {
+      id: "mvp",
+      name: "🚀 MVP",
+      description: "최소 기능 제품",
+      whatToDo: [
+        "핵심 기능 구현",
+        "기본 테스트 작성",
+        "초기 사용자 피드백"
+      ],
+      expectedOutcome: "불확실성: PROBABILISTIC(30%) → DETERMINISTIC(15%)",
+      estimatedDuration: "2-3주"
+    },
+    {
+      id: "implementation",
+      name: "💻 Implementation",
+      description: "전체 기능 구현",
+      whatToDo: [
+        "전체 기능 완성",
+        "테스트 커버리지 70%+",
+        "CI/CD 파이프라인 구축"
+      ],
+      expectedOutcome: "불확실성: CHAOTIC(33%) → PROBABILISTIC(15%)",
+      estimatedDuration: "4-6주"
+    },
+    {
+      id: "testing",
+      name: "🧪 Testing",
+      description: "품질 보증",
+      whatToDo: [
+        "통합 테스트 완료",
+        "성능 테스트 통과",
+        "보안 검증"
+      ],
+      expectedOutcome: "불확실성: PROBABILISTIC(15%) → DETERMINISTIC(5%)",
+      estimatedDuration: "1-2주"
+    },
   ]
 
   const currentIndex = phases.findIndex(p => p.id === currentPhase)
@@ -101,6 +165,49 @@ export function PhaseProgress({ currentPhase, onPhaseChange }: PhaseProgressProp
           />
         </div>
       </div>
+
+      {/* Current Phase Details */}
+      {currentIndex >= 0 && (
+        <motion.div
+          initial={{ opacity: 0, y: 10 }}
+          animate={{ opacity: 1, y: 0 }}
+          className="mt-4 pt-4 border-t border-gray-700"
+        >
+          <h3 className="text-sm font-semibold text-blue-300 mb-2">
+            📍 Current Phase Details
+          </h3>
+
+          <div className="space-y-3 text-sm">
+            {/* What to Do */}
+            <div>
+              <div className="text-gray-400 mb-1">🎯 What to Do:</div>
+              <ul className="space-y-1 ml-2">
+                {phases[currentIndex].whatToDo.map((item, idx) => (
+                  <li key={idx} className="text-gray-300 text-xs">
+                    • {item}
+                  </li>
+                ))}
+              </ul>
+            </div>
+
+            {/* Expected Outcome */}
+            <div>
+              <div className="text-gray-400 mb-1">💡 Expected Outcome:</div>
+              <div className="text-green-300 text-xs">
+                {phases[currentIndex].expectedOutcome}
+              </div>
+            </div>
+
+            {/* Duration */}
+            <div className="flex justify-between">
+              <span className="text-gray-400">⏱️ Duration:</span>
+              <span className="text-yellow-300 text-xs">
+                {phases[currentIndex].estimatedDuration}
+              </span>
+            </div>
+          </div>
+        </motion.div>
+      )}
     </motion.div>
   )
 }

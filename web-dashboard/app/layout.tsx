@@ -3,6 +3,7 @@ import { Inter } from "next/font/google";
 import "./globals.css";
 import { Providers } from "@/components/providers";
 import { Toaster } from "sonner";
+import { Navigation } from "@/components/Navigation";
 
 const inter = Inter({ subsets: ["latin"] });
 
@@ -21,7 +22,19 @@ export default function RootLayout({
     <html lang="en" suppressHydrationWarning>
       <body className={`${inter.className} bg-background text-foreground antialiased`}>
         <Providers>
-          {children}
+          <div className="min-h-screen flex flex-col">
+            <header className="sticky top-0 z-50 w-full border-b bg-background/95 backdrop-blur supports-[backdrop-filter]:bg-background/60">
+              <div className="container flex h-16 items-center justify-between px-4">
+                <div className="flex items-center gap-4">
+                  <h1 className="text-xl font-bold">UDO Platform v3.0</h1>
+                </div>
+                <Navigation />
+              </div>
+            </header>
+            <main className="flex-1">
+              {children}
+            </main>
+          </div>
           <Toaster richColors position="top-right" />
         </Providers>
       </body>
