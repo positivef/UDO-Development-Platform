@@ -14,7 +14,7 @@ Key features:
 
 from typing import List, Dict, Set, Optional, Tuple
 from uuid import UUID, uuid4
-from datetime import datetime
+from datetime import datetime, UTC
 from collections import defaultdict, deque
 import logging
 import time
@@ -236,7 +236,7 @@ class KanbanDependencyService:
 
         # Update dependency status
         dependency.status = DependencyStatus.OVERRIDDEN
-        dependency.updated_at = datetime.utcnow()
+        dependency.updated_at = datetime.now(UTC)
 
         # Create audit log entry
         audit_entry = DependencyAudit(

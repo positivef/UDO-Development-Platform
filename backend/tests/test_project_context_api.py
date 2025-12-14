@@ -13,7 +13,7 @@ import sys
 import json
 import uuid
 from pathlib import Path
-from datetime import datetime
+from datetime import datetime, UTC
 from typing import Dict, Any, Optional
 from unittest.mock import Mock, AsyncMock, patch, MagicMock
 
@@ -63,7 +63,7 @@ class MockProjectContextService:
             "recent_executions": recent_executions[:10] if recent_executions else [],  # FIFO limit
             "ai_preferences": ai_preferences or {},
             "editor_state": editor_state or {},
-            "saved_at": datetime.utcnow().isoformat(),
+            "saved_at": datetime.now(UTC).isoformat(),
             "loaded_at": None
         }
         self.contexts[str(project_id)] = context
@@ -73,7 +73,7 @@ class MockProjectContextService:
         """Mock load context"""
         context = self.contexts.get(str(project_id))
         if context:
-            context["loaded_at"] = datetime.utcnow().isoformat()
+            context["loaded_at"] = datetime.now(UTC).isoformat()
         return context
 
     async def update_context(
@@ -89,7 +89,7 @@ class MockProjectContextService:
         for key, value in context_update.items():
             if value is not None:
                 current[key] = value
-        current["saved_at"] = datetime.utcnow().isoformat()
+        current["saved_at"] = datetime.now(UTC).isoformat()
         return current
 
     async def merge_context(
@@ -102,7 +102,7 @@ class MockProjectContextService:
             # Create new context if doesn't exist
             self.contexts[str(project_id)] = {
                 "project_id": str(project_id),
-                "saved_at": datetime.utcnow().isoformat(),
+                "saved_at": datetime.now(UTC).isoformat(),
                 "loaded_at": None
             }
 
@@ -110,7 +110,7 @@ class MockProjectContextService:
         for key, value in partial_context.items():
             if value is not None:
                 current[key] = value
-        current["saved_at"] = datetime.utcnow().isoformat()
+        current["saved_at"] = datetime.now(UTC).isoformat()
         return current
 
     async def delete_context(self, project_id: uuid.UUID) -> bool:
@@ -130,7 +130,7 @@ class MockProjectContextService:
 
         # Auto-save current context if exists
         if auto_save_current and previous_project_id and str(previous_project_id) in self.contexts:
-            self.contexts[str(previous_project_id)]["saved_at"] = datetime.utcnow().isoformat()
+            self.contexts[str(previous_project_id)]["saved_at"] = datetime.now(UTC).isoformat()
 
         # Load new context
         self.current_project_id = target_project_id
@@ -159,7 +159,7 @@ class MockProjectContextService:
                 "name": "UDO-Development-Platform",
                 "description": "Main development platform",
                 "current_phase": "testing",
-                "last_active_at": datetime.utcnow().isoformat(),
+                "last_active_at": datetime.now(UTC).isoformat(),
                 "is_archived": False,
                 "has_context": "550e8400-e29b-41d4-a716-446655440000" in self.contexts
             },
@@ -168,7 +168,7 @@ class MockProjectContextService:
                 "name": "Test-Project",
                 "description": "Test project for validation",
                 "current_phase": "mvp",
-                "last_active_at": datetime.utcnow().isoformat(),
+                "last_active_at": datetime.now(UTC).isoformat(),
                 "is_archived": False,
                 "has_context": "550e8400-e29b-41d4-a716-446655440001" in self.contexts
             }
@@ -193,7 +193,7 @@ class MockProjectContextService:
                 "name": "UDO-Development-Platform",
                 "description": "Main development platform",
                 "current_phase": "testing",
-                "last_active_at": datetime.utcnow().isoformat(),
+                "last_active_at": datetime.now(UTC).isoformat(),
                 "is_archived": False,
                 "has_context": True
             }
@@ -250,7 +250,7 @@ class TestProjectContextAPI:
             },
             "recent_executions": [
                 {
-                    "timestamp": datetime.utcnow().isoformat(),
+                    "timestamp": datetime.now(UTC).isoformat(),
                     "task": "pytest",
                     "decision": "GO",
                     "confidence": 0.9,
@@ -416,7 +416,7 @@ class TestProjectContextAPI:
         executions = []
         for i in range(15):
             executions.append({
-                "timestamp": datetime.utcnow().isoformat(),
+                "timestamp": datetime.now(UTC).isoformat(),
                 "task": f"task-{i:03d}",
                 "decision": "GO",
                 "confidence": 0.85,

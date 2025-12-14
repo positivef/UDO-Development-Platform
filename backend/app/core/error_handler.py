@@ -13,7 +13,7 @@ import logging
 import traceback
 import os
 from typing import Any, Dict, Optional, Callable
-from datetime import datetime
+from datetime import datetime, UTC
 from enum import Enum
 import asyncio
 import json
@@ -238,7 +238,7 @@ class GlobalErrorHandler:
 
         # 에러 정보 로깅
         error_info = {
-            "timestamp": datetime.utcnow().isoformat(),
+            "timestamp": datetime.now(UTC).isoformat(),
             "path": str(request.url),
             "method": request.method,
             "category": category.value,

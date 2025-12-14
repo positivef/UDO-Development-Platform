@@ -34,7 +34,7 @@ router = APIRouter(prefix="/api/kanban/dependencies", tags=["Kanban Dependencies
 
 def error_response(code: str, message: str, status_code: int, details: dict = None):
     """Standard error response format"""
-    from datetime import datetime
+    from datetime import datetime, UTC
     return JSONResponse(
         status_code=status_code,
         content={
@@ -42,7 +42,7 @@ def error_response(code: str, message: str, status_code: int, details: dict = No
                 "code": code,
                 "message": message,
                 "details": details or {},
-                "timestamp": datetime.utcnow().isoformat() + "Z"
+                "timestamp": datetime.now(UTC).isoformat() + "Z"
             }
         }
     )

@@ -13,7 +13,7 @@ Key features:
 
 from typing import Dict, Optional
 from uuid import UUID, uuid4
-from datetime import datetime
+from datetime import datetime, UTC
 import hashlib
 import logging
 
@@ -242,8 +242,8 @@ class KanbanContextService:
         # Update context
         context.load_count = new_count
         context.avg_load_time_ms = new_avg
-        context.last_loaded_at = datetime.utcnow()
-        context.updated_at = datetime.utcnow()
+        context.last_loaded_at = datetime.now(UTC)
+        context.updated_at = datetime.now(UTC)
 
         if self.db:
             # Database implementation

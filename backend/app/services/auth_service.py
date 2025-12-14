@@ -5,7 +5,7 @@ Authentication Service
 """
 
 from typing import Optional, Dict, Any
-from datetime import datetime
+from datetime import datetime, UTC
 import logging
 from ..core.security import PasswordHasher
 from ..core.log_sanitizer import sanitize_exception
@@ -42,7 +42,7 @@ class AuthService:
             "username": "admin",
             "password_hash": admin_password,
             "full_name": "System Administrator",
-            "created_at": datetime.utcnow().isoformat(),
+            "created_at": datetime.now(UTC).isoformat(),
             "is_active": True,
             "role": UserRole.ADMIN
         }
@@ -56,7 +56,7 @@ class AuthService:
             "username": "projectowner",
             "password_hash": owner_password,
             "full_name": "Project Owner",
-            "created_at": datetime.utcnow().isoformat(),
+            "created_at": datetime.now(UTC).isoformat(),
             "is_active": True,
             "role": UserRole.PROJECT_OWNER
         }
@@ -70,7 +70,7 @@ class AuthService:
             "username": "developer",
             "password_hash": dev_password,
             "full_name": "Developer User",
-            "created_at": datetime.utcnow().isoformat(),
+            "created_at": datetime.now(UTC).isoformat(),
             "is_active": True,
             "role": UserRole.DEVELOPER
         }
@@ -84,7 +84,7 @@ class AuthService:
             "username": "viewer",
             "password_hash": viewer_password,
             "full_name": "Viewer User",
-            "created_at": datetime.utcnow().isoformat(),
+            "created_at": datetime.now(UTC).isoformat(),
             "is_active": True,
             "role": UserRole.VIEWER
         }
@@ -135,7 +135,7 @@ class AuthService:
                 "username": username,
                 "password_hash": password_hash,
                 "full_name": full_name,
-                "created_at": datetime.utcnow().isoformat(),
+                "created_at": datetime.now(UTC).isoformat(),
                 "is_active": True,
                 "role": UserRole.DEVELOPER  # Default role for new users
             }
@@ -258,7 +258,7 @@ class AuthService:
                 )
 
             # 업데이트 시간 기록
-            user["updated_at"] = datetime.utcnow().isoformat()
+            user["updated_at"] = datetime.now(UTC).isoformat()
 
             logger.info(f"User updated: {email}")
 

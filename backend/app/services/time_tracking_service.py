@@ -9,7 +9,7 @@ import logging
 import yaml
 import asyncio
 from pathlib import Path
-from datetime import datetime, date, timedelta
+from datetime import datetime, UTC, date, timedelta
 from typing import Dict, List, Optional, Any, Tuple
 from uuid import UUID
 
@@ -141,7 +141,7 @@ class TimeTrackingService:
             baseline_seconds = self._get_baseline_seconds(task_type)
 
             # Create session
-            start_time = datetime.utcnow()
+            start_time = datetime.now(UTC)
             session_create = TaskSessionCreate(
                 task_id=task_id,
                 task_type=task_type,
@@ -221,7 +221,7 @@ class TimeTrackingService:
             TaskMetrics with calculated time savings and ROI
         """
         try:
-            end_time = datetime.utcnow()
+            end_time = datetime.now(UTC)
 
             # Get session info from memory
             session_key = str(session_id)
@@ -350,7 +350,7 @@ class TimeTrackingService:
                 return False
 
             # Record pause start time
-            self.paused_sessions[session_key] = datetime.utcnow()
+            self.paused_sessions[session_key] = datetime.now(UTC)
 
             logger.info(f"Paused task session {session_id}")
             return True
@@ -378,7 +378,7 @@ class TimeTrackingService:
 
             # Calculate pause duration
             pause_start = self.paused_sessions[session_key]
-            pause_duration = int((datetime.utcnow() - pause_start).total_seconds())
+            pause_duration = int((datetime.now(UTC) - pause_start).total_seconds())
 
             # Add to total pause duration
             self.active_sessions[session_key]["total_pause_duration"] += pause_duration

@@ -14,7 +14,7 @@ import re
 import secrets
 import hashlib
 import os
-from datetime import datetime, timedelta
+from datetime import datetime, timedelta, UTC
 from typing import Optional, Dict, Any, List, Set
 from fastapi import HTTPException, Request, status, Depends
 from fastapi.security import HTTPBearer, HTTPAuthorizationCredentials
@@ -370,9 +370,9 @@ class JWTManager:
         to_encode = data.copy()
 
         if expires_delta:
-            expire = datetime.utcnow() + expires_delta
+            expire = datetime.now(UTC) + expires_delta
         else:
-            expire = datetime.utcnow() + timedelta(minutes=ACCESS_TOKEN_EXPIRE_MINUTES)
+            expire = datetime.now(UTC) + timedelta(minutes=ACCESS_TOKEN_EXPIRE_MINUTES)
 
         to_encode.update({"exp": expire, "type": "access"})
 
@@ -397,7 +397,7 @@ class JWTManager:
             JWT 리프레시 토큰
         """
         to_encode = data.copy()
-        expire = datetime.utcnow() + timedelta(days=REFRESH_TOKEN_EXPIRE_DAYS)
+        expire = datetime.now(UTC) + timedelta(days=REFRESH_TOKEN_EXPIRE_DAYS)
 
         to_encode.update({"exp": expire, "type": "refresh"})
 
@@ -505,7 +505,7 @@ class RateLimiter:
 
     def check_rate_limit(self, client_ip: str) -> bool:
         """레이트 리밋 체크"""
-        now = datetime.utcnow()
+        now = datetime.now(UTC)
 
         # Initialize if new client
         if client_ip not in self.requests:
@@ -573,14 +573,14 @@ class AuthRateLimiter:
     def _cleanup_old_attempts(self, attempts: Dict[str, List[datetime]], client_ip: str) -> None:
         """Remove attempts outside the window"""
         if client_ip in attempts:
-            cutoff = datetime.utcnow() - timedelta(seconds=self.WINDOW_SECONDS)
+            cutoff = datetime.now(UTC) - timedelta(seconds=self.WINDOW_SECONDS)
             attempts[client_ip] = [t for t in attempts[client_ip] if t > cutoff]
 
     def _check_lockout(self, client_ip: str) -> bool:
         """Check if client is locked out"""
         if client_ip in self._lockouts:
             lockout_end = self._lockouts[client_ip]
-            if datetime.utcnow() < lockout_end:
+            if datetime.now(UTC) < lockout_end:
                 return True
             else:
                 # Lockout expired, remove it
@@ -589,7 +589,7 @@ class AuthRateLimiter:
 
     def _apply_lockout(self, client_ip: str) -> None:
         """Apply lockout to client"""
-        self._lockouts[client_ip] = datetime.utcnow() + timedelta(seconds=self.LOCKOUT_DURATION)
+        self._lockouts[client_ip] = datetime.now(UTC) + timedelta(seconds=self.LOCKOUT_DURATION)
         logger.warning(f"Auth lockout applied to {client_ip} for {self.LOCKOUT_DURATION}s")
 
     def check_login_limit(self, client_ip: str) -> bool:
@@ -613,7 +613,7 @@ class AuthRateLimiter:
                 self._apply_lockout(client_ip)
                 return False
 
-            self._login_attempts[client_ip].append(datetime.utcnow())
+            self._login_attempts[client_ip].append(datetime.now(UTC))
             return True
 
     def check_register_limit(self, client_ip: str) -> bool:
@@ -631,7 +631,7 @@ class AuthRateLimiter:
                 self._apply_lockout(client_ip)
                 return False
 
-            self._register_attempts[client_ip].append(datetime.utcnow())
+            self._register_attempts[client_ip].append(datetime.now(UTC))
             return True
 
     def check_reset_limit(self, client_ip: str) -> bool:
@@ -649,7 +649,7 @@ class AuthRateLimiter:
                 self._apply_lockout(client_ip)
                 return False
 
-            self._reset_attempts[client_ip].append(datetime.utcnow())
+            self._reset_attempts[client_ip].append(datetime.now(UTC))
             return True
 
     def get_remaining_attempts(self, client_ip: str, endpoint: str = "login") -> int:

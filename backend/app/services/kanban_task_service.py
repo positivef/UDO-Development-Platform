@@ -7,7 +7,7 @@ Follows Q1-Q8 decisions from KANBAN_INTEGRATION_STRATEGY.md.
 
 from typing import List, Optional, Dict
 from uuid import UUID, uuid4
-from datetime import datetime
+from datetime import datetime, UTC
 import logging
 
 from backend.app.models.kanban_task import (
@@ -268,12 +268,12 @@ class KanbanTaskService:
         if task_update.quality_score is not None:
             task.quality_score = task_update.quality_score
 
-        task.updated_at = datetime.utcnow()
+        task.updated_at = datetime.now(UTC)
 
         # Mark as completed if completeness is 100%
         if task.completeness == 100 and task.status != TaskStatus.COMPLETED:
             task.status = TaskStatus.COMPLETED
-            task.completed_at = datetime.utcnow()
+            task.completed_at = datetime.now(UTC)
 
         if self.db:
             # Database implementation
@@ -333,7 +333,7 @@ class KanbanTaskService:
 
         task.phase_id = phase_request.new_phase_id
         task.phase_name = phase_request.new_phase_name
-        task.updated_at = datetime.utcnow()
+        task.updated_at = datetime.now(UTC)
 
         logger.info(
             f"Moved task {task_id} to phase: {phase_request.new_phase_name}"
@@ -362,11 +362,11 @@ class KanbanTaskService:
         task = await self.get_task(task_id)
 
         task.status = status_request.new_status
-        task.updated_at = datetime.utcnow()
+        task.updated_at = datetime.now(UTC)
 
         # Set completed_at if status is COMPLETED
         if status_request.new_status == TaskStatus.COMPLETED:
-            task.completed_at = datetime.utcnow()
+            task.completed_at = datetime.now(UTC)
 
         logger.info(f"Changed task {task_id} status to: {status_request.new_status}")
         return task
@@ -389,7 +389,7 @@ class KanbanTaskService:
         task = await self.get_task(task_id)
 
         task.priority = priority_request.new_priority
-        task.updated_at = datetime.utcnow()
+        task.updated_at = datetime.now(UTC)
 
         logger.info(
             f"Changed task {task_id} priority to: {priority_request.new_priority}"
@@ -414,12 +414,12 @@ class KanbanTaskService:
         task = await self.get_task(task_id)
 
         task.completeness = completeness_request.completeness
-        task.updated_at = datetime.utcnow()
+        task.updated_at = datetime.now(UTC)
 
         # Auto-mark as completed if 100%
         if completeness_request.completeness == 100:
             task.status = TaskStatus.COMPLETED
-            task.completed_at = datetime.utcnow()
+            task.completed_at = datetime.now(UTC)
 
         logger.info(
             f"Updated task {task_id} completeness to: "
@@ -448,7 +448,7 @@ class KanbanTaskService:
             Quality gate result
         """
         task = await self.get_task(task_id)
-        start_time = datetime.utcnow()
+        start_time = datetime.now(UTC)
 
         # Mock quality checks (will integrate with quality_service later)
         checks = [
@@ -484,7 +484,7 @@ class KanbanTaskService:
         task.constitutional_compliant = len(violated_articles) == 0
         task.violated_articles = violated_articles
 
-        execution_time = (datetime.utcnow() - start_time).total_seconds() * 1000
+        execution_time = (datetime.now(UTC) - start_time).total_seconds() * 1000
 
         result = QualityGateResult(
             task_id=task_id,
@@ -493,7 +493,7 @@ class KanbanTaskService:
             constitutional_compliant=len(violated_articles) == 0,
             violated_articles=violated_articles,
             checks=checks,
-            timestamp=datetime.utcnow(),
+            timestamp=datetime.now(UTC),
             execution_time_ms=execution_time,
         )
 
@@ -567,14 +567,14 @@ class KanbanTaskService:
             task_id=task_id,
             task_data=task,
             ai_summary=ai_summary,
-            archived_at=datetime.utcnow(),
+            archived_at=datetime.now(UTC),
             archived_by=archive_request.archived_by,
             obsidian_synced=False,  # Will be synced by obsidian_service
         )
 
         # Update task status
         task.status = TaskStatus.DONE_END
-        task.archived_at = datetime.utcnow()
+        task.archived_at = datetime.now(UTC)
 
         if self.db:
             # Database implementation

@@ -7,7 +7,7 @@ import asyncio
 import json
 import logging
 from typing import Any, Dict, Optional, List, Tuple
-from datetime import datetime
+from datetime import datetime, UTC
 import asyncpg
 from redis import Redis
 import numpy as np
@@ -153,7 +153,7 @@ class DualWriteManager:
                     data.get('file_path', ''),
                     data.get('content', ''),
                     json.dumps(data.get('metadata', {})),
-                    datetime.utcnow())
+                    datetime.now(UTC))
 
                 # If embedding is provided, update it separately
                 if 'embedding' in data:
@@ -306,7 +306,7 @@ class DualWriteManager:
                 )
 
                 self.consistency_checks.append({
-                    'timestamp': datetime.utcnow(),
+                    'timestamp': datetime.now(UTC),
                     'consistent': consistent,
                     'project_id': project_id
                 })

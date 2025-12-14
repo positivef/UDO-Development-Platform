@@ -6,7 +6,7 @@ Task Management Service
 """
 
 from typing import List, Dict, Any, Optional
-from datetime import datetime
+from datetime import datetime, UTC
 from enum import Enum
 import uuid
 import json
@@ -62,8 +62,8 @@ class TaskService:
             "project_id": "proj-udo-001",
             "phase": "development",
             "status": TaskStatus.IN_PROGRESS.value,
-            "created_at": datetime.utcnow().isoformat(),
-            "updated_at": datetime.utcnow().isoformat(),
+            "created_at": datetime.now(UTC).isoformat(),
+            "updated_at": datetime.now(UTC).isoformat(),
 
             # TODO 그룹
             "todo_groups": [
@@ -222,8 +222,8 @@ class TaskService:
             "project_id": "proj-udo-001",
             "phase": "planning",
             "status": TaskStatus.PENDING.value,
-            "created_at": datetime.utcnow().isoformat(),
-            "updated_at": datetime.utcnow().isoformat(),
+            "created_at": datetime.now(UTC).isoformat(),
+            "updated_at": datetime.now(UTC).isoformat(),
 
             "todo_groups": [
                 {
@@ -275,8 +275,8 @@ class TaskService:
             "project_id": "proj-udo-001",
             "phase": "development",
             "status": TaskStatus.BLOCKED.value,
-            "created_at": datetime.utcnow().isoformat(),
-            "updated_at": datetime.utcnow().isoformat(),
+            "created_at": datetime.now(UTC).isoformat(),
+            "updated_at": datetime.now(UTC).isoformat(),
 
             "todo_groups": [
                 {
@@ -479,14 +479,14 @@ class TaskService:
                     if item["id"] == todo_id:
                         item["status"] = new_status
                         if new_status == "completed":
-                            item["completed_at"] = datetime.utcnow().isoformat()
+                            item["completed_at"] = datetime.now(UTC).isoformat()
                             item["current"] = False
                         elif new_status == "in_progress":
-                            item["started_at"] = datetime.utcnow().isoformat()
+                            item["started_at"] = datetime.now(UTC).isoformat()
                             item["current"] = True
                         break
 
-        task["updated_at"] = datetime.utcnow().isoformat()
+        task["updated_at"] = datetime.now(UTC).isoformat()
 
         logger.info(f"Updated task progress: {task_id}")
         return True
@@ -505,8 +505,8 @@ class TaskService:
 
         task = {
             "id": task_id,
-            "created_at": datetime.utcnow().isoformat(),
-            "updated_at": datetime.utcnow().isoformat(),
+            "created_at": datetime.now(UTC).isoformat(),
+            "updated_at": datetime.now(UTC).isoformat(),
             "status": TaskStatus.PENDING.value,
             "completeness": 0,
             "actual_hours": 0,
@@ -545,7 +545,7 @@ class TaskService:
         self.task_contexts[task_id] = {
             **self.task_contexts.get(task_id, {}),
             **context,
-            "updated_at": datetime.utcnow().isoformat()
+            "updated_at": datetime.now(UTC).isoformat()
         }
 
         logger.info(f"Saved task context: {task_id}")

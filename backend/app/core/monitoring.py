@@ -9,7 +9,7 @@ import psutil
 import logging
 from typing import Dict, Any, Optional, Callable
 from functools import wraps
-from datetime import datetime
+from datetime import datetime, UTC
 import asyncio
 from contextlib import contextmanager
 from prometheus_client import Counter, Histogram, Gauge, generate_latest, REGISTRY
@@ -235,7 +235,7 @@ class PerformanceMonitor:
             "cache_hit_rate": cache_hit_rate,
             "active_connections": active_connections._value.get(),
             "task_queue_size": task_queue_size._value.get(),
-            "timestamp": datetime.utcnow().isoformat()
+            "timestamp": datetime.now(UTC).isoformat()
         }
 
     def get_prometheus_metrics(self) -> bytes:

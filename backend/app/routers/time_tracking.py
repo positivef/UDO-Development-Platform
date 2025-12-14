@@ -5,7 +5,7 @@ FastAPI endpoints for time tracking and ROI measurement.
 """
 
 import logging
-from datetime import date
+from datetime import date, UTC
 from typing import Optional, List
 from uuid import UUID
 from fastapi import APIRouter, HTTPException, Depends, Query
@@ -138,7 +138,7 @@ async def pause_tracking(
     The paused time will not count toward task duration.
     """
     try:
-        from datetime import datetime
+        from datetime import datetime, UTC
 
         success = await service.pause_task(session_id)
 
@@ -148,7 +148,7 @@ async def pause_tracking(
         return PauseTrackingResponse(
             success=True,
             message="Task tracking paused",
-            paused_at=datetime.utcnow()
+            paused_at=datetime.now(UTC)
         )
 
     except HTTPException:
@@ -170,7 +170,7 @@ async def resume_tracking(
     toward the task duration.
     """
     try:
-        from datetime import datetime
+        from datetime import datetime, UTC
 
         success = await service.resume_task(session_id)
 
@@ -180,7 +180,7 @@ async def resume_tracking(
         return ResumeTrackingResponse(
             success=True,
             message="Task tracking resumed",
-            resumed_at=datetime.utcnow()
+            resumed_at=datetime.now(UTC)
         )
 
     except HTTPException:
@@ -358,7 +358,7 @@ async def get_trends(
     ```
     """
     try:
-        from datetime import timedelta
+        from datetime import timedelta, UTC
 
         end_date = date.today()
         start_date = end_date - timedelta(days=days)

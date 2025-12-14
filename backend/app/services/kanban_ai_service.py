@@ -7,7 +7,7 @@ Implements Q2: AI Hybrid (suggest + approve) with Constitutional compliance.
 
 import os
 import time
-from datetime import datetime, timedelta
+from datetime import datetime, UTC, timedelta
 from typing import List, Dict, Optional
 from uuid import UUID
 import logging
@@ -359,7 +359,7 @@ Format your response as JSON array of objects with these fields:
 
     def _check_rate_limit(self, user_id: str) -> RateLimitStatus:
         """Check if user has exceeded rate limit (10 suggestions/hour)"""
-        now = datetime.utcnow()
+        now = datetime.now(UTC)
         one_hour_ago = now - timedelta(hours=1)
 
         # Get user's recent suggestions
@@ -396,7 +396,7 @@ Format your response as JSON array of objects with these fields:
 
     def _record_suggestion_usage(self, user_id: str):
         """Record that user generated a suggestion"""
-        now = datetime.utcnow()
+        now = datetime.now(UTC)
         if user_id not in self.rate_limit_storage:
             self.rate_limit_storage[user_id] = []
         self.rate_limit_storage[user_id].append(now)

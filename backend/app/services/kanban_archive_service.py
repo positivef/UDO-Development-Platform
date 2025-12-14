@@ -8,7 +8,7 @@ Implements Q6: Done-End archive with GPT-4o summarization and Obsidian knowledge
 import os
 import time
 import logging
-from datetime import datetime
+from datetime import datetime, UTC
 from typing import List, Optional, Dict
 from uuid import UUID
 
@@ -127,7 +127,7 @@ class KanbanArchiveService:
                 obsidian_error = str(e)
 
         # 5. Update task status to DONE_END
-        archived_at = datetime.utcnow()
+        archived_at = datetime.now(UTC)
         # TODO: In production, update task in database with archived_at timestamp
 
         # 6. Store in archive
@@ -372,14 +372,14 @@ Generate a comprehensive summary with key learnings, technical insights, and rec
                 ],
                 related_tasks=[],  # TODO: Link related tasks
                 created_at=task.created_at,
-                archived_at=datetime.utcnow()
+                archived_at=datetime.now(UTC)
             )
 
             # Generate Obsidian note content
             note_content = self._generate_obsidian_note(entry, roi_metrics)
 
             # Save to Obsidian vault
-            note_filename = f"{datetime.utcnow().strftime('%Y-%m-%d')}_task_{task.task_id}.md"
+            note_filename = f"{datetime.now(UTC).strftime('%Y-%m-%d')}_task_{task.task_id}.md"
             note_path = self.obsidian_service.daily_notes_dir / note_filename
 
             # Write note to file
@@ -392,7 +392,7 @@ Generate a comprehensive summary with key learnings, technical insights, and rec
                 task_id=task.task_id,
                 synced=True,
                 obsidian_note_path=str(note_path),
-                sync_timestamp=datetime.utcnow(),
+                sync_timestamp=datetime.now(UTC),
                 retry_count=0
             )
 
@@ -533,8 +533,8 @@ Generate a comprehensive summary with key learnings, technical insights, and rec
                 ai_suggested_tasks=0,
                 constitutional_compliant_tasks=0,
                 constitutional_compliance_rate=0.0,
-                period_start=datetime.utcnow(),
-                period_end=datetime.utcnow()
+                period_start=datetime.now(UTC),
+                period_end=datetime.now(UTC)
             )
 
         total_estimated = sum(a.roi_metrics.estimated_hours for a in archives if a.roi_metrics)

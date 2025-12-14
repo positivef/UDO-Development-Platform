@@ -8,7 +8,7 @@ Tests Q6: Done-End archive with GPT-4o summarization and Obsidian sync.
 import pytest
 import pytest_asyncio
 from uuid import uuid4
-from datetime import datetime
+from datetime import datetime, UTC
 
 from backend.app.services.kanban_archive_service import kanban_archive_service
 from backend.app.models.kanban_archive import (
@@ -48,9 +48,9 @@ def sample_completed_task():
         quality_gate_passed=True,
         user_confirmed=True,
         confirmed_by="test_developer",
-        created_at=datetime.utcnow(),
-        updated_at=datetime.utcnow(),
-        completed_at=datetime.utcnow(),
+        created_at=datetime.now(UTC),
+        updated_at=datetime.now(UTC),
+        completed_at=datetime.now(UTC),
     )
 
 
@@ -120,8 +120,8 @@ class TestArchiveTask:
             title="Pending task",
             phase_name=PhaseName.IMPLEMENTATION,
             status=TaskStatus.PENDING,  # Not completed
-            created_at=datetime.utcnow(),
-            updated_at=datetime.utcnow(),
+            created_at=datetime.now(UTC),
+            updated_at=datetime.now(UTC),
         )
 
         # Add to service storage
@@ -207,9 +207,9 @@ class TestAISummarization:
                 estimated_hours=10.0,
                 actual_hours=9.0,
                 quality_score=85,
-                created_at=datetime.utcnow(),
-                updated_at=datetime.utcnow(),
-                completed_at=datetime.utcnow(),
+                created_at=datetime.now(UTC),
+                updated_at=datetime.now(UTC),
+                completed_at=datetime.now(UTC),
             )
 
             # Add to service storage
@@ -275,9 +275,9 @@ class TestROIMetrics:
             estimated_hours=10.0,
             actual_hours=15.0,  # Took longer
             quality_score=80,
-            created_at=datetime.utcnow(),
-            updated_at=datetime.utcnow(),
-            completed_at=datetime.utcnow(),
+            created_at=datetime.now(UTC),
+            updated_at=datetime.now(UTC),
+            completed_at=datetime.now(UTC),
         )
 
         # Add to service storage
@@ -339,9 +339,9 @@ class TestArchiveList:
                 estimated_hours=10.0,
                 actual_hours=9.0,
                 quality_score=85,
-                created_at=datetime.utcnow(),
-                updated_at=datetime.utcnow(),
-                completed_at=datetime.utcnow(),
+                created_at=datetime.now(UTC),
+                updated_at=datetime.now(UTC),
+                completed_at=datetime.now(UTC),
             )
 
             # Add and archive
@@ -379,9 +379,9 @@ class TestArchiveList:
                 estimated_hours=10.0,
                 actual_hours=9.0,
                 quality_score=85,
-                created_at=datetime.utcnow(),
-                updated_at=datetime.utcnow(),
-                completed_at=datetime.utcnow(),
+                created_at=datetime.now(UTC),
+                updated_at=datetime.now(UTC),
+                completed_at=datetime.now(UTC),
             )
 
             from backend.app.services.kanban_task_service import kanban_task_service
@@ -445,7 +445,7 @@ class TestObsidianSync:
             technical_insights=["Insight 1"],
             tags=["test", "implementation"],
             created_at=sample_completed_task.created_at,
-            archived_at=datetime.utcnow()
+            archived_at=datetime.now(UTC)
         )
 
         roi = ROIMetrics(
@@ -506,9 +506,9 @@ class TestEdgeCases:
                 actual_hours=9.0,
                 quality_score=85 + i * 5,
                 constitutional_compliant=True,
-                created_at=datetime.utcnow(),
-                updated_at=datetime.utcnow(),
-                completed_at=datetime.utcnow(),
+                created_at=datetime.now(UTC),
+                updated_at=datetime.now(UTC),
+                completed_at=datetime.now(UTC),
             )
 
             from backend.app.services.kanban_task_service import kanban_task_service

@@ -15,7 +15,7 @@ Version: 1.0.0
 import logging
 import sys
 from pathlib import Path
-from datetime import datetime
+from datetime import datetime, UTC
 from typing import Optional, Dict, Any
 from uuid import UUID, uuid4
 
@@ -242,7 +242,7 @@ class PhaseTransitionListener:
                     "to_phase": to_phase.value,
                     "transition_id": str(transition_id),
                     "duration_seconds": duration_seconds,
-                    "timestamp": datetime.utcnow().isoformat()
+                    "timestamp": datetime.now(UTC).isoformat()
                 }
             })
 
