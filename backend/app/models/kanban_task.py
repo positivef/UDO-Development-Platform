@@ -3,12 +3,62 @@ Kanban Task Models
 
 Core task management models for Kanban-UDO integration.
 Implements Q1-Q8 decisions from KANBAN_INTEGRATION_STRATEGY.md.
+
+Security improvements (MED-02):
+- Input sanitization for text fields
+- XSS/SQL injection pattern checks
+- Length constraints on all string fields
 """
 
 from datetime import datetime
 from typing import List, Optional
 from pydantic import BaseModel, Field, field_validator
 from uuid import UUID, uuid4
+import re
+
+
+# ============================================================================
+# MED-02: Security Validation Patterns (inline to avoid circular imports)
+# ============================================================================
+
+# SQL injection patterns (OWASP)
+_SQL_INJECTION_PATTERNS = [
+    r"(\b(SELECT|INSERT|UPDATE|DELETE|DROP|UNION|ALTER|CREATE)\b)",
+    r"(--|\||;|\/\*|\*\/|@@|@)",
+    r"(xp_|sp_|0x)",
+    r"(\bEXEC\b|\bEXECUTE\b)",
+]
+
+# XSS patterns (OWASP)
+_XSS_PATTERNS = [
+    r"<script[^>]*>.*?</script>",
+    r"javascript:",
+    r"on\w+\s*=",
+    r"<iframe[^>]*>",
+    r"<object[^>]*>",
+]
+
+
+def _check_dangerous_content(value: str) -> bool:
+    """Check for SQL injection or XSS patterns"""
+    if not value:
+        return False
+    for pattern in _SQL_INJECTION_PATTERNS + _XSS_PATTERNS:
+        if re.search(pattern, value, re.IGNORECASE):
+            return True
+    return False
+
+
+def _sanitize_text(value: str, max_length: int = 10000) -> str:
+    """Sanitize text input: remove null bytes, strip whitespace, limit length"""
+    if not value:
+        return value
+    # Remove null bytes
+    sanitized = value.replace('\x00', '')
+    # Strip whitespace
+    sanitized = sanitized.strip()
+    # Limit length
+    return sanitized[:max_length]
 
 
 # ============================================================================
@@ -48,13 +98,35 @@ class PhaseName:
 class TaskBase(BaseModel):
     """Base task model with common fields"""
     title: str = Field(..., min_length=1, max_length=255)
-    description: Optional[str] = None
+    description: Optional[str] = Field(None, max_length=5000)  # MED-02: Length limit
     phase_name: str = Field(..., description="Phase this task belongs to (Q1)")
     status: str = Field(default=TaskStatus.PENDING)
     priority: str = Field(default=TaskPriority.MEDIUM)
     completeness: int = Field(default=0, ge=0, le=100, description="Completion percentage (0-100)")
-    estimated_hours: float = Field(default=0.0, ge=0)
-    actual_hours: float = Field(default=0.0, ge=0)
+    estimated_hours: float = Field(default=0.0, ge=0, le=10000)  # MED-02: Max 10000 hours
+    actual_hours: float = Field(default=0.0, ge=0, le=10000)  # MED-02: Max 10000 hours
+
+    @field_validator('title')
+    @classmethod
+    def validate_title(cls, v):
+        """MED-02: Validate and sanitize title"""
+        sanitized = _sanitize_text(v, max_length=255)
+        if _check_dangerous_content(sanitized):
+            raise ValueError("Title contains potentially dangerous content")
+        if len(sanitized) < 1:
+            raise ValueError("Title must not be empty")
+        return sanitized
+
+    @field_validator('description')
+    @classmethod
+    def validate_description(cls, v):
+        """MED-02: Validate and sanitize description"""
+        if v is None:
+            return v
+        sanitized = _sanitize_text(v, max_length=5000)
+        if _check_dangerous_content(sanitized):
+            raise ValueError("Description contains potentially dangerous content")
+        return sanitized
 
     @field_validator('phase_name')
     @classmethod
@@ -122,13 +194,37 @@ class TaskCreate(TaskBase):
 class TaskUpdate(BaseModel):
     """Task update request (all fields optional)"""
     title: Optional[str] = Field(None, min_length=1, max_length=255)
-    description: Optional[str] = None
+    description: Optional[str] = Field(None, max_length=5000)  # MED-02: Length limit
     status: Optional[str] = None
     priority: Optional[str] = None
     completeness: Optional[int] = Field(None, ge=0, le=100)
-    estimated_hours: Optional[float] = Field(None, ge=0)
-    actual_hours: Optional[float] = Field(None, ge=0)
+    estimated_hours: Optional[float] = Field(None, ge=0, le=10000)  # MED-02: Max limit
+    actual_hours: Optional[float] = Field(None, ge=0, le=10000)  # MED-02: Max limit
     quality_score: Optional[int] = Field(None, ge=0, le=100)
+
+    @field_validator('title')
+    @classmethod
+    def validate_title(cls, v):
+        """MED-02: Validate and sanitize title"""
+        if v is None:
+            return v
+        sanitized = _sanitize_text(v, max_length=255)
+        if _check_dangerous_content(sanitized):
+            raise ValueError("Title contains potentially dangerous content")
+        if len(sanitized) < 1:
+            raise ValueError("Title must not be empty")
+        return sanitized
+
+    @field_validator('description')
+    @classmethod
+    def validate_description(cls, v):
+        """MED-02: Validate and sanitize description"""
+        if v is None:
+            return v
+        sanitized = _sanitize_text(v, max_length=5000)
+        if _check_dangerous_content(sanitized):
+            raise ValueError("Description contains potentially dangerous content")
+        return sanitized
 
 
 class Task(TaskBase):
@@ -196,7 +292,7 @@ class PhaseChangeRequest(BaseModel):
     """Request to move task to different phase"""
     new_phase_id: UUID
     new_phase_name: str
-    reason: Optional[str] = None
+    reason: Optional[str] = Field(None, max_length=500)  # MED-02: Length limit
 
     @field_validator('new_phase_name')
     @classmethod
@@ -212,6 +308,17 @@ class PhaseChangeRequest(BaseModel):
         if v not in valid_phases:
             raise ValueError(f"Phase must be one of: {', '.join(valid_phases)}")
         return v
+
+    @field_validator('reason')
+    @classmethod
+    def validate_reason(cls, v):
+        """MED-02: Validate and sanitize reason"""
+        if v is None:
+            return v
+        sanitized = _sanitize_text(v, max_length=500)
+        if _check_dangerous_content(sanitized):
+            raise ValueError("Reason contains potentially dangerous content")
+        return sanitized
 
 
 # ============================================================================
@@ -244,12 +351,34 @@ class QualityGateResult(BaseModel):
 
 class ArchiveRequest(BaseModel):
     """Request to archive task"""
-    archived_by: str
+    archived_by: str = Field(..., min_length=1, max_length=100)  # MED-02: Length limit
     generate_ai_summary: bool = Field(
         default=True,
         description="Generate AI summary using GPT-4o (Q6)"
     )
-    reason: Optional[str] = None
+    reason: Optional[str] = Field(None, max_length=500)  # MED-02: Length limit
+
+    @field_validator('archived_by')
+    @classmethod
+    def validate_archived_by(cls, v):
+        """MED-02: Validate and sanitize archived_by field"""
+        sanitized = _sanitize_text(v, max_length=100)
+        if _check_dangerous_content(sanitized):
+            raise ValueError("archived_by contains potentially dangerous content")
+        if len(sanitized) < 1:
+            raise ValueError("archived_by must not be empty")
+        return sanitized
+
+    @field_validator('reason')
+    @classmethod
+    def validate_reason(cls, v):
+        """MED-02: Validate and sanitize reason"""
+        if v is None:
+            return v
+        sanitized = _sanitize_text(v, max_length=500)
+        if _check_dangerous_content(sanitized):
+            raise ValueError("Reason contains potentially dangerous content")
+        return sanitized
 
 
 class TaskArchive(BaseModel):
@@ -292,7 +421,7 @@ class TaskListResponse(BaseModel):
 class StatusChangeRequest(BaseModel):
     """Request to change task status"""
     new_status: str
-    reason: Optional[str] = None
+    reason: Optional[str] = Field(None, max_length=500)  # MED-02: Length limit
 
     @field_validator('new_status')
     @classmethod
@@ -309,11 +438,22 @@ class StatusChangeRequest(BaseModel):
             raise ValueError(f"Status must be one of: {', '.join(valid_statuses)}")
         return v
 
+    @field_validator('reason')
+    @classmethod
+    def validate_reason(cls, v):
+        """MED-02: Validate and sanitize reason"""
+        if v is None:
+            return v
+        sanitized = _sanitize_text(v, max_length=500)
+        if _check_dangerous_content(sanitized):
+            raise ValueError("Reason contains potentially dangerous content")
+        return sanitized
+
 
 class PriorityChangeRequest(BaseModel):
     """Request to change task priority"""
     new_priority: str
-    reason: Optional[str] = None
+    reason: Optional[str] = Field(None, max_length=500)  # MED-02: Length limit
 
     @field_validator('new_priority')
     @classmethod
@@ -329,11 +469,33 @@ class PriorityChangeRequest(BaseModel):
             raise ValueError(f"Priority must be one of: {', '.join(valid_priorities)}")
         return v
 
+    @field_validator('reason')
+    @classmethod
+    def validate_reason(cls, v):
+        """MED-02: Validate and sanitize reason"""
+        if v is None:
+            return v
+        sanitized = _sanitize_text(v, max_length=500)
+        if _check_dangerous_content(sanitized):
+            raise ValueError("Reason contains potentially dangerous content")
+        return sanitized
+
 
 class CompletenessUpdateRequest(BaseModel):
     """Request to update task completeness"""
     completeness: int = Field(..., ge=0, le=100)
-    updated_by: str
+    updated_by: str = Field(..., min_length=1, max_length=100)  # MED-02: Length limit
+
+    @field_validator('updated_by')
+    @classmethod
+    def validate_updated_by(cls, v):
+        """MED-02: Validate and sanitize updated_by field"""
+        sanitized = _sanitize_text(v, max_length=100)
+        if _check_dangerous_content(sanitized):
+            raise ValueError("updated_by contains potentially dangerous content")
+        if len(sanitized) < 1:
+            raise ValueError("updated_by must not be empty")
+        return sanitized
 
 
 # ============================================================================
