@@ -75,3 +75,24 @@ secrets/*.txt
 # Jupyter Notebook
 .ipynb_checkpoints
 *.ipynb
+
+# Playwright test artifacts
+web-dashboard/playwright-report/
+web-dashboard/test-results/
+playwright-report/
+test-results/
+
+# Temporary test outputs
+*.test.json
+test_*.json
+!tests/*.json
+
+# Secrets folder content
+secrets/*
+!secrets/README.md
+
+# Session state (auto-generated)
+.udo/session_state.json
+
+# Symlinks to external folders
+C:*
