@@ -24,6 +24,9 @@ import logging
 from functools import wraps
 from threading import Lock
 
+# MED-04: Import log sanitizer for secure logging
+from .log_sanitizer import sanitize_log_message, sanitize_exception
+
 # Optional bcrypt import with fallback
 try:
     import bcrypt
@@ -447,7 +450,8 @@ class JWTManager:
             raise
         except Exception as e:
             # Catch any other decoding errors (UnicodeDecodeError, ValueError, etc.)
-            logger.error(f"Token decode error: {type(e).__name__}: {e}")
+            # MED-04: Sanitize exception before logging to prevent sensitive data leakage
+            logger.error(f"Token decode error: {type(e).__name__}: {sanitize_exception(e)}")
             raise HTTPException(
                 status_code=status.HTTP_401_UNAUTHORIZED,
                 detail="Invalid token"
@@ -485,7 +489,8 @@ class JWTManager:
         except HTTPException:
             raise
         except Exception as e:
-            logger.error(f"Token verification failed: {e}")
+            # MED-04: Sanitize exception before logging
+            logger.error(f"Token verification failed: {sanitize_exception(e)}")
             raise HTTPException(
                 status_code=status.HTTP_401_UNAUTHORIZED,
                 detail="Could not validate credentials"
@@ -769,7 +774,8 @@ class PasswordHasher:
                 return password_hash.hex() == stored_hash
 
         except Exception as e:
-            logger.error(f"Password verification error: {e}")
+            # MED-04: Sanitize exception - password data should never appear in logs
+            logger.error(f"Password verification error: {sanitize_exception(e)}")
             return False
 
     @staticmethod
@@ -980,7 +986,8 @@ def require_role(required_role: str):
         except HTTPException:
             raise
         except Exception as e:
-            logger.error(f"Role verification failed: {e}")
+            # MED-04: Sanitize exception before logging
+            logger.error(f"Role verification failed: {sanitize_exception(e)}")
             raise HTTPException(
                 status_code=status.HTTP_403_FORBIDDEN,
                 detail="Permission verification failed"

@@ -8,6 +8,7 @@ from typing import Optional, Dict, Any
 from datetime import datetime
 import logging
 from ..core.security import PasswordHasher
+from ..core.log_sanitizer import sanitize_exception
 
 logger = logging.getLogger(__name__)
 
@@ -151,7 +152,8 @@ class AuthService:
             return user_data
 
         except Exception as e:
-            logger.error(f"Failed to create user: {e}")
+            # MED-04: Sanitize exception before logging
+            logger.error(f"Failed to create user: {sanitize_exception(e)}")
             return None
 
     async def authenticate_user(
@@ -194,7 +196,8 @@ class AuthService:
             return user_data
 
         except Exception as e:
-            logger.error(f"Authentication error: {e}")
+            # MED-04: Sanitize exception before logging
+            logger.error(f"Authentication error: {sanitize_exception(e)}")
             return None
 
     async def get_user(self, email: str) -> Optional[Dict[str, Any]]:
@@ -218,7 +221,8 @@ class AuthService:
             return user_data
 
         except Exception as e:
-            logger.error(f"Failed to get user: {e}")
+            # MED-04: Sanitize exception before logging
+            logger.error(f"Failed to get user: {sanitize_exception(e)}")
             return None
 
     async def update_user(
@@ -264,7 +268,8 @@ class AuthService:
             return user_data
 
         except Exception as e:
-            logger.error(f"Failed to update user: {e}")
+            # MED-04: Sanitize exception before logging
+            logger.error(f"Failed to update user: {sanitize_exception(e)}")
             return None
 
     async def delete_user(self, email: str) -> bool:
@@ -285,7 +290,8 @@ class AuthService:
             return False
 
         except Exception as e:
-            logger.error(f"Failed to delete user: {e}")
+            # MED-04: Sanitize exception before logging
+            logger.error(f"Failed to delete user: {sanitize_exception(e)}")
             return False
 
     async def list_users(
@@ -329,7 +335,8 @@ class AuthService:
             }
 
         except Exception as e:
-            logger.error(f"Failed to list users: {e}")
+            # MED-04: Sanitize exception before logging
+            logger.error(f"Failed to list users: {sanitize_exception(e)}")
             return {
                 "users": [],
                 "total": 0,
