@@ -124,6 +124,63 @@ class ConnectionManager:
 connection_manager = ConnectionManager()
 
 
+# Root WebSocket endpoint (for simple client connections)
+@router.websocket("")
+async def websocket_root(
+    websocket: WebSocket,
+    session_manager: SessionManager = Depends(get_session_manager)
+):
+    """
+    Root WebSocket endpoint for dashboard connections
+    Automatically generates session ID if not provided
+    """
+    from uuid import uuid4
+
+    session_id = str(uuid4())
+    project_id = None
+    redis_client = None
+
+    try:
+        # Connect WebSocket
+        await connection_manager.connect(websocket, session_id, project_id)
+
+        # Get Redis client for pub/sub (optional, may fail)
+        try:
+            redis_client = await get_redis_client()
+        except Exception as e:
+            logger.warning(f"Redis not available for WebSocket: {e}")
+
+        # Send initial connection success
+        await websocket.send_json({
+            "type": "connection_established",
+            "session_id": session_id,
+            "timestamp": datetime.now().isoformat()
+        })
+
+        # Handle incoming messages
+        try:
+            while True:
+                data = await websocket.receive_json()
+
+                # Simple echo back for heartbeat/ping
+                if data.get("type") == "ping":
+                    await websocket.send_json({
+                        "type": "pong",
+                        "timestamp": datetime.now().isoformat()
+                    })
+        except WebSocketDisconnect:
+            pass
+        except Exception as e:
+            logger.error(f"WebSocket message error: {e}")
+
+    except Exception as e:
+        logger.error(f"WebSocket error: {e}")
+
+    finally:
+        # Cleanup
+        await connection_manager.disconnect(session_id)
+
+
 @router.websocket("/session")
 async def websocket_endpoint(
     websocket: WebSocket,
@@ -139,25 +196,31 @@ async def websocket_endpoint(
     - project_id: Optional project ID for project-specific events
     """
     redis_client = None
+    pubsub = None
 
     try:
         # Connect WebSocket
         await connection_manager.connect(websocket, session_id, project_id)
 
-        # Get Redis client for pub/sub
-        redis_client = await get_redis_client()
+        # Get Redis client for pub/sub (graceful fallback)
+        try:
+            redis_client = await get_redis_client()
+        except Exception as e:
+            logger.warning("Redis unavailable for WebSocket session %s: %s", session_id, e)
+            redis_client = None
 
-        # Subscribe to relevant channels
-        channels = [
-            RedisKeys.CHANNEL_SESSION,
-            RedisKeys.CHANNEL_CONFLICTS,
-            RedisKeys.CHANNEL_BROADCAST
-        ]
+        if redis_client:
+            # Subscribe to relevant channels
+            channels = [
+                RedisKeys.CHANNEL_SESSION,
+                RedisKeys.CHANNEL_CONFLICTS,
+                RedisKeys.CHANNEL_BROADCAST
+            ]
 
-        if project_id:
-            channels.append(RedisKeys.CHANNEL_PROJECT.format(project_id))
+            if project_id:
+                channels.append(RedisKeys.CHANNEL_PROJECT.format(project_id))
 
-        pubsub = await redis_client.subscribe(channels)
+            pubsub = await redis_client.subscribe(channels)
 
         # Send initial connection success
         await websocket.send_json({
@@ -200,6 +263,8 @@ async def websocket_endpoint(
 
         # Task 2: Handle Redis pub/sub messages
         async def handle_redis_messages():
+            if not pubsub:
+                return
             try:
                 async for message in pubsub.listen():
                     if message["type"] == "message":

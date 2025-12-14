@@ -561,16 +561,17 @@ class TestDAGOperations:
         """Test cycle detection with indirect cycle A→B→C→D→A"""
         task_list = list(available_task_ids)
 
-        # Create A→B→C→D
+        # Create A→B→C→D→A (4-node cycle)
+        # Fixed: Use % 4 instead of % 5 to create actual cycle
         for i in range(4):
             dep = DependencyCreate(
                 task_id=task_list[i],
-                depends_on_task_id=task_list[(i + 1) % 5],
+                depends_on_task_id=task_list[(i + 1) % 4],  # % 4 creates cycle: task[3] → task[0]
                 dependency_type=DependencyType.FINISH_TO_START,
             )
-            if i < 3:  # Create first 3 dependencies
+            if i < 3:  # Create first 3 dependencies (A→B, B→C, C→D)
                 await kanban_dependency_service.create_dependency(dep, available_task_ids)
-            else:  # 4th dependency (D→A) should fail
+            else:  # 4th dependency (D→A) should fail with CircularDependencyError
                 with pytest.raises(CircularDependencyError):
                     await kanban_dependency_service.create_dependency(dep, available_task_ids)
 

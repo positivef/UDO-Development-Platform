@@ -5,10 +5,9 @@ Service layer for managing project contexts and seamless project switching.
 """
 
 import logging
-from datetime import datetime
+import json
 from typing import Dict, List, Optional, Any
 from uuid import UUID
-from pathlib import Path
 import asyncpg
 
 logger = logging.getLogger(__name__)
@@ -61,7 +60,7 @@ class ProjectContextService:
 
                 # UPSERT query
                 query = """
-                INSERT INTO project_contexts (
+                INSERT INTO project_states (
                     project_id, udo_state, ml_models, recent_executions,
                     ai_preferences, editor_state, saved_at
                 )
@@ -81,11 +80,11 @@ class ProjectContextService:
                 result = await conn.fetchrow(
                     query,
                     context_data["project_id"],
-                    context_data["udo_state"],
-                    context_data["ml_models"],
-                    context_data["recent_executions"],
-                    context_data["ai_preferences"],
-                    context_data["editor_state"]
+                    json.dumps(context_data["udo_state"]),
+                    json.dumps(context_data["ml_models"]),
+                    json.dumps(context_data["recent_executions"]),
+                    json.dumps(context_data["ai_preferences"]),
+                    json.dumps(context_data["editor_state"])
                 )
 
                 logger.info(f"✅ Saved context for project {project_id}")
@@ -108,7 +107,7 @@ class ProjectContextService:
             async with self.db_pool.acquire() as conn:
                 # Load context and update loaded_at
                 query = """
-                UPDATE project_contexts
+                UPDATE project_states
                 SET loaded_at = NOW()
                 WHERE project_id = $1
                 RETURNING id, project_id, udo_state, ml_models, recent_executions,
@@ -119,7 +118,14 @@ class ProjectContextService:
 
                 if result:
                     logger.info(f"✅ Loaded context for project {project_id}")
-                    return dict(result)
+                    # Parse JSONB fields back to dicts
+                    context = dict(result)
+                    # Parse each JSONB field if it's a string
+                    for field in ["udo_state", "ml_models", "recent_executions",
+                                  "ai_preferences", "editor_state"]:
+                        if isinstance(context[field], str):
+                            context[field] = json.loads(context[field])
+                    return context
                 else:
                     logger.warning(f"⚠️ No context found for project {project_id}")
                     return None
@@ -132,7 +138,7 @@ class ProjectContextService:
         """Delete project context (CASCADE delete when project is deleted)"""
         try:
             async with self.db_pool.acquire() as conn:
-                query = "DELETE FROM project_contexts WHERE project_id = $1"
+                query = "DELETE FROM project_states WHERE project_id = $1"
                 result = await conn.execute(query, project_id)
 
                 deleted = result.split()[-1] == "1"
@@ -232,10 +238,10 @@ class ProjectContextService:
                     p.current_phase,
                     p.last_active_at,
                     p.is_archived,
-                    (pc.id IS NOT NULL) as has_context,
-                    pc.saved_at as context_saved_at
+                    (ps.id IS NOT NULL) as has_context,
+                    ps.saved_at as context_saved_at
                 FROM projects p
-                LEFT JOIN project_contexts pc ON p.id = pc.project_id
+                LEFT JOIN project_states ps ON p.id = ps.project_id
                 {where_clause}
                 ORDER BY p.last_active_at DESC
                 LIMIT $1 OFFSET $2
@@ -269,9 +275,9 @@ class ProjectContextService:
                 query = """
                 SELECT
                     p.*,
-                    (pc.id IS NOT NULL) as has_context
+                    (ps.id IS NOT NULL) as has_context
                 FROM projects p
-                LEFT JOIN project_contexts pc ON p.id = pc.project_id
+                LEFT JOIN project_states ps ON p.id = ps.project_id
                 WHERE p.id = $1
                 """
 
@@ -408,22 +414,36 @@ _mock_service_instance: Optional[Any] = None
 
 def get_project_context_service() -> Optional[Any]:
     """Get the global project context service instance (ProjectContextService or MockProjectService)"""
+    import os
     global _mock_service_instance
 
     if _use_mock_service:
-        # Return cached mock service instance
-        if _mock_service_instance:
-            logger.debug(f"Returning cached mock service instance: {type(_mock_service_instance)}")
-            return _mock_service_instance
-        # If not cached, create and cache it
-        try:
-            from app.services.mock_project_service import MockProjectService
-            _mock_service_instance = MockProjectService()
-            logger.info("✅ MockProjectService instance created and cached")
-            return _mock_service_instance
-        except ImportError as e:
-            logger.error(f"Failed to import MockProjectService: {e}")
-            return None
+        # CRITICAL FIX: Disable caching in development mode for hot reload
+        is_development = os.getenv("ENV", "production") == "development"
+
+        if is_development:
+            # Always create new instance in development
+            try:
+                from app.services.mock_project_service import MockProjectService
+                logger.debug("🔄 Development mode: Creating fresh MockProjectService instance")
+                return MockProjectService()
+            except ImportError as e:
+                logger.error(f"Failed to import MockProjectService: {e}")
+                return None
+        else:
+            # Production: Use caching for performance
+            if _mock_service_instance:
+                logger.debug(f"Returning cached mock service instance: {type(_mock_service_instance)}")
+                return _mock_service_instance
+            # If not cached, create and cache it
+            try:
+                from app.services.mock_project_service import MockProjectService
+                _mock_service_instance = MockProjectService()
+                logger.info("✅ MockProjectService instance created and cached")
+                return _mock_service_instance
+            except ImportError as e:
+                logger.error(f"Failed to import MockProjectService: {e}")
+                return None
     logger.debug(f"Returning database service: {type(_project_context_service) if _project_context_service else 'None'}")
     return _project_context_service
 

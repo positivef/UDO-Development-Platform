@@ -40,6 +40,8 @@ class VersionCommit(BaseModel):
     branches: List[str] = Field(default_factory=list, description="Branches containing this commit")
 
     class Config:
+        arbitrary_types_allowed = True
+        populate_by_name = True
         json_schema_extra = {
             "example": {
                 "commit_hash": "a1b2c3d4e5f6g7h8i9j0k1l2m3n4o5p6q7r8s9t0",
@@ -77,6 +79,8 @@ class VersionHistory(BaseModel):
     last_commit_date: Optional[datetime] = Field(default=None, description="Date of last commit")
 
     class Config:
+        arbitrary_types_allowed = True
+        populate_by_name = True
         json_schema_extra = {
             "example": {
                 "project_name": "UDO-Development-Platform",
@@ -118,6 +122,8 @@ class VersionComparison(BaseModel):
     )
 
     class Config:
+        arbitrary_types_allowed = True
+        populate_by_name = True
         json_schema_extra = {
             "example": {
                 "from_commit": "a1b2c3d",
@@ -147,6 +153,8 @@ class VersionHistoryQuery(BaseModel):
     search: Optional[str] = Field(default=None, description="Search in commit messages")
 
     class Config:
+        arbitrary_types_allowed = True
+        populate_by_name = True
         json_schema_extra = {
             "example": {
                 "branch": "main",

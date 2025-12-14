@@ -4,7 +4,7 @@ C-K Theory Data Models
 Pydantic models for Concept-Knowledge Design Theory (design alternative generation)
 """
 
-from pydantic import BaseModel, Field, validator, root_validator
+from pydantic import BaseModel, Field, field_validator, model_validator
 from typing import List, Dict, Optional, Any
 from datetime import datetime
 
@@ -37,16 +37,11 @@ class RICEScore(BaseModel):
     )
     score: float = Field(..., ge=0.0, description="Calculated RICE score")
 
-    @root_validator
-    def calculate_rice_score(cls, values):
+    @model_validator(mode='after')
+    def calculate_rice_score(self) -> 'RICEScore':
         """Auto-calculate RICE score"""
-        reach = values.get('reach', 1)
-        impact = values.get('impact', 1)
-        confidence = values.get('confidence', 1)
-        effort = values.get('effort', 1)
-
-        values['score'] = round((reach * impact * confidence) / max(effort, 1), 2)
-        return values
+        self.score = round((self.reach * self.impact * self.confidence) / max(self.effort, 1), 2)
+        return self
 
     class Config:
         json_schema_extra = {
@@ -116,7 +111,8 @@ class DesignAlternative(BaseModel):
         description="Additional metadata"
     )
 
-    @validator('id')
+    @field_validator('id')
+    @classmethod
     def validate_id(cls, v):
         """Validate alternative ID is A, B, or C"""
         if v not in ['A', 'B', 'C']:
@@ -223,7 +219,8 @@ class CKTheoryRequest(BaseModel):
         description="Project name"
     )
 
-    @validator('challenge')
+    @field_validator('challenge')
+    @classmethod
     def validate_challenge(cls, v):
         """Validate challenge statement"""
         # Check for meaningful content
@@ -237,7 +234,8 @@ class CKTheoryRequest(BaseModel):
 
         return v.strip()
 
-    @validator('constraints')
+    @field_validator('constraints')
+    @classmethod
     def validate_constraints(cls, v):
         """Validate constraint structure"""
         if v is None:
@@ -300,7 +298,8 @@ class CKTheoryResult(BaseModel):
         description="Additional metadata"
     )
 
-    @validator('alternatives')
+    @field_validator('alternatives')
+    @classmethod
     def validate_alternatives_ids(cls, v):
         """Validate alternatives have IDs A, B, C"""
         ids = {alt.id for alt in v}
@@ -386,14 +385,16 @@ class DesignFeedback(BaseModel):
         description="Implementation outcome (success, partial, failure)"
     )
 
-    @validator('alternative_id', 'selected_alternative')
+    @field_validator('alternative_id', 'selected_alternative')
+    @classmethod
     def validate_alternative_id(cls, v):
         """Validate alternative ID"""
         if v is not None and v not in ['A', 'B', 'C']:
             raise ValueError("Alternative ID must be 'A', 'B', or 'C'")
         return v
 
-    @validator('outcome')
+    @field_validator('outcome')
+    @classmethod
     def validate_outcome(cls, v):
         """Validate outcome"""
         if v is not None and v not in ['success', 'partial', 'failure']:

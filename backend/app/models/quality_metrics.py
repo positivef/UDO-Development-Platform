@@ -92,6 +92,8 @@ class QualityMetricsResponse(BaseModel):
     collected_at: str = Field(..., description="ISO 8601 timestamp of collection")
 
     class Config:
+        arbitrary_types_allowed = True
+        populate_by_name = True
         json_schema_extra = {
             "example": {
                 "overall_score": 8.5,

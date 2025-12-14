@@ -5,6 +5,7 @@ from .constitutional import router as constitutional_router
 from .time_tracking import router as time_tracking_router
 from .gi_formula import router as gi_formula_router
 from .ck_theory import router as ck_theory_router
+from .uncertainty import router as uncertainty_router
 
 # Try importing project context routers
 try:
@@ -27,7 +28,8 @@ __all__ = [
     "constitutional_router",
     "time_tracking_router",
     "gi_formula_router",
-    "ck_theory_router"
+    "ck_theory_router",
+    "uncertainty_router"
 ]
 
 if project_context_available:
