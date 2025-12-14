@@ -49,12 +49,12 @@ def test_dashboard():
         page.on("response", handle_response)
 
         print("=" * 80)
-        print("🚀 Testing UDO Web Dashboard at http://localhost:3000")
+        print("🚀 Testing UDO Web Dashboard at http://localhost:3001")
         print("=" * 80)
 
         # Navigate to dashboard
         try:
-            page.goto('http://localhost:3000', timeout=10000)
+            page.goto('http://localhost:3001', timeout=30000)
             print("✅ Page loaded successfully")
         except Exception as e:
             print(f"❌ Failed to load page: {e}")
@@ -63,10 +63,10 @@ def test_dashboard():
 
         # Wait for network to be idle
         try:
-            page.wait_for_load_state('networkidle', timeout=10000)
+            page.wait_for_load_state('networkidle', timeout=20000)
             print("✅ Network idle - all resources loaded")
         except Exception as e:
-            print(f"⚠️  Network not idle after 10s: {e}")
+            print(f"⚠️  Network not idle after 20s: {e}")
 
         # Take screenshot
         screenshot_path = 'C:\\Users\\user\\Documents\\GitHub\\UDO-Development-Platform\\dashboard_screenshot.png'
