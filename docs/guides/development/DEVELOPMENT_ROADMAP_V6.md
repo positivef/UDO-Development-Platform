@@ -1,10 +1,12 @@
 # UDO Platform 최종 개발 로드맵 v6.1
 ## 하이브리드 접근 + RL 기반 지식 재사용 통합
 
-**Date**: 2025-12-07
-**Version**: 6.1 (RL Integration - Training-free GRPO)
+**Date**: 2025-12-13 (Updated)
+**Version**: 6.3 (정합성 검증 반영)
 **Approach**: 하이브리드 (영역별 성숙도에 맞춘 목표) + RL 지식 재사용
-**Verified**: 테스트 실행 + 5 Whys 분석 + RL 이론 통합 완료
+**Verified**: 테스트 실행 + 5 Whys 분석 + RL 이론 통합 + **문서 정합성 검증** 완료
+**Integrated From**: V4 (Gap Table, Alignment) + V5 (Progressive Justification)
+**Validated**: 2025-12-13 코드-문서 상태 비교 검증 (DOCUMENT_INCONSISTENCY_ANALYSIS.md 참조)
 
 **NEW (v6.1)**: Training-free Group Relative Policy Optimization 통합
 - ArXiv 2510.08191 논문 기반
@@ -19,14 +21,16 @@
 ### 테스트 실행 결과
 
 ```yaml
-테스트 결과:
-  총 테스트: ~200개
-  통과: ~85%
-  실패: ~15% (주로 Uncertainty 통합 테스트)
-  
-실패 원인:
-  - predict() 함수 파라미터 불일치
-  - 통합 모듈 호환성 이슈
+테스트 결과 (2025-12-09 최신):
+  총 테스트: 186개
+  통과: 98.4% (183/186)
+  실패: 1.6% (3개 - E2E 관련)
+
+Backend: 166/166 (100%) ✅
+E2E: 17/20 (85%) - 3개 이슈 수정 필요
+  - Time Tracking: 날짜 selector
+  - Quality Metrics: API 연결
+  - Performance: 로드 시간 >6초
 ```
 
 ### 영역별 성숙도
@@ -39,9 +43,56 @@
 | **Services** | 15개 서비스 | ✅ 85% | 높은 목표 |
 | **Frontend** | 기본 대시보드 | ⚠️ 50% | **점진적** (40→70%) |
 | **AI Bridge** | Claude 연동만 | ⚠️ 30% | **점진적** (65→85%) |
-| **CI/CD** | 없음 | ❌ 0% | **점진적** (60→85%) |
+| **CI/CD** | GitHub Actions 완료 | ✅ 100% | **완료** (2025-12-13) |
 | **Obsidian** | 서비스 있음 | ⚠️ 40% | 점진적 |
 | **RL 지식 재사용** | Training-free 60% | ⚠️ 60% | **점진적** (60→95%) 🆕 |
+
+---
+
+## 📅 프로젝트 Phase 정의 (v6.3 신규)
+
+> **IMPORTANT**: "Week N" 명명 충돌 해결을 위한 Phase 체계
+
+### Phase A: 설계 및 초기 구현 (2025-11-17 ~ 11-20)
+
+**목표**: 기반 인프라 코드 작성
+
+| 완료일 | 작업 | 문서 | 상태 |
+|--------|------|------|------|
+| 11-17 | DB 스키마 설계 (7개 테이블) | `DESIGN_PHASE_COMPLETION_2025-11-17.md` | ✅ Code Complete |
+| 11-20 | Obsidian, Constitution, Time Tracking | `FOUNDATION_PHASE_COMPLETE_2025-11-20.md` | ✅ Code Complete |
+
+**Phase A 상태**: 코드 작성 완료, **프로덕션 검증 미완료**
+
+### Phase B: 검증 및 통합 (2025-12-06 ~ 현재)
+
+**목표**: 실제 작동 검증 + Kanban 통합
+
+| 완료일 | 작업 | 문서 | 상태 |
+|--------|------|------|------|
+| 12-06~07 | 베이스라인 측정 (58% 커버리지) | `WEEK0_COMPLETION_SUMMARY.md` | ✅ Complete |
+| 12-08~ | Kanban UI + API 통합 | `WEEK1_DAY1-2_COMPLETION_REPORT.md` | 🔄 In Progress |
+| 12-13 | CI/CD 파이프라인 | `.github/workflows/*` | ✅ Complete |
+
+**Phase B 상태**: 검증 진행 중, Kanban 통합 진행 중
+
+### "완료" 등급 정의
+
+| 등급 | 정의 | 기준 |
+|------|------|------|
+| **Code Complete** | 코드 작성됨 | 기능 구현 완료 |
+| **Test Verified** | 테스트 검증됨 | 커버리지 60%+ |
+| **Integration Ready** | 통합 준비됨 | 실제 연동 테스트 통과 |
+| **Production Ready** | 프로덕션 준비됨 | 6주+ 안정 운영 |
+
+### 현재 서비스별 상태 (v6.3 실측)
+
+| 서비스 | Code | Test | Integration | Production |
+|--------|------|------|-------------|------------|
+| Obsidian | ✅ 873줄 | ⚠️ 55% | ❌ stub | ❌ |
+| Time Tracking | ✅ 1034줄 | ❌ 0% | ❌ | ❌ |
+| Constitution | ✅ 801줄 | ✅ 통과 | ⚠️ 부분 | ❌ |
+| Kanban | ✅ 진행중 | ⚠️ 부분 | 🔄 진행중 | ❌ |
 
 ---
 
@@ -64,6 +115,63 @@
 | 자동화율 | 65% | 75% | 85% | **92%** 🆕 |
 | 지식 재사용율 | 70% 🆕 | 75% 🆕 | 85% 🆕 | **90%** 🆕 |
 | 오류율 | 15% | 10% | 8% | 5% |
+
+---
+
+## 🔗 개발 목표와 계획 연계 (from V4)
+
+| 프로젝트 목표 | 로드맵 Task | Stage | 연계 확인 |
+|--------------|-------------|-------|-----------|
+| **95% 자동화** | CI/CD Pipeline | MVP | ✅ |
+| **예측적 불확실성** | Uncertainty Map v3 | 완료 | ✅ |
+| **3-AI 오케스트레이션** | AI Bridge 완성 | Prototype-Beta | ✅ |
+| **Phase-aware 의사결정** | UDO v2 | 완료 | ✅ |
+| **ROI 측정** | Time Tracking | 완료 | ✅ |
+| **실시간 시각화** | Frontend Kanban UI | MVP-Prototype | ✅ |
+| **Constitutional 거버넌스** | P1-P17 | 완료 | ✅ |
+| **RL 지식 재사용** | RL-1 ~ RL-12 | MVP-Production | ✅ 🆕 |
+
+---
+
+## 🔍 Gap 분석 (from V4)
+
+| ID | 영역 | Uncertainty | 우선순위 | 해결 방법 | 상태 |
+|----|------|-------------|----------|-----------|------|
+| **G1** | Frontend CI | 🟠 40% | P1 | frontend-test.yml | ✅ 완료 (2025-12-13) |
+| **G2** | Import 순서 의존성 | 🔴 70% | P0 | ROUTER_ORDER | ⚠️ 진행중 |
+| **G3** | Config 롤백 불가 | 🔴 80% | P0 | USE_CENTRAL_CONFIG | ⏳ 대기 |
+| **G4** | 순환 의존성 | ⚫ 95% | Deferred | Phase 2 연기 | ⏳ 연기 |
+| **G5** | 압축 기준 미정의 | 🔵 20% | P2 | 기준 문서화 | ⏳ 대기 |
+| **G6** | 템플릿 검증 없음 | 🔵 25% | P2 | 3회 실사용 후 승인 | ⏳ 대기 |
+| **G7** | 롤백 테스트 없음 | 🟠 50% | P1 | rollback-test.yml | ⏳ 대기 |
+| **G8** | AI Bridge 미완성 | 🟠 45% | P2 | Phase 3 | ⏳ 대기 |
+| **G9** | DB 마이그레이션 | 🔴 60% | P0 | PostgreSQL 설치 | ⏳ 대기 🆕 |
+
+---
+
+## 💡 왜 점진적인가? (from V5)
+
+> **현실적 기대치 설정의 근거**
+
+### 예측 정확도
+- 학습 데이터가 쌓여야 개선됨
+- 규칙 기반 시작 (MVP 40%) → 베이지안 학습 (Production 70%)
+
+### 자동화율
+- **GitHub Copilot**: 40-55% 수준
+- **UDO 목표**: 85-92%가 현실적 상한
+- 100% 자동화는 비현실적
+
+### 오류율
+- 신규 시스템 평균: 15-20%
+- 사용 피드백으로 점진 개선
+- Production 5%가 우수한 목표
+
+### 단계별 사용자 체감
+- **MVP**: "뭔가 동작한다"
+- **Prototype**: "유용하다"
+- **Beta**: "믿을 만하다"
+- **Production**: "지식이 자산이다" 🆕
 
 ---
 

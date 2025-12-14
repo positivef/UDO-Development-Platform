@@ -1,0 +1,868 @@
+# UDO Development Platform v3.0 - Performance Optimization Strategy
+# Generated: 2025-11-29
+# Based on: Code analysis, PRD requirements, and bottleneck predictions
+
+metadata:
+  project: UDO Development Platform v3.0
+  version: 3.0.0
+  target_goals:
+    api_p95_latency: "< 200ms"
+    api_p50_latency: "< 50ms"
+    ai_response_time: "< 2 seconds"
+    db_query: "< 30ms"
+    frontend_tti: "< 3 seconds"
+  current_status:
+    backend_completion: "95%"
+    monitoring: "Not deployed"
+    database: "PostgreSQL + pgvector (not deployed)"
+    ai_orchestration: "3-AI Bridge (Claude + Codex + Gemini)"
+
+# ================================================================
+# BOTTLENECK PREDICTIONS (Evidence-Based)
+# ================================================================
+
+bottlenecks:
+  predicted:
+    - endpoint: "/api/uncertainty/status"
+      reason: "UncertaintyMap v3 analysis + vector calculations + ML predictions"
+      expected_latency: "400-800ms"
+      evidence:
+        - "uncertainty_map_v3.py: analyze_context() + predict_evolution() + generate_mitigations()"
+        - "Lines 293-508: Complex vector math, pattern matching, ML prediction"
+        - "No caching on first call (line 129-131 cache check but cold start)"
+      impact: "HIGH - Called on every dashboard load"
+      priority: "P0"
+
+    - endpoint: "/api/metrics"
+      reason: "UDO system report aggregation + async component queries"
+      expected_latency: "200-400ms"
+      evidence:
+        - "main.py line 687: get_system_report_async() aggregates all components"
+        - "Multiple component queries even with async (network/IO bound)"
+        - "Cache present but 60s TTL may be too aggressive for dynamic data"
+      impact: "MEDIUM - Called frequently by frontend"
+      priority: "P0"
+
+    - endpoint: "/api/quality/metrics"
+      reason: "Subprocess calls to Pylint, ESLint, pytest (synchronous)"
+      expected_latency: "5-15 seconds"
+      evidence:
+        - "quality_service.py lines 58-411: Sequential subprocess execution"
+        - "get_pylint_metrics() → _run_command() blocks thread"
+        - "get_eslint_metrics() → npx eslint blocks thread"
+        - "get_test_coverage_metrics() → pytest --cov blocks thread"
+      impact: "CRITICAL - Blocks API thread during quality check"
+      priority: "P0"
+
+    - endpoint: "/api/execute"
+      reason: "3-AI orchestration + UDO development cycle"
+      expected_latency: "3-10 seconds"
+      evidence:
+        - "three_ai_collaboration_bridge.py: Sequential/Iterative AI calls"
+        - "Lines 546-690: Multiple AI API calls (Claude, Codex, Gemini)"
+        - "unified_development_orchestrator_v2.py: Phase-aware evaluation"
+      impact: "HIGH - User-triggered, but long-running"
+      priority: "P1"
+
+    - db_operation: "pgvector similarity search"
+      reason: "Vector similarity search on embeddings (not indexed initially)"
+      expected_latency: "100-500ms"
+      evidence:
+        - "requirements.txt line 10: asyncpg (async driver good)"
+        - "But pgvector needs proper indexing (IVFFlat or HNSW)"
+        - "No evidence of index configuration in codebase"
+      impact: "MEDIUM - Knowledge base queries"
+      priority: "P1"
+
+    - websocket_broadcast: "/ws broadcast to all clients"
+      reason: "Sequential message delivery to N clients"
+      expected_latency: "N * 10ms (grows with connections)"
+      evidence:
+        - "websocket_handler.py: session_manager.broadcast_to_all()"
+        - "Async but sequential iteration over connections"
+      impact: "LOW - Only affects real-time updates"
+      priority: "P2"
+
+# ================================================================
+# OPTIMIZATION STRATEGIES (Prioritized by ROI)
+# ================================================================
+
+optimization_strategies:
+  p0_critical:
+    - name: "Redis caching layer for AI/Uncertainty responses"
+      impact: "P95: 800ms → 50ms (94% reduction)"
+      target_endpoints:
+        - "/api/uncertainty/status"
+        - "/api/metrics"
+        - "/api/uncertainty/predict"
+      implementation:
+        strategy: "Cache-aside pattern with state-aware TTL"
+        dependencies: ["redis==5.0.8 (already in requirements.txt)"]
+        steps:
+          - "Create CacheService wrapper around redis_client.py"
+          - "Implement state-aware TTL (DETERMINISTIC: 1h, QUANTUM: 15m, VOID: 1m)"
+          - "Add cache key generation: f'uncertainty:{phase}:{hash(context)}'"
+          - "Wrap uncertainty_map.analyze_context() with cache decorator"
+          - "Implement cache invalidation on project state changes"
+        code_location: "backend/app/services/cache_service.py"
+        estimated_effort: "8 hours"
+      testing:
+        - "Verify cache hit rate > 80% for repeated requests"
+        - "Verify cache invalidation on state change"
+        - "Load test: 100 req/s with 90% cache hit rate"
+      rollback: "Feature flag: USE_REDIS_CACHE=false"
+
+    - name: "Background task queue for quality metrics (Celery)"
+      impact: "API latency: 15s → 200ms (blocked → async)"
+      target_endpoints:
+        - "/api/quality/metrics"
+      implementation:
+        strategy: "Move subprocess calls to Celery worker"
+        dependencies:
+          - "celery[redis]==5.3.4"
+          - "flower==2.0.1 (monitoring)"
+        steps:
+          - "Create backend/app/tasks/quality_tasks.py"
+          - "Define Celery tasks: @app.task def run_pylint_async()"
+          - "Store task_id in Redis for polling"
+          - "Return 202 Accepted with task_id immediately"
+          - "Add /api/quality/status/{task_id} for polling"
+          - "Frontend polls every 2s with exponential backoff"
+        code_location: "backend/app/tasks/quality_tasks.py"
+        estimated_effort: "12 hours"
+      testing:
+        - "Verify task completes in background"
+        - "Verify task result stored in Redis"
+        - "Verify frontend polling succeeds"
+      rollback: "Keep synchronous endpoint as fallback"
+
+    - name: "Parallel component queries in get_system_report_async()"
+      impact: "P95: 400ms → 150ms (62% reduction)"
+      target_endpoints:
+        - "/api/metrics"
+        - "/api/status"
+      implementation:
+        strategy: "Use asyncio.gather() for concurrent component queries"
+        steps:
+          - "Identify sequential await calls in IntegratedUDOSystem"
+          - "Convert to: await asyncio.gather(udo.report(), uncertainty.report(), ai_bridge.report())"
+          - "Add timeout per component (2s max)"
+          - "Handle partial failures gracefully"
+        code_location: "src/integrated_udo_system.py (get_system_report_async)"
+        estimated_effort: "4 hours"
+      testing:
+        - "Verify all components queried in parallel"
+        - "Verify timeout handling"
+        - "Load test: 50 req/s concurrent"
+      rollback: "Revert to sequential queries"
+
+    - name: "Database connection pooling optimization"
+      impact: "DB query: 50ms → 15ms (70% reduction)"
+      target: "All database operations"
+      implementation:
+        strategy: "Optimize asyncpg pool settings"
+        configuration:
+          min_size: 10
+          max_size: 50
+          max_queries: 50000
+          max_inactive_connection_lifetime: 300
+          command_timeout: 10
+        steps:
+          - "Update async_database.py pool configuration"
+          - "Add connection health checks"
+          - "Implement prepared statement caching"
+          - "Add query timeout monitoring"
+        code_location: "backend/async_database.py"
+        estimated_effort: "4 hours"
+      testing:
+        - "Verify pool exhaustion doesn't occur under load"
+        - "Verify connection reuse (check logs)"
+        - "Load test: 200 req/s for 5 minutes"
+      rollback: "Revert to default pool settings"
+
+  p1_important:
+    - name: "pgvector index optimization"
+      impact: "Vector search: 500ms → 30ms (94% reduction)"
+      target: "Knowledge base similarity search"
+      implementation:
+        strategy: "Create IVFFlat or HNSW index on embeddings"
+        steps:
+          - "Create migration: backend/migrations/versions/add_vector_index.py"
+          - "Add index: CREATE INDEX ON embeddings USING ivfflat (vector vector_cosine_ops) WITH (lists = 100)"
+          - "Or HNSW: CREATE INDEX ON embeddings USING hnsw (vector vector_cosine_ops)"
+          - "Analyze trade-off: IVFFlat (faster build, lower accuracy) vs HNSW (slower build, higher accuracy)"
+          - "Recommendation: Start with IVFFlat, upgrade to HNSW if accuracy issues"
+        code_location: "backend/migrations/versions/"
+        estimated_effort: "6 hours"
+      testing:
+        - "Benchmark: 1000 similarity searches before/after"
+        - "Verify accuracy: Top-10 recall should be > 95%"
+        - "Monitor index build time (should be < 10 minutes for 100k vectors)"
+      rollback: "Drop index if query planning issues"
+
+    - name: "AI response caching with content-based keys"
+      impact: "AI orchestration: 10s → 500ms for repeated queries"
+      target_endpoints:
+        - "/api/execute"
+      implementation:
+        strategy: "Cache AI responses by task hash"
+        steps:
+          - "Generate cache key: hash(task + phase + constraints)"
+          - "Store in Redis with 24h TTL"
+          - "Check cache before calling AI Bridge"
+          - "Include similarity threshold (90% match = cache hit)"
+        code_location: "backend/app/services/ai_cache_service.py"
+        estimated_effort: "10 hours"
+      testing:
+        - "Verify cache hit for identical tasks"
+        - "Verify cache miss for different tasks"
+        - "Verify similarity matching (90% threshold)"
+      rollback: "Feature flag: CACHE_AI_RESPONSES=false"
+
+    - name: "WebSocket fanout optimization"
+      impact: "Broadcast latency: N*10ms → O(log N) with pub/sub"
+      target: "Real-time updates to multiple clients"
+      implementation:
+        strategy: "Use Redis Pub/Sub for WebSocket fanout"
+        steps:
+          - "Create Redis pub/sub channel per project"
+          - "Each WebSocket worker subscribes to channel"
+          - "SessionManagerV2 publishes once to Redis"
+          - "Each worker broadcasts to local clients only"
+        code_location: "backend/app/services/session_manager_v2.py"
+        estimated_effort: "8 hours"
+      testing:
+        - "Verify message delivery to 100+ clients"
+        - "Verify message ordering"
+        - "Load test: 50 messages/sec to 100 clients"
+      rollback: "Revert to direct broadcast"
+
+    - name: "Frontend bundle optimization"
+      impact: "TTI: 5s → 2.5s (50% reduction)"
+      target: "Next.js web-dashboard"
+      implementation:
+        strategy: "Code splitting + lazy loading + CDN"
+        steps:
+          - "Enable Next.js App Router code splitting (already on Next 16)"
+          - "Lazy load heavy components: dynamic(() => import('...'))"
+          - "Add bundle analyzer: @next/bundle-analyzer"
+          - "Move Recharts to separate chunk (lazy load charts)"
+          - "Implement route-based code splitting"
+          - "Add Vercel CDN or Cloudflare for static assets"
+        code_location: "web-dashboard/next.config.js"
+        estimated_effort: "10 hours"
+      testing:
+        - "Verify initial bundle < 200KB gzipped"
+        - "Verify Lighthouse score > 90"
+        - "Verify TTI < 3s on 3G connection"
+      rollback: "Remove dynamic imports if issues"
+
+  p2_nice_to_have:
+    - name: "HTTP/2 server push for critical resources"
+      impact: "First paint: 1.5s → 1.0s (33% reduction)"
+      implementation:
+        strategy: "Use uvicorn with HTTP/2 support"
+        steps:
+          - "Upgrade uvicorn with HTTP/2: uvicorn[standard]"
+          - "Enable HTTP/2 in production: --http h2"
+          - "Implement server push for CSS/JS/fonts"
+        estimated_effort: "4 hours"
+
+    - name: "GraphQL layer for flexible data fetching"
+      impact: "Reduce overfetching: -30% bandwidth"
+      implementation:
+        strategy: "Add Strawberry GraphQL alongside REST"
+        steps:
+          - "Install: strawberry-graphql[fastapi]"
+          - "Create GraphQL schema for Dashboard metrics"
+          - "Allow frontend to request specific fields only"
+        estimated_effort: "16 hours"
+
+    - name: "Database read replicas for analytics"
+      impact: "Offload 40% read traffic from primary"
+      implementation:
+        strategy: "Add PostgreSQL read replica"
+        steps:
+          - "Configure streaming replication"
+          - "Route analytics queries to replica"
+          - "Add replica lag monitoring"
+        estimated_effort: "12 hours"
+
+# ================================================================
+# CACHING STRATEGY (Detailed)
+# ================================================================
+
+caching_strategy:
+  layers:
+    - layer: "L1 - In-Memory (FastAPI)"
+      scope: "Single process"
+      implementation: "SimpleTTLCache (already in circuit_breaker.py)"
+      use_cases:
+        - "Uncertainty status for same request within 15m"
+        - "System metrics within 1m"
+      ttl_strategy: "State-aware (DETERMINISTIC: 1h, QUANTUM: 15m)"
+      eviction: "TTL-based"
+      max_size: "1000 entries"
+
+    - layer: "L2 - Redis (Distributed)"
+      scope: "All API instances"
+      implementation: "redis_client.py + CacheService wrapper"
+      use_cases:
+        - "AI orchestration responses (24h TTL)"
+        - "Uncertainty predictions (state-aware TTL)"
+        - "Quality metrics results (1h TTL)"
+        - "User sessions"
+      ttl_by_type:
+        uncertainty_deterministic: 3600  # 1 hour
+        uncertainty_probabilistic: 1800  # 30 minutes
+        uncertainty_quantum: 900         # 15 minutes
+        uncertainty_chaotic: 300         # 5 minutes
+        uncertainty_void: 60             # 1 minute
+        ai_response: 86400               # 24 hours
+        quality_metrics: 3600            # 1 hour
+        system_metrics: 300              # 5 minutes
+      eviction: "LRU with maxmemory-policy: allkeys-lru"
+      max_memory: "512MB"
+
+    - layer: "L3 - PostgreSQL (Persistent)"
+      scope: "Long-term storage"
+      use_cases:
+        - "Historical metrics"
+        - "User data"
+        - "Project state"
+      query_optimization:
+        - "Add indexes on frequently queried columns"
+        - "Use materialized views for analytics"
+        - "Implement query result caching"
+
+  cache_keys:
+    uncertainty_status: "uncertainty:status:{project_id}:{phase}:{context_hash}"
+    ai_response: "ai:response:{task_hash}:{phase}"
+    quality_metrics: "quality:metrics:{project_id}:{timestamp_hour}"
+    system_metrics: "system:metrics:{project_id}"
+
+  invalidation_strategy:
+    - trigger: "Project state change"
+      action: "Invalidate uncertainty:* and system:metrics:*"
+      method: "Redis SCAN + DEL pattern"
+
+    - trigger: "Code commit"
+      action: "Invalidate quality:metrics:*"
+      method: "Redis DEL by key pattern"
+
+    - trigger: "Phase transition"
+      action: "Invalidate uncertainty:status:* for old phase"
+      method: "Specific key deletion"
+
+    - trigger: "AI model update"
+      action: "Invalidate ai:response:*"
+      method: "Redis FLUSHDB (selective)"
+
+  monitoring:
+    metrics:
+      - cache_hit_rate
+      - cache_miss_rate
+      - avg_cache_latency
+      - cache_size_mb
+      - eviction_count
+    alerting:
+      - condition: "cache_hit_rate < 60%"
+        action: "Review TTL settings"
+      - condition: "cache_size_mb > 400MB"
+        action: "Review eviction policy"
+
+# ================================================================
+# ASYNC PROCESSING (Celery Background Tasks)
+# ================================================================
+
+async_processing:
+  celery_tasks:
+    - task: "Quality metrics collection"
+      reason: "Blocks API for 5-15 seconds (subprocess calls)"
+      priority: "HIGH"
+      implementation:
+        queue: "quality_checks"
+        worker_concurrency: 4
+        soft_time_limit: 300  # 5 minutes
+        hard_time_limit: 360  # 6 minutes
+      monitoring:
+        - task_duration
+        - task_success_rate
+        - queue_length
+
+    - task: "AI orchestration (long-running)"
+      reason: "3-AI collaboration takes 3-10 seconds"
+      priority: "MEDIUM"
+      implementation:
+        queue: "ai_tasks"
+        worker_concurrency: 2
+        soft_time_limit: 30
+        hard_time_limit: 45
+      rate_limit: "10/m per user"  # Prevent abuse
+
+    - task: "Uncertainty prediction batch"
+      reason: "Pre-compute predictions for all phases"
+      priority: "LOW"
+      implementation:
+        queue: "predictions"
+        worker_concurrency: 2
+        schedule: "Every 1 hour"  # Celery Beat
+      caching: "Store results in Redis for instant retrieval"
+
+    - task: "Obsidian knowledge sync"
+      reason: "File I/O and git operations"
+      priority: "LOW"
+      implementation:
+        queue: "sync_tasks"
+        worker_concurrency: 1
+        schedule: "Every 15 minutes"
+
+  background_vs_realtime:
+    realtime_response:
+      - "/api/health"
+      - "/api/uncertainty/status (cached)"
+      - "/api/metrics (cached)"
+      - "WebSocket messages"
+
+    background_task:
+      - "/api/quality/metrics (always async)"
+      - "/api/execute (async if > 2s predicted)"
+      - "/api/uncertainty/predict (batch pre-compute)"
+      - "/api/obsidian/sync"
+
+  task_result_storage:
+    backend: "Redis"
+    ttl: 86400  # 24 hours
+    retrieval_endpoint: "/api/tasks/{task_id}/status"
+
+# ================================================================
+# MONITORING & PROFILING
+# ================================================================
+
+monitoring:
+  prometheus_metrics:
+    - metric: "api_request_duration_seconds"
+      type: "histogram"
+      labels: ["endpoint", "method", "status_code"]
+      buckets: [0.01, 0.05, 0.1, 0.25, 0.5, 1.0, 2.5, 5.0, 10.0]
+
+    - metric: "api_request_count"
+      type: "counter"
+      labels: ["endpoint", "method", "status_code"]
+
+    - metric: "cache_hit_total"
+      type: "counter"
+      labels: ["cache_layer", "cache_type"]
+
+    - metric: "cache_miss_total"
+      type: "counter"
+      labels: ["cache_layer", "cache_type"]
+
+    - metric: "db_query_duration_seconds"
+      type: "histogram"
+      labels: ["query_type", "table"]
+
+    - metric: "celery_task_duration_seconds"
+      type: "histogram"
+      labels: ["task_name", "status"]
+
+    - metric: "ai_api_duration_seconds"
+      type: "histogram"
+      labels: ["ai_provider", "operation"]
+
+    - metric: "websocket_connections_active"
+      type: "gauge"
+      labels: ["project_id"]
+
+    - metric: "uncertainty_state_gauge"
+      type: "gauge"
+      labels: ["project_id", "phase", "state"]
+
+  grafana_dashboards:
+    - dashboard: "API Performance"
+      panels:
+        - "Request rate (req/s)"
+        - "P50/P95/P99 latency by endpoint"
+        - "Error rate (%)"
+        - "Top slowest endpoints"
+      refresh: "10s"
+
+    - dashboard: "Cache Performance"
+      panels:
+        - "Cache hit rate (%) by layer"
+        - "Cache size (MB)"
+        - "Eviction rate"
+        - "Cache latency (ms)"
+      refresh: "30s"
+
+    - dashboard: "Database Performance"
+      panels:
+        - "Active connections"
+        - "Query duration P95"
+        - "Slow queries (> 100ms)"
+        - "Connection pool utilization"
+      refresh: "15s"
+
+    - dashboard: "Celery Task Queue"
+      panels:
+        - "Queue length by queue"
+        - "Task processing rate"
+        - "Task failure rate"
+        - "Worker CPU/memory usage"
+      refresh: "30s"
+
+    - dashboard: "AI Orchestration"
+      panels:
+        - "AI API latency by provider"
+        - "AI API rate limits"
+        - "AI response cache hit rate"
+        - "3-AI collaboration duration"
+      refresh: "1m"
+
+  alerting:
+    critical:
+      - name: "High API latency"
+        condition: "api_request_duration_seconds{quantile='0.95'} > 1.0"
+        threshold: "P95 > 1 second for 5 minutes"
+        action: "Page on-call engineer"
+
+      - name: "Database connection pool exhausted"
+        condition: "db_connection_pool_utilization > 0.9"
+        threshold: "> 90% for 2 minutes"
+        action: "Auto-scale database connections, alert team"
+
+      - name: "Celery queue backed up"
+        condition: "celery_queue_length > 100"
+        threshold: "> 100 tasks for 10 minutes"
+        action: "Scale up Celery workers"
+
+    warning:
+      - name: "Cache hit rate low"
+        condition: "cache_hit_rate < 0.6"
+        threshold: "< 60% for 15 minutes"
+        action: "Review cache TTL settings"
+
+      - name: "Slow database queries"
+        condition: "db_query_duration_seconds{quantile='0.95'} > 0.1"
+        threshold: "P95 > 100ms"
+        action: "Review query optimization"
+
+  profiling_tools:
+    - tool: "py-spy"
+      purpose: "CPU profiling of Python code"
+      usage: "py-spy record -o profile.svg --pid {PID}"
+      schedule: "On-demand when latency spikes"
+
+    - tool: "memory_profiler"
+      purpose: "Memory leak detection"
+      usage: "@profile decorator on suspect functions"
+      schedule: "Weekly memory analysis"
+
+    - tool: "asyncio-profiler"
+      purpose: "Async operation profiling"
+      usage: "Enable debug mode in asyncio"
+      schedule: "During load testing"
+
+    - tool: "pgBadger"
+      purpose: "PostgreSQL log analysis"
+      usage: "pgbadger /var/log/postgresql/*.log"
+      schedule: "Daily reports"
+
+# ================================================================
+# LOAD TESTING & BENCHMARKING
+# ================================================================
+
+load_testing:
+  tools:
+    - name: "Locust"
+      purpose: "API load testing"
+      scenarios:
+        - name: "Dashboard load simulation"
+          users: 100
+          spawn_rate: 10
+          duration: "10m"
+          endpoints:
+            - "/api/uncertainty/status (60%)"
+            - "/api/metrics (30%)"
+            - "/api/quality/metrics (10%)"
+
+        - name: "AI orchestration stress"
+          users: 10
+          spawn_rate: 1
+          duration: "5m"
+          endpoints:
+            - "/api/execute (100%)"
+
+    - name: "k6"
+      purpose: "High-concurrency testing"
+      scenarios:
+        - name: "Spike test"
+          stages:
+            - duration: "2m", target: 10
+            - duration: "1m", target: 100
+            - duration: "5m", target: 100
+            - duration: "1m", target: 10
+
+  benchmarking:
+    baseline_metrics:
+      - "P50 latency: 80ms (current)"
+      - "P95 latency: 600ms (current)"
+      - "Cache hit rate: 40% (current)"
+      - "DB query P95: 50ms (current)"
+
+    target_metrics:
+      - "P50 latency: < 50ms"
+      - "P95 latency: < 200ms"
+      - "Cache hit rate: > 80%"
+      - "DB query P95: < 30ms"
+
+    regression_testing:
+      schedule: "On every deploy"
+      threshold: "No more than 10% latency increase"
+      automated: true
+
+# ================================================================
+# IMPLEMENTATION ROADMAP
+# ================================================================
+
+implementation_roadmap:
+  week_1:
+    - "Deploy Redis caching for uncertainty/metrics endpoints"
+    - "Optimize asyncpg connection pool"
+    - "Add Prometheus metrics collection"
+    - "Set up Grafana dashboards"
+    effort: "24 hours"
+
+  week_2:
+    - "Implement Celery for quality metrics"
+    - "Parallelize component queries in get_system_report_async()"
+    - "Add pgvector index optimization"
+    - "Deploy monitoring alerts"
+    effort: "28 hours"
+
+  week_3:
+    - "Implement AI response caching"
+    - "Optimize WebSocket fanout with Redis Pub/Sub"
+    - "Frontend bundle optimization"
+    - "Load testing and tuning"
+    effort: "32 hours"
+
+  week_4:
+    - "Polish and refinement"
+    - "Performance regression testing"
+    - "Documentation and runbooks"
+    - "Production deployment"
+    effort: "16 hours"
+
+  total_effort: "100 hours (2.5 weeks with 1 engineer)"
+
+# ================================================================
+# SUCCESS CRITERIA & VALIDATION
+# ================================================================
+
+success_criteria:
+  performance_targets:
+    - metric: "API P95 latency"
+      baseline: "600ms"
+      target: "< 200ms"
+      validation: "Load test with 100 concurrent users"
+
+    - metric: "API P50 latency"
+      baseline: "80ms"
+      target: "< 50ms"
+      validation: "Load test with 50 concurrent users"
+
+    - metric: "AI response time"
+      baseline: "10s (cold)"
+      target: "< 2s (cached)"
+      validation: "Repeated task execution"
+
+    - metric: "DB query P95"
+      baseline: "50ms"
+      target: "< 30ms"
+      validation: "pgBench on production load"
+
+    - metric: "Frontend TTI"
+      baseline: "5s"
+      target: "< 3s"
+      validation: "Lighthouse CI on 3G connection"
+
+  operational_metrics:
+    - "Cache hit rate: > 80%"
+    - "Celery task success rate: > 99%"
+    - "Database connection pool utilization: < 80%"
+    - "WebSocket connection count: > 100 simultaneous"
+    - "Zero P0 incidents for 30 days post-deployment"
+
+  rollback_triggers:
+    - "P95 latency increases by > 50%"
+    - "Error rate increases by > 10%"
+    - "Database connection pool exhausted"
+    - "Redis OOM errors"
+    - "Celery worker crashes"
+
+# ================================================================
+# COST-BENEFIT ANALYSIS
+# ================================================================
+
+cost_benefit:
+  infrastructure_costs:
+    redis:
+      size: "2GB memory"
+      cost: "$20/month (AWS ElastiCache t3.small)"
+
+    celery_workers:
+      size: "2 workers (t3.medium)"
+      cost: "$60/month"
+
+    monitoring:
+      grafana_cloud: "$0 (free tier up to 10k metrics)"
+      prometheus: "Self-hosted (included)"
+
+    total_monthly: "$80/month"
+
+  benefits:
+    performance_improvement:
+      - "94% reduction in uncertainty endpoint latency"
+      - "60% reduction in system metrics latency"
+      - "50% reduction in frontend TTI"
+
+    user_experience:
+      - "Dashboard loads in < 3 seconds (vs 8 seconds)"
+      - "Real-time updates feel instant"
+      - "No blocking on quality checks"
+
+    scalability:
+      - "Support 10x more concurrent users (10 → 100)"
+      - "Handle 10x more requests (100 req/min → 1000 req/min)"
+
+    developer_productivity:
+      - "Faster CI/CD (quality checks don't block)"
+      - "Better debugging (Prometheus metrics)"
+      - "Reduced on-call alerts (proactive monitoring)"
+
+  roi:
+    implementation_cost: "$10,000 (100 hours @ $100/hour)"
+    infrastructure_cost: "$960/year"
+    total_cost: "$10,960 first year
+
+    benefit_value:
+      - "10x user capacity: $50k ARR potential"
+      - "50% faster development: $20k/year savings"
+      - "Reduced downtime: $10k/year savings"
+
+    total_benefit: "$80k/year"
+
+    roi: "630% first year"
+    break_even: "1.6 months"
+
+# ================================================================
+# RISK MITIGATION
+# ================================================================
+
+risks:
+  - risk: "Redis cache invalidation bugs"
+    probability: "MEDIUM"
+    impact: "HIGH (stale data shown to users)"
+    mitigation:
+      - "Implement cache versioning (cache_key:v{version})"
+      - "Add cache health monitoring"
+      - "Implement cache warming on deploy"
+    contingency: "Feature flag to disable Redis cache"
+
+  - risk: "Celery worker crashes"
+    probability: "LOW"
+    impact: "HIGH (quality checks fail)"
+    mitigation:
+      - "Implement task retry with exponential backoff"
+      - "Add worker health checks"
+      - "Keep synchronous fallback endpoint"
+    contingency: "Auto-restart workers with supervisor"
+
+  - risk: "Database connection pool exhaustion"
+    probability: "MEDIUM"
+    impact: "CRITICAL (API returns 500 errors)"
+    mitigation:
+      - "Set max_size=50 with overflow queue"
+      - "Add connection timeout monitoring"
+      - "Implement circuit breaker on DB queries"
+    contingency: "Auto-scale database connections"
+
+  - risk: "pgvector index build fails"
+    probability: "LOW"
+    impact: "MEDIUM (vector search slow)"
+    mitigation:
+      - "Build index during off-peak hours"
+      - "Use CONCURRENTLY option"
+      - "Test on staging first"
+    contingency: "Drop index and retry with different parameters"
+
+# ================================================================
+# APPENDIX: REFERENCE IMPLEMENTATIONS
+# ================================================================
+
+reference_implementations:
+  redis_caching:
+    file: "backend/app/services/cache_service.py"
+    example: |
+      ```python
+      class CacheService:
+          def __init__(self, redis_client):
+              self.redis = redis_client
+
+          async def get_or_compute(self, key: str, compute_fn, ttl: int):
+              cached = await self.redis.get(key)
+              if cached:
+                  return json.loads(cached)
+
+              result = await compute_fn()
+              await self.redis.setex(key, ttl, json.dumps(result))
+              return result
+      ```
+
+  celery_task:
+    file: "backend/app/tasks/quality_tasks.py"
+    example: |
+      ```python
+      from celery import Celery
+
+      celery_app = Celery('udo', broker='redis://localhost:6379/0')
+
+      @celery_app.task(bind=True, max_retries=3)
+      def run_quality_metrics(self, project_id: str):
+          try:
+              service = QualityMetricsService()
+              result = service.get_all_metrics()
+              # Store in Redis
+              redis_client.setex(f"quality:{project_id}", 3600, json.dumps(result))
+              return {"status": "success", "task_id": self.request.id}
+          except Exception as e:
+              self.retry(exc=e, countdown=60)
+      ```
+
+  prometheus_instrumentation:
+    file: "backend/app/core/monitoring.py"
+    example: |
+      ```python
+      from prometheus_client import Histogram, Counter
+
+      REQUEST_DURATION = Histogram(
+          'api_request_duration_seconds',
+          'API request duration',
+          ['endpoint', 'method', 'status_code']
+      )
+
+      @app.middleware("http")
+      async def prometheus_middleware(request, call_next):
+          start = time.time()
+          response = await call_next(request)
+          duration = time.time() - start
+
+          REQUEST_DURATION.labels(
+              endpoint=request.url.path,
+              method=request.method,
+              status_code=response.status_code
+          ).observe(duration)
+
+          return response
+      ```

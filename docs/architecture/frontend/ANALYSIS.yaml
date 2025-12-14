@@ -1,0 +1,861 @@
+# UDO Development Platform v3.0 - Frontend Architecture Analysis
+# Generated: 2025-11-29
+# Based on: IMPLEMENTATION_WORKFLOW_SYSTEMATIC.md, DEVELOPMENT_PLAN_AND_REVIEW.md
+
+---
+frontend_architecture:
+  overview:
+    status: "50% Complete (5/10 pages)"
+    stack: "Next.js 16.0.3 + React 19.2.0 + Tailwind v4"
+    state_management: "Zustand + Tanstack Query"
+    ui_library: "Radix UI + Framer Motion"
+    charts: "Recharts 3.4.1"
+    realtime: "Socket.IO Client 4.8.1"
+
+  current_gaps:
+    critical:
+      - name: "Uncertainty 전용 페이지 누락"
+        impact: "핵심 차별화 기능 미노출"
+        priority: "P0"
+        estimated_effort: "6-8 hours"
+
+      - name: "WebSocket 실시간 업데이트 불완전"
+        impact: "예측 데이터 지연 표시"
+        priority: "P0"
+        estimated_effort: "4 hours"
+
+    important:
+      - name: "Loading/Error/Empty State 부재"
+        impact: "UX 품질 저하"
+        priority: "P1"
+        estimated_effort: "3 hours"
+
+      - name: "AI Persona 구분 미비"
+        impact: "Multi-Agent 가치 전달 실패"
+        priority: "P1"
+        estimated_effort: "2 hours"
+
+      - name: "One-Click Start 스크립트 누락"
+        impact: "초보자 진입 장벽"
+        priority: "P1"
+        estimated_effort: "1 hour"
+
+  layers:
+    page_layer:
+      description: "사용자 진입점 및 라우팅 (Next.js App Router)"
+      current_pages:
+        - path: "/"
+          component: "page.tsx"
+          status: "✅ Complete"
+          features: ["Dashboard", "System Status", "Phase Progress", "Uncertainty Map"]
+
+        - path: "/quality"
+          component: "quality/page.tsx"
+          status: "✅ Complete"
+          features: ["Pylint", "ESLint", "Coverage", "Quality Score"]
+
+        - path: "/time-tracking"
+          component: "time-tracking/page.tsx"
+          status: "✅ Complete"
+          features: ["Task Timer", "ROI", "Weekly Summary", "AI Performance"]
+
+        - path: "/ck-theory"
+          component: "ck-theory/page.tsx"
+          status: "✅ Complete"
+          features: ["Concept Space", "Knowledge Space", "Expansion Operators"]
+
+        - path: "/gi-formula"
+          component: "gi-formula/page.tsx"
+          status: "✅ Complete"
+          features: ["Granularity-Impact Analysis", "Decision Matrix"]
+
+      missing_pages:
+        - path: "/uncertainty"
+          priority: "P0"
+          reason: "핵심 차별화 기능 전용 페이지 필요"
+          estimated_effort: "6 hours"
+          features:
+            - "5D Vector Visualization (Radar Chart)"
+            - "Quantum State Timeline (24h prediction)"
+            - "Mitigation Panel with ROI"
+            - "Root Cause Analysis"
+            - "Real-time WebSocket updates"
+
+        - path: "/projects"
+          priority: "P1"
+          reason: "Multi-project 전환 UX 강화"
+          estimated_effort: "4 hours"
+          features:
+            - "Project List with Status"
+            - "Quick Switch Cards"
+            - "Project Analytics Summary"
+
+      responsibilities:
+        - "페이지 레벨 레이아웃 구성"
+        - "Navigation 통합"
+        - "Meta 정보 (SEO, OG Tags)"
+        - "Error Boundary 설정"
+        - "Loading Suspense Boundary"
+
+    component_layer:
+      dashboard_components:
+        description: "비즈니스 로직이 포함된 스마트 컴포넌트"
+        existing:
+          - name: "dashboard.tsx"
+            status: "✅ Complete"
+            responsibilities:
+              - "WebSocket 연결 관리"
+              - "API 상태 조회 (Tanstack Query)"
+              - "전역 레이아웃 구성"
+              - "실시간 데이터 동기화"
+
+          - name: "uncertainty-map.tsx"
+            status: "⚠️ Partial (75%)"
+            current_features:
+              - "Quantum State 표시 (5가지 상태)"
+              - "Confidence Meter"
+              - "Risk Assessment"
+              - "24h Prediction"
+              - "Root Cause Analysis"
+              - "Prevention Checklist"
+              - "Mitigation Strategies"
+            missing_features:
+              - "5D Radar Chart Visualization"
+              - "Vector Dimension Breakdown"
+              - "Historical Trend Graph"
+              - "AI Persona 명시 (Prophet)"
+
+          - name: "phase-progress.tsx"
+            status: "✅ Complete"
+            responsibilities:
+              - "Phase 전환 UI"
+              - "Progress Bar with Milestones"
+
+          - name: "quality-metrics.tsx"
+            status: "✅ Complete"
+            responsibilities:
+              - "Pylint/ESLint/Coverage 통합 표시"
+              - "Quality Score 계산"
+
+          - name: "project-selector.tsx"
+            status: "✅ Complete"
+            responsibilities:
+              - "Multi-project dropdown"
+              - "Context switching"
+
+          - name: "ai-collaboration.tsx"
+            status: "⚠️ Needs Enhancement"
+            current_features:
+              - "AI Service Status"
+            missing_features:
+              - "Persona 명시 (Claude, Codex, Gemini)"
+              - "역할 표시 (Prophet, Team)"
+              - "Action Button: Ask Claude"
+
+        needed:
+          - name: "uncertainty-radar-chart.tsx"
+            priority: "P0"
+            estimated_effort: "3 hours"
+            purpose: "5D Vector를 Radar Chart로 시각화"
+            data_source: "/api/uncertainty/status → vector: {technical, market, resource, timeline, quality}"
+
+          - name: "mitigation-panel.tsx"
+            priority: "P0"
+            estimated_effort: "2 hours"
+            purpose: "완화 전략을 Interactive Panel로 표시"
+            features:
+              - "ROI 기반 우선순위 정렬"
+              - "Apply/Dismiss 버튼"
+              - "Success Probability 표시"
+
+          - name: "ai-persona-badge.tsx"
+            priority: "P1"
+            estimated_effort: "1 hour"
+            purpose: "AI 페르소나 명시 컴포넌트"
+            props:
+              - "persona: 'prophet' | 'claude' | 'codex' | 'gemini'"
+              - "message: string"
+              - "actionLabel?: string"
+              - "onAction?: () => void"
+
+      ui_components:
+        description: "재사용 가능한 Dumb 컴포넌트 (Radix UI 기반)"
+        existing:
+          - "components/ui/button.tsx"
+          - "components/ui/dialog.tsx"
+          - "components/ui/progress.tsx"
+          - "components/ui/scroll-area.tsx"
+          - "components/ui/separator.tsx"
+          - "components/ui/tabs.tsx"
+
+        needed:
+          - name: "loading-skeleton.tsx"
+            priority: "P1"
+            estimated_effort: "1 hour"
+            purpose: "Skeleton UI for loading states"
+
+          - name: "empty-state.tsx"
+            priority: "P1"
+            estimated_effort: "0.5 hours"
+            purpose: "데이터 없을 때 안내 UI"
+            props:
+              - "icon: LucideIcon"
+              - "title: string"
+              - "description: string"
+              - "actionLabel?: string"
+              - "onAction?: () => void"
+
+          - name: "error-fallback.tsx"
+            priority: "P1"
+            estimated_effort: "1 hour"
+            purpose: "Error Boundary UI"
+            features:
+              - "에러 메시지 표시"
+              - "Retry 버튼"
+              - "Report to Claude 버튼"
+
+    data_layer:
+      api_integration:
+        pattern: "Tanstack Query (React Query v5)"
+        current_endpoints:
+          - endpoint: "/api/status"
+            queryKey: "['system-status']"
+            usage: "Dashboard - System Status"
+
+          - endpoint: "/api/metrics"
+            queryKey: "['metrics']"
+            usage: "Dashboard - Metrics Chart, Phase Progress"
+
+          - endpoint: "/api/uncertainty/status"
+            queryKey: "['uncertainty-status']"
+            usage: "Uncertainty Map"
+
+          - endpoint: "/api/uncertainty/ack/{id}"
+            mutationKey: "['ack-mitigation']"
+            usage: "Mitigation 적용"
+
+          - endpoint: "/api/quality-metrics"
+            queryKey: "['quality-metrics']"
+            usage: "Quality Page"
+
+          - endpoint: "/api/time-tracking/stats"
+            queryKey: "['time-stats']"
+            usage: "Time Tracking Page"
+
+        needed_endpoints:
+          - endpoint: "/api/uncertainty/history"
+            priority: "P1"
+            purpose: "Historical uncertainty trend data"
+            response: "Array<{timestamp, state, vector, confidence}>"
+
+          - endpoint: "/api/ai/ask-claude"
+            priority: "P1"
+            purpose: "AI에게 해결책 요청"
+            method: "POST"
+            body: "{problem: string, context: object}"
+
+        websocket_integration:
+          url: "ws://localhost:8000/ws"
+          connection_status: "isConnected state"
+          event_types:
+            - "task_executed"
+            - "phase_changed"
+            - "uncertainty_update"
+            - "error"
+
+          improvements_needed:
+            - name: "Auto-reconnect"
+              priority: "P1"
+              estimated_effort: "1 hour"
+
+            - name: "Heartbeat ping/pong"
+              priority: "P2"
+              estimated_effort: "0.5 hours"
+
+            - name: "Message Queue (offline)"
+              priority: "P2"
+              estimated_effort: "2 hours"
+
+      state_management:
+        global_state: "Zustand"
+        current_stores:
+          - name: "useProjectStore (추정)"
+            purpose: "Current project context"
+            state:
+              - "currentProjectId: string"
+              - "projectName: string"
+              - "switchProject: (id: string) => void"
+
+        needed_stores:
+          - name: "useUncertaintyStore"
+            priority: "P1"
+            estimated_effort: "1 hour"
+            purpose: "Uncertainty state caching"
+            state:
+              - "currentState: QuantumState"
+              - "vector: 5DVector"
+              - "predictions: Prediction[]"
+              - "history: HistoryPoint[]"
+              - "addPrediction: (p: Prediction) => void"
+
+          - name: "useAIPersonaStore"
+            priority: "P2"
+            estimated_effort: "0.5 hours"
+            purpose: "AI Persona preferences"
+            state:
+              - "preferredAI: 'claude' | 'codex' | 'gemini'"
+              - "conversationHistory: Message[]"
+
+---
+ux_improvements:
+  antigravity_integration:
+    one_click_start:
+      description: "Backend + Frontend 동시 실행"
+      implementation: "concurrently 패키지 사용"
+      priority: "P1"
+      estimated_effort: "1 hour"
+
+      files:
+        - path: "package.json"
+          changes:
+            scripts:
+              dev:full: "concurrently \"npm run dev\" \"cd ../backend && .venv/Scripts/python.exe -m uvicorn main:app --reload\""
+
+        - path: "README.md"
+          changes:
+            - "Quick Start 섹션 추가"
+            - "npm run dev:full 한 줄로 실행"
+
+      success_criteria:
+        - "npm run dev:full 실행 시 Backend (8000) + Frontend (3000) 동시 시작"
+        - "양쪽 로그가 터미널에 동시 출력"
+        - "Ctrl+C로 양쪽 모두 종료"
+
+  visual_feedback:
+    loading_states:
+      priority: "P1"
+      estimated_effort: "3 hours"
+
+      patterns:
+        - component: "Dashboard"
+          current: "단순 Loader2 spinner"
+          improvement: "Skeleton UI (카드별 로딩 애니메이션)"
+          example: "PhaseProgress → 5개 바 스켈레톤, UncertaintyMap → Radar 영역 shimmer"
+
+        - component: "QualityMetrics"
+          current: "데이터 없으면 빈 화면"
+          improvement: "Empty State: 'Run quality checks to see metrics' + CTA 버튼"
+
+        - component: "TimeTracking"
+          current: "Loading 시 전체 흰 화면"
+          improvement: "Table skeleton + Timer placeholder"
+
+      implementation:
+        - "components/ui/loading-skeleton.tsx 생성"
+        - "각 대시보드 컴포넌트에 isLoading prop 전달"
+        - "Suspense Boundary 추가 (React 19)"
+
+    error_states:
+      priority: "P1"
+      estimated_effort: "2 hours"
+
+      patterns:
+        - component: "Dashboard"
+          current: "에러 시 아무것도 표시 안 됨"
+          improvement: "Error Fallback UI + Retry 버튼 + Report to Claude"
+
+        - component: "API Calls (Tanstack Query)"
+          current: "error 객체만 로깅"
+          improvement: "toast.error() + 재시도 버튼 + 에러 상세 모달"
+
+      implementation:
+        - "components/ui/error-fallback.tsx 생성"
+        - "Error Boundary 래핑 (app/layout.tsx)"
+        - "Tanstack Query onError 핸들러 통합"
+
+    empty_states:
+      priority: "P1"
+      estimated_effort: "1 hour"
+
+      patterns:
+        - component: "ExecutionHistory"
+          current: "빈 배열이면 아무것도 없음"
+          improvement: "Empty State: 'No tasks executed yet' + 'Run your first task' CTA"
+
+        - component: "MitigationStrategies"
+          current: "텍스트만 '추천 전략이 아직 없습니다.'"
+          improvement: "Empty State with Icon: 'System is stable - no mitigations needed' (긍정적 메시지)"
+
+      implementation:
+        - "components/ui/empty-state.tsx 생성"
+        - "각 리스트 컴포넌트에 data.length === 0 체크"
+
+  action_buttons:
+    ask_claude_integration:
+      priority: "P0"
+      estimated_effort: "2 hours"
+
+      trigger_locations:
+        - component: "UncertaintyMap"
+          condition: "state === 'Chaotic' || state === 'Void'"
+          button_label: "🤖 Ask Claude for Solution"
+          action: "POST /api/ai/ask-claude with {problem: rootCause, context: vector}"
+
+        - component: "ErrorFallback"
+          condition: "에러 발생 시"
+          button_label: "Report Error to Claude"
+          action: "POST /api/ai/ask-claude with {problem: errorMessage, context: stackTrace}"
+
+        - component: "QualityMetrics"
+          condition: "quality_score < 70"
+          button_label: "Get AI Recommendations"
+          action: "POST /api/ai/ask-claude with {problem: 'Low quality score', context: metrics}"
+
+      implementation:
+        files:
+          - "components/dashboard/uncertainty-map.tsx"
+            changes:
+              - "Ask Claude 버튼 추가 (state === 'Chaotic' || 'Void')"
+              - "useMutation hook for /api/ai/ask-claude"
+              - "Response를 toast 또는 modal로 표시"
+
+          - "backend/app/routers/ai.py (NEW)"
+            changes:
+              - "POST /api/ai/ask-claude endpoint 생성"
+              - "Claude API 호출 (src/three_ai_collaboration_bridge.py 활용)"
+              - "Response: {solution: string, confidence: number, estimated_time: string}"
+
+      ux_flow:
+        1: "사용자가 'Ask Claude' 버튼 클릭"
+        2: "Loading 상태 표시 (Spinner + 'Thinking...')"
+        3: "Backend가 Claude에게 요청 (max 10초)"
+        4: "Response를 Dialog로 표시"
+        5: "Apply Solution 버튼 (optional)"
+
+    persona_distinction:
+      priority: "P1"
+      estimated_effort: "2 hours"
+
+      personas:
+        - name: "Prophet"
+          emoji: "🔮"
+          role: "Uncertainty Prediction"
+          color: "purple"
+          trigger: "UncertaintyMap 컴포넌트"
+          message_example: "Prophet predicts 72% chance of delay"
+
+        - name: "Claude"
+          emoji: "🤖"
+          role: "Code Analysis & Solutions"
+          color: "blue"
+          trigger: "Ask Claude 버튼"
+          message_example: "Claude suggests: Add caching layer"
+
+        - name: "Codex"
+          emoji: "⚡"
+          role: "Code Generation"
+          color: "green"
+          trigger: "Quality Metrics 개선 제안"
+          message_example: "Codex can auto-fix 12 issues"
+
+        - name: "Gemini"
+          emoji: "💎"
+          role: "Security & Performance"
+          color: "orange"
+          trigger: "Performance 병목 감지 시"
+          message_example: "Gemini detected N+1 query issue"
+
+      implementation:
+        - "components/ai-persona-badge.tsx 생성"
+        - "각 컴포넌트에서 적절한 페르소나 표시"
+        - "UncertaintyMap → Prophet"
+        - "AI Collaboration → Claude/Codex/Gemini 구분"
+
+---
+uncertainty_page:
+  overview:
+    path: "/uncertainty"
+    priority: "P0"
+    estimated_effort: "6-8 hours"
+    purpose: "핵심 차별화 기능 전용 페이지 (현재 Dashboard 일부만 표시)"
+
+  layout:
+    grid: "2-column (lg:grid-cols-2)"
+    sections:
+      left_column:
+        - "5D Radar Chart (Primary Visualization)"
+        - "Quantum State Timeline (24h history)"
+        - "Vector Dimension Breakdown Table"
+
+      right_column:
+        - "Current State Badge (큰 사이즈)"
+        - "Confidence Meter + Risk Level"
+        - "Mitigation Panel (Interactive)"
+        - "Root Cause Analysis (확장됨)"
+
+  visualizations:
+    radar_chart:
+      type: "Radar Chart (Recharts)"
+      priority: "P0"
+      estimated_effort: "3 hours"
+
+      data_source: "/api/uncertainty/status → vector"
+      dimensions:
+        - technical: "기술적 복잡도"
+        - market: "시장 불확실성"
+        - resource: "리소스 제약"
+        - timeline: "일정 압박"
+        - quality: "품질 위험"
+
+      implementation:
+        library: "recharts (already installed)"
+        component: "components/uncertainty/radar-chart.tsx"
+        props:
+          - "vector: 5DVector"
+          - "showLabels: boolean"
+          - "interactive: boolean"
+
+        code_snippet: |
+          <RadarChart data={vectorData}>
+            <PolarGrid />
+            <PolarAngleAxis dataKey="dimension" />
+            <PolarRadiusAxis domain={[0, 1]} />
+            <Radar name="Current" dataKey="value" stroke="#8884d8" fill="#8884d8" fillOpacity={0.6} />
+            <Tooltip />
+          </RadarChart>
+
+      interactions:
+        - "Dimension 클릭 시 해당 차원의 Root Cause 상세 표시"
+        - "Hover 시 수치 표시"
+
+    state_timeline:
+      type: "Line Chart / Area Chart"
+      priority: "P1"
+      estimated_effort: "2 hours"
+
+      data_source: "/api/uncertainty/history (NEW endpoint needed)"
+      x_axis: "timestamp (last 24h)"
+      y_axis: "confidence_score (0-1)"
+      color_coding: "state별 색상 (Deterministic=green, Chaotic=red)"
+
+      implementation:
+        component: "components/uncertainty/state-timeline.tsx"
+        code_snippet: |
+          <AreaChart data={historyData}>
+            <XAxis dataKey="timestamp" />
+            <YAxis domain={[0, 1]} />
+            <Area type="monotone" dataKey="confidence" stroke="#8884d8" fill="#8884d8" />
+            <Tooltip content={<CustomTooltip />} />
+          </AreaChart>
+
+    state_badge:
+      type: "Large Badge Component"
+      priority: "P0"
+      estimated_effort: "0.5 hours"
+
+      current_location: "uncertainty-map.tsx (작은 사이즈)"
+      new_design: "Hero Section (큰 아이콘 + 애니메이션)"
+
+      enhancements:
+        - "Icon 크기: h-16 w-16 (현재 h-5)"
+        - "Animated glow effect (framer-motion)"
+        - "State 전환 시 애니메이션"
+
+      code_snippet: |
+        <motion.div
+          initial={{ scale: 0.8, opacity: 0 }}
+          animate={{ scale: 1, opacity: 1 }}
+          className="p-8 rounded-xl bg-gradient-to-br from-purple-500/20 to-blue-500/20"
+        >
+          <span className="text-6xl">{config.icon}</span>
+          <h2 className="text-4xl font-bold mt-4">{normalizedState}</h2>
+        </motion.div>
+
+  components:
+    mitigation_panel:
+      type: "Interactive Panel"
+      priority: "P0"
+      estimated_effort: "2 hours"
+
+      file: "components/uncertainty/mitigation-panel.tsx"
+
+      props:
+        - "mitigations: Mitigation[]"
+        - "onApply: (id: string) => Promise<void>"
+        - "onDismiss: (id: string) => void"
+
+      features:
+        sorting:
+          - "ROI 기준 (기본)"
+          - "Impact 기준"
+          - "Success Probability 기준"
+
+        interaction:
+          - "Apply 버튼 → POST /api/uncertainty/ack/{id}"
+          - "Dismiss 버튼 → 로컬 상태에서 제거"
+          - "Details 확장 → 상세 설명 + 예상 비용"
+
+        visual:
+          - "ROI > 2.0 → Green badge"
+          - "ROI 1.0-2.0 → Yellow badge"
+          - "ROI < 1.0 → Red badge"
+
+      code_snippet: |
+        <div className="space-y-3">
+          {sortedMitigations.map(m => (
+            <Card key={m.id}>
+              <div className="flex justify-between">
+                <span>{m.action}</span>
+                <Badge color={getRoiColor(m.roi)}>ROI: {m.roi.toFixed(2)}</Badge>
+              </div>
+              <div className="mt-2 flex gap-2">
+                <Button onClick={() => onApply(m.id)}>Apply</Button>
+                <Button variant="ghost" onClick={() => onDismiss(m.id)}>Dismiss</Button>
+              </div>
+            </Card>
+          ))}
+        </div>
+
+    vector_breakdown_table:
+      type: "Data Table"
+      priority: "P1"
+      estimated_effort: "1 hour"
+
+      file: "components/uncertainty/vector-table.tsx"
+
+      columns:
+        - dimension: "Dimension Name"
+        - current_value: "Current (%)"
+        - trend: "Trend (↑ ↓ →)"
+        - root_cause: "Primary Cause"
+        - action: "Quick Action Button"
+
+      data_source: "vector + historical comparison"
+
+      example_row:
+        dimension: "Quality"
+        current_value: "78%"
+        trend: "↑ (+5% vs yesterday)"
+        root_cause: "테스트 커버리지 부족"
+        action: "<Button>Run Tests</Button>"
+
+  realtime_updates:
+    websocket_integration:
+      event: "uncertainty_update"
+      handler: "queryClient.invalidateQueries(['uncertainty-status'])"
+
+      improvements:
+        - name: "Visual indicator"
+          description: "데이터 갱신 시 Badge에 Pulse 애니메이션"
+          estimated_effort: "0.5 hours"
+
+        - name: "Toast notification"
+          description: "State 변경 시 toast.info('State changed: Probabilistic → Quantum')"
+          estimated_effort: "0.5 hours"
+
+        - name: "Auto-scroll to changes"
+          description: "Mitigation 추가 시 자동 스크롤"
+          estimated_effort: "0.5 hours"
+
+  navigation:
+    header_link:
+      location: "Dashboard header (alongside Quality, Time Tracking)"
+      icon: "AlertTriangle (lucide-react)"
+      color: "yellow-500"
+      label: "Uncertainty"
+
+    sidebar_link:
+      location: "Navigation.tsx"
+      icon: "TrendingUp"
+      label: "Uncertainty Analysis"
+
+    quick_access:
+      dashboard: "UncertaintyMap 컴포넌트에 'View Details' 링크"
+      target: "/uncertainty"
+
+---
+implementation_priority:
+  week_1:
+    - task: "Uncertainty 전용 페이지 생성 (/uncertainty)"
+      estimated_effort: "2 hours"
+      files:
+        - "web-dashboard/app/uncertainty/page.tsx"
+
+    - task: "5D Radar Chart 구현"
+      estimated_effort: "3 hours"
+      files:
+        - "web-dashboard/components/uncertainty/radar-chart.tsx"
+      dependencies:
+        - "Recharts (already installed)"
+
+    - task: "Mitigation Panel 구현"
+      estimated_effort: "2 hours"
+      files:
+        - "web-dashboard/components/uncertainty/mitigation-panel.tsx"
+
+    - task: "Loading/Error/Empty State 컴포넌트"
+      estimated_effort: "3 hours"
+      files:
+        - "web-dashboard/components/ui/loading-skeleton.tsx"
+        - "web-dashboard/components/ui/error-fallback.tsx"
+        - "web-dashboard/components/ui/empty-state.tsx"
+
+    - task: "Ask Claude 버튼 통합"
+      estimated_effort: "2 hours"
+      files:
+        - "web-dashboard/components/dashboard/uncertainty-map.tsx"
+        - "backend/app/routers/ai.py (NEW)"
+
+    total_effort: "12 hours (1.5 days)"
+
+  week_2:
+    - task: "AI Persona Badge 컴포넌트"
+      estimated_effort: "2 hours"
+      files:
+        - "web-dashboard/components/ai-persona-badge.tsx"
+
+    - task: "State Timeline 차트"
+      estimated_effort: "2 hours"
+      files:
+        - "web-dashboard/components/uncertainty/state-timeline.tsx"
+      dependencies:
+        - "Backend: /api/uncertainty/history endpoint"
+
+    - task: "Vector Breakdown Table"
+      estimated_effort: "1 hour"
+      files:
+        - "web-dashboard/components/uncertainty/vector-table.tsx"
+
+    - task: "One-Click Start 스크립트"
+      estimated_effort: "1 hour"
+      files:
+        - "package.json (dev:full script)"
+        - "README.md update"
+
+    - task: "WebSocket Auto-reconnect"
+      estimated_effort: "1 hour"
+      files:
+        - "web-dashboard/components/dashboard/dashboard.tsx"
+
+    total_effort: "7 hours (1 day)"
+
+---
+success_criteria:
+  technical:
+    - metric: "페이지 완성도"
+      target: "50% → 70% (Uncertainty 페이지 추가)"
+      measurement: "페이지 수: 5 → 6"
+
+    - metric: "UX 품질"
+      target: "Loading/Error/Empty State 100% 커버"
+      measurement: "전체 컴포넌트 중 상태 처리 비율"
+
+    - metric: "Realtime 성능"
+      target: "WebSocket 메시지 지연 < 500ms"
+      measurement: "uncertainty_update → UI 반영 시간"
+
+    - metric: "초보자 진입"
+      target: "npm run dev:full 한 줄로 실행 가능"
+      measurement: "Quick Start 단계 수: 3 → 1"
+
+  business:
+    - metric: "핵심 가치 전달"
+      target: "Uncertainty 예측 기능 전용 페이지 노출"
+      measurement: "사용자가 5D Vector를 시각적으로 확인 가능"
+
+    - metric: "Multi-Agent 가치"
+      target: "AI Persona 구분 명확화"
+      measurement: "Prophet/Claude/Codex/Gemini 역할 표시"
+
+    - metric: "액션 가능성"
+      target: "AI에게 해결책 요청 버튼 제공"
+      measurement: "Ask Claude 버튼 클릭률 측정"
+
+---
+risks_and_mitigations:
+  - risk: "Recharts Radar Chart 성능 이슈 (대량 데이터)"
+    probability: "Low (30%)"
+    impact: "Medium"
+    mitigation: "데이터 샘플링 (최근 100개 포인트만)"
+    fallback: "Simple Bar Chart로 대체"
+
+  - risk: "Backend /api/uncertainty/history 엔드포인트 미구현"
+    probability: "Medium (50%)"
+    impact: "High"
+    mitigation: "Mock 데이터로 Frontend 먼저 구현"
+    fallback: "Static data hardcoding (임시)"
+
+  - risk: "WebSocket 불안정 (재연결 실패)"
+    probability: "Medium (40%)"
+    impact: "Medium"
+    mitigation: "Auto-reconnect 로직 + Fallback to polling"
+    fallback: "30초마다 REST API polling"
+
+  - risk: "AI Ask Claude 응답 시간 > 10초"
+    probability: "High (60%)"
+    impact: "Medium"
+    mitigation: "Timeout 설정 (10초) + Loading UI"
+    fallback: "캐싱된 유사 문제 해결책 표시"
+
+---
+next_steps:
+  immediate:
+    1:
+      action: "Week 1 Task 1 시작"
+      command: "mkdir web-dashboard/app/uncertainty && touch web-dashboard/app/uncertainty/page.tsx"
+      estimated_time: "2 hours"
+
+    2:
+      action: "5D Radar Chart 프로토타입"
+      files:
+        - "web-dashboard/components/uncertainty/radar-chart.tsx"
+      test_data: "Mock vector: {technical: 0.7, market: 0.3, resource: 0.5, timeline: 0.8, quality: 0.6}"
+      estimated_time: "3 hours"
+
+    3:
+      action: "Loading Skeleton 컴포넌트 생성"
+      files:
+        - "web-dashboard/components/ui/loading-skeleton.tsx"
+      usage: "Dashboard, QualityMetrics, TimeTracking"
+      estimated_time: "1 hour"
+
+  coordination:
+    - team: "Backend Developer"
+      request: "/api/uncertainty/history 엔드포인트 구현"
+      priority: "P1"
+      estimated_effort: "2 hours"
+
+    - team: "Backend Developer"
+      request: "/api/ai/ask-claude 엔드포인트 구현"
+      priority: "P0"
+      estimated_effort: "3 hours"
+
+---
+appendix:
+  tech_stack_details:
+    frontend:
+      framework: "Next.js 16.0.3 (App Router)"
+      ui_library: "React 19.2.0"
+      styling: "Tailwind CSS v4"
+      components: "Radix UI (Headless)"
+      animations: "Framer Motion 12.23.24"
+      charts: "Recharts 3.4.1"
+      state: "Zustand 5.0.8"
+      data_fetching: "Tanstack Query 5.90.10"
+      realtime: "Socket.IO Client 4.8.1"
+      notifications: "Sonner 2.0.7"
+
+    backend:
+      framework: "FastAPI"
+      database: "PostgreSQL + pgvector"
+      realtime: "WebSocket"
+      ai: "Claude API, Codex MCP, Gemini API"
+
+  reference_docs:
+    - "docs/IMPLEMENTATION_WORKFLOW_SYSTEMATIC.md"
+    - "docs/DEVELOPMENT_PLAN_AND_REVIEW.md"
+    - "docs/ARCHITECTURE_EXECUTIVE_SUMMARY.md"
+    - "web-dashboard/components/dashboard/uncertainty-map.tsx"
+    - "web-dashboard/components/dashboard/dashboard.tsx"
+
+# End of Frontend Architecture Analysis

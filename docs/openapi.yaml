@@ -1,0 +1,972 @@
+openapi: 3.0.3
+info:
+  title: UDO Development Platform API
+  description: |
+    **Unified Development Orchestrator** - AI-powered development automation platform API
+
+    ## Features
+    - Multi-project management
+    - Git version history tracking
+    - Task execution and history
+    - Quality metrics monitoring
+    - Kanban work management
+    - Real-time WebSocket updates
+
+    ## Authentication
+    Currently no authentication required (development mode).
+    Production will use JWT authentication.
+  version: 3.0.0
+  contact:
+    name: UDO Development Team
+    email: support@udo-platform.dev
+  license:
+    name: MIT
+    url: https://opensource.org/licenses/MIT
+
+servers:
+  - url: http://localhost:8000
+    description: Local development server
+  - url: http://localhost:8000/api
+    description: Local development server (API prefix)
+
+tags:
+  - name: System
+    description: System health and status
+  - name: Projects
+    description: Project management operations
+  - name: Version History
+    description: Git commit history and version tracking
+  - name: Task History
+    description: Prompt/code execution history
+  - name: Kanban
+    description: Work management and kanban boards
+  - name: Quality Metrics
+    description: Code quality and metrics tracking
+  - name: Execution
+    description: Task execution and UDO operations
+  - name: WebSocket
+    description: Real-time updates via WebSocket
+
+paths:
+  # ============================================================
+  # SYSTEM ENDPOINTS
+  # ============================================================
+  /api/health:
+    get:
+      tags: [System]
+      summary: Health check
+      description: Check if the API server is running and healthy
+      responses:
+        '200':
+          description: Server is healthy
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/HealthCheck'
+
+  /api/status:
+    get:
+      tags: [System]
+      summary: Get system status
+      description: Get detailed UDO system status including all components
+      responses:
+        '200':
+          description: System status retrieved
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/SystemStatus'
+        '500':
+          $ref: '#/components/responses/InternalServerError'
+
+  /api/metrics:
+    get:
+      tags: [System]
+      summary: Get dashboard metrics
+      description: Get comprehensive metrics for dashboard display
+      responses:
+        '200':
+          description: Metrics retrieved
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/DashboardMetrics'
+
+  # ============================================================
+  # PROJECTS ENDPOINTS
+  # ============================================================
+  /api/projects:
+    get:
+      tags: [Projects]
+      summary: List all projects
+      description: Get list of all projects with optional filtering
+      parameters:
+        - $ref: '#/components/parameters/LimitParam'
+        - $ref: '#/components/parameters/SkipParam'
+        - name: archived
+          in: query
+          schema:
+            type: boolean
+          description: Include archived projects
+      responses:
+        '200':
+          description: Projects list retrieved
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  total:
+                    type: integer
+                  projects:
+                    type: array
+                    items:
+                      $ref: '#/components/schemas/Project'
+
+    post:
+      tags: [Projects]
+      summary: Create new project
+      description: Create a new project
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/ProjectCreate'
+      responses:
+        '201':
+          description: Project created
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Project'
+        '400':
+          $ref: '#/components/responses/BadRequest'
+
+  /api/projects/{project_id}:
+    get:
+      tags: [Projects]
+      summary: Get project details
+      parameters:
+        - $ref: '#/components/parameters/ProjectIdParam'
+      responses:
+        '200':
+          description: Project details retrieved
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Project'
+        '404':
+          $ref: '#/components/responses/NotFound'
+
+    put:
+      tags: [Projects]
+      summary: Update project
+      parameters:
+        - $ref: '#/components/parameters/ProjectIdParam'
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/ProjectUpdate'
+      responses:
+        '200':
+          description: Project updated
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Project'
+
+    delete:
+      tags: [Projects]
+      summary: Delete project
+      parameters:
+        - $ref: '#/components/parameters/ProjectIdParam'
+      responses:
+        '204':
+          description: Project deleted
+
+  /api/projects/{project_id}/switch:
+    post:
+      tags: [Projects]
+      summary: Switch to project
+      description: Switch to a project and auto-load its context
+      parameters:
+        - $ref: '#/components/parameters/ProjectIdParam'
+      responses:
+        '200':
+          description: Switched to project successfully
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  project:
+                    $ref: '#/components/schemas/Project'
+                  context:
+                    $ref: '#/components/schemas/ProjectContext'
+
+  # ============================================================
+  # VERSION HISTORY ENDPOINTS
+  # ============================================================
+  /api/version-history:
+    get:
+      tags: [Version History]
+      summary: Get version history
+      description: Get Git commit history with filtering options
+      parameters:
+        - name: project_path
+          in: query
+          schema:
+            type: string
+          description: Path to Git repository
+        - name: branch
+          in: query
+          schema:
+            type: string
+          description: Branch name (default: current branch)
+        - $ref: '#/components/parameters/LimitParam'
+        - $ref: '#/components/parameters/SkipParam'
+        - name: author
+          in: query
+          schema:
+            type: string
+          description: Filter by author email
+        - name: since
+          in: query
+          schema:
+            type: string
+            format: date-time
+          description: Commits after this date (ISO 8601)
+        - name: until
+          in: query
+          schema:
+            type: string
+            format: date-time
+          description: Commits before this date (ISO 8601)
+        - name: search
+          in: query
+          schema:
+            type: string
+          description: Search in commit messages
+      responses:
+        '200':
+          description: Version history retrieved
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/VersionHistory'
+        '400':
+          $ref: '#/components/responses/BadRequest'
+        '500':
+          $ref: '#/components/responses/InternalServerError'
+
+  /api/version-history/commits/{commit_hash}:
+    get:
+      tags: [Version History]
+      summary: Get commit details
+      parameters:
+        - name: commit_hash
+          in: path
+          required: true
+          schema:
+            type: string
+          description: Full or short Git commit hash
+      responses:
+        '200':
+          description: Commit details retrieved
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/VersionCommit'
+        '404':
+          $ref: '#/components/responses/NotFound'
+
+  /api/version-history/compare:
+    get:
+      tags: [Version History]
+      summary: Compare commits
+      description: Compare two commits to see differences
+      parameters:
+        - name: from_commit
+          in: query
+          required: true
+          schema:
+            type: string
+          description: Source commit hash
+        - name: to_commit
+          in: query
+          required: true
+          schema:
+            type: string
+          description: Target commit hash
+      responses:
+        '200':
+          description: Comparison retrieved
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/VersionComparison'
+
+  /api/version-history/stats:
+    get:
+      tags: [Version History]
+      summary: Get repository statistics
+      responses:
+        '200':
+          description: Repository stats retrieved
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  project_name:
+                    type: string
+                  total_commits:
+                    type: integer
+                  total_contributors:
+                    type: integer
+                  first_commit_date:
+                    type: string
+                    format: date-time
+                  last_commit_date:
+                    type: string
+                    format: date-time
+
+  /api/version-history/branches:
+    get:
+      tags: [Version History]
+      summary: List all branches
+      responses:
+        '200':
+          description: Branches list retrieved
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  branches:
+                    type: array
+                    items:
+                      type: string
+                  current_branch:
+                    type: string
+                  total:
+                    type: integer
+
+  # ============================================================
+  # TASK HISTORY ENDPOINTS
+  # ============================================================
+  /api/task-history:
+    get:
+      tags: [Task History]
+      summary: Get task execution history
+      parameters:
+        - name: project_id
+          in: query
+          schema:
+            type: string
+            format: uuid
+        - name: phase
+          in: query
+          schema:
+            type: string
+            enum: [ideation, design, mvp, implementation, testing]
+        - $ref: '#/components/parameters/LimitParam'
+        - $ref: '#/components/parameters/SkipParam'
+      responses:
+        '200':
+          description: Task history retrieved
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  total:
+                    type: integer
+                  tasks:
+                    type: array
+                    items:
+                      $ref: '#/components/schemas/TaskHistory'
+
+  # ============================================================
+  # QUALITY METRICS ENDPOINTS
+  # ============================================================
+  /api/quality-metrics:
+    get:
+      tags: [Quality Metrics]
+      summary: Get quality metrics
+      parameters:
+        - name: project_id
+          in: query
+          schema:
+            type: string
+            format: uuid
+      responses:
+        '200':
+          description: Quality metrics retrieved
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/QualityMetrics'
+
+  # ============================================================
+  # KANBAN ENDPOINTS
+  # ============================================================
+  /api/kanban/boards:
+    get:
+      tags: [Kanban]
+      summary: List kanban boards
+      parameters:
+        - name: project_id
+          in: query
+          schema:
+            type: string
+            format: uuid
+      responses:
+        '200':
+          description: Boards list retrieved
+          content:
+            application/json:
+              schema:
+                type: array
+                items:
+                  $ref: '#/components/schemas/KanbanBoard'
+
+    post:
+      tags: [Kanban]
+      summary: Create kanban board
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/KanbanBoardCreate'
+      responses:
+        '201':
+          description: Board created
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/KanbanBoard'
+
+  /api/kanban/boards/{board_id}/cards:
+    get:
+      tags: [Kanban]
+      summary: Get cards on board
+      parameters:
+        - name: board_id
+          in: path
+          required: true
+          schema:
+            type: string
+            format: uuid
+      responses:
+        '200':
+          description: Cards retrieved
+          content:
+            application/json:
+              schema:
+                type: array
+                items:
+                  $ref: '#/components/schemas/KanbanCard'
+
+    post:
+      tags: [Kanban]
+      summary: Create card
+      parameters:
+        - name: board_id
+          in: path
+          required: true
+          schema:
+            type: string
+            format: uuid
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/KanbanCardCreate'
+      responses:
+        '201':
+          description: Card created
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/KanbanCard'
+
+  # ============================================================
+  # EXECUTION ENDPOINTS
+  # ============================================================
+  /api/execute:
+    post:
+      tags: [Execution]
+      summary: Execute development task
+      description: Execute a development task using UDO system
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              required: [task]
+              properties:
+                task:
+                  type: string
+                  description: Task description
+                phase:
+                  type: string
+                  enum: [ideation, design, mvp, implementation, testing]
+                priority:
+                  type: string
+                  enum: [low, normal, high, urgent]
+                  default: normal
+      responses:
+        '200':
+          description: Task executed successfully
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  success:
+                    type: boolean
+                  result:
+                    type: object
+
+  /api/train:
+    post:
+      tags: [Execution]
+      summary: Train ML models
+      description: Retrain ML models with latest data
+      responses:
+        '200':
+          description: Training completed
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  success:
+                    type: boolean
+                  training_results:
+                    type: object
+
+# ============================================================
+# COMPONENTS
+# ============================================================
+components:
+  parameters:
+    ProjectIdParam:
+      name: project_id
+      in: path
+      required: true
+      schema:
+        type: string
+        format: uuid
+      description: Project UUID
+
+    LimitParam:
+      name: limit
+      in: query
+      schema:
+        type: integer
+        minimum: 1
+        maximum: 500
+        default: 50
+      description: Maximum number of results
+
+    SkipParam:
+      name: skip
+      in: query
+      schema:
+        type: integer
+        minimum: 0
+        default: 0
+      description: Number of results to skip
+
+  schemas:
+    # System schemas
+    HealthCheck:
+      type: object
+      properties:
+        status:
+          type: string
+          example: healthy
+        udo_available:
+          type: boolean
+        timestamp:
+          type: string
+          format: date-time
+
+    SystemStatus:
+      type: object
+      properties:
+        status:
+          type: string
+          enum: [online, offline]
+        report:
+          type: object
+
+    DashboardMetrics:
+      type: object
+      properties:
+        system_status:
+          type: object
+        current_phase:
+          type: string
+        confidence_level:
+          type: number
+        uncertainty_state:
+          type: string
+        ai_services:
+          type: object
+        ml_metrics:
+          type: object
+        recent_tasks:
+          type: array
+          items:
+            type: object
+        performance_metrics:
+          type: object
+
+    # Project schemas
+    Project:
+      type: object
+      required: [id, name, path]
+      properties:
+        id:
+          type: string
+          format: uuid
+        name:
+          type: string
+        description:
+          type: string
+        path:
+          type: string
+        git_url:
+          type: string
+        git_branch:
+          type: string
+        current_phase:
+          type: string
+          enum: [ideation, design, mvp, implementation, testing]
+        phase_progress:
+          type: object
+        created_at:
+          type: string
+          format: date-time
+        updated_at:
+          type: string
+          format: date-time
+        last_active_at:
+          type: string
+          format: date-time
+        settings:
+          type: object
+        tags:
+          type: array
+          items:
+            type: string
+        is_archived:
+          type: boolean
+
+    ProjectCreate:
+      type: object
+      required: [name, path]
+      properties:
+        name:
+          type: string
+        description:
+          type: string
+        path:
+          type: string
+        git_url:
+          type: string
+        git_branch:
+          type: string
+          default: main
+
+    ProjectUpdate:
+      type: object
+      properties:
+        description:
+          type: string
+        current_phase:
+          type: string
+        settings:
+          type: object
+
+    ProjectContext:
+      type: object
+      properties:
+        id:
+          type: string
+          format: uuid
+        project_id:
+          type: string
+          format: uuid
+        udo_state:
+          type: object
+        ml_models:
+          type: object
+        recent_executions:
+          type: array
+        ai_preferences:
+          type: object
+        editor_state:
+          type: object
+
+    # Version History schemas
+    VersionCommit:
+      type: object
+      required: [commit_hash, short_hash, author, author_email, date, message]
+      properties:
+        commit_hash:
+          type: string
+          minLength: 40
+          maxLength: 40
+        short_hash:
+          type: string
+          minLength: 7
+          maxLength: 7
+        author:
+          type: string
+        author_email:
+          type: string
+          format: email
+        date:
+          type: string
+          format: date-time
+        message:
+          type: string
+        files_modified:
+          type: array
+          items:
+            type: string
+        files_added:
+          type: array
+          items:
+            type: string
+        files_deleted:
+          type: array
+          items:
+            type: string
+        lines_added:
+          type: integer
+        lines_deleted:
+          type: integer
+        tags:
+          type: array
+          items:
+            type: string
+        branches:
+          type: array
+          items:
+            type: string
+
+    VersionHistory:
+      type: object
+      properties:
+        project_name:
+          type: string
+        project_path:
+          type: string
+        current_branch:
+          type: string
+        total_commits:
+          type: integer
+        commits:
+          type: array
+          items:
+            $ref: '#/components/schemas/VersionCommit'
+        total_contributors:
+          type: integer
+        first_commit_date:
+          type: string
+          format: date-time
+        last_commit_date:
+          type: string
+          format: date-time
+
+    VersionComparison:
+      type: object
+      properties:
+        from_commit:
+          type: string
+        to_commit:
+          type: string
+        files_changed:
+          type: array
+          items:
+            type: string
+        files_added:
+          type: array
+          items:
+            type: string
+        files_deleted:
+          type: array
+          items:
+            type: string
+        total_lines_added:
+          type: integer
+        total_lines_deleted:
+          type: integer
+        commits_between:
+          type: array
+          items:
+            $ref: '#/components/schemas/VersionCommit'
+
+    # Task History schemas
+    TaskHistory:
+      type: object
+      properties:
+        id:
+          type: string
+          format: uuid
+        project_id:
+          type: string
+          format: uuid
+        user_prompt:
+          type: string
+        decision:
+          type: string
+          enum: [GO, GO_WITH_CHECKPOINTS, NO_GO]
+        confidence:
+          type: number
+          minimum: 0
+          maximum: 1
+        phase:
+          type: string
+        success:
+          type: boolean
+        executed_at:
+          type: string
+          format: date-time
+
+    # Quality Metrics schemas
+    QualityMetrics:
+      type: object
+      properties:
+        id:
+          type: string
+          format: uuid
+        project_id:
+          type: string
+          format: uuid
+        code_quality:
+          type: object
+        test_metrics:
+          type: object
+        performance_metrics:
+          type: object
+        security_metrics:
+          type: object
+        overall_score:
+          type: number
+          minimum: 0
+          maximum: 10
+        measured_at:
+          type: string
+          format: date-time
+
+    # Kanban schemas
+    KanbanBoard:
+      type: object
+      properties:
+        id:
+          type: string
+          format: uuid
+        project_id:
+          type: string
+          format: uuid
+        name:
+          type: string
+        description:
+          type: string
+        columns:
+          type: array
+        is_default:
+          type: boolean
+
+    KanbanBoardCreate:
+      type: object
+      required: [project_id, name]
+      properties:
+        project_id:
+          type: string
+          format: uuid
+        name:
+          type: string
+        description:
+          type: string
+
+    KanbanCard:
+      type: object
+      properties:
+        id:
+          type: string
+          format: uuid
+        board_id:
+          type: string
+          format: uuid
+        title:
+          type: string
+        description:
+          type: string
+        column_id:
+          type: string
+        status:
+          type: string
+        priority:
+          type: string
+          enum: [low, medium, high, urgent]
+
+    KanbanCardCreate:
+      type: object
+      required: [title, column_id]
+      properties:
+        title:
+          type: string
+        description:
+          type: string
+        column_id:
+          type: string
+        priority:
+          type: string
+          default: medium
+
+    # Error schemas
+    Error:
+      type: object
+      properties:
+        detail:
+          type: string
+        code:
+          type: string
+        timestamp:
+          type: string
+          format: date-time
+
+  responses:
+    BadRequest:
+      description: Bad request
+      content:
+        application/json:
+          schema:
+            $ref: '#/components/schemas/Error'
+
+    NotFound:
+      description: Resource not found
+      content:
+        application/json:
+          schema:
+            $ref: '#/components/schemas/Error'
+
+    InternalServerError:
+      description: Internal server error
+      content:
+        application/json:
+          schema:
+            $ref: '#/components/schemas/Error'
