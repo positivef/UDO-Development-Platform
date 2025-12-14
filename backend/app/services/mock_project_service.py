@@ -130,15 +130,17 @@ class MockProjectService:
         project["has_context"] = True
         project["last_active_at"] = datetime.now().isoformat()
 
+        # Return format matching ProjectContextResponse model
         return {
+            "id": str(project_id),  # Required by ProjectContextResponse
             "project_id": str(project_id),
             "udo_state": udo_state or {},
             "ml_models": ml_models or {},
-            "recent_executions": recent_executions or [],
+            "recent_executions": recent_executions[:10] if recent_executions else [],  # FIFO limit
             "ai_preferences": ai_preferences or {},
             "editor_state": editor_state or {},
-            "created_at": project.get("created_at", datetime.now().isoformat()),
-            "updated_at": datetime.now().isoformat()
+            "saved_at": datetime.now().isoformat(),
+            "loaded_at": None
         }
 
     async def load_context(self, project_id: UUID) -> Optional[Dict[str, Any]]:
@@ -152,7 +154,9 @@ class MockProjectService:
         if not project:
             return None
 
+        # Return format matching ProjectContextResponse model
         return {
+            "id": str(project_id),
             "project_id": str(project_id),
             "udo_state": {
                 "current_phase": "development",
@@ -173,8 +177,8 @@ class MockProjectService:
                 "open_files": [],
                 "cursor_positions": {}
             },
-            "created_at": project.get("created_at", datetime.now().isoformat()),
-            "updated_at": datetime.now().isoformat()
+            "saved_at": datetime.now().isoformat(),
+            "loaded_at": datetime.now().isoformat()
         }
 
     async def delete_context(self, project_id: UUID) -> bool:
@@ -198,6 +202,7 @@ class MockProjectService:
     ) -> Dict[str, Any]:
         """Mock project switch"""
 
+        logger.error(f"🚨🚨🚨 ENTERING MODIFIED switch_project METHOD 🚨🚨🚨 target={target_project_id}")
         logger.info(f"🔄 Mock: Switching to project {target_project_id}")
 
         # Find target project
@@ -220,13 +225,17 @@ class MockProjectService:
         # Mock context loading
         context = await self.load_context(target_project_id)
 
-        return {
-            "success": True,
+        result = {
             "previous_project_id": self.current_project.get("id") if self.current_project else None,
-            "current_project_id": str(target_project_id),
+            "new_project_id": str(target_project_id),
+            "context_loaded": context is not None,
             "context": context,
             "message": f"Switched to project {target_project.get('name', 'Unknown')}"
         }
+
+        logger.info(f"[DEBUG] MockProjectService.switch_project returning: {list(result.keys())}")
+
+        return result
 
     async def update_execution_history(
         self,

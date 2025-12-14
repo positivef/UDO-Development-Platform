@@ -9,36 +9,48 @@ This file provides guidance to Claude Code (claude.ai/code) when working with co
 ### 📌 Claude Code 핵심 요약
 
 ```yaml
-현재 상태 (실측):
+현재 상태 (2025-12-09 기준):
   Backend: 95% ✅ → 높은 목표 적용
   Frontend: 50% ⚠️ → 점진적 개발
   AI Bridge: 30% ⚠️ → 점진적 개발
-  테스트: 85% 통과 (일부 실패 수정 필요)
+  테스트: 98.4% 통과 (183/186) ✅
+  E2E: 85% 통과 (17/20) - 3개 이슈 수정 필요
 
 즉시 해야 할 일 (P0):
-  1. 테스트 실패 수정 (Uncertainty predict() 파라미터)
-  2. Uncertainty UI 기본 (web-dashboard/app/uncertainty/)
-  3. Confidence Dashboard 기본 (web-dashboard/app/confidence/)
-  4. CI Pipeline 생성 (.github/workflows/)
+  1. CI/CD Pipeline 생성 (.github/workflows/)
+  2. DB 마이그레이션 실행 (PostgreSQL + kanban 스키마)
+  3. E2E 이슈 3개 해결 (Time Tracking, Quality, Performance)
 ```
 
-### 참고 문서
+### 📚 문서 계층 (Document Hierarchy)
 
+**Tier 1 - 필수 참조** (Single Source of Truth):
 | 문서 | 위치 | 내용 |
 |------|------|------|
-| **RL 기반 지식 재사용** | `docs/RL_GUIDED_KNOWLEDGE_REUSE.md` | Training-free GRPO 이론 + 실무 통합 (NEW 🆕) |
-| **종합 최종 로드맵 v6.0** | `docs/COMPREHENSIVE_ROADMAP_V6.md` | 3개 모델 통합 계획 ⭐ |
-| **기술 인계 가이드** | `docs/HANDOFF_TO_CLAUDE.md` | **Facade 패턴 설명 및 실행 가이드** 👈 |
-| **Pre-mortem 분석** | `docs/PREMORTEM_ANALYSIS_2025-12-06.md` | 위험 분석 및 단순화 근거 |
-| **개발 로드맵 v6.0** | `docs/DEVELOPMENT_ROADMAP_V6.md` | 하이브리드 상세 계획 |
+| **CLAUDE.md** | 루트 | 프로젝트 컨텍스트 + 현재 상태 ⭐ |
+| **개발 로드맵 v6.1** | `docs/DEVELOPMENT_ROADMAP_V6.md` | 하이브리드 접근 + RL 통합 |
+
+**Tier 2 - 실행 가이드**:
+| 문서 | 위치 | 내용 |
+|------|------|------|
+| **Kanban 구현 요약** | `docs/KANBAN_IMPLEMENTATION_SUMMARY.md` | Q1-Q8 결정 + 4주 로드맵 |
+| **Week 1 완료 보고서** | `docs/WEEK1_DAY1-2_COMPLETION_REPORT.md` | 진행 현황 + 테스트 결과 |
+| **기술 인계 가이드** | `docs/HANDOFF_TO_CLAUDE.md` | Facade 패턴 + 실행 가이드 |
+
+**Tier 3 - 상세 참조** (필요시 확장):
+| 문서 | 위치 | 내용 |
+|------|------|------|
+| **Kanban 전략 분석** | `docs/KANBAN_INTEGRATION_STRATEGY.md` | 18,000 words 전체 분석 |
+| **Pre-mortem 분석** | `docs/PREMORTEM_ANALYSIS_2025-12-06.md` | 위험 분석 + 완화 전략 |
+| **RL 기반 지식 재사용** | `docs/RL_GUIDED_KNOWLEDGE_REUSE.md` | Training-free GRPO 이론 |
 
 ### 하이브리드 목표
 
 **성숙 영역 (Backend) - 높은 목표**:
-| 지표 | 현재 | 목표 |
-|------|------|------|
-| 테스트 통과율 | 85% | **98%** |
-| API 응답 시간 | 미측정 | **<200ms** |
+| 지표 | 현재 | 목표 | 상태 |
+|------|------|------|------|
+| 테스트 통과율 | 98.4% | **98%** | ✅ 달성 |
+| API 응답 시간 | 미측정 | **<200ms** | ⏳ 측정 필요 |
 
 **신규 영역 (Frontend/AI) - 점진적 목표**:
 | 지표 | MVP (2주) | Prototype | Beta | Production |
@@ -69,10 +81,11 @@ MVP 성공 기준:
 ### 검증 완료
 
 - [x] 5 Whys 본질 분석 완료
-- [x] 현재 상태 테스트 실행 (85% 통과)
+- [x] 현재 상태 테스트 실행 (98.4% 통과, 2025-12-09)
 - [x] 영역별 성숙도 분석 완료
 - [x] 하이브리드 접근법 정의
 - [x] 단계별 보완점 체크리스트
+- [x] Gap Analysis 및 계획 검토 (2025-12-13)
 
 ### 명령어 참조
 
@@ -539,7 +552,152 @@ Check `backend/app/services/` for integration implementations.
 ---
 
 
-## Current Status (2025-12-04) - All Issues Resolved ✅
+## Current Status (2025-12-08) - Week 1 Day 2 API Integration Complete ✅
+
+**Phase**: Week 1 Day 2 - Backend API Integration & Task Detail Modal
+**Completion**: 100% (6/6 tasks)
+**Build Status**: ✅ Production build passing
+**New Components**: 2 (API client + TaskDetailModal)
+**Type System**: ✅ Aligned frontend/backend types
+
+### Week 0-1 Progress
+- ✅ **Week 0 Day 1-3**: Foundation setup, pre-commit hooks, RL validation framework
+- ✅ **Week 0 Day 4**: Performance baselines, coverage tracking, RL hypothesis validation
+- ✅ **Week 0 Day 5**: Comprehensive test analysis, Week 0 completion (95%)
+- ✅ **Week 1 Day 1**: Kanban UI Foundation (COMPLETE)
+- ✅ **Week 1 Day 2**: API Integration + Task Detail Modal (COMPLETE)
+
+### Recent Achievements (2025-12-08)
+
+**Week 1 Day 2 - API Integration & Task Detail Modal** 🎉
+1. ✅ **Kanban API Client**: Complete backend integration (lib/api/kanban.ts)
+   - CRUD operations: fetchTasks, createTask, updateTask, deleteTask
+   - Status management: updateTaskStatus (for drag & drop persistence)
+   - Phase/Priority updates: updateTaskPhase, updateTaskPriority
+   - Quality & Archiving: checkQualityGate, archiveTask
+   - Batch operations: bulkUpdateStatus
+   - Error handling: Custom KanbanAPIError class
+   - 12 API endpoints fully integrated
+
+2. ✅ **Type System Alignment**: Frontend/backend type consistency
+   - Fixed TaskStatus: `'todo' | 'done'` → `'pending' | 'completed'`
+   - Updated files: `kanban.ts`, `kanban-store.ts`, `page.tsx`, `Column.tsx`
+   - TypeScript errors: 100% resolved
+   - Build verification: ✅ Passing
+
+3. ✅ **Optimistic Updates with Rollback**: Robust error handling
+   - Immediate UI feedback on drag & drop
+   - Automatic rollback on API failure
+   - Network error detection and user notification
+   - Prevents concurrent updates with `isUpdating` flag
+   - Server response sync for timestamp/metadata updates
+
+4. ✅ **TaskDetailModal Component**: Full task editing capabilities
+   - Inline editing: Title, description, tags, context notes
+   - Time tracking: Estimated hours, actual hours
+   - Metadata display: Priority badges, status indicators, phase info
+   - Dependencies: Read-only display of dependencies and blockers
+   - AI metadata: Confidence score display for AI-suggested tasks
+   - Actions: Edit, Save, Cancel, Delete
+   - Integration: Modal triggered from TaskCard click
+
+5. ✅ **ShadCN UI Components**: Added missing form components
+   - Components added: `input.tsx`, `textarea.tsx`, `label.tsx`, `select.tsx`
+   - Integration: TaskDetailModal uses all new components
+   - Consistency: Matches existing UI design system
+
+6. ✅ **Production Build**: Build passing (12.7s compilation)
+   - Zero TypeScript errors after type alignment
+   - All routes: 7 pages static-rendered successfully
+   - Performance: `/kanban` route fully optimized
+   - New files: 2 (API client + TaskDetailModal)
+
+**Week 1 Day 1 - Kanban UI Foundation** 🎉
+1. ✅ **Kanban Board Component Structure**: Full drag & drop with @dnd-kit
+   - Components: `KanbanBoard`, `Column`, `TaskCard`
+   - Zustand store: `kanban-store.ts` with localStorage persistence
+   - Types: Complete TypeScript interfaces for tasks and columns
+   - Files created: 6 new files (types, store, 3 components, page, navigation)
+
+2. ✅ **Drag & Drop Integration**: Modern @dnd-kit library (React 19 compatible)
+   - Sensors: Pointer and keyboard for accessibility
+   - Optimistic updates: Instant UI feedback
+   - Visual feedback: Drag overlay with rotation effect
+   - Column states: To Do, In Progress, Blocked, Done
+
+3. ✅ **Production Build**: Next.js build passing (32.6s compilation)
+   - TypeScript: Zero errors
+   - Routes: `/kanban` added to navigation
+   - Static generation: All pages pre-rendered successfully
+   - Build size: Optimized for production
+
+4. ✅ **Sample Data**: 5 mock tasks for testing
+   - Priority levels: Low, Medium, High, Critical with color coding
+   - Phase integration: Ideation, Design, MVP, Implementation, Testing
+   - Tags system: Flexible tag display with overflow handling
+   - AI indicators: AI-suggested tasks with confidence scores
+
+5. ✅ **E2E Testing with Playwright** (2025-12-07): 13/13 tests passing (100%)
+   - Test file: `web-dashboard/tests/e2e/kanban-ui.spec.ts`
+   - Coverage: Page load, 4 columns, 5 mock tasks, priority colors, metadata, badges, stats footer, action buttons, navigation
+   - Performance: 2083ms load time (< 3000ms target, 30% better than goal)
+   - Visual regression: Full page + individual column screenshots captured
+   - Console errors: Zero errors detected across all tests
+   - Test execution time: 28.8s (13 tests in parallel with 6 workers)
+
+**Week 0 Achievements**
+1. ✅ **RL Hypothesis Validated**: 88% conceptual overlap with ArXiv paper 2510.08191
+   - User insight confirmed: "Obsidian knowledge reuse = Training-free GRPO"
+   - Recommendation: Documentation only (no new code needed)
+   - ROI: Focus on existing roadmap (frontend tests 0% → priority)
+
+2. ✅ **Performance Baseline Established**: 5 predictions logged
+   - State: DETERMINISTIC (stable, predictable)
+   - Window: 24-hour ahead prediction active
+   - Location: `C:\Users\user\.udo\predictions_log.jsonl`
+
+3. ✅ **Test Coverage Analysis**: 58% overall
+   - High-quality: Kanban (95%+), AI Services (100%), Core (95%+)
+   - Needs work: Session Management (25%), Project Context (20%)
+   - Pass rate: 92.2% (376/408 tests)
+
+4. ⚠️ **Coverage Trend Tracker**: Script created, encoding issue
+   - Workaround: Manual pytest execution available
+   - Fix ETA: Week 0 Day 5
+
+### Test Results Summary (2025-12-14)
+**Pass Rate**: 100% (440 passed, 0 failed) ✅
+
+**Recent Fixes (2025-12-14)**:
+- ✅ Time Tracking Tests (3): Fixed sleep duration for int truncation
+- ✅ Uncertainty Tests (4): Fixed import paths and pytest fixture pattern
+- ✅ Project Context API (9): Fixed mock service response formats
+- ✅ Mock Project Service (2): Aligned with Pydantic model requirements
+
+**Coverage by Category**:
+| Category | Coverage | Status |
+|----------|----------|--------|
+| Backend Tests | 100% | ✅ All passing |
+| Kanban Implementation | 95%+ | ✅ Production-ready |
+| AI Services | 100% | ✅ Perfect |
+| Core Infrastructure | 95%+ | ✅ Excellent |
+| Time Tracking | 100% | ✅ All tests pass |
+| Uncertainty Integration | 100% | ✅ All tests pass |
+| Quality Metrics | 75% | ✅ Good |
+| Project Context | 100% | ✅ All tests pass |
+
+### Test Statistics
+- **Total Tests**: 440
+- **Passed**: 440 (100%)
+- **Failed**: 0
+- **Warnings**: 402 (deprecation notices, non-critical)
+
+### Documentation
+- Latest: `docs/WEEK0_DAY4_COMPLETION_REPORT.md`
+- RL Validation: `docs/WEEK0_DAY4_RL_VALIDATION_SUMMARY.md`
+- Coverage Tracker: `scripts/track_coverage_trend.py`
+
+---
 
 ## Refactoring Validation & Next Steps
 

@@ -23,6 +23,8 @@ class UDOState(BaseModel):
     phase: Optional[str] = Field(None, description="Current development phase")
 
     class Config:
+        arbitrary_types_allowed = True
+        populate_by_name = True
         json_schema_extra = {
             "example": {
                 "last_decision": "GO",
@@ -44,6 +46,8 @@ class MLModelsState(BaseModel):
     custom_models: Optional[Dict[str, str]] = Field(default_factory=dict, description="Custom model paths")
 
     class Config:
+        arbitrary_types_allowed = True
+        populate_by_name = True
         json_schema_extra = {
             "example": {
                 "confidence_predictor": "models/confidence_v1.pkl",
@@ -64,6 +68,8 @@ class ExecutionRecord(BaseModel):
     success: bool = Field(..., description="Execution success status")
 
     class Config:
+        arbitrary_types_allowed = True
+        populate_by_name = True
         json_schema_extra = {
             "example": {
                 "timestamp": "2025-11-17T14:30:00",
@@ -83,6 +89,8 @@ class AIPreferences(BaseModel):
     custom_settings: Optional[Dict[str, Any]] = Field(default_factory=dict, description="Custom AI settings")
 
     class Config:
+        arbitrary_types_allowed = True
+        populate_by_name = True
         json_schema_extra = {
             "example": {
                 "preferred_model": "claude-sonnet-4.5",
@@ -107,6 +115,8 @@ class EditorState(BaseModel):
     terminal_history: Optional[List[str]] = Field(default_factory=list, description="Terminal command history")
 
     class Config:
+        arbitrary_types_allowed = True
+        populate_by_name = True
         json_schema_extra = {
             "example": {
                 "open_files": [
@@ -158,6 +168,8 @@ class ProjectContextResponse(BaseModel):
     loaded_at: Optional[datetime] = None
 
     class Config:
+        arbitrary_types_allowed = True
+        populate_by_name = True
         from_attributes = True
         json_schema_extra = {
             "example": {
@@ -210,6 +222,8 @@ class ProjectSwitchResponse(BaseModel):
     message: str
 
     class Config:
+        arbitrary_types_allowed = True
+        populate_by_name = True
         json_schema_extra = {
             "example": {
                 "previous_project_id": "550e8400-e29b-41d4-a716-446655440000",
@@ -239,6 +253,8 @@ class ProjectListResponse(BaseModel):
     has_context: bool = False  # Whether project context exists
 
     class Config:
+        arbitrary_types_allowed = True
+        populate_by_name = True
         from_attributes = True
         json_schema_extra = {
             "example": {
@@ -260,6 +276,8 @@ class ProjectsListResponse(BaseModel):
     current_project_id: Optional[UUID] = None
 
     class Config:
+        arbitrary_types_allowed = True
+        populate_by_name = True
         json_schema_extra = {
             "example": {
                 "projects": [
