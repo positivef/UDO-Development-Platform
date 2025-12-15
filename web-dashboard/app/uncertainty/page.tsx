@@ -23,10 +23,30 @@ export default function UncertaintyPage() {
   const handleAcknowledge = async (mitigation: any) => {
     setIsAcking(true)
     try {
-      // TODO: Implement API call to /api/uncertainty/ack/{mitigation_id}
-      toast.success(`Mitigation "${mitigation.action}" acknowledged`)
+      const response = await fetch(`http://localhost:8000/api/uncertainty/ack/${mitigation.id}`, {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+        },
+        body: JSON.stringify({
+          mitigation_id: mitigation.id,
+          applied_impact: mitigation.estimated_impact,
+          dimension: null, // Will use dominant dimension from backend
+        }),
+      })
+
+      if (!response.ok) {
+        throw new Error(`Failed to acknowledge mitigation: ${response.statusText}`)
+      }
+
+      const result = await response.json()
+      toast.success(`Mitigation "${mitigation.action}" applied successfully!`)
+      toast.info(`Updated state: ${result.updated_state} (confidence: ${Math.round(result.confidence_score * 100)}%)`)
+
+      // Refetch to get updated uncertainty data
       await refetch()
     } catch (error) {
+      console.error('Acknowledgment error:', error)
       toast.error("Failed to acknowledge mitigation")
     } finally {
       setIsAcking(false)

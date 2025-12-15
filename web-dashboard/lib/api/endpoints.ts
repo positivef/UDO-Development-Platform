@@ -63,6 +63,7 @@ export const API_ENDPOINTS = {
     CURRENT: '/api/uncertainty/current',
     PREDICTIONS: '/api/uncertainty/predictions',
     MITIGATIONS: '/api/uncertainty/mitigations',
+    ACK: (mitigationId: string) => `/api/uncertainty/ack/${mitigationId}`,
   },
 
   // WebSocket
