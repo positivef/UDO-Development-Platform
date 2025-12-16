@@ -9,17 +9,22 @@ This file provides guidance to Claude Code (claude.ai/code) when working with co
 ### 📌 Claude Code 핵심 요약
 
 ```yaml
-현재 상태 (2025-12-09 기준):
-  Backend: 95% ✅ → 높은 목표 적용
-  Frontend: 50% ⚠️ → 점진적 개발
-  AI Bridge: 30% ⚠️ → 점진적 개발
-  테스트: 98.4% 통과 (183/186) ✅
-  E2E: 85% 통과 (17/20) - 3개 이슈 수정 필요
+현재 상태 (2025-12-16 기준):
+  Backend: 100% ✅ → 496/496 tests passing
+  Frontend: 60% ✅ → Kanban UI + E2E tests passing
+  CI/CD: 100% ✅ → GitHub Actions workflows deployed
+  Feature Flags: 100% ✅ → Tier 1 rollback ready (<10s)
 
-즉시 해야 할 일 (P0):
-  1. CI/CD Pipeline 생성 (.github/workflows/)
-  2. DB 마이그레이션 실행 (PostgreSQL + kanban 스키마)
-  3. E2E 이슈 3개 해결 (Time Tracking, Quality, Performance)
+완료 상황 (Week 4):
+  ✅ Feature Flags System (Tier 1 Rollback)
+  ✅ CI/CD Pipeline (Backend + Frontend)
+  ✅ Admin API (X-Admin-Key authentication)
+  ✅ 496/496 tests passing (100%)
+
+다음 단계:
+  1. Frontend: Uncertainty UI 기본 (web-dashboard/app/uncertainty/)
+  2. Frontend: Confidence Dashboard (web-dashboard/app/confidence/)
+  3. DB 마이그레이션 실행 (PostgreSQL + kanban 스키마)
 ```
 
 ### 📚 문서 계층 (Document Hierarchy)
@@ -62,20 +67,21 @@ This file provides guidance to Claude Code (claude.ai/code) when working with co
 ### 현재 Stage: MVP (2주)
 
 ```yaml
-MVP Task (P0):
-  1. Uncertainty UI 기본 (3일)
+MVP Task (P0) - Status:
+  1. ⏳ Uncertainty UI 기본 (3일)
      파일: web-dashboard/app/uncertainty/page.tsx
-     
-  2. Confidence Dashboard 기본 (2일)
+
+  2. ⏳ Confidence Dashboard 기본 (2일)
      파일: web-dashboard/app/confidence/page.tsx
-     
-  3. CI Pipeline (1일)
-     파일: .github/workflows/backend-test.yml
+
+  3. ✅ CI Pipeline (1일) - COMPLETE
+     파일: .github/workflows/backend-ci.yml, frontend-ci.yml
+     커밋: 3d37e1d (2025-12-16)
 
 MVP 성공 기준:
-  - 예측 화면 표시
-  - CI 자동 실행
-  - 테스트 통과율 95%+
+  - ⏳ 예측 화면 표시
+  - ✅ CI 자동 실행 (GitHub Actions deployed)
+  - ✅ 테스트 통과율 95%+ (496/496 = 100%)
 ```
 
 ### 검증 완료
@@ -428,19 +434,77 @@ Check `backend/app/services/` for integration implementations.
 - Integration design: `docs/INTEGRATION_ARCHITECTURE_V4.md`
 - Terminal environment notes: `docs/WSL_VS_WINDOWS_ENV.md`
 - Obsidian sync: `docs/OBSIDIAN_SERVICE_README.md`
+- **Obsidian MVP roadmap**: `docs/OBSIDIAN_SYNC_MVP_ROADMAP.md` (NEW - MVP-first approach)
 - Time tracking guide: `docs/TIME_TRACKING_GUIDE.md`
 
 ---
 
-## Kanban-UDO Integration (2025-12-05)
+<!-- ⚠️ PROTECTED SECTION - DO NOT MODIFY OR DELETE ⚠️
+     This section contains critical Obsidian sync strategy decisions.
+     Master document: docs/OBSIDIAN_SYNC_MVP_ROADMAP.md
+     If CLAUDE.md is regenerated, restore this section from the master document.
+     Last updated: 2025-12-16
+-->
 
-**Status**: Week 3 Complete ✅ - Week 4 Testing Preparation
+## Obsidian Sync Strategy (2025-12-16) 🔒
+
+> **⚠️ PROTECTED**: 이 섹션은 사용자 승인된 전략입니다. 수정 시 `docs/OBSIDIAN_SYNC_MVP_ROADMAP.md` 참조.
+
+**Status**: Phase 0 (Maintain Current) - MVP approach adopted
+
+### Current Approach: MVP-First, Data-Driven Expansion
+
+기존 전략 문서(UNIFIED_OBSIDIAN_SYNC_STRATEGY.md, LEARNING_CURRICULUM_AUTOMATION.md)는 현재 단계에서 과도하다고 판단되어 `docs/_ARCHIVE/`로 이동. MVP 우선 접근법 채택.
+
+**Core Principle**: 작동하는 것부터, 측정 기반 확장, 외부 의존성 최소화
+
+### Phase Summary
+
+| Phase | Timeline | Focus | Dependencies |
+|-------|----------|-------|--------------|
+| 0: Maintain | Now | 기존 개발일지 동기화 유지 | 0 |
+| 1: MVP | Week 5-6 | 🌱 단일 카테고리 추출 | 0 |
+| 2: Measure | Week 7-8 | 데이터 수집 및 ROI 측정 | 0 |
+| 3: Expand | Month 3+ | 카테고리 확장 (데이터 기반) | 0 |
+| 4: Advanced | Month 6+ | 고급 기능 (수요 발생 시) | TBD |
+
+### Working Scripts (No Changes)
+```
+scripts/
+├── obsidian_auto_sync.py      # v2.0 - Git commit → 개발일지 (KEEP)
+├── obsidian_append.py         # MCP append helper
+├── obsidian_3stage_search.py  # 3-tier search
+└── obsidian_tag_enforcer.py   # Tag validation
+```
+
+### Key Documents
+- **MVP Roadmap**: `docs/OBSIDIAN_SYNC_MVP_ROADMAP.md`
+- **Critical Review**: `docs/OPUS_CRITICAL_REVIEW_OBSIDIAN_STRATEGY.md`
+- **Multi-Angle Analysis**: `docs/MULTI_ANGLE_ANALYSIS_OBSIDIAN_STRATEGY.md`
+- **Archived (for future)**: `docs/_ARCHIVE/UNIFIED_OBSIDIAN_SYNC_STRATEGY.md`, `docs/_ARCHIVE/LEARNING_CURRICULUM_AUTOMATION.md`
+
+### Expansion Triggers (Data-Driven)
+- Phase 1 → 2: UDO 핵심 기능 완료 후
+- Phase 2 → 3: concepts_extracted ≥ 50 AND reuse_rate ≥ 30%
+- Phase 3 → 4: 실제 교육/PDF 요청 10건+
+
+---
+
+## Kanban-UDO Integration (2025-12-16)
+
+**Status**: Week 4 Feature Flags Complete ✅ - Ready for User Testing
 
 ### Quick Reference
 
 **Master Document**: `docs/KANBAN_IMPLEMENTATION_SUMMARY.md` (Concise overview)
 
-**Implementation Documents** (Week 3 Complete):
+**Week 4 Feature Flags** (2025-12-16 Complete):
+- `backend/app/core/feature_flags.py` - Thread-safe feature flag manager (418 lines)
+- `backend/app/routers/admin.py` - Admin API for Tier 1 rollback (279 lines)
+- `backend/tests/test_feature_flags.py` - 25/25 tests passing (100%)
+- `docs/WEEK4_FEATURE_FLAGS_COMPLETION.md` - Complete documentation
+
+**Week 3 Archive Implementation** (Complete):
 - `backend/app/models/kanban_archive.py` - Archive models with AI summarization
 - `backend/app/services/kanban_archive_service.py` - Archive service (GPT-4o integration)
 - `backend/app/routers/kanban_archive.py` - Archive API endpoints
@@ -552,22 +616,75 @@ Check `backend/app/services/` for integration implementations.
 ---
 
 
-## Current Status (2025-12-08) - Week 1 Day 2 API Integration Complete ✅
+## Current Status (2025-12-16) - Week 2 Day 4 Context Operations Complete ✅
 
-**Phase**: Week 1 Day 2 - Backend API Integration & Task Detail Modal
-**Completion**: 100% (6/6 tasks)
-**Build Status**: ✅ Production build passing
-**New Components**: 2 (API client + TaskDetailModal)
-**Type System**: ✅ Aligned frontend/backend types
+**Phase**: Week 2 Day 4 - Context Operations (ZIP Upload/Download)
+**Completion**: 100% (5/5 tasks)
+**Build Status**: ✅ Production build passing (10.9s)
+**New Components**: 2 (Context API client + ContextManager)
+**Integration**: ✅ TaskDetailModal with Tabs
 
-### Week 0-1 Progress
+### Week 0-2 Progress
 - ✅ **Week 0 Day 1-3**: Foundation setup, pre-commit hooks, RL validation framework
 - ✅ **Week 0 Day 4**: Performance baselines, coverage tracking, RL hypothesis validation
 - ✅ **Week 0 Day 5**: Comprehensive test analysis, Week 0 completion (95%)
 - ✅ **Week 1 Day 1**: Kanban UI Foundation (COMPLETE)
 - ✅ **Week 1 Day 2**: API Integration + Task Detail Modal (COMPLETE)
+- ✅ **Week 2 Day 1**: API Integration + Optimistic Updates (COMPLETE)
+- ✅ **Week 2 Day 2**: TaskCreateModal (COMPLETE)
+- ✅ **Week 2 Day 3**: Filter Functionality (COMPLETE)
+- ✅ **Week 2 Day 4**: Context Operations (COMPLETE)
 
-### Recent Achievements (2025-12-08)
+### Recent Achievements (2025-12-16)
+
+**Week 2 Day 4 - Context Operations** 🎉
+1. ✅ **Kanban Context API Client**: Full backend integration (lib/api/kanban-context.ts)
+   - 5 API functions: fetchContextMetadata, uploadContext, trackContextLoad, fetchFullContext, downloadContextZip
+   - TypeScript interfaces: ContextMetadata, ContextFile, TaskContext
+   - Error handling: Custom KanbanContextAPIError class with status codes
+   - Size limit validation: 50MB enforcement
+   - Browser download: Blob API implementation
+
+2. ✅ **ContextManager Component**: Context management UI (242 lines)
+   - Metadata display: File count, size, load stats (count + avg time)
+   - Download ZIP: With load time tracking (performance.now())
+   - Upload placeholder: Week 3 implementation
+   - Error/Success alerts: ShadCN Alert component
+   - Q4 info banner: Double-click auto-load guidance
+
+3. ✅ **TaskDetailModal Integration**: Tabs navigation structure
+   - Added ShadCN Tabs component
+   - Details Tab: All existing task fields (description, tags, time tracking, dependencies, context notes, AI metadata)
+   - Context Tab: ContextManager component with taskId prop
+   - Clean separation: Tab navigation + footer buttons
+
+4. ✅ **Production Build**: TypeScript compilation passing (10.9s)
+   - Zero errors after Tabs + ContextManager integration
+   - All routes: 9 pages static-rendered successfully
+   - New files: 2 (kanban-context.ts, ContextManager.tsx)
+
+**Week 2 Day 3 - Filter Functionality** 🎉
+1. ✅ **FilterPanel Component**: Multi-select filtering (245 lines)
+   - Phase, Status, Priority filters with color-coded checkboxes
+   - Active filter count badge + clear all button
+   - Popover UI with clean organization
+
+2. ✅ **Kanban Page Integration**: Efficient filtering with useMemo
+   - Filtered tasks computation: Phase + Status + Priority logic
+   - Stats footer: Shows "X / Y" when filtered
+   - FilterPanel replaces static Filter button
+
+**Week 2 Day 2 - TaskCreateModal** 🎉
+1. ✅ **Task Creation UI**: Full form with validation
+   - All task fields: Title, description, phase, priority, tags, time estimates
+   - Form validation: Required fields enforcement
+   - API integration: Creates task via kanbanAPI.createTask()
+
+**Week 2 Day 1 - Optimistic Updates** 🎉
+1. ✅ **Drag & Drop Persistence**: Backend integration
+   - Optimistic UI update + API call to updateTaskStatus
+   - Rollback on error + network detection
+   - Server timestamp sync
 
 **Week 1 Day 2 - API Integration & Task Detail Modal** 🎉
 1. ✅ **Kanban API Client**: Complete backend integration (lib/api/kanban.ts)
