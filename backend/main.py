@@ -165,6 +165,14 @@ except ImportError as e:
     KANBAN_ARCHIVE_ROUTER_AVAILABLE = False
     logger.info(f"Kanban Archive router not available: {e}")
 
+# Import Admin router for Feature Flags (Week 4, Tier 1 Rollback)
+try:
+    from app.routers.admin import router as admin_router
+    ADMIN_ROUTER_AVAILABLE = True
+except ImportError as e:
+    ADMIN_ROUTER_AVAILABLE = False
+    logger.info(f"Admin router not available: {e}")
+
 # Import WebSocket handler and SessionManagerV2
 try:
     from app.routers import websocket_handler
@@ -413,6 +421,10 @@ if KANBAN_AI_ROUTER_AVAILABLE:
 if KANBAN_ARCHIVE_ROUTER_AVAILABLE:
     app.include_router(kanban_archive_router)
     logger.info("✅ Kanban Archive router included (Done-End Archive Q6: /api/kanban/archive)")
+
+if ADMIN_ROUTER_AVAILABLE:
+    app.include_router(admin_router)
+    logger.info("✅ Admin router included (Feature Flags Tier 1 Rollback: /api/admin)")
 
 if TIME_TRACKING_ROUTER_AVAILABLE:
     app.include_router(time_tracking_router)
