@@ -1,0 +1,72 @@
+name: Frontend CI
+
+on:
+  push:
+    branches: [ main, develop ]
+    paths:
+      - 'web-dashboard/**'
+      - '.github/workflows/frontend-ci.yml'
+  pull_request:
+    branches: [ main, develop ]
+    paths:
+      - 'web-dashboard/**'
+
+jobs:
+  test:
+    runs-on: ubuntu-latest
+    strategy:
+      matrix:
+        node-version: ['20.x']
+
+    steps:
+    - name: Checkout code
+      uses: actions/checkout@v4
+
+    - name: Set up Node.js ${{ matrix.node-version }}
+      uses: actions/setup-node@v4
+      with:
+        node-version: ${{ matrix.node-version }}
+        cache: 'npm'
+        cache-dependency-path: 'web-dashboard/package-lock.json'
+
+    - name: Install dependencies
+      working-directory: web-dashboard
+      run: npm ci
+
+    - name: Lint with ESLint
+      working-directory: web-dashboard
+      run: npm run lint
+      continue-on-error: true
+
+    - name: Type check with TypeScript
+      working-directory: web-dashboard
+      run: npx tsc --noEmit
+
+    - name: Build Next.js application
+      working-directory: web-dashboard
+      run: npm run build
+      env:
+        NEXT_PUBLIC_API_URL: http://localhost:8000
+
+    - name: Run Playwright E2E tests
+      working-directory: web-dashboard
+      run: |
+        npx playwright install --with-deps chromium
+        npm run test:e2e
+      continue-on-error: true
+
+    - name: Upload Playwright report
+      if: always()
+      uses: actions/upload-artifact@v4
+      with:
+        name: playwright-report
+        path: web-dashboard/playwright-report/
+        retention-days: 7
+
+    - name: Test summary
+      if: always()
+      run: |
+        echo "## Test Results" >> $GITHUB_STEP_SUMMARY
+        echo "" >> $GITHUB_STEP_SUMMARY
+        echo "Node.js version: ${{ matrix.node-version }}" >> $GITHUB_STEP_SUMMARY
+        echo "Frontend tests completed" >> $GITHUB_STEP_SUMMARY
