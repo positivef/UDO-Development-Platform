@@ -24,6 +24,7 @@ import {
   DialogTitle,
   DialogFooter,
 } from '@/components/ui/dialog'
+import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs'
 import { Button } from '@/components/ui/button'
 import { Input } from '@/components/ui/input'
 import { Textarea } from '@/components/ui/textarea'
@@ -46,6 +47,7 @@ import {
   FileText,
   AlertCircle,
 } from 'lucide-react'
+import { ContextManager } from './ContextManager'
 
 interface TaskDetailModalProps {
   task: KanbanTask | null
@@ -203,7 +205,13 @@ export function TaskDetailModal({ task, open, onClose }: TaskDetailModalProps) {
           </DialogDescription>
         </DialogHeader>
 
-        <div className="space-y-6 py-4">
+        <Tabs defaultValue="details" className="mt-4">
+          <TabsList className="grid w-full grid-cols-2">
+            <TabsTrigger value="details">Details</TabsTrigger>
+            <TabsTrigger value="context">Context</TabsTrigger>
+          </TabsList>
+
+          <TabsContent value="details" className="space-y-6 py-4">
           {/* Description */}
           <div>
             <Label>Description</Label>
@@ -362,7 +370,12 @@ export function TaskDetailModal({ task, open, onClose }: TaskDetailModalProps) {
               </div>
             </div>
           )}
-        </div>
+          </TabsContent>
+
+          <TabsContent value="context" className="py-4">
+            <ContextManager taskId={task.id} />
+          </TabsContent>
+        </Tabs>
 
         <DialogFooter className="gap-2">
           {isEditing ? (

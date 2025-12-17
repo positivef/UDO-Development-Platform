@@ -28,11 +28,37 @@ import { TaskCard } from './TaskCard'
 import { TaskDetailModal } from './TaskDetailModal'
 import { useKanbanStore, useColumns } from '@/lib/stores/kanban-store'
 import { kanbanAPI } from '@/lib/api/kanban'
-import type { KanbanTask, TaskStatus } from '@/lib/types/kanban'
+import type { KanbanTask, TaskStatus, KanbanColumn } from '@/lib/types/kanban'
 
-export function KanbanBoard() {
-  const columns = useColumns()
+interface KanbanBoardProps {
+  /** Optional filtered tasks. If provided, columns will be computed from these tasks instead of store */
+  tasks?: KanbanTask[]
+}
+
+// Column definitions (same as store)
+const columnDefinitions: { id: TaskStatus; title: string }[] = [
+  { id: 'pending', title: 'To Do' },
+  { id: 'in_progress', title: 'In Progress' },
+  { id: 'blocked', title: 'Blocked' },
+  { id: 'completed', title: 'Done' },
+]
+
+export function KanbanBoard({ tasks: filteredTasks }: KanbanBoardProps = {}) {
+  const storeColumns = useColumns()
   const { moveTask, selectedTask, setSelectedTask, updateTask: updateTaskInStore } = useKanbanStore()
+
+  // Compute columns from filtered tasks if provided, otherwise use store columns
+  const columns = useMemo((): KanbanColumn[] => {
+    if (!filteredTasks) {
+      return storeColumns
+    }
+    // Build columns from filtered tasks
+    return columnDefinitions.map((col) => ({
+      id: col.id,
+      title: col.title,
+      tasks: filteredTasks.filter((task) => task.status === col.id),
+    }))
+  }, [filteredTasks, storeColumns])
   const [activeTask, setActiveTask] = useState<KanbanTask | null>(null)
   const [isUpdating, setIsUpdating] = useState(false)
   const [isModalOpen, setIsModalOpen] = useState(false)

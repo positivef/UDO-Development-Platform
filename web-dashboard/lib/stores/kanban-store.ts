@@ -6,12 +6,20 @@
 
 import { create } from 'zustand'
 import { persist, createJSONStorage } from 'zustand/middleware'
-import type { KanbanTask, TaskStatus, KanbanColumn } from '@/lib/types/kanban'
+import type { KanbanTask, TaskStatus, KanbanColumn, Phase, Priority } from '@/lib/types/kanban'
+
+export interface KanbanFilters {
+  phases: Phase[]
+  statuses: TaskStatus[]
+  priorities: Priority[]
+}
 
 interface KanbanState {
   // State
   tasks: KanbanTask[]
   columns: KanbanColumn[]
+  filteredColumns: KanbanColumn[]
+  filters: KanbanFilters
   isLoading: boolean
   error: string | null
   selectedTask: KanbanTask | null
@@ -23,6 +31,10 @@ interface KanbanState {
   deleteTask: (id: string) => void
   moveTask: (taskId: string, newStatus: TaskStatus) => void
   setSelectedTask: (task: KanbanTask | null) => void
+
+  // Filter management
+  setFilters: (filters: KanbanFilters) => void
+  clearFilters: () => void
 
   // Column management
   updateColumns: () => void
@@ -43,9 +55,17 @@ const initialColumns: KanbanColumn[] = [
   { id: 'completed', title: 'Done', tasks: [] },
 ]
 
+const initialFilters: KanbanFilters = {
+  phases: [],
+  statuses: [],
+  priorities: [],
+}
+
 const initialState = {
   tasks: [],
   columns: initialColumns,
+  filteredColumns: initialColumns,
+  filters: initialFilters,
   isLoading: false,
   error: null,
   selectedTask: null,
@@ -99,6 +119,10 @@ export const useKanbanStore = create<KanbanState>()(
       },
 
       setSelectedTask: (task) => set({ selectedTask: task }),
+
+      // Filter management
+      setFilters: (filters) => set({ filters }),
+      clearFilters: () => set({ filters: initialFilters }),
 
       // Update columns based on tasks
       updateColumns: () => {
