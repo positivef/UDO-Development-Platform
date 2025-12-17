@@ -29,8 +29,8 @@ def test_confidence_ui():
         # 1. Navigate to Confidence page
         print("\n[1/8] Loading page: http://localhost:3000/confidence")
         try:
-            page.goto('http://localhost:3000/confidence', timeout=10000)
-            page.wait_for_load_state('networkidle', timeout=15000)
+            page.goto('http://localhost:3000/confidence', timeout=60000)  # Increased for Turbopack
+            page.wait_for_load_state('networkidle', timeout=60000)
             print("[OK] Page loaded successfully")
         except Exception as e:
             print(f"[ERROR] Failed to load page: {e}")
