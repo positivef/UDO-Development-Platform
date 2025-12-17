@@ -59,13 +59,19 @@ def error_response(code: str, message: str, status_code: int, details: dict = No
     "",
     response_model=Task,
     status_code=status.HTTP_201_CREATED,
-    dependencies=[Depends(require_role(UserRole.DEVELOPER))],
+    # DEV_MODE: RBAC disabled for development
+
+    # TODO: Re-enable RBAC in Week 5 Day 2 (see UNCERTAINTY_MAP_WEEK5_ANALYSIS.md P0-1)
+
+    # dependencies=[Depends(require_role(UserRole.DEVELOPER))],
     summary="Create new task",
     description="Create new task (requires developer role or higher)"
 )
 async def create_task(
     task_data: TaskCreate,
-    current_user: dict = Depends(get_current_user)
+    # DEV_MODE: Auth disabled
+
+    # current_user: dict = Depends(get_current_user)
 ):
     """
     Create new task.
@@ -87,7 +93,11 @@ async def create_task(
 @router.get(
     "",
     response_model=TaskListResponse,
-    dependencies=[Depends(require_role(UserRole.VIEWER))],
+    # DEV_MODE: RBAC disabled for development
+
+    # TODO: Re-enable RBAC in Week 5 Day 2 (see UNCERTAINTY_MAP_WEEK5_ANALYSIS.md P0-1)
+
+    # dependencies=[Depends(require_role(UserRole.VIEWER))],
     summary="List tasks with filtering and pagination",
     description="List tasks with filters, sorting, and pagination (requires viewer role)"
 )
@@ -109,7 +119,10 @@ async def list_tasks(
     sort_by: str = Query("created_at", description="Sort field"),
     sort_desc: bool = Query(True, description="Sort descending"),
 
-    current_user: dict = Depends(get_current_user)
+    # DEV_MODE: Auth disabled
+
+
+    # current_user: dict = Depends(get_current_user)
 ):
     """
     List tasks with filtering, sorting, and pagination.
@@ -152,13 +165,19 @@ async def list_tasks(
 @router.get(
     "/{task_id}",
     response_model=Task,
-    dependencies=[Depends(require_role(UserRole.VIEWER))],
+    # DEV_MODE: RBAC disabled for development
+
+    # TODO: Re-enable RBAC in Week 5 Day 2 (see UNCERTAINTY_MAP_WEEK5_ANALYSIS.md P0-1)
+
+    # dependencies=[Depends(require_role(UserRole.VIEWER))],
     summary="Get task details",
     description="Get task by ID (requires viewer role)"
 )
 async def get_task(
     task_id: UUID,
-    current_user: dict = Depends(get_current_user)
+    # DEV_MODE: Auth disabled
+
+    # current_user: dict = Depends(get_current_user)
 ):
     """
     Get task by ID.
@@ -186,14 +205,20 @@ async def get_task(
 @router.put(
     "/{task_id}",
     response_model=Task,
-    dependencies=[Depends(require_role(UserRole.DEVELOPER))],
+    # DEV_MODE: RBAC disabled for development
+
+    # TODO: Re-enable RBAC in Week 5 Day 2 (see UNCERTAINTY_MAP_WEEK5_ANALYSIS.md P0-1)
+
+    # dependencies=[Depends(require_role(UserRole.DEVELOPER))],
     summary="Update task",
     description="Update task (requires developer role or higher)"
 )
 async def update_task(
     task_id: UUID,
     task_update: TaskUpdate,
-    current_user: dict = Depends(get_current_user)
+    # DEV_MODE: Auth disabled
+
+    # current_user: dict = Depends(get_current_user)
 ):
     """
     Update task.
@@ -222,13 +247,19 @@ async def update_task(
 @router.delete(
     "/{task_id}",
     status_code=status.HTTP_204_NO_CONTENT,
-    dependencies=[Depends(require_role(UserRole.DEVELOPER))],
+    # DEV_MODE: RBAC disabled for development
+
+    # TODO: Re-enable RBAC in Week 5 Day 2 (see UNCERTAINTY_MAP_WEEK5_ANALYSIS.md P0-1)
+
+    # dependencies=[Depends(require_role(UserRole.DEVELOPER))],
     summary="Delete task",
     description="Delete task (requires developer role or higher)"
 )
 async def delete_task(
     task_id: UUID,
-    current_user: dict = Depends(get_current_user)
+    # DEV_MODE: Auth disabled
+
+    # current_user: dict = Depends(get_current_user)
 ):
     """
     Delete task (soft delete).
@@ -260,14 +291,20 @@ async def delete_task(
 @router.put(
     "/{task_id}/phase",
     response_model=Task,
-    dependencies=[Depends(require_role(UserRole.DEVELOPER))],
+    # DEV_MODE: RBAC disabled for development
+
+    # TODO: Re-enable RBAC in Week 5 Day 2 (see UNCERTAINTY_MAP_WEEK5_ANALYSIS.md P0-1)
+
+    # dependencies=[Depends(require_role(UserRole.DEVELOPER))],
     summary="Move task to different phase",
     description="Move task to different phase (Q1: Task within Phase)"
 )
 async def change_phase(
     task_id: UUID,
     phase_request: PhaseChangeRequest,
-    current_user: dict = Depends(get_current_user)
+    # DEV_MODE: Auth disabled
+
+    # current_user: dict = Depends(get_current_user)
 ):
     """
     Move task to different phase.
@@ -300,14 +337,20 @@ async def change_phase(
 @router.put(
     "/{task_id}/status",
     response_model=Task,
-    dependencies=[Depends(require_role(UserRole.DEVELOPER))],
+    # DEV_MODE: RBAC disabled for development
+
+    # TODO: Re-enable RBAC in Week 5 Day 2 (see UNCERTAINTY_MAP_WEEK5_ANALYSIS.md P0-1)
+
+    # dependencies=[Depends(require_role(UserRole.DEVELOPER))],
     summary="Change task status",
     description="Change task status"
 )
 async def change_status(
     task_id: UUID,
     status_request: StatusChangeRequest,
-    current_user: dict = Depends(get_current_user)
+    # DEV_MODE: Auth disabled
+
+    # current_user: dict = Depends(get_current_user)
 ):
     """
     Change task status.
@@ -336,14 +379,20 @@ async def change_status(
 @router.put(
     "/{task_id}/priority",
     response_model=Task,
-    dependencies=[Depends(require_role(UserRole.DEVELOPER))],
+    # DEV_MODE: RBAC disabled for development
+
+    # TODO: Re-enable RBAC in Week 5 Day 2 (see UNCERTAINTY_MAP_WEEK5_ANALYSIS.md P0-1)
+
+    # dependencies=[Depends(require_role(UserRole.DEVELOPER))],
     summary="Change task priority",
     description="Change task priority"
 )
 async def change_priority(
     task_id: UUID,
     priority_request: PriorityChangeRequest,
-    current_user: dict = Depends(get_current_user)
+    # DEV_MODE: Auth disabled
+
+    # current_user: dict = Depends(get_current_user)
 ):
     """
     Change task priority.
@@ -371,14 +420,20 @@ async def change_priority(
 @router.put(
     "/{task_id}/completeness",
     response_model=Task,
-    dependencies=[Depends(require_role(UserRole.DEVELOPER))],
+    # DEV_MODE: RBAC disabled for development
+
+    # TODO: Re-enable RBAC in Week 5 Day 2 (see UNCERTAINTY_MAP_WEEK5_ANALYSIS.md P0-1)
+
+    # dependencies=[Depends(require_role(UserRole.DEVELOPER))],
     summary="Update task completeness",
     description="Update task completeness percentage (0-100)"
 )
 async def update_completeness(
     task_id: UUID,
     completeness_request: CompletenessUpdateRequest,
-    current_user: dict = Depends(get_current_user)
+    # DEV_MODE: Auth disabled
+
+    # current_user: dict = Depends(get_current_user)
 ):
     """
     Update task completeness percentage.
@@ -411,13 +466,19 @@ async def update_completeness(
 @router.get(
     "/{task_id}/quality-gates",
     response_model=QualityGateResult,
-    dependencies=[Depends(require_role(UserRole.VIEWER))],
+    # DEV_MODE: RBAC disabled for development
+
+    # TODO: Re-enable RBAC in Week 5 Day 2 (see UNCERTAINTY_MAP_WEEK5_ANALYSIS.md P0-1)
+
+    # dependencies=[Depends(require_role(UserRole.VIEWER))],
     summary="Get quality gate status",
     description="Get quality gate status for task (Q3: Hybrid completion)"
 )
 async def get_quality_gates(
     task_id: UUID,
-    current_user: dict = Depends(get_current_user)
+    # DEV_MODE: Auth disabled
+
+    # current_user: dict = Depends(get_current_user)
 ):
     """
     Get quality gate status for task.
@@ -446,13 +507,19 @@ async def get_quality_gates(
 @router.post(
     "/{task_id}/quality-gates",
     response_model=QualityGateResult,
-    dependencies=[Depends(require_role(UserRole.DEVELOPER))],
+    # DEV_MODE: RBAC disabled for development
+
+    # TODO: Re-enable RBAC in Week 5 Day 2 (see UNCERTAINTY_MAP_WEEK5_ANALYSIS.md P0-1)
+
+    # dependencies=[Depends(require_role(UserRole.DEVELOPER))],
     summary="Run quality gate checks",
     description="Run quality gate checks on task (Q3: Hybrid completion)"
 )
 async def run_quality_gates(
     task_id: UUID,
-    current_user: dict = Depends(get_current_user)
+    # DEV_MODE: Auth disabled
+
+    # current_user: dict = Depends(get_current_user)
 ):
     """
     Run quality gate checks on task.
@@ -491,14 +558,20 @@ async def run_quality_gates(
 @router.post(
     "/{task_id}/archive",
     response_model=TaskArchive,
-    dependencies=[Depends(require_role(UserRole.DEVELOPER))],
+    # DEV_MODE: RBAC disabled for development
+
+    # TODO: Re-enable RBAC in Week 5 Day 2 (see UNCERTAINTY_MAP_WEEK5_ANALYSIS.md P0-1)
+
+    # dependencies=[Depends(require_role(UserRole.DEVELOPER))],
     summary="Archive task to Done-End",
     description="Archive task to Done-End with AI summary (Q6: Done-End archiving)"
 )
 async def archive_task(
     task_id: UUID,
     archive_request: ArchiveRequest,
-    current_user: dict = Depends(get_current_user)
+    # DEV_MODE: Auth disabled
+
+    # current_user: dict = Depends(get_current_user)
 ):
     """
     Archive task to Done-End.

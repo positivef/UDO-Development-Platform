@@ -996,9 +996,12 @@ def require_role(required_role: str):
     return role_checker
 
 
-def get_current_user(credentials: HTTPAuthorizationCredentials = Depends(security)) -> Dict[str, Any]:
+def get_current_user(credentials: Optional[HTTPAuthorizationCredentials] = Depends(lambda: None)) -> Dict[str, Any]:
     """
-    현재 사용자 정보 조회 의존성
+    현재 사용자 정보 조회 의존성 (DEV_MODE: 인증 비활성화)
+
+    DEV_MODE (2025-12-16): credentials를 Optional로 변경하여 개발 중 인증 없이 접근 가능
+    TODO: Week 5 Day 2에 원래대로 복원 (credentials: HTTPAuthorizationCredentials = Depends(security))
 
     Usage:
         @router.get("/profile")
@@ -1008,6 +1011,16 @@ def get_current_user(credentials: HTTPAuthorizationCredentials = Depends(securit
     Returns:
         사용자 정보 (sub, user_id, role 포함)
     """
+    # DEV_MODE: credentials가 None이면 기본 개발자 사용자 반환
+    if credentials is None:
+        return {
+            "sub": "dev-user",
+            "user_id": "dev-user-id",
+            "username": "dev-user",
+            "email": "dev@example.com",
+            "role": UserRole.DEVELOPER,  # 개발 모드 기본 역할
+            "dev_mode": True
+        }
     return JWTManager.verify_token(credentials)
 
 

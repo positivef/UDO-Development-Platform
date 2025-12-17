@@ -53,13 +53,19 @@ def error_response(code: str, message: str, status_code: int, details: dict = No
 @router.get(
     "/{task_id}",
     response_model=ContextMetadata,
-    dependencies=[Depends(require_role(UserRole.VIEWER))],
+    # DEV_MODE: RBAC disabled for development
+
+    # TODO: Re-enable RBAC in Week 5 Day 2 (see UNCERTAINTY_MAP_WEEK5_ANALYSIS.md P0-1)
+
+    # dependencies=[Depends(require_role(UserRole.VIEWER))],
     summary="Get context metadata",
     description="Get context metadata without full files list (Q4: Context info)"
 )
 async def get_context_metadata(
     task_id: UUID,
-    current_user: dict = Depends(get_current_user)
+    # DEV_MODE: Auth disabled
+
+    # current_user: dict = Depends(get_current_user)
 ):
     """
     Get context metadata for task.
@@ -93,14 +99,20 @@ async def get_context_metadata(
     "/{task_id}",
     response_model=ContextUploadResponse,
     status_code=status.HTTP_201_CREATED,
-    dependencies=[Depends(require_role(UserRole.DEVELOPER))],
+    # DEV_MODE: RBAC disabled for development
+
+    # TODO: Re-enable RBAC in Week 5 Day 2 (see UNCERTAINTY_MAP_WEEK5_ANALYSIS.md P0-1)
+
+    # dependencies=[Depends(require_role(UserRole.DEVELOPER))],
     summary="Upload context as ZIP",
     description="Upload context files as ZIP (<50MB limit)"
 )
 async def upload_context(
     task_id: UUID,
     upload_request: ContextUploadRequest,
-    current_user: dict = Depends(get_current_user)
+    # DEV_MODE: Auth disabled
+
+    # current_user: dict = Depends(get_current_user)
 ):
     """
     Upload context for task as ZIP file.
@@ -149,14 +161,20 @@ async def upload_context(
 @router.post(
     "/{task_id}/load",
     response_model=ContextLoadResponse,
-    dependencies=[Depends(require_role(UserRole.DEVELOPER))],
+    # DEV_MODE: RBAC disabled for development
+
+    # TODO: Re-enable RBAC in Week 5 Day 2 (see UNCERTAINTY_MAP_WEEK5_ANALYSIS.md P0-1)
+
+    # dependencies=[Depends(require_role(UserRole.DEVELOPER))],
     summary="Track context load (Q4 double-click)",
     description="Track context load event (Q4: load_count, avg_load_time_ms)"
 )
 async def track_context_load(
     task_id: UUID,
     load_request: ContextLoadRequest,
-    current_user: dict = Depends(get_current_user)
+    # DEV_MODE: Auth disabled
+
+    # current_user: dict = Depends(get_current_user)
 ):
     """
     Track context load event (Q4: Double-click auto-load tracking).
@@ -200,13 +218,19 @@ async def track_context_load(
 @router.get(
     "/{task_id}/full",
     response_model=TaskContext,
-    dependencies=[Depends(require_role(UserRole.DEVELOPER))],
+    # DEV_MODE: RBAC disabled for development
+
+    # TODO: Re-enable RBAC in Week 5 Day 2 (see UNCERTAINTY_MAP_WEEK5_ANALYSIS.md P0-1)
+
+    # dependencies=[Depends(require_role(UserRole.DEVELOPER))],
     summary="Get full context with files list",
     description="Get complete context including all file paths (developer+ only)"
 )
 async def get_context_full(
     task_id: UUID,
-    current_user: dict = Depends(get_current_user)
+    # DEV_MODE: Auth disabled
+
+    # current_user: dict = Depends(get_current_user)
 ):
     """
     Get full context including files array.

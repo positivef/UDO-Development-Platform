@@ -141,7 +141,7 @@ class BackgroundSyncTask:
                 })
 
                 # Flush immediately (don't wait for debouncing)
-                await obsidian_service._flush_events()
+                await obsidian_service.flush_pending_events()
 
                 logger.info("📝 Temporary devlog created via ObsidianService")
 

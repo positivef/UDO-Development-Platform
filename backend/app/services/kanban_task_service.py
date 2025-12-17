@@ -81,6 +81,19 @@ class KanbanTaskService:
 
         logger.info(f"Created {len(self._mock_tasks)} test tasks")
 
+    def reset_mock_data(self, recreate_test_tasks: bool = True):
+        """
+        Reset mock data storage for test isolation.
+
+        Args:
+            recreate_test_tasks: Whether to recreate default test tasks
+        """
+        self._mock_tasks.clear()
+        self._mock_archived.clear()
+        if recreate_test_tasks:
+            self._create_test_tasks()
+        logger.info("Mock data reset completed")
+
     # ========================================================================
     # CRUD Operations
     # ========================================================================

@@ -36,6 +36,20 @@ from backend.app.services.kanban_task_service import kanban_task_service
 # Test Fixtures
 # ============================================================================
 
+@pytest.fixture(autouse=True, scope="function")
+def reset_task_service():
+    """
+    Reset task service mock data before each test for isolation.
+
+    This fixture ensures tests don't interfere with each other
+    by clearing accumulated task state from previous tests.
+    """
+    kanban_task_service.reset_mock_data(recreate_test_tasks=False)
+    yield
+    # Cleanup after test (optional, but good practice)
+    kanban_task_service.reset_mock_data(recreate_test_tasks=False)
+
+
 @pytest.fixture
 def sample_task_data():
     """Sample task creation data"""
