@@ -29,8 +29,8 @@ def test_uncertainty_ui():
         # 1. Navigate to Uncertainty page
         print("\n[1/7] Loading page: http://localhost:3000/uncertainty")
         try:
-            page.goto('http://localhost:3000/uncertainty', timeout=10000)
-            page.wait_for_load_state('networkidle', timeout=15000)
+            page.goto('http://localhost:3000/uncertainty', timeout=60000)  # Increased for Turbopack compilation
+            page.wait_for_load_state('networkidle', timeout=60000)
             print("[OK] Page loaded successfully")
         except Exception as e:
             print(f"[ERROR] Failed to load page: {e}")
@@ -102,17 +102,53 @@ def test_uncertainty_ui():
         except Exception as e:
             print(f"[WARNING] Uncertainty map check: {e}")
 
-        # 5. Check 24h Prediction
-        print("\n[5/7] Checking 24h Prediction...")
+        # 5. Check NEW: 24-Hour Prediction Chart (Recharts)
+        print("\n[5/7] Checking NEW 24-Hour Prediction Chart...")
         try:
-            if page.locator('text=24h Prediction').count() > 0:
-                print("[OK] 24h prediction section present")
+            # Check for new chart title
+            chart_title = page.locator('text=24-Hour Prediction Forecast').count()
+            if chart_title > 0:
+                print(f"[OK] Chart title found: '24-Hour Prediction Forecast'")
+            else:
+                print("[WARNING] New Prediction Chart title not found")
 
-            if page.locator('text=Stability').count() > 0:
-                print("[OK] Stability indicator present")
+            # Check for Recharts SVG elements
+            svg_count = page.locator('svg').count()
+            print(f"[OK] SVG elements (charts): {svg_count}")
+
+            # Check for chart legend items (NEW)
+            legend_items = ['Current Confidence', 'Predicted Trend', 'Upper Bound', 'Lower Bound']
+            found_legends = 0
+            for item in legend_items:
+                if page.locator(f'text={item}').count() > 0:
+                    found_legends += 1
+                    print(f"[OK] Legend item: '{item}'")
+            print(f"[OK] Found {found_legends}/4 legend items")
+
+            # Check for bottom metrics panel (NEW)
+            metrics = ['Velocity', 'Acceleration', 'Resolution ETA']
+            found_metrics = 0
+            for metric in metrics:
+                if page.locator(f'text={metric}').count() > 0:
+                    found_metrics += 1
+                    print(f"[OK] Metric: '{metric}'")
+            print(f"[OK] Found {found_metrics}/3 bottom metrics")
+
+            # Check for trend indicator (NEW)
+            trend_indicators = ['Improving', 'Degrading', 'Stable']
+            for indicator in trend_indicators:
+                if page.locator(f'text={indicator}').count() > 0:
+                    print(f"[OK] Trend indicator: '{indicator}'")
+                    break
+
+            # Take chart-specific screenshot
+            chart_section = page.locator('text=24-Hour Prediction Forecast').locator('..')
+            if chart_section.count() > 0:
+                chart_section.first.screenshot(path='prediction_chart_detail.png')
+                print("[SCREENSHOT] Chart detail: prediction_chart_detail.png")
 
         except Exception as e:
-            print(f"[WARNING] Prediction check: {e}")
+            print(f"[WARNING] Prediction chart check: {e}")
 
         # 6. Check Mitigation Strategies
         print("\n[6/7] Checking Mitigation Strategies...")
