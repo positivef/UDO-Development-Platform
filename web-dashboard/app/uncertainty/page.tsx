@@ -7,6 +7,7 @@ import { Button } from "@/components/ui/button"
 import { Skeleton } from "@/components/ui/skeleton"
 import { Card, CardHeader, CardTitle, CardContent } from "@/components/ui/card"
 import { UncertaintyMap } from "@/components/dashboard/uncertainty-map"
+import { UncertaintyPredictionChart } from "@/components/dashboard/uncertainty-prediction-chart"
 import { useUncertainty } from "@/hooks/useUncertainty"
 import { toast } from "sonner"
 import { cn } from "@/lib/utils"
@@ -284,11 +285,20 @@ export default function UncertaintyPage() {
           </motion.div>
         )}
 
+        {/* 24-Hour Prediction Chart */}
+        {!isLoading && uncertaintyData && (
+          <UncertaintyPredictionChart
+            currentConfidence={uncertaintyData.confidence_score}
+            prediction={uncertaintyData.prediction}
+            vector={uncertaintyData.vector}
+          />
+        )}
+
         {/* Main Uncertainty Map */}
         <motion.div
           initial={{ opacity: 0, y: 20 }}
           animate={{ opacity: 1, y: 0 }}
-          transition={{ delay: 0.3 }}
+          transition={{ delay: 0.4 }}
         >
           {isLoading ? (
             <Skeleton className="h-[600px]" />
