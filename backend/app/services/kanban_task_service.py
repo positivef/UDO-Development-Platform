@@ -1,14 +1,15 @@
 """
-Kanban Task Service - Core Task Management
+Kanban Task Service - Core Task Management (Database Implementation)
 
-Implements Week 2 Day 3-4: Tasks CRUD operations with mock data pattern.
+Week 8 Day 1: Migrated from mock data to real PostgreSQL database.
 Follows Q1-Q8 decisions from KANBAN_INTEGRATION_STRATEGY.md.
 """
 
-from typing import List, Optional, Dict
+from typing import List, Optional
 from uuid import UUID, uuid4
 from datetime import datetime, UTC
 import logging
+import asyncpg
 
 from backend.app.models.kanban_task import (
     Task,
@@ -35,64 +36,20 @@ logger = logging.getLogger(__name__)
 
 class KanbanTaskService:
     """
-    Service for managing Kanban tasks.
+    Service for managing Kanban tasks with PostgreSQL database.
 
-    Mock implementation for Week 2 (will be replaced with database later).
-    Provides all CRUD operations with pagination and filtering.
+    Uses asyncpg connection pool for all database operations.
+    Provides CRUD operations with pagination, filtering, and quality gates.
     """
 
-    def __init__(self, db_session=None):
+    def __init__(self, db_pool: asyncpg.Pool):
         """
-        Initialize service with database session.
+        Initialize service with database connection pool.
 
         Args:
-            db_session: Database session (optional for testing with mock data)
+            db_pool: asyncpg connection pool
         """
-        self.db = db_session
-        # In-memory storage for testing (will be replaced by DB)
-        self._mock_tasks: Dict[UUID, Task] = {}
-        self._mock_archived: Dict[UUID, TaskArchive] = {}
-
-        # Create some test tasks for development
-        self._create_test_tasks()
-
-    def _create_test_tasks(self):
-        """Create test tasks for development"""
-        test_phases = [
-            {"phase_id": uuid4(), "phase_name": "ideation"},
-            {"phase_id": uuid4(), "phase_name": "design"},
-            {"phase_id": uuid4(), "phase_name": "implementation"},
-        ]
-
-        for i, phase in enumerate(test_phases):
-            task = Task(
-                task_id=uuid4(),
-                title=f"Test Task {i+1}",
-                description=f"Test task in {phase['phase_name']} phase",
-                phase_id=phase["phase_id"],
-                phase_name=phase["phase_name"],
-                status=TaskStatus.PENDING if i == 0 else TaskStatus.IN_PROGRESS,
-                priority=TaskPriority.HIGH if i == 0 else TaskPriority.MEDIUM,
-                completeness=0 if i == 0 else 50,
-                estimated_hours=8.0,
-                actual_hours=0.0 if i == 0 else 4.0,
-            )
-            self._mock_tasks[task.task_id] = task
-
-        logger.info(f"Created {len(self._mock_tasks)} test tasks")
-
-    def reset_mock_data(self, recreate_test_tasks: bool = True):
-        """
-        Reset mock data storage for test isolation.
-
-        Args:
-            recreate_test_tasks: Whether to recreate default test tasks
-        """
-        self._mock_tasks.clear()
-        self._mock_archived.clear()
-        if recreate_test_tasks:
-            self._create_test_tasks()
-        logger.info("Mock data reset completed")
+        self.db_pool = db_pool
 
     # ========================================================================
     # CRUD Operations
@@ -100,45 +57,56 @@ class KanbanTaskService:
 
     async def create_task(self, task_data: TaskCreate) -> Task:
         """
-        Create new task.
+        Create new task in database.
 
         Args:
             task_data: Task creation data
 
         Returns:
             Created task
-
-        Raises:
-            TaskValidationError: If validation fails
         """
-        task = Task(
-            task_id=uuid4(),
-            title=task_data.title,
-            description=task_data.description,
-            phase_id=task_data.phase_id,
-            phase_name=task_data.phase_name,
-            status=task_data.status,
-            priority=task_data.priority,
-            completeness=task_data.completeness,
-            estimated_hours=task_data.estimated_hours,
-            actual_hours=task_data.actual_hours,
-            ai_suggested=task_data.ai_suggested,
-            ai_confidence=task_data.ai_confidence,
-        )
+        async with self.db_pool.acquire() as conn:
+            query = """
+                INSERT INTO kanban.tasks (
+                    title, description, phase_id, phase_name,
+                    status, priority, completeness,
+                    estimated_hours, actual_hours,
+                    ai_suggested, ai_confidence
+                )
+                VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9, $10, $11)
+                RETURNING
+                    task_id, title, description, phase_id, phase_name,
+                    status, priority, completeness,
+                    estimated_hours, actual_hours,
+                    ai_suggested, ai_confidence, approved_by, approval_timestamp,
+                    quality_gate_passed, quality_score,
+                    constitutional_compliant, COALESCE(violated_articles, '{}') as violated_articles,
+                    user_confirmed, confirmed_by, confirmed_at,
+                    created_at, updated_at, completed_at, archived_at
+            """
 
-        if self.db:
-            # Database implementation (when DB is available)
-            pass
-        else:
-            # Mock implementation
-            self._mock_tasks[task.task_id] = task
+            row = await conn.fetchrow(
+                query,
+                task_data.title,
+                task_data.description,
+                task_data.phase_id,
+                task_data.phase_name,
+                task_data.status if task_data.status else 'pending',
+                task_data.priority if task_data.priority else 'medium',
+                task_data.completeness,
+                task_data.estimated_hours,
+                task_data.actual_hours,
+                task_data.ai_suggested,
+                task_data.ai_confidence
+            )
 
-        logger.info(f"Created task: {task.task_id} - {task.title}")
-        return task
+            task = Task(**dict(row))
+            logger.info(f"Created task: {task.task_id} - {task.title}")
+            return task
 
     async def get_task(self, task_id: UUID) -> Task:
         """
-        Get task by ID.
+        Get task by ID from database.
 
         Args:
             task_id: Task ID
@@ -149,15 +117,27 @@ class KanbanTaskService:
         Raises:
             TaskNotFoundError: If task not found
         """
-        if self.db:
-            # Database implementation
-            pass
-        else:
-            # Mock implementation
-            task = self._mock_tasks.get(task_id)
-            if not task:
+        async with self.db_pool.acquire() as conn:
+            query = """
+                SELECT
+                    task_id, title, description, phase_id, phase_name,
+                    status, priority, completeness,
+                    estimated_hours, actual_hours,
+                    ai_suggested, ai_confidence, approved_by, approval_timestamp,
+                    quality_gate_passed, quality_score,
+                    constitutional_compliant, COALESCE(violated_articles, '{}') as violated_articles,
+                    user_confirmed, confirmed_by, confirmed_at,
+                    created_at, updated_at, completed_at, archived_at
+                FROM kanban.tasks
+                WHERE task_id = $1
+            """
+
+            row = await conn.fetchrow(query, task_id)
+
+            if not row:
                 raise TaskNotFoundError(task_id)
-            return task
+
+            return Task(**dict(row))
 
     async def list_tasks(
         self,
@@ -174,74 +154,105 @@ class KanbanTaskService:
             filters: Optional filters
             page: Page number (1-indexed)
             per_page: Items per page (default 50)
-            sort_by: Sort field
+            sort_by: Sort field (created_at, updated_at, priority, completeness)
             sort_desc: Sort descending (default True)
 
         Returns:
             Paginated task list
         """
-        # Start with all tasks
-        tasks = list(self._mock_tasks.values())
+        async with self.db_pool.acquire() as conn:
+            # Build WHERE clause
+            where_clauses = []
+            params = []
+            param_count = 1
 
-        # Apply filters
-        if filters:
-            if filters.phase:
-                tasks = [t for t in tasks if t.phase_name == filters.phase]
-            if filters.status:
-                tasks = [t for t in tasks if t.status == filters.status]
-            if filters.priority:
-                tasks = [t for t in tasks if t.priority == filters.priority]
-            if filters.min_completeness is not None:
-                tasks = [t for t in tasks if t.completeness >= filters.min_completeness]
-            if filters.max_completeness is not None:
-                tasks = [t for t in tasks if t.completeness <= filters.max_completeness]
-            if filters.ai_suggested is not None:
-                tasks = [t for t in tasks if t.ai_suggested == filters.ai_suggested]
-            if filters.quality_gate_passed is not None:
-                tasks = [t for t in tasks if t.quality_gate_passed == filters.quality_gate_passed]
+            if filters:
+                if filters.phase:
+                    where_clauses.append(f"phase_name = ${param_count}")
+                    params.append(filters.phase)
+                    param_count += 1
 
-        # Sort tasks
-        if sort_by == "created_at":
-            tasks.sort(key=lambda t: t.created_at, reverse=sort_desc)
-        elif sort_by == "updated_at":
-            tasks.sort(key=lambda t: t.updated_at, reverse=sort_desc)
-        elif sort_by == "priority":
-            priority_order = {
-                TaskPriority.CRITICAL: 4,
-                TaskPriority.HIGH: 3,
-                TaskPriority.MEDIUM: 2,
-                TaskPriority.LOW: 1,
+                if filters.status:
+                    where_clauses.append(f"status = ${param_count}")
+                    params.append(filters.status.value if hasattr(filters.status, 'value') else filters.status)
+                    param_count += 1
+
+                if filters.priority:
+                    where_clauses.append(f"priority = ${param_count}")
+                    params.append(filters.priority.value if hasattr(filters.priority, 'value') else filters.priority)
+                    param_count += 1
+
+                if filters.min_completeness is not None:
+                    where_clauses.append(f"completeness >= ${param_count}")
+                    params.append(filters.min_completeness)
+                    param_count += 1
+
+                if filters.max_completeness is not None:
+                    where_clauses.append(f"completeness <= ${param_count}")
+                    params.append(filters.max_completeness)
+                    param_count += 1
+
+                if filters.ai_suggested is not None:
+                    where_clauses.append(f"ai_suggested = ${param_count}")
+                    params.append(filters.ai_suggested)
+                    param_count += 1
+
+                if filters.quality_gate_passed is not None:
+                    where_clauses.append(f"quality_gate_passed = ${param_count}")
+                    params.append(filters.quality_gate_passed)
+                    param_count += 1
+
+            where_sql = "WHERE " + " AND ".join(where_clauses) if where_clauses else ""
+
+            # Build ORDER BY clause
+            sort_mapping = {
+                "created_at": "created_at",
+                "updated_at": "updated_at",
+                "priority": "priority",
+                "completeness": "completeness"
             }
-            tasks.sort(
-                key=lambda t: priority_order.get(t.priority, 0),
-                reverse=sort_desc
+            sort_column = sort_mapping.get(sort_by, "created_at")
+            sort_direction = "DESC" if sort_desc else "ASC"
+
+            # Count total
+            count_query = f"SELECT COUNT(*) FROM kanban.tasks {where_sql}"
+            total = await conn.fetchval(count_query, *params)
+
+            # Calculate pagination
+            total_pages = (total + per_page - 1) // per_page if total > 0 else 0
+            offset = (page - 1) * per_page
+
+            # Fetch tasks
+            query = f"""
+                SELECT
+                    task_id, title, description, phase_id, phase_name,
+                    status, priority, completeness,
+                    estimated_hours, actual_hours,
+                    ai_suggested, ai_confidence, approved_by, approval_timestamp,
+                    quality_gate_passed, quality_score,
+                    constitutional_compliant, COALESCE(violated_articles, '{{}}') as violated_articles,
+                    user_confirmed, confirmed_by, confirmed_at,
+                    created_at, updated_at, completed_at, archived_at
+                FROM kanban.tasks
+                {where_sql}
+                ORDER BY {sort_column} {sort_direction}
+                LIMIT ${param_count} OFFSET ${param_count + 1}
+            """
+
+            rows = await conn.fetch(query, *params, per_page, offset)
+            tasks = [Task(**dict(row)) for row in rows]
+
+            pagination = PaginationMeta(
+                total=total,
+                page=page,
+                per_page=per_page,
+                total_pages=total_pages,
+                has_next=page < total_pages,
+                has_prev=page > 1,
             )
-        elif sort_by == "completeness":
-            tasks.sort(key=lambda t: t.completeness, reverse=sort_desc)
 
-        # Calculate pagination
-        total = len(tasks)
-        total_pages = (total + per_page - 1) // per_page if total > 0 else 0
-        start_idx = (page - 1) * per_page
-        end_idx = start_idx + per_page
-        paginated_tasks = tasks[start_idx:end_idx]
-
-        # Build response
-        pagination = PaginationMeta(
-            total=total,
-            page=page,
-            per_page=per_page,
-            total_pages=total_pages,
-            has_next=page < total_pages,
-            has_prev=page > 1,
-        )
-
-        logger.info(
-            f"Listed {len(paginated_tasks)}/{total} tasks "
-            f"(page {page}/{total_pages})"
-        )
-
-        return TaskListResponse(data=paginated_tasks, pagination=pagination)
+            logger.info(f"Listed {len(tasks)}/{total} tasks (page {page}/{total_pages})")
+            return TaskListResponse(data=tasks, pagination=pagination)
 
     async def update_task(
         self,
@@ -249,11 +260,11 @@ class KanbanTaskService:
         task_update: TaskUpdate
     ) -> Task:
         """
-        Update task.
+        Update task in database.
 
         Args:
             task_id: Task ID
-            task_update: Update data
+            task_update: Update data (only non-None fields are updated)
 
         Returns:
             Updated task
@@ -261,46 +272,102 @@ class KanbanTaskService:
         Raises:
             TaskNotFoundError: If task not found
         """
-        task = await self.get_task(task_id)
+        # Check task exists
+        await self.get_task(task_id)
 
-        # Apply updates (only non-None fields)
-        if task_update.title is not None:
-            task.title = task_update.title
-        if task_update.description is not None:
-            task.description = task_update.description
-        if task_update.status is not None:
-            task.status = task_update.status
-        if task_update.priority is not None:
-            task.priority = task_update.priority
-        if task_update.completeness is not None:
-            task.completeness = task_update.completeness
-        if task_update.estimated_hours is not None:
-            task.estimated_hours = task_update.estimated_hours
-        if task_update.actual_hours is not None:
-            task.actual_hours = task_update.actual_hours
-        if task_update.quality_score is not None:
-            task.quality_score = task_update.quality_score
+        async with self.db_pool.acquire() as conn:
+            # Build dynamic UPDATE query
+            set_clauses = []
+            params = []
+            param_count = 1
 
-        task.updated_at = datetime.now(UTC)
+            if task_update.title is not None:
+                set_clauses.append(f"title = ${param_count}")
+                params.append(task_update.title)
+                param_count += 1
 
-        # Mark as completed if completeness is 100%
-        if task.completeness == 100 and task.status != TaskStatus.COMPLETED:
-            task.status = TaskStatus.COMPLETED
-            task.completed_at = datetime.now(UTC)
+            if task_update.description is not None:
+                set_clauses.append(f"description = ${param_count}")
+                params.append(task_update.description)
+                param_count += 1
 
-        if self.db:
-            # Database implementation
-            pass
-        else:
-            # Mock implementation (already updated)
-            pass
+            if task_update.status is not None:
+                set_clauses.append(f"status = ${param_count}")
+                params.append(task_update.status.value if hasattr(task_update.status, 'value') else task_update.status)
+                param_count += 1
 
-        logger.info(f"Updated task: {task_id}")
-        return task
+                # Set completed_at if status is COMPLETED
+                if task_update.status == TaskStatus.COMPLETED:
+                    set_clauses.append(f"completed_at = ${param_count}")
+                    params.append(datetime.now(UTC))
+                    param_count += 1
+
+            if task_update.priority is not None:
+                set_clauses.append(f"priority = ${param_count}")
+                params.append(task_update.priority.value if hasattr(task_update.priority, 'value') else task_update.priority)
+                param_count += 1
+
+            if task_update.completeness is not None:
+                set_clauses.append(f"completeness = ${param_count}")
+                params.append(task_update.completeness)
+                param_count += 1
+
+                # Auto-mark as completed if 100%
+                if task_update.completeness == 100:
+                    set_clauses.append(f"status = ${param_count}")
+                    params.append('completed')
+                    param_count += 1
+                    set_clauses.append(f"completed_at = ${param_count}")
+                    params.append(datetime.now(UTC))
+                    param_count += 1
+
+            if task_update.estimated_hours is not None:
+                set_clauses.append(f"estimated_hours = ${param_count}")
+                params.append(task_update.estimated_hours)
+                param_count += 1
+
+            if task_update.actual_hours is not None:
+                set_clauses.append(f"actual_hours = ${param_count}")
+                params.append(task_update.actual_hours)
+                param_count += 1
+
+            if task_update.quality_score is not None:
+                set_clauses.append(f"quality_score = ${param_count}")
+                params.append(task_update.quality_score)
+                param_count += 1
+
+            # Always update updated_at
+            set_clauses.append(f"updated_at = ${param_count}")
+            params.append(datetime.now(UTC))
+            param_count += 1
+
+            # Add task_id as last parameter
+            params.append(task_id)
+
+            query = f"""
+                UPDATE kanban.tasks
+                SET {', '.join(set_clauses)}
+                WHERE task_id = ${param_count}
+                RETURNING
+                    task_id, title, description, phase_id, phase_name,
+                    status, priority, completeness,
+                    estimated_hours, actual_hours,
+                    ai_suggested, ai_confidence, approved_by, approval_timestamp,
+                    quality_gate_passed, quality_score,
+                    constitutional_compliant, violated_articles,
+                    user_confirmed, confirmed_by, confirmed_at,
+                    created_at, updated_at, completed_at, archived_at
+            """
+
+            row = await conn.fetchrow(query, *params)
+            task = Task(**dict(row))
+
+            logger.info(f"Updated task: {task_id}")
+            return task
 
     async def delete_task(self, task_id: UUID) -> bool:
         """
-        Delete task (soft delete).
+        Delete task from database (hard delete).
 
         Args:
             task_id: Task ID
@@ -311,17 +378,17 @@ class KanbanTaskService:
         Raises:
             TaskNotFoundError: If task not found
         """
-        task = await self.get_task(task_id)
+        async with self.db_pool.acquire() as conn:
+            query = "DELETE FROM kanban.tasks WHERE task_id = $1"
+            result = await conn.execute(query, task_id)
 
-        if self.db:
-            # Database implementation (soft delete)
-            pass
-        else:
-            # Mock implementation (hard delete for now)
-            del self._mock_tasks[task_id]
+            # Check if any row was deleted
+            deleted_count = int(result.split()[-1])
+            if deleted_count == 0:
+                raise TaskNotFoundError(task_id)
 
-        logger.info(f"Deleted task: {task_id}")
-        return True
+            logger.info(f"Deleted task: {task_id}")
+            return True
 
     # ========================================================================
     # Phase Operations
@@ -342,16 +409,39 @@ class KanbanTaskService:
         Returns:
             Updated task
         """
-        task = await self.get_task(task_id)
+        async with self.db_pool.acquire() as conn:
+            query = """
+                UPDATE kanban.tasks
+                SET
+                    phase_id = $1,
+                    phase_name = $2,
+                    updated_at = $3
+                WHERE task_id = $4
+                RETURNING
+                    task_id, title, description, phase_id, phase_name,
+                    status, priority, completeness,
+                    estimated_hours, actual_hours,
+                    ai_suggested, ai_confidence, approved_by, approval_timestamp,
+                    quality_gate_passed, quality_score,
+                    constitutional_compliant, violated_articles,
+                    user_confirmed, confirmed_by, confirmed_at,
+                    created_at, updated_at, completed_at, archived_at
+            """
 
-        task.phase_id = phase_request.new_phase_id
-        task.phase_name = phase_request.new_phase_name
-        task.updated_at = datetime.now(UTC)
+            row = await conn.fetchrow(
+                query,
+                phase_request.new_phase_id,
+                phase_request.new_phase_name,
+                datetime.now(UTC),
+                task_id
+            )
 
-        logger.info(
-            f"Moved task {task_id} to phase: {phase_request.new_phase_name}"
-        )
-        return task
+            if not row:
+                raise TaskNotFoundError(task_id)
+
+            task = Task(**dict(row))
+            logger.info(f"Moved task {task_id} to phase: {phase_request.new_phase_name}")
+            return task
 
     # ========================================================================
     # Status & Priority Operations
@@ -372,17 +462,62 @@ class KanbanTaskService:
         Returns:
             Updated task
         """
-        task = await self.get_task(task_id)
+        async with self.db_pool.acquire() as conn:
+            # Set completed_at if status is COMPLETED
+            if status_request.new_status == TaskStatus.COMPLETED:
+                query = """
+                    UPDATE kanban.tasks
+                    SET
+                        status = $1,
+                        completed_at = $2,
+                        updated_at = $2
+                    WHERE task_id = $3
+                    RETURNING
+                        task_id, title, description, phase_id, phase_name,
+                        status, priority, completeness,
+                        estimated_hours, actual_hours,
+                        ai_suggested, ai_confidence, approved_by, approval_timestamp,
+                        quality_gate_passed, quality_score,
+                        constitutional_compliant, violated_articles,
+                        user_confirmed, confirmed_by, confirmed_at,
+                        created_at, updated_at, completed_at, archived_at
+                """
+                row = await conn.fetchrow(
+                    query,
+                    status_request.new_status.value,
+                    datetime.now(UTC),
+                    task_id
+                )
+            else:
+                query = """
+                    UPDATE kanban.tasks
+                    SET
+                        status = $1,
+                        updated_at = $2
+                    WHERE task_id = $3
+                    RETURNING
+                        task_id, title, description, phase_id, phase_name,
+                        status, priority, completeness,
+                        estimated_hours, actual_hours,
+                        ai_suggested, ai_confidence, approved_by, approval_timestamp,
+                        quality_gate_passed, quality_score,
+                        constitutional_compliant, violated_articles,
+                        user_confirmed, confirmed_by, confirmed_at,
+                        created_at, updated_at, completed_at, archived_at
+                """
+                row = await conn.fetchrow(
+                    query,
+                    status_request.new_status.value,
+                    datetime.now(UTC),
+                    task_id
+                )
 
-        task.status = status_request.new_status
-        task.updated_at = datetime.now(UTC)
+            if not row:
+                raise TaskNotFoundError(task_id)
 
-        # Set completed_at if status is COMPLETED
-        if status_request.new_status == TaskStatus.COMPLETED:
-            task.completed_at = datetime.now(UTC)
-
-        logger.info(f"Changed task {task_id} status to: {status_request.new_status}")
-        return task
+            task = Task(**dict(row))
+            logger.info(f"Changed task {task_id} status to: {status_request.new_status}")
+            return task
 
     async def change_priority(
         self,
@@ -399,15 +534,37 @@ class KanbanTaskService:
         Returns:
             Updated task
         """
-        task = await self.get_task(task_id)
+        async with self.db_pool.acquire() as conn:
+            query = """
+                UPDATE kanban.tasks
+                SET
+                    priority = $1,
+                    updated_at = $2
+                WHERE task_id = $3
+                RETURNING
+                    task_id, title, description, phase_id, phase_name,
+                    status, priority, completeness,
+                    estimated_hours, actual_hours,
+                    ai_suggested, ai_confidence, approved_by, approval_timestamp,
+                    quality_gate_passed, quality_score,
+                    constitutional_compliant, violated_articles,
+                    user_confirmed, confirmed_by, confirmed_at,
+                    created_at, updated_at, completed_at, archived_at
+            """
 
-        task.priority = priority_request.new_priority
-        task.updated_at = datetime.now(UTC)
+            row = await conn.fetchrow(
+                query,
+                priority_request.new_priority.value,
+                datetime.now(UTC),
+                task_id
+            )
 
-        logger.info(
-            f"Changed task {task_id} priority to: {priority_request.new_priority}"
-        )
-        return task
+            if not row:
+                raise TaskNotFoundError(task_id)
+
+            task = Task(**dict(row))
+            logger.info(f"Changed task {task_id} priority to: {priority_request.new_priority}")
+            return task
 
     async def update_completeness(
         self,
@@ -417,6 +574,8 @@ class KanbanTaskService:
         """
         Update task completeness percentage.
 
+        Auto-marks task as completed if 100%.
+
         Args:
             task_id: Task ID
             completeness_request: Completeness update data
@@ -424,21 +583,63 @@ class KanbanTaskService:
         Returns:
             Updated task
         """
-        task = await self.get_task(task_id)
+        async with self.db_pool.acquire() as conn:
+            # Auto-mark as completed if 100%
+            if completeness_request.completeness == 100:
+                query = """
+                    UPDATE kanban.tasks
+                    SET
+                        completeness = $1,
+                        status = 'completed',
+                        completed_at = $2,
+                        updated_at = $2
+                    WHERE task_id = $3
+                    RETURNING
+                        task_id, title, description, phase_id, phase_name,
+                        status, priority, completeness,
+                        estimated_hours, actual_hours,
+                        ai_suggested, ai_confidence, approved_by, approval_timestamp,
+                        quality_gate_passed, quality_score,
+                        constitutional_compliant, violated_articles,
+                        user_confirmed, confirmed_by, confirmed_at,
+                        created_at, updated_at, completed_at, archived_at
+                """
+                row = await conn.fetchrow(
+                    query,
+                    completeness_request.completeness,
+                    datetime.now(UTC),
+                    task_id
+                )
+            else:
+                query = """
+                    UPDATE kanban.tasks
+                    SET
+                        completeness = $1,
+                        updated_at = $2
+                    WHERE task_id = $3
+                    RETURNING
+                        task_id, title, description, phase_id, phase_name,
+                        status, priority, completeness,
+                        estimated_hours, actual_hours,
+                        ai_suggested, ai_confidence, approved_by, approval_timestamp,
+                        quality_gate_passed, quality_score,
+                        constitutional_compliant, violated_articles,
+                        user_confirmed, confirmed_by, confirmed_at,
+                        created_at, updated_at, completed_at, archived_at
+                """
+                row = await conn.fetchrow(
+                    query,
+                    completeness_request.completeness,
+                    datetime.now(UTC),
+                    task_id
+                )
 
-        task.completeness = completeness_request.completeness
-        task.updated_at = datetime.now(UTC)
+            if not row:
+                raise TaskNotFoundError(task_id)
 
-        # Auto-mark as completed if 100%
-        if completeness_request.completeness == 100:
-            task.status = TaskStatus.COMPLETED
-            task.completed_at = datetime.now(UTC)
-
-        logger.info(
-            f"Updated task {task_id} completeness to: "
-            f"{completeness_request.completeness}%"
-        )
-        return task
+            task = Task(**dict(row))
+            logger.info(f"Updated task {task_id} completeness to: {completeness_request.completeness}%")
+            return task
 
     # ========================================================================
     # Quality Gate Operations (Q3)
@@ -448,11 +649,7 @@ class KanbanTaskService:
         """
         Run quality gate checks on task (Q3: Hybrid completion).
 
-        Checks:
-        1. Constitutional compliance (P1-P17)
-        2. Code quality standards
-        3. Test coverage
-        4. Documentation completeness
+        Updates task with quality gate results in database.
 
         Args:
             task_id: Task ID
@@ -460,7 +657,6 @@ class KanbanTaskService:
         Returns:
             Quality gate result
         """
-        task = await self.get_task(task_id)
         start_time = datetime.now(UTC)
 
         # Mock quality checks (will integrate with quality_service later)
@@ -491,11 +687,27 @@ class KanbanTaskService:
         quality_gate_passed = len(passed_checks) == len(checks)
         violated_articles = [c.article for c in checks if not c.passed and c.article]
 
-        # Update task
-        task.quality_gate_passed = quality_gate_passed
-        task.quality_score = quality_score
-        task.constitutional_compliant = len(violated_articles) == 0
-        task.violated_articles = violated_articles
+        # Update task in database
+        async with self.db_pool.acquire() as conn:
+            query = """
+                UPDATE kanban.tasks
+                SET
+                    quality_gate_passed = $1,
+                    quality_score = $2,
+                    constitutional_compliant = $3,
+                    violated_articles = $4,
+                    updated_at = $5
+                WHERE task_id = $6
+            """
+            await conn.execute(
+                query,
+                quality_gate_passed,
+                quality_score,
+                len(violated_articles) == 0,
+                violated_articles,
+                datetime.now(UTC),
+                task_id
+            )
 
         execution_time = (datetime.now(UTC) - start_time).total_seconds() * 1000
 
@@ -526,11 +738,10 @@ class KanbanTaskService:
             task_id: Task ID
 
         Returns:
-            Quality gate result (cached from last run)
+            Quality gate result (from database)
         """
         task = await self.get_task(task_id)
 
-        # Return cached result
         result = QualityGateResult(
             task_id=task_id,
             quality_gate_passed=task.quality_gate_passed,
@@ -556,6 +767,8 @@ class KanbanTaskService:
         """
         Archive task to Done-End (Q6: Done-End + AI → Obsidian).
 
+        Updates task status to 'done_end' and sets archived_at.
+
         Args:
             task_id: Task ID
             archive_request: Archive request data
@@ -575,7 +788,19 @@ class KanbanTaskService:
                 f"Actual: {task.actual_hours}h."
             )
 
-        # Create archive
+        # Update task status to done_end
+        async with self.db_pool.acquire() as conn:
+            query = """
+                UPDATE kanban.tasks
+                SET
+                    status = 'done_end',
+                    archived_at = $1,
+                    updated_at = $1
+                WHERE task_id = $2
+            """
+            await conn.execute(query, datetime.now(UTC), task_id)
+
+        # Create archive object
         archive = TaskArchive(
             task_id=task_id,
             task_data=task,
@@ -585,23 +810,32 @@ class KanbanTaskService:
             obsidian_synced=False,  # Will be synced by obsidian_service
         )
 
-        # Update task status
-        task.status = TaskStatus.DONE_END
-        task.archived_at = datetime.now(UTC)
-
-        if self.db:
-            # Database implementation
-            pass
-        else:
-            # Mock implementation
-            self._mock_archived[task_id] = archive
-
         logger.info(f"Archived task: {task_id}")
         return archive
 
 
 # ============================================================================
-# Singleton Instance
+# Dependency Injection
 # ============================================================================
 
-kanban_task_service = KanbanTaskService()
+def get_kanban_task_service() -> "KanbanTaskService":
+    """
+    Dependency function for FastAPI routes.
+
+    Returns a KanbanTaskService instance with the global database pool.
+    Used via Depends(get_kanban_task_service) in route handlers.
+
+    Example:
+        @router.get("/tasks")
+        async def list_tasks(
+            service: KanbanTaskService = Depends(get_kanban_task_service)
+        ):
+            return await service.get_all_tasks()
+    """
+    from backend.async_database import async_db
+
+    db_pool = async_db.get_pool()
+    if db_pool is None:
+        raise RuntimeError("Database pool not initialized. Ensure startup_event has run.")
+
+    return KanbanTaskService(db_pool=db_pool)

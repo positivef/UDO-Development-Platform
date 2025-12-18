@@ -38,7 +38,7 @@ from backend.app.models.kanban_archive import (
     ROIStatistics,
     ArchiveFilters,
 )
-from backend.app.services.kanban_task_service import kanban_task_service
+from backend.app.services.kanban_task_service import get_kanban_task_service
 from backend.app.services.obsidian_service import ObsidianService
 
 logger = logging.getLogger(__name__)
@@ -165,7 +165,8 @@ class KanbanArchiveService:
         """Validate that task exists and can be archived"""
         # TODO: In production, fetch from database
         # For now, get from task service
-        task = await kanban_task_service.get_task(task_id)
+        task_service = get_kanban_task_service()
+        task = await task_service.get_task(task_id)
 
         # Check if task is completed
         if task.status not in [TaskStatus.COMPLETED, TaskStatus.DONE_END]:

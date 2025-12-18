@@ -13,7 +13,7 @@ from fastapi.responses import JSONResponse
 
 from backend.app.core.security import require_role, UserRole, get_current_user
 from backend.app.services.kanban_dependency_service import kanban_dependency_service
-from backend.app.services.kanban_task_service import kanban_task_service
+from backend.app.services.kanban_task_service import KanbanTaskService, get_kanban_task_service
 from backend.app.models.kanban_dependencies import (
     Dependency,
     DependencyCreate,
@@ -66,6 +66,7 @@ def error_response(code: str, message: str, status_code: int, details: dict = No
 )
 async def create_dependency(
     dependency_data: DependencyCreate,
+    task_service: KanbanTaskService = Depends(get_kanban_task_service),
     # DEV_MODE: Auth disabled
 
     # current_user: dict = Depends(get_current_user)
@@ -83,7 +84,7 @@ async def create_dependency(
     """
     try:
         # Get all available task IDs for validation
-        task_list = await kanban_task_service.list_tasks(
+        task_list = await task_service.list_tasks(
             filters=None,
             page=1,
             per_page=10000,  # Get all tasks for validation

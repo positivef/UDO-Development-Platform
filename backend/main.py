@@ -173,6 +173,22 @@ except ImportError as e:
     ADMIN_ROUTER_AVAILABLE = False
     logger.info(f"Admin router not available: {e}")
 
+# Import Knowledge Feedback router for Accuracy Tracking (Week 6 Day 4-5)
+try:
+    from app.routers.knowledge_feedback import router as knowledge_feedback_router
+    KNOWLEDGE_FEEDBACK_ROUTER_AVAILABLE = True
+except ImportError as e:
+    KNOWLEDGE_FEEDBACK_ROUTER_AVAILABLE = False
+    logger.info(f"Knowledge Feedback router not available: {e}")
+
+# Import Knowledge Search router for 3-Tier Search (Week 6 Day 4 PM)
+try:
+    from app.routers.knowledge_search import router as knowledge_search_router
+    KNOWLEDGE_SEARCH_ROUTER_AVAILABLE = True
+except ImportError as e:
+    KNOWLEDGE_SEARCH_ROUTER_AVAILABLE = False
+    logger.info(f"Knowledge Search router not available: {e}")
+
 # Import WebSocket handler and SessionManagerV2
 try:
     from app.routers import websocket_handler
@@ -426,6 +442,29 @@ if ADMIN_ROUTER_AVAILABLE:
     app.include_router(admin_router)
     logger.info("✅ Admin router included (Feature Flags Tier 1 Rollback: /api/admin)")
 
+if KNOWLEDGE_FEEDBACK_ROUTER_AVAILABLE:
+    logger.info(f"[DEBUG] knowledge_feedback_router object: {knowledge_feedback_router}")
+    logger.info(f"[DEBUG] knowledge_feedback_router prefix: {knowledge_feedback_router.prefix}")
+    logger.info(f"[DEBUG] knowledge_feedback_router routes: {len(knowledge_feedback_router.routes)}")
+
+    # List all routes before including
+    logger.info(f"[DEBUG] App routes before include: {len(app.routes)}")
+
+    app.include_router(knowledge_feedback_router)
+
+    # List all routes after including
+    logger.info(f"[DEBUG] App routes after include: {len(app.routes)}")
+
+    # List knowledge routes
+    knowledge_routes = [route for route in app.routes if hasattr(route, 'path') and '/knowledge' in route.path]
+    logger.info(f"[DEBUG] Knowledge routes: {[route.path for route in knowledge_routes]}")
+
+    logger.info("✅ Knowledge Feedback router included (Accuracy Tracking Week 6: /api/knowledge)")
+
+if KNOWLEDGE_SEARCH_ROUTER_AVAILABLE:
+    app.include_router(knowledge_search_router)
+    logger.info("✅ Knowledge Search router included (3-Tier Search Week 6: /api/knowledge/search)")
+
 if TIME_TRACKING_ROUTER_AVAILABLE:
     app.include_router(time_tracking_router)
     logger.info("✅ Time Tracking router included (ROI Measurement)")
@@ -600,7 +639,7 @@ async def startup_event():
                     if db_pool is None:
                         raise RuntimeError("Database pool is None - database not initialized")
 
-                    time_tracking_service = TimeTrackingService(db_pool=db_pool)
+                    time_tracking_service = TimeTrackingService(pool=db_pool)
 
                     # Get WebSocket broadcast function
                     broadcast_func = None

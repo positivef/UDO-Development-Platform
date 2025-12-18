@@ -426,7 +426,10 @@ class KanbanDependencyService:
             Dependency graph with nodes and edges enriched with task metadata
         """
         # Import inside method to avoid circular dependency
-        from backend.app.services.kanban_task_service import kanban_task_service
+        from backend.app.services.kanban_task_service import get_kanban_task_service
+
+        # Get task service instance
+        task_service = get_kanban_task_service()
 
         visited_tasks = set()
         edges = []
@@ -470,7 +473,7 @@ class KanbanDependencyService:
         nodes = []
         for tid in visited_tasks:
             try:
-                task = await kanban_task_service.get_task(tid)
+                task = await task_service.get_task(tid)
 
                 # Calculate is_blocked status based on pending dependencies
                 deps = task_dependencies_map.get(tid, [])
