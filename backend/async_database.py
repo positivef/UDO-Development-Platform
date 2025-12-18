@@ -118,10 +118,10 @@ class AsyncDatabase:
                 command_timeout=10.0  # 10 second command timeout
             )
             self._initialized = True
-            logger.info(f"✅ Async database pool initialized: {self.config.database}")
+            logger.info(f"[OK] Async database pool initialized: {self.config.database}")
             logger.info(f"   Pool size: min={self.config.min_size}, max={self.config.max_size}")
         except Exception as e:
-            logger.error(f"❌ Failed to initialize async database pool: {e}")
+            logger.error(f"[FAIL] Failed to initialize async database pool: {e}")
             raise
 
     async def close(self):
@@ -161,7 +161,7 @@ class AsyncDatabase:
                 result = await conn.fetchval("SELECT 1")
                 return result == 1
         except Exception as e:
-            logger.error(f"❌ Health check failed: {e}")
+            logger.error(f"[FAIL] Health check failed: {e}")
             return False
 
     def get_pool_stats(self) -> dict:
@@ -228,7 +228,7 @@ if __name__ == "__main__":
 
             # Health check
             if await async_db.health_check():
-                print("✅ Async database connection successful!")
+                print("[OK] Async database connection successful!")
 
                 # Test query
                 pool = async_db.get_pool()
@@ -240,10 +240,10 @@ if __name__ == "__main__":
                     """)
                     print(f"Tables in database: {result}")
             else:
-                print("❌ Async database connection failed!")
+                print("[FAIL] Async database connection failed!")
 
         except Exception as e:
-            print(f"❌ Error: {e}")
+            print(f"[FAIL] Error: {e}")
             import traceback
             traceback.print_exc()
         finally:

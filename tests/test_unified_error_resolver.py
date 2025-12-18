@@ -46,7 +46,7 @@ class TestUnifiedErrorResolver:
         assert self.resolver.circuit_breaker["state"] == "CLOSED"
 
     def test_tier2_module_not_found_high_confidence(self):
-        """Test Tier 2: ModuleNotFoundError → HIGH confidence → Auto-apply"""
+        """Test Tier 2: ModuleNotFoundError -> HIGH confidence -> Auto-apply"""
         solution = self.resolver.resolve_error(
             "ModuleNotFoundError: No module named 'pandas'",
             context={"tool": "Python", "file": "analyzer.py"}
@@ -64,7 +64,7 @@ class TestUnifiedErrorResolver:
         assert stats["automation_rate"] == 1.0
 
     def test_tier2_permission_error_high_confidence(self):
-        """Test Tier 2: PermissionError → HIGH confidence → Auto-apply"""
+        """Test Tier 2: PermissionError -> HIGH confidence -> Auto-apply"""
         solution = self.resolver.resolve_error(
             "PermissionError: [Errno 13] Permission denied: '/path/to/file.py'",
             context={"tool": "Read", "file": "/path/to/file.py"}
@@ -79,7 +79,7 @@ class TestUnifiedErrorResolver:
         assert stats["tier2_auto"] == 1
 
     def test_tier2_file_not_found_high_confidence(self):
-        """Test Tier 2: FileNotFoundError → HIGH confidence → Auto-apply"""
+        """Test Tier 2: FileNotFoundError -> HIGH confidence -> Auto-apply"""
         solution = self.resolver.resolve_error(
             "FileNotFoundError: [Errno 2] No such file or directory: '/path/to/missing/file.txt'",
             context={"tool": "Read"}
@@ -90,7 +90,7 @@ class TestUnifiedErrorResolver:
         assert "mkdir" in solution or "touch" in solution
 
     def test_tier3_unknown_error_no_solution(self):
-        """Test Tier 3: Unknown error → No solution → User escalation"""
+        """Test Tier 3: Unknown error -> No solution -> User escalation"""
         solution = self.resolver.resolve_error(
             "CustomBusinessError: Payment processing failed",
             context={"tool": "API", "endpoint": "/payment"}
@@ -226,9 +226,9 @@ class TestUnifiedErrorResolver:
         solution = "Fix it manually by doing X"
         context = {"tool": "API", "file": "service.py"}
 
-        # Create 개발일지 folder structure
+        # Create [EMOJI] folder structure
         today = datetime.now().strftime("%Y-%m-%d")
-        dev_log = Path(self.temp_vault) / "개발일지" / today
+        dev_log = Path(self.temp_vault) / "[EMOJI]" / today
         dev_log.mkdir(parents=True, exist_ok=True)
 
         # Save solution
@@ -460,22 +460,22 @@ class TestTier1ObsidianIntegration:
     def setup_method(self):
         """Create temporary vault with test files"""
         self.temp_vault = tempfile.mkdtemp()
-        self.dev_log = Path(self.temp_vault) / "개발일지" / "2025-11-21"
+        self.dev_log = Path(self.temp_vault) / "[EMOJI]" / "2025-11-21"
         self.dev_log.mkdir(parents=True)
 
         # Create test file for Tier 1 hit
         test_file = self.dev_log / "Debug-ModuleNotFound-pandas.md"
-        test_file.write_text("""# ModuleNotFoundError 해결
+        test_file.write_text("""# ModuleNotFoundError [EMOJI]
 
-## ✅ 최종 해결 방법
+## [OK] [EMOJI] [EMOJI] [EMOJI]
 
-pip install pandas로 해결했습니다.
+pip install pandas[EMOJI] [EMOJI].
 
 ```bash
 pip install pandas
 ```
 
-성공!
+[EMOJI]!
 """, encoding='utf-8')
 
         self.resolver = UnifiedErrorResolver(vault_path=self.temp_vault)
@@ -515,7 +515,7 @@ class TestConfidenceBasedDecision:
         shutil.rmtree(self.temp_vault)
 
     def test_high_confidence_auto_apply(self):
-        """Test HIGH confidence (≥95%) → Auto-apply"""
+        """Test HIGH confidence (≥95%) -> Auto-apply"""
         solution = self.resolver.resolve_error(
             "ModuleNotFoundError: No module named 'pandas'",
             {}
@@ -528,7 +528,7 @@ class TestConfidenceBasedDecision:
         assert stats["tier2_auto"] == 1
 
     def test_medium_confidence_user_confirmation(self):
-        """Test MEDIUM confidence (70-95%) → User confirmation needed
+        """Test MEDIUM confidence (70-95%) -> User confirmation needed
 
         Note: This is simulated behavior. In real implementation,
         Context7 MCP would return MEDIUM confidence solutions.
@@ -552,16 +552,16 @@ class TestConfidenceBasedDecision:
 def temp_vault_with_solution():
     """Fixture for temporary vault with past solution"""
     temp_vault = tempfile.mkdtemp()
-    dev_log = Path(temp_vault) / "개발일지" / "2025-11-21"
+    dev_log = Path(temp_vault) / "[EMOJI]" / "2025-11-21"
     dev_log.mkdir(parents=True)
 
     # Create past solution file
     solution_file = dev_log / "Debug-ModuleNotFound-pandas.md"
-    solution_file.write_text("""## ✅ 최종 해결 방법
+    solution_file.write_text("""## [OK] [EMOJI] [EMOJI] [EMOJI]
 
 pip install pandas
 
-성공!
+[EMOJI]!
 """, encoding='utf-8')
 
     yield str(temp_vault)

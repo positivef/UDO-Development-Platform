@@ -1,0 +1,106 @@
+#!/usr/bin/env python3
+# -*- coding: utf-8 -*-
+"""
+Emoji Detection Script
+Scans Python files for emoji characters that cause Windows cp949 encoding errors.
+"""
+
+import re
+from pathlib import Path
+
+def check_emoji_usage(file_path):
+    """Check for emoji in Python files"""
+    try:
+        with open(file_path, 'r', encoding='utf-8') as f:
+            content = f.read()
+    except Exception as e:
+        print(f"[SKIP] Cannot read {file_path}: {e}")
+        return []
+
+    # Comprehensive emoji pattern
+    emoji_pattern = re.compile(
+        '['
+        '\U0001F600-\U0001F64F'  # emoticons
+        '\U0001F300-\U0001F5FF'  # symbols & pictographs
+        '\U0001F680-\U0001F6FF'  # transport & map
+        '\U0001F1E0-\U0001F1FF'  # flags
+        '\U00002702-\U000027B0'  # dingbats
+        '\U000024C2-\U0001F251'  # enclosed characters
+        '\u2600-\u26FF'          # misc symbols ([WARN], [OK], [FAIL], [EMOJI])
+        ']+',
+        flags=re.UNICODE
+    )
+
+    findings = []
+    lines = content.split('\n')
+    for line_num, line in enumerate(lines, 1):
+        matches = emoji_pattern.findall(line)
+        if matches:
+            findings.append({
+                'line': line_num,
+                'text': line.strip()[:80],  # First 80 chars
+                'emojis': matches
+            })
+
+    return findings
+
+def main():
+    """Main function"""
+    print("[INFO] Scanning Python files for emoji...")
+
+    # Directories to scan
+    dirs_to_scan = ['backend', 'src', 'scripts', 'tests']
+    base_path = Path('.')
+
+    total_files = 0
+    files_with_emoji = []
+
+    for dir_name in dirs_to_scan:
+        dir_path = base_path / dir_name
+        if not dir_path.exists():
+            continue
+
+        for py_file in dir_path.rglob('*.py'):
+            # Skip venv and node_modules
+            if '.venv' in str(py_file) or 'node_modules' in str(py_file):
+                continue
+
+            total_files += 1
+            findings = check_emoji_usage(py_file)
+
+            if findings:
+                files_with_emoji.append({
+                    'file': str(py_file),
+                    'findings': findings
+                })
+
+    # Report results
+    print(f"\n[RESULT] Scanned {total_files} Python files")
+
+    if not files_with_emoji:
+        print("[OK] No emoji found in Python files")
+        print("[OK] All files are Windows cp949 compatible")
+        return 0
+
+    print(f"[WARN] Found emoji in {len(files_with_emoji)} files:\n")
+
+    for file_info in files_with_emoji[:10]:  # Show first 10 files
+        print(f"File: {file_info['file']}")
+        for finding in file_info['findings'][:3]:  # Show first 3 findings per file
+            emoji_count = len(finding['emojis'])
+            print(f"  Line {finding['line']}: [{emoji_count} emoji(s)]")
+        print()
+
+    if len(files_with_emoji) > 10:
+        print(f"... and {len(files_with_emoji) - 10} more files")
+
+    print("\n[ACTION] Replace emoji with ASCII equivalents:")
+    print("  Checkmark -> [OK]")
+    print("  X mark -> [FAIL]")
+    print("  Warning -> [WARN]")
+    print("  Chart -> [INFO]")
+
+    return 1
+
+if __name__ == '__main__':
+    exit(main())

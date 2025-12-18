@@ -194,9 +194,9 @@ class TradeoffAnalysis(BaseModel):
                     "scalability": {"A": "High", "B": "Medium", "C": "High"}
                 },
                 "decision_tree": [
-                    "If security is top priority → Choose A or C",
-                    "If simplicity is critical → Choose B",
-                    "If third-party providers needed → Choose A"
+                    "If security is top priority -> Choose A or C",
+                    "If simplicity is critical -> Choose B",
+                    "If third-party providers needed -> Choose A"
                 ]
             }
         }
@@ -338,7 +338,7 @@ class CKTheoryResult(BaseModel):
                 },
                 "total_duration_ms": 42000,
                 "created_at": "2025-11-20T15:45:00",
-                "obsidian_path": "개발일지/2025-11-20/CK-Design-Auth-System.md"
+                "obsidian_path": "[EMOJI]/2025-11-20/CK-Design-Auth-System.md"
             }
         }
 

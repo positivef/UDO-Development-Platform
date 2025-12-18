@@ -418,8 +418,8 @@ class QualityMetricsService:
             cmd,
             capture_output=True,
             text=True,
-            encoding='utf-8',  # Windows 한글 인코딩 문제 해결
-            errors='replace',  # 디코딩 에러 시 대체 문자 사용
+            encoding='utf-8',  # Windows [EMOJI] [EMOJI] [EMOJI] [EMOJI]
+            errors='replace',  # [EMOJI] [EMOJI] [EMOJI] [EMOJI] [EMOJI] [EMOJI]
             cwd=str(cwd.resolve()),
             shell=shell_flag,
             check=False

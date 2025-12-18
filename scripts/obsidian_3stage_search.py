@@ -13,9 +13,9 @@ Usage:
 
     # Automatic 3-stage cascade
     result = search_obsidian_solutions("ModuleNotFoundError: pandas")
-    # → Stage 1: Searches "Debug-ModuleNotFound-*.md"
-    # → Stage 2: Searches frontmatter error_type=="ModuleNotFoundError"
-    # → Stage 3: Full-text search as fallback
+    # -> Stage 1: Searches "Debug-ModuleNotFound-*.md"
+    # -> Stage 2: Searches frontmatter error_type=="ModuleNotFoundError"
+    # -> Stage 3: Full-text search as fallback
 
     if result["found"]:
         print(f"Solution: {result['solution']}")
@@ -64,7 +64,7 @@ class Obsidian3StageSearch:
             vault_path: Absolute path to Obsidian vault
         """
         self.vault_path = Path(vault_path)
-        self.dev_log_path = self.vault_path / "개발일지"
+        self.dev_log_path = self.vault_path / "[EMOJI]"
 
         if not self.vault_path.exists():
             raise ValueError(f"Obsidian vault not found: {vault_path}")
@@ -98,20 +98,20 @@ class Obsidian3StageSearch:
             SearchResult with solution and metadata
         """
         start_time = time.time()
-        logger.info(f"🔍 3-Stage Search: {error_msg[:100]}")
+        logger.info(f"[EMOJI] 3-Stage Search: {error_msg[:100]}")
 
         # Stage 1: Filename pattern search (<10ms)
         result = self._stage1_filename_search(error_msg)
         if result.found:
             result.search_time_ms = (time.time() - start_time) * 1000
-            logger.info(f"✅ Stage 1 hit in {result.search_time_ms:.1f}ms")
+            logger.info(f"[OK] Stage 1 hit in {result.search_time_ms:.1f}ms")
             return result
 
         # Stage 2: Frontmatter metadata search (<500ms)
         result = self._stage2_frontmatter_search(error_msg)
         if result.found:
             result.search_time_ms = (time.time() - start_time) * 1000
-            logger.info(f"✅ Stage 2 hit in {result.search_time_ms:.1f}ms")
+            logger.info(f"[OK] Stage 2 hit in {result.search_time_ms:.1f}ms")
             return result
 
         # Stage 3: Full-text search (<5s)
@@ -119,9 +119,9 @@ class Obsidian3StageSearch:
         result.search_time_ms = (time.time() - start_time) * 1000
 
         if result.found:
-            logger.info(f"✅ Stage 3 hit in {result.search_time_ms:.1f}ms")
+            logger.info(f"[OK] Stage 3 hit in {result.search_time_ms:.1f}ms")
         else:
-            logger.warning(f"❌ No solution found after {result.search_time_ms:.1f}ms")
+            logger.warning(f"[FAIL] No solution found after {result.search_time_ms:.1f}ms")
 
         return result
 
@@ -134,16 +134,16 @@ class Obsidian3StageSearch:
         Token usage: 100
 
         Examples:
-            "ModuleNotFoundError: pandas" → Debug-ModuleNotFound-*.md
-            "401 Unauthorized" → Debug-401-*.md
-            "WebSocket connection failed" → WebSocket-*.md
+            "ModuleNotFoundError: pandas" -> Debug-ModuleNotFound-*.md
+            "401 Unauthorized" -> Debug-401-*.md
+            "WebSocket connection failed" -> WebSocket-*.md
         """
         logger.debug("Stage 1: Filename pattern search")
 
         # Extract error pattern
         for pattern, filename_glob in self.error_patterns.items():
             if pattern.lower() in error_msg.lower():
-                logger.debug(f"Pattern matched: {pattern} → {filename_glob}")
+                logger.debug(f"Pattern matched: {pattern} -> {filename_glob}")
 
                 # Search for matching files
                 matching_files = list(self.dev_log_path.rglob(filename_glob))
@@ -153,7 +153,7 @@ class Obsidian3StageSearch:
                     matching_files.sort(key=lambda p: p.stat().st_mtime, reverse=True)
                     recent_file = matching_files[0]
 
-                    logger.info(f"📄 Found: {recent_file.name}")
+                    logger.info(f"[EMOJI] Found: {recent_file.name}")
 
                     # Read solution from file
                     solution = self._extract_solution(recent_file)
@@ -222,7 +222,7 @@ class Obsidian3StageSearch:
                 # Check for matching error_type
                 if f'error_type: "{error_type}"' in frontmatter or \
                    f"error_type: {error_type}" in frontmatter:
-                    logger.info(f"📄 Frontmatter match: {md_file.name}")
+                    logger.info(f"[EMOJI] Frontmatter match: {md_file.name}")
 
                     solution = self._extract_solution(md_file)
 
@@ -291,7 +291,7 @@ class Obsidian3StageSearch:
 
         # Require at least 50% keyword match
         if best_match and best_score >= len(keywords) * 0.5:
-            logger.info(f"📄 Full-text match: {best_match.name} (score: {best_score}/{len(keywords)})")
+            logger.info(f"[EMOJI] Full-text match: {best_match.name} (score: {best_score}/{len(keywords)})")
 
             solution = self._extract_solution(best_match)
 
@@ -321,8 +321,8 @@ class Obsidian3StageSearch:
         Extract solution from markdown file
 
         Looks for sections:
-        - ## ✅ 최종 해결 방법
-        - ## 해결
+        - ## [OK] [EMOJI] [EMOJI] [EMOJI]
+        - ## [EMOJI]
         - ## Solution
         """
         try:
@@ -331,8 +331,8 @@ class Obsidian3StageSearch:
 
             # Look for solution markers
             solution_patterns = [
-                r"## ✅ 최종 해결 방법\n(.*?)(?=\n##|\Z)",
-                r"## 해결\n(.*?)(?=\n##|\Z)",
+                r"## [OK] [EMOJI] [EMOJI] [EMOJI]\n(.*?)(?=\n##|\Z)",
+                r"## [EMOJI]\n(.*?)(?=\n##|\Z)",
                 r"## Solution\n(.*?)(?=\n##|\Z)",
                 r"## Fix\n(.*?)(?=\n##|\Z)"
             ]

@@ -1,0 +1,225 @@
+#!/usr/bin/env python3
+# -*- coding: utf-8 -*-
+"""
+Emoji Replacement Script
+Replaces emoji characters with ASCII equivalents for Windows cp949 compatibility.
+"""
+
+import re
+import shutil
+from pathlib import Path
+from typing import Dict, List, Tuple
+
+# Emoji to ASCII mapping
+EMOJI_REPLACEMENTS = {
+    # Status indicators
+    '\u2705': '[OK]',      # [OK]
+    '\u274c': '[FAIL]',    # [FAIL]
+    '\u2757': '[!]',       # [!]
+    '\u2753': '[?]',       # [?]
+    '\u2714': '[OK]',      # [OK]
+    '\u2716': '[X]',       # [X]
+
+    # Warnings and alerts
+    '\u26a0': '[WARN]',    # [WARN]
+    '\ufe0f': '',          # Variation selector (remove)
+    '\u2622': '[HAZARD]',  # [HAZARD]
+    '\u26d4': '[NO]',      # [NO]
+    '\u2757': '[!]',       # [!]
+
+    # Common symbols
+    '\ud83d\udcca': '[INFO]',   # [EMOJI]
+    '\ud83e\uddea': '[TEST]',   # 🧪
+    '\ud83d\udd34': '[RED]',    # [EMOJI]
+    '\ud83d\udfe1': '[YELLOW]', # 🟡
+    '\ud83d\udfe2': '[GREEN]',  # 🟢
+    '\u2b55': '[O]',       # [O]
+    '\u274e': '[X]',       # [X]
+
+    # Development symbols
+    '\ud83d\udd27': '[TOOL]',   # [EMOJI]
+    '\ud83d\udee0': '[BUILD]',  # [EMOJI]
+    '\ud83d\udc1b': '[BUG]',    # [EMOJI]
+    '\ud83d\ude80': '[ROCKET]', # [EMOJI]
+    '\u2728': '[NEW]',     # [NEW]
+    '\ud83d\udd25': '[HOT]',    # [EMOJI]
+
+    # Arrows and directions
+    '\u2192': '->',        # ->
+    '\u2190': '<-',        # <-
+    '\u2191': '^',         # ^
+    '\u2193': 'v',         # v
+    '\u21d2': '=>',        # =>
+    '\u21d0': '<=',        # <=
+
+    # Other common
+    '\u2022': '*',         # *
+    '\u25cf': '*',         # *
+    '\u25cb': 'o',         # o
+    '\u25a0': '[#]',       # [#]
+    '\u25a1': '[ ]',       # [ ]
+}
+
+def create_comprehensive_pattern():
+    """Create regex pattern for all emoji ranges"""
+    return re.compile(
+        '['
+        '\U0001F600-\U0001F64F'  # emoticons
+        '\U0001F300-\U0001F5FF'  # symbols & pictographs
+        '\U0001F680-\U0001F6FF'  # transport & map
+        '\U0001F1E0-\U0001F1FF'  # flags
+        '\U00002702-\U000027B0'  # dingbats
+        '\U000024C2-\U0001F251'  # enclosed characters
+        '\u2600-\u26FF'          # misc symbols
+        '\u2700-\u27BF'          # dingbats
+        '\uFE0F'                 # variation selector
+        ']+',
+        flags=re.UNICODE
+    )
+
+def replace_emoji_in_text(text: str) -> Tuple[str, List[str]]:
+    """
+    Replace emoji with ASCII equivalents.
+    Returns: (modified_text, list_of_changes)
+    """
+    changes = []
+    modified = text
+
+    # First, replace known emoji with mappings
+    for emoji, replacement in EMOJI_REPLACEMENTS.items():
+        if emoji in modified:
+            count = modified.count(emoji)
+            modified = modified.replace(emoji, replacement)
+            if count > 0:
+                # Use unicode escape code instead of emoji character in output
+                emoji_code = emoji.encode('unicode-escape').decode('ascii')
+                changes.append(f"Replaced \\{emoji_code} with {replacement} ({count} times)")
+
+    # Then catch any remaining emoji with generic replacement
+    emoji_pattern = create_comprehensive_pattern()
+    remaining_emoji = emoji_pattern.findall(modified)
+
+    if remaining_emoji:
+        # Replace remaining with [EMOJI]
+        modified = emoji_pattern.sub('[EMOJI]', modified)
+        unique_remaining = set(remaining_emoji)
+        for emoji in unique_remaining:
+            emoji_code = emoji.encode('unicode-escape').decode('ascii')
+            changes.append(f"Replaced \\{emoji_code} with [EMOJI]")
+
+    return modified, changes
+
+def process_file(file_path: Path, create_backup: bool = True) -> Dict:
+    """
+    Process a single Python file, replacing emoji.
+    Returns: dict with file path, changes made, and status
+    """
+    result = {
+        'file': str(file_path),
+        'changes': [],
+        'backup_created': False,
+        'modified': False,
+        'error': None
+    }
+
+    try:
+        # Read original content
+        with open(file_path, 'r', encoding='utf-8') as f:
+            original = f.read()
+
+        # Replace emoji
+        modified, changes = replace_emoji_in_text(original)
+
+        # Check if anything changed
+        if original == modified:
+            return result
+
+        result['modified'] = True
+        result['changes'] = changes
+
+        # Create backup if requested
+        if create_backup:
+            backup_path = file_path.with_suffix(file_path.suffix + '.bak')
+            shutil.copy2(file_path, backup_path)
+            result['backup_created'] = True
+
+        # Write modified content
+        with open(file_path, 'w', encoding='utf-8') as f:
+            f.write(modified)
+
+    except Exception as e:
+        result['error'] = str(e)
+
+    return result
+
+def main():
+    """Main function"""
+    print("[INFO] Starting emoji replacement in Python files...")
+
+    # Directories to process
+    dirs_to_scan = ['backend', 'src', 'scripts', 'tests']
+    base_path = Path('.')
+
+    total_files = 0
+    modified_files = []
+    skipped_files = []
+    error_files = []
+
+    for dir_name in dirs_to_scan:
+        dir_path = base_path / dir_name
+        if not dir_path.exists():
+            continue
+
+        for py_file in dir_path.rglob('*.py'):
+            # Skip virtual environment and node_modules
+            if '.venv' in str(py_file) or 'node_modules' in str(py_file):
+                continue
+
+            total_files += 1
+            result = process_file(py_file, create_backup=True)
+
+            if result['error']:
+                error_files.append(result)
+            elif result['modified']:
+                modified_files.append(result)
+            else:
+                skipped_files.append(result)
+
+    # Report results
+    print(f"\n[RESULT] Processed {total_files} Python files")
+    print(f"[OK] Modified: {len(modified_files)} files")
+    print(f"[OK] Unchanged: {len(skipped_files)} files")
+
+    if error_files:
+        print(f"[WARN] Errors: {len(error_files)} files")
+
+    # Show details of modified files
+    if modified_files:
+        print(f"\n[CHANGES] Details of {len(modified_files)} modified files:\n")
+
+        for result in modified_files[:20]:  # Show first 20
+            print(f"File: {result['file']}")
+            for change in result['changes'][:3]:  # Show first 3 changes per file
+                print(f"  - {change}")
+            if result['backup_created']:
+                print(f"  - Backup: {result['file']}.bak")
+            print()
+
+        if len(modified_files) > 20:
+            print(f"... and {len(modified_files) - 20} more files")
+
+    # Show errors if any
+    if error_files:
+        print(f"\n[ERROR] Files with errors:\n")
+        for result in error_files:
+            print(f"File: {result['file']}")
+            print(f"  Error: {result['error']}\n")
+
+    print("\n[INFO] Emoji replacement complete!")
+    print("[INFO] Backups created with .bak extension")
+    print("[INFO] Run check_emoji.py again to verify all emoji removed")
+
+    return 0 if not error_files else 1
+
+if __name__ == '__main__':
+    exit(main())

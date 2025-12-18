@@ -72,7 +72,7 @@ class TestPatternBasedSolutions:
     """Test Tier 2 pattern-based solution matching"""
 
     def test_module_not_found_high_confidence(self):
-        """ModuleNotFoundError → pip install (95% confidence)"""
+        """ModuleNotFoundError -> pip install (95% confidence)"""
         with tempfile.TemporaryDirectory() as tmpdir:
             stats_file = Path(tmpdir) / "test_stats.json"
             resolver = UnifiedErrorResolver(stats_file=stats_file)
@@ -89,7 +89,7 @@ class TestPatternBasedSolutions:
             assert result.source == "context7"
 
     def test_permission_denied_write_high_confidence(self):
-        """PermissionError (write) → chmod +w (95% confidence)"""
+        """PermissionError (write) -> chmod +w (95% confidence)"""
         with tempfile.TemporaryDirectory() as tmpdir:
             stats_file = Path(tmpdir) / "test_stats.json"
             resolver = UnifiedErrorResolver(stats_file=stats_file)
@@ -104,7 +104,7 @@ class TestPatternBasedSolutions:
             assert result.confidence >= 0.95
 
     def test_permission_denied_execute_high_confidence(self):
-        """PermissionError (execute) → chmod +x (95% confidence)"""
+        """PermissionError (execute) -> chmod +x (95% confidence)"""
         with tempfile.TemporaryDirectory() as tmpdir:
             stats_file = Path(tmpdir) / "test_stats.json"
             resolver = UnifiedErrorResolver(stats_file=stats_file)
@@ -119,7 +119,7 @@ class TestPatternBasedSolutions:
             assert result.confidence >= 0.95
 
     def test_file_not_found_medium_confidence(self):
-        """FileNotFoundError → None (70% confidence, user confirmation)"""
+        """FileNotFoundError -> None (70% confidence, user confirmation)"""
         with tempfile.TemporaryDirectory() as tmpdir:
             stats_file = Path(tmpdir) / "test_stats.json"
             resolver = UnifiedErrorResolver(stats_file=stats_file)
@@ -153,7 +153,7 @@ class TestConfidenceScoring:
     """Test confidence-based decision making"""
 
     def test_high_confidence_auto_apply(self):
-        """≥95% confidence → auto-apply (Tier 2)"""
+        """≥95% confidence -> auto-apply (Tier 2)"""
         with tempfile.TemporaryDirectory() as tmpdir:
             stats_file = Path(tmpdir) / "test_stats.json"
             resolver = UnifiedErrorResolver(stats_file=stats_file)
@@ -163,13 +163,13 @@ class TestConfidenceScoring:
                 context={"tool": "Python"}
             )
 
-            # HIGH confidence → auto-applied
+            # HIGH confidence -> auto-applied
             assert result.confidence >= 0.95
             stats = resolver.get_statistics()
             assert stats["tier2_auto"] == 1  # Auto-applied
 
     def test_medium_confidence_user_confirmation(self):
-        """70-95% confidence → return for user confirmation"""
+        """70-95% confidence -> return for user confirmation"""
         with tempfile.TemporaryDirectory() as tmpdir:
             stats_file = Path(tmpdir) / "test_stats.json"
             resolver = UnifiedErrorResolver(stats_file=stats_file)
@@ -180,13 +180,13 @@ class TestConfidenceScoring:
                 context={"tool": "Read"}
             )
 
-            # MEDIUM confidence → not auto-applied, escalates
+            # MEDIUM confidence -> not auto-applied, escalates
             assert result.tier == 3  # No auto-apply
             stats = resolver.get_statistics()
             assert stats["tier2_auto"] == 0
 
     def test_low_confidence_escalates(self):
-        """<70% confidence → escalate to user (Tier 3)"""
+        """<70% confidence -> escalate to user (Tier 3)"""
         with tempfile.TemporaryDirectory() as tmpdir:
             stats_file = Path(tmpdir) / "test_stats.json"
             resolver = UnifiedErrorResolver(stats_file=stats_file)
@@ -348,7 +348,7 @@ class TestRealWorldScenarios:
             stats_file = Path(tmpdir) / "test_stats.json"
             resolver = UnifiedErrorResolver(stats_file=stats_file)
 
-            # 5 pandas errors (same error → should reuse knowledge if Tier 1 worked)
+            # 5 pandas errors (same error -> should reuse knowledge if Tier 1 worked)
             for _ in range(5):
                 resolver.resolve_error("ModuleNotFoundError: No module named 'pandas'")
 

@@ -1,7 +1,7 @@
 """
 Security and Input Validation System
 
-보안 미들웨어, 입력 검증, JWT 토큰 관리를 제공합니다.
+[EMOJI] [EMOJI], [EMOJI] [EMOJI], JWT [EMOJI] [EMOJI] [EMOJI].
 
 Security Improvements (2025-12-14):
 - CRIT-01: JWT secret key from environment variable (persistent across restarts)
@@ -163,7 +163,7 @@ class UserRole:
 
 
 class SecurityConfig:
-    """보안 설정"""
+    """[EMOJI] [EMOJI]"""
 
     # Rate limiting (increased for development/testing)
     RATE_LIMIT_REQUESTS = 1000  # requests per minute (100 in production)
@@ -202,17 +202,17 @@ class SecurityConfig:
 
 
 class InputValidator:
-    """입력 데이터 검증"""
+    """[EMOJI] [EMOJI] [EMOJI]"""
 
     @staticmethod
     def validate_email(email: str) -> bool:
-        """이메일 형식 검증"""
+        """[EMOJI] [EMOJI] [EMOJI]"""
         pattern = r'^[a-zA-Z0-9._%+-]+@[a-zA-Z0-9.-]+\.[a-zA-Z]{2,}$'
         return re.match(pattern, email) is not None
 
     @staticmethod
     def validate_password(password: str) -> Dict[str, Any]:
-        """비밀번호 정책 검증"""
+        """[EMOJI] [EMOJI] [EMOJI]"""
         errors = []
 
         if len(password) < SecurityConfig.MIN_PASSWORD_LENGTH:
@@ -238,7 +238,7 @@ class InputValidator:
 
     @staticmethod
     def calculate_password_strength(password: str) -> str:
-        """비밀번호 강도 계산"""
+        """[EMOJI] [EMOJI] [EMOJI]"""
         score = 0
 
         if len(password) >= 8:
@@ -263,7 +263,7 @@ class InputValidator:
 
     @staticmethod
     def sanitize_input(input_string: str, max_length: Optional[int] = None) -> str:
-        """입력 데이터 살균"""
+        """[EMOJI] [EMOJI] [EMOJI]"""
         if not input_string:
             return ""
 
@@ -283,7 +283,7 @@ class InputValidator:
 
     @staticmethod
     def check_sql_injection(input_string: str) -> bool:
-        """SQL 인젝션 패턴 검사"""
+        """SQL [EMOJI] [EMOJI] [EMOJI]"""
         if not input_string:
             return False
 
@@ -296,7 +296,7 @@ class InputValidator:
 
     @staticmethod
     def check_xss(input_string: str) -> bool:
-        """XSS 패턴 검사"""
+        """XSS [EMOJI] [EMOJI]"""
         if not input_string:
             return False
 
@@ -316,7 +316,7 @@ class InputValidator:
         pattern: Optional[str] = None,
         check_injection: bool = True
     ) -> Any:
-        """종합적인 입력 검증"""
+        """[EMOJI] [EMOJI] [EMOJI]"""
 
         # Check if required
         if required and not input_data:
@@ -350,7 +350,7 @@ class InputValidator:
 
 
 class JWTManager:
-    """JWT 토큰 관리"""
+    """JWT [EMOJI] [EMOJI]"""
 
     @staticmethod
     def create_access_token(
@@ -358,14 +358,14 @@ class JWTManager:
         expires_delta: Optional[timedelta] = None
     ) -> str:
         """
-        액세스 토큰 생성
+        [EMOJI] [EMOJI] [EMOJI]
 
         Args:
-            data: 토큰에 포함할 데이터 (sub, user_id, role 포함 권장)
-            expires_delta: 만료 시간 (기본: ACCESS_TOKEN_EXPIRE_MINUTES)
+            data: [EMOJI] [EMOJI] [EMOJI] (sub, user_id, role [EMOJI] [EMOJI])
+            expires_delta: [EMOJI] [EMOJI] ([EMOJI]: ACCESS_TOKEN_EXPIRE_MINUTES)
 
         Returns:
-            JWT 액세스 토큰
+            JWT [EMOJI] [EMOJI]
         """
         to_encode = data.copy()
 
@@ -388,13 +388,13 @@ class JWTManager:
     @staticmethod
     def create_refresh_token(data: Dict[str, Any]) -> str:
         """
-        리프레시 토큰 생성
+        [EMOJI] [EMOJI] [EMOJI]
 
         Args:
-            data: 토큰에 포함할 데이터 (sub, user_id, role 포함)
+            data: [EMOJI] [EMOJI] [EMOJI] (sub, user_id, role [EMOJI])
 
         Returns:
-            JWT 리프레시 토큰
+            JWT [EMOJI] [EMOJI]
         """
         to_encode = data.copy()
         expire = datetime.now(UTC) + timedelta(days=REFRESH_TOKEN_EXPIRE_DAYS)
@@ -412,17 +412,17 @@ class JWTManager:
     @staticmethod
     def decode_token(token: str, check_blacklist: bool = True) -> Dict[str, Any]:
         """
-        토큰 디코드 (CRIT-03: 블랙리스트 검증 포함)
+        [EMOJI] [EMOJI] (CRIT-03: [EMOJI] [EMOJI] [EMOJI])
 
         Args:
-            token: JWT 토큰 문자열
-            check_blacklist: 블랙리스트 검사 여부 (기본: True)
+            token: JWT [EMOJI] [EMOJI]
+            check_blacklist: [EMOJI] [EMOJI] [EMOJI] ([EMOJI]: True)
 
         Returns:
-            디코드된 페이로드
+            [EMOJI] [EMOJI]
 
         Raises:
-            HTTPException: 토큰이 만료되었거나, 블랙리스트에 있거나, 유효하지 않은 경우
+            HTTPException: [EMOJI] [EMOJI], [EMOJI] [EMOJI], [EMOJI] [EMOJI] [EMOJI]
         """
         try:
             # CRIT-03 FIX: Check blacklist BEFORE decoding (fast path)
@@ -460,17 +460,17 @@ class JWTManager:
     @staticmethod
     def blacklist_token(token: str) -> None:
         """
-        토큰을 블랙리스트에 추가 (로그아웃 시 호출)
+        [EMOJI] [EMOJI] [EMOJI] ([EMOJI] [EMOJI] [EMOJI])
 
         Args:
-            token: 블랙리스트에 추가할 JWT 토큰
+            token: [EMOJI] [EMOJI] JWT [EMOJI]
         """
         token_blacklist.add(token)
         logger.info("Token added to blacklist")
 
     @staticmethod
     def verify_token(credentials: HTTPAuthorizationCredentials = Depends(security)) -> Dict[str, Any]:
-        """토큰 검증 의존성 (블랙리스트 검증 포함)"""
+        """[EMOJI] [EMOJI] [EMOJI] ([EMOJI] [EMOJI] [EMOJI])"""
         token = credentials.credentials
 
         try:
@@ -504,7 +504,7 @@ class RateLimiter:
         self.requests: Dict[str, List[datetime]] = {}
 
     def check_rate_limit(self, client_ip: str) -> bool:
-        """레이트 리밋 체크"""
+        """[EMOJI] [EMOJI] [EMOJI]"""
         now = datetime.now(UTC)
 
         # Initialize if new client
@@ -527,7 +527,7 @@ class RateLimiter:
         return True
 
     def get_client_ip(self, request: Request) -> str:
-        """클라이언트 IP 추출"""
+        """[EMOJI] IP [EMOJI]"""
         # Check for X-Forwarded-For header (proxy/load balancer)
         forwarded = request.headers.get("X-Forwarded-For")
         if forwarded:
@@ -684,7 +684,7 @@ auth_rate_limiter = AuthRateLimiter()
 # =============================================================================
 class PasswordHasher:
     """
-    비밀번호 해싱 - bcrypt 사용 (OWASP 권장)
+    [EMOJI] [EMOJI] - bcrypt [EMOJI] (OWASP [EMOJI])
 
     bcrypt advantages over PBKDF2:
     - Memory-hard algorithm (resistant to GPU attacks)
@@ -698,7 +698,7 @@ class PasswordHasher:
     @staticmethod
     def hash_password(password: str) -> str:
         """
-        비밀번호 해싱 (bcrypt preferred, PBKDF2 fallback)
+        [EMOJI] [EMOJI] (bcrypt preferred, PBKDF2 fallback)
 
         Args:
             password: Plain text password
@@ -725,7 +725,7 @@ class PasswordHasher:
     @staticmethod
     def verify_password(password: str, hashed: str) -> bool:
         """
-        비밀번호 검증 (supports bcrypt, PBKDF2, and legacy format)
+        [EMOJI] [EMOJI] (supports bcrypt, PBKDF2, and legacy format)
 
         Args:
             password: Plain text password to verify
@@ -793,13 +793,13 @@ class PasswordHasher:
 
 
 class SecurityMiddleware:
-    """보안 미들웨어"""
+    """[EMOJI] [EMOJI]"""
 
     def __init__(self):
         self.rate_limiter = RateLimiter()
 
     async def __call__(self, request: Request, call_next):
-        """미들웨어 실행"""
+        """[EMOJI] [EMOJI]"""
 
         # Check rate limit
         client_ip = self.rate_limiter.get_client_ip(request)
@@ -838,7 +838,7 @@ class SecurityMiddleware:
 
 # Pydantic models with validation
 class SecureUserCreate(BaseModel):
-    """보안 사용자 생성 모델"""
+    """[EMOJI] [EMOJI] [EMOJI] [EMOJI]"""
 
     email: str = Field(..., max_length=255)
     password: str = Field(..., min_length=8, max_length=128)
@@ -876,7 +876,7 @@ class SecureUserCreate(BaseModel):
 
 
 class SecureProjectCreate(BaseModel):
-    """보안 프로젝트 생성 모델"""
+    """[EMOJI] [EMOJI] [EMOJI] [EMOJI]"""
 
     name: str = Field(..., min_length=1, max_length=255)
     description: Optional[str] = Field(None, max_length=1000)
@@ -925,7 +925,7 @@ class SecureProjectCreate(BaseModel):
 
 # Utility functions
 def require_auth(func):
-    """인증 필수 데코레이터"""
+    """[EMOJI] [EMOJI] [EMOJI]"""
     @wraps(func)
     async def wrapper(*args, **kwargs):
         # This is a decorator for route functions
@@ -936,7 +936,7 @@ def require_auth(func):
 
 def require_role(required_role: str):
     """
-    RBAC 권한 검증 의존성 함수
+    RBAC [EMOJI] [EMOJI] [EMOJI] [EMOJI]
 
     Usage in FastAPI routes:
         @router.get("/admin")
@@ -944,31 +944,31 @@ def require_role(required_role: str):
             pass
 
     Args:
-        required_role: 필요한 최소 권한 (admin/project_owner/developer/viewer)
+        required_role: [EMOJI] [EMOJI] [EMOJI] (admin/project_owner/developer/viewer)
 
     Returns:
-        FastAPI Depends 함수
+        FastAPI Depends [EMOJI]
 
     Raises:
-        HTTPException: 권한 부족 시 403 Forbidden
+        HTTPException: [EMOJI] [EMOJI] [EMOJI] 403 Forbidden
     """
 
     async def role_checker(credentials: HTTPAuthorizationCredentials = Depends(security)) -> Dict[str, Any]:
         """
-        역할 기반 권한 검증
+        [EMOJI] [EMOJI] [EMOJI] [EMOJI]
 
-        1. JWT 토큰 검증
-        2. 토큰에서 role 추출
-        3. 필요한 권한과 비교
+        1. JWT [EMOJI] [EMOJI]
+        2. [EMOJI] role [EMOJI]
+        3. [EMOJI] [EMOJI] [EMOJI]
         """
         try:
-            # 토큰 검증
+            # [EMOJI] [EMOJI]
             payload = JWTManager.verify_token(credentials)
 
-            # 사용자 role 추출
+            # [EMOJI] role [EMOJI]
             user_role = payload.get("role", UserRole.VIEWER)
 
-            # 권한 검증
+            # [EMOJI] [EMOJI]
             if not UserRole.has_permission(user_role, required_role):
                 logger.warning(
                     f"Permission denied: user role '{user_role}' "
@@ -979,7 +979,7 @@ def require_role(required_role: str):
                     detail=f"Insufficient permissions. Required role: {required_role}"
                 )
 
-            # 권한 통과 - 사용자 정보 반환
+            # [EMOJI] [EMOJI] - [EMOJI] [EMOJI] [EMOJI]
             logger.debug(f"Access granted: role '{user_role}' >= required '{required_role}'")
             return payload
 
@@ -998,9 +998,9 @@ def require_role(required_role: str):
 
 def get_current_user(credentials: HTTPAuthorizationCredentials = Depends(security)) -> Dict[str, Any]:
     """
-    현재 사용자 정보 조회 의존성
+    [EMOJI] [EMOJI] [EMOJI] [EMOJI] [EMOJI]
 
-    RBAC RESTORED (2025-12-17 Week 5 Day 3): JWT 인증 필수
+    RBAC RESTORED (2025-12-17 Week 5 Day 3): JWT [EMOJI] [EMOJI]
 
     Usage:
         @router.get("/profile")
@@ -1008,16 +1008,16 @@ def get_current_user(credentials: HTTPAuthorizationCredentials = Depends(securit
             return user
 
     Returns:
-        사용자 정보 (sub, user_id, role 포함)
+        [EMOJI] [EMOJI] (sub, user_id, role [EMOJI])
 
     Raises:
-        HTTPException: 토큰이 유효하지 않거나 만료된 경우 401 Unauthorized
+        HTTPException: [EMOJI] [EMOJI] [EMOJI] [EMOJI] [EMOJI] 401 Unauthorized
     """
     return JWTManager.verify_token(credentials)
 
 
 def setup_security(app):
-    """FastAPI 앱에 보안 설정"""
+    """FastAPI [EMOJI] [EMOJI] [EMOJI]"""
     from fastapi import FastAPI
     from starlette.middleware.base import BaseHTTPMiddleware
 

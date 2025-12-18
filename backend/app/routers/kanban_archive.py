@@ -66,7 +66,7 @@ async def archive_task(
     Archive a completed Kanban task with AI summarization and knowledge extraction.
 
     **RBAC**: Requires `developer` role or higher.
-    **Q6**: Done-End archive with GPT-4o AI summarization → Obsidian knowledge base.
+    **Q6**: Done-End archive with GPT-4o AI summarization -> Obsidian knowledge base.
 
     Process:
     1. Validate task is completed

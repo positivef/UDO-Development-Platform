@@ -143,10 +143,10 @@ class SessionManager:
             asyncio.create_task(self._event_listener())
 
             self._initialized = True
-            logger.info("✅ SessionManager initialized with Redis")
+            logger.info("[OK] SessionManager initialized with Redis")
 
         except Exception as e:
-            logger.warning(f"⚠️ Redis not available, using in-memory mode: {e}")
+            logger.warning(f"[WARN] Redis not available, using in-memory mode: {e}")
             self._initialized = True
 
     async def create_session(
@@ -199,7 +199,7 @@ class SessionManager:
                 "is_primary": is_primary
             })
 
-        logger.info(f"📌 Session created: {session_id} (Primary: {is_primary})")
+        logger.info(f"[EMOJI] Session created: {session_id} (Primary: {is_primary})")
         return session
 
     async def acquire_lock(
@@ -238,7 +238,7 @@ class SessionManager:
 
             if not wait:
                 # Lock held by another session
-                logger.warning(f"🔒 Lock conflict: {resource_id} held by {existing_lock.session_id}")
+                logger.warning(f"[EMOJI] Lock conflict: {resource_id} held by {existing_lock.session_id}")
 
                 # Record conflict
                 await self._record_conflict(
@@ -298,7 +298,7 @@ class SessionManager:
             "lock_type": lock_type.value
         })
 
-        logger.info(f"✅ Lock acquired: {resource_id} by {session_id}")
+        logger.info(f"[OK] Lock acquired: {resource_id} by {session_id}")
         return lock
 
     async def release_lock(
@@ -315,7 +315,7 @@ class SessionManager:
         existing_lock = await self._get_existing_lock(lock_key)
 
         if not existing_lock or existing_lock.session_id != session_id:
-            logger.warning(f"⚠️ Cannot release lock not owned by session: {session_id}")
+            logger.warning(f"[WARN] Cannot release lock not owned by session: {session_id}")
             return False
 
         # Release in Redis
@@ -358,7 +358,7 @@ class SessionManager:
             "lock_type": lock_type.value
         })
 
-        logger.info(f"🔓 Lock released: {resource_id} by {session_id}")
+        logger.info(f"[EMOJI] Lock released: {resource_id} by {session_id}")
         return True
 
     async def detect_conflicts(
@@ -537,7 +537,7 @@ class SessionManager:
             "was_primary": session.is_primary
         })
 
-        logger.info(f"🔚 Session terminated: {session_id}")
+        logger.info(f"[EMOJI] Session terminated: {session_id}")
 
     async def get_session_status(self, session_id: str) -> Optional[Dict[str, Any]]:
         """Get detailed session status"""
@@ -741,7 +741,7 @@ class SessionManager:
                 "project_id": project_id
             })
 
-            logger.info(f"👑 New primary session: {new_primary.id}")
+            logger.info(f"[EMOJI] New primary session: {new_primary.id}")
 
     def _get_safe_areas(self, locked_resources: Dict[str, str], session_id: str) -> List[str]:
         """Get safe work areas for a session to avoid conflicts"""

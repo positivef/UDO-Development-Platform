@@ -26,7 +26,7 @@ from datetime import datetime
 
 # Config
 VAULT = Path(r"{vault}")
-DAILY_DIR = VAULT / "개발일지"
+DAILY_DIR = VAULT / "[EMOJI]"
 REPO_ROOT = Path("{repo_root}")
 APPEND_FILE = REPO_ROOT / "tmp" / "obsidian_append.txt"
 

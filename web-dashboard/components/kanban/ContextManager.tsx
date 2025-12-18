@@ -28,9 +28,11 @@ import {
   fetchContextMetadata,
   downloadContextZip,
   trackContextLoad,
+  uploadContextFile,
   type ContextMetadata,
   KanbanContextAPIError,
 } from '@/lib/api/kanban-context'
+import { Input } from '@/components/ui/input'
 
 interface ContextManagerProps {
   taskId: string
@@ -40,6 +42,8 @@ export function ContextManager({ taskId }: ContextManagerProps) {
   const [metadata, setMetadata] = useState<ContextMetadata | null>(null)
   const [isLoading, setIsLoading] = useState(true)
   const [isDownloading, setIsDownloading] = useState(false)
+  const [isUploading, setIsUploading] = useState(false)
+  const [selectedFile, setSelectedFile] = useState<File | null>(null)
   const [error, setError] = useState<string | null>(null)
   const [success, setSuccess] = useState<string | null>(null)
 
@@ -100,9 +104,49 @@ export function ContextManager({ taskId }: ContextManagerProps) {
     }
   }
 
-  const handleUpload = () => {
-    // TODO: Implement upload UI in Week 3
-    setError('Upload feature coming in Week 3')
+  const handleFileSelect = (event: React.ChangeEvent<HTMLInputElement>) => {
+    const file = event.target.files?.[0]
+    if (!file) return
+
+    setSelectedFile(file)
+    setError(null)
+    setSuccess(null)
+  }
+
+  const handleUpload = async () => {
+    if (!selectedFile) {
+      setError('Please select a ZIP file to upload')
+      return
+    }
+
+    setIsUploading(true)
+    setError(null)
+    setSuccess(null)
+
+    try {
+      // uploadContextFile already validates size (50MB) and file type (ZIP)
+      const response = await uploadContextFile(taskId, selectedFile)
+
+      // Refresh metadata to show updated stats
+      await loadMetadata()
+
+      setSuccess(
+        `Context uploaded successfully! ${response.file_count} files (${formatBytes(response.total_size_bytes)})`
+      )
+      setSelectedFile(null)
+
+      // Reset file input
+      const fileInput = document.getElementById('context-file-input') as HTMLInputElement
+      if (fileInput) fileInput.value = ''
+    } catch (err) {
+      if (err instanceof KanbanContextAPIError) {
+        setError(err.message)
+      } else {
+        setError('Failed to upload context')
+      }
+    } finally {
+      setIsUploading(false)
+    }
   }
 
   const formatBytes = (bytes: number): string => {
@@ -201,11 +245,12 @@ export function ContextManager({ taskId }: ContextManagerProps) {
           </div>
 
           {/* Actions */}
-          <div className="flex gap-2">
+          <div className="space-y-3">
+            {/* Download Button */}
             <Button
               onClick={handleDownload}
               disabled={!metadata.zip_url || isDownloading}
-              className="flex-1"
+              className="w-full"
             >
               {isDownloading ? (
                 <>
@@ -220,14 +265,46 @@ export function ContextManager({ taskId }: ContextManagerProps) {
               )}
             </Button>
 
-            <Button
-              variant="outline"
-              onClick={handleUpload}
-              className="flex-1"
-            >
-              <Upload className="mr-2 h-4 w-4" />
-              Upload Context
-            </Button>
+            {/* Upload Section */}
+            <div className="space-y-2">
+              <div className="flex gap-2">
+                <div className="relative flex-1">
+                  <Input
+                    id="context-file-input"
+                    type="file"
+                    accept=".zip,application/zip"
+                    onChange={handleFileSelect}
+                    disabled={isUploading}
+                    className="cursor-pointer"
+                  />
+                </div>
+                <Button
+                  variant="outline"
+                  onClick={handleUpload}
+                  disabled={!selectedFile || isUploading}
+                >
+                  {isUploading ? (
+                    <>
+                      <Loader2 className="mr-2 h-4 w-4 animate-spin" />
+                      Uploading...
+                    </>
+                  ) : (
+                    <>
+                      <Upload className="mr-2 h-4 w-4" />
+                      Upload
+                    </>
+                  )}
+                </Button>
+              </div>
+              {selectedFile && (
+                <p className="text-xs text-muted-foreground">
+                  Selected: {selectedFile.name} ({formatBytes(selectedFile.size)})
+                </p>
+              )}
+              <p className="text-xs text-muted-foreground">
+                Upload ZIP file (max 50MB)
+              </p>
+            </div>
           </div>
         </div>
       ) : (
@@ -237,10 +314,46 @@ export function ContextManager({ taskId }: ContextManagerProps) {
           <p className="text-sm text-muted-foreground mb-4">
             Upload context files to get started
           </p>
-          <Button onClick={handleUpload}>
-            <Upload className="mr-2 h-4 w-4" />
-            Upload Context
-          </Button>
+
+          {/* Upload Section for No Context */}
+          <div className="max-w-md mx-auto space-y-2">
+            <div className="flex gap-2">
+              <div className="relative flex-1">
+                <Input
+                  id="context-file-input-no-context"
+                  type="file"
+                  accept=".zip,application/zip"
+                  onChange={handleFileSelect}
+                  disabled={isUploading}
+                  className="cursor-pointer"
+                />
+              </div>
+              <Button
+                onClick={handleUpload}
+                disabled={!selectedFile || isUploading}
+              >
+                {isUploading ? (
+                  <>
+                    <Loader2 className="mr-2 h-4 w-4 animate-spin" />
+                    Uploading...
+                  </>
+                ) : (
+                  <>
+                    <Upload className="mr-2 h-4 w-4" />
+                    Upload
+                  </>
+                )}
+              </Button>
+            </div>
+            {selectedFile && (
+              <p className="text-xs text-muted-foreground">
+                Selected: {selectedFile.name} ({formatBytes(selectedFile.size)})
+              </p>
+            )}
+            <p className="text-xs text-muted-foreground">
+              Upload ZIP file (max 50MB)
+            </p>
+          </div>
         </div>
       )}
 

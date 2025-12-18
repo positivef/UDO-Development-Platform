@@ -70,7 +70,7 @@ class ValidationResult:
         }
 
     def __repr__(self):
-        status = "✅ PASSED" if self.passed else "❌ FAILED"
+        status = "[OK] PASSED" if self.passed else "[FAIL] FAILED"
         return f"{status} [{self.article}] - {len(self.violations)} violations, {len(self.warnings)} warnings"
 
 
@@ -143,9 +143,9 @@ class ConstitutionalGuard:
         self.violation_log.append(violation)
         logger.warning(f"Constitutional violation: [{article}] {description}")
 
-    # ═══════════════════════════════════════════════════
+    # [EMOJI]
     # P1: Design Review First
-    # ═══════════════════════════════════════════════════
+    # [EMOJI]
 
     async def validate_design(self, design: Dict[str, Any]) -> ValidationResult:
         """
@@ -221,9 +221,9 @@ class ConstitutionalGuard:
             metadata={"design_id": design.get("id"), "risks_checked": len(design.get("risk_assessments", {}))}
         )
 
-    # ═══════════════════════════════════════════════════
+    # [EMOJI]
     # P2: Uncertainty Disclosure
-    # ═══════════════════════════════════════════════════
+    # [EMOJI]
 
     async def validate_confidence(self, response: Dict[str, Any]) -> ValidationResult:
         """
@@ -321,9 +321,9 @@ class ConstitutionalGuard:
             }
         )
 
-    # ═══════════════════════════════════════════════════
+    # [EMOJI]
     # P3: Evidence-Based Decision
-    # ═══════════════════════════════════════════════════
+    # [EMOJI]
 
     async def validate_evidence(self, claim: Dict[str, Any]) -> ValidationResult:
         """
@@ -417,9 +417,9 @@ class ConstitutionalGuard:
             metadata={"claim_type": claim.get("type"), "has_evidence": has_benchmark or has_ab_test}
         )
 
-    # ═══════════════════════════════════════════════════
+    # [EMOJI]
     # P4: Phase-Aware Compliance
-    # ═══════════════════════════════════════════════════
+    # [EMOJI]
 
     async def validate_phase_compliance(
         self,
@@ -564,7 +564,7 @@ class ConstitutionalGuard:
             self._log_violation(
                 article=article,
                 violation_type="phase_transition_blocked",
-                description=f"Phase transition {current_phase} → {next_phase} blocked: {', '.join(violations)}",
+                description=f"Phase transition {current_phase} -> {next_phase} blocked: {', '.join(violations)}",
                 severity=Severity.HIGH,
                 metadata={
                     "current_phase": current_phase,
@@ -586,9 +586,9 @@ class ConstitutionalGuard:
             }
         )
 
-    # ═══════════════════════════════════════════════════
+    # [EMOJI]
     # P5: Multi-AI Consistency
-    # ═══════════════════════════════════════════════════
+    # [EMOJI]
 
     async def validate_ai_consensus(
         self,
@@ -687,9 +687,9 @@ class ConstitutionalGuard:
             }
         ), consensus_decision
 
-    # ═══════════════════════════════════════════════════
+    # [EMOJI]
     # General Validation
-    # ═══════════════════════════════════════════════════
+    # [EMOJI]
 
     async def validate_all(
         self,

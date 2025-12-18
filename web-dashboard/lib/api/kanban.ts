@@ -150,6 +150,8 @@ export interface UpdateTaskRequest {
   primary_project?: string
   related_projects?: string[]
   context_notes?: string
+  // Week 6 Day 4: Comments support
+  comments?: import('@/lib/types/kanban').TaskComment[]
 }
 
 /**

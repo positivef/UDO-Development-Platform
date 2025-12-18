@@ -418,40 +418,40 @@ Generate a comprehensive summary with key learnings, technical insights, and rec
 
 {tags_str}
 
-## 📊 Task Summary
+## [EMOJI] Task Summary
 
 **Phase**: {entry.phase_name}
 **Archived**: {entry.archived_at.strftime("%Y-%m-%d %H:%M")}
 **Task ID**: `{entry.task_id}`
 
-## 💡 Summary
+## [EMOJI] Summary
 
 {entry.summary}
 
-## 🎯 Key Learnings
+## [EMOJI] Key Learnings
 
 """
         for learning in entry.key_learnings:
             note += f"- {learning}\n"
 
         note += f"""
-## 🔧 Technical Insights
+## [EMOJI] Technical Insights
 
 """
         for insight in entry.technical_insights:
             note += f"- {insight}\n"
 
         note += f"""
-## 📈 ROI Metrics
+## [EMOJI] ROI Metrics
 
 - **Estimated**: {roi_metrics.estimated_hours}h
 - **Actual**: {roi_metrics.actual_hours}h
 - **Time Saved**: {roi_metrics.time_saved_hours:+.1f}h
 - **Efficiency**: {roi_metrics.efficiency_percentage:.1f}%
 - **Quality Score**: {roi_metrics.quality_score}/100
-- **Constitutional Compliance**: {"✅ Yes" if roi_metrics.constitutional_compliance else "❌ No"}
+- **Constitutional Compliance**: {"[OK] Yes" if roi_metrics.constitutional_compliance else "[FAIL] No"}
 
-## 🔗 Related
+## [EMOJI] Related
 
 - [[Kanban Archive MOC]]
 - [[{entry.phase_name.capitalize()} Phase]]

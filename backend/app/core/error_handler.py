@@ -1,7 +1,7 @@
 """
 Global Error Handler and Recovery System
 
-포괄적인 에러 핸들링과 자동 복구 메커니즘을 제공합니다.
+[EMOJI] [EMOJI] [EMOJI] [EMOJI] [EMOJI] [EMOJI] [EMOJI].
 
 Security improvements (MED-01):
 - Production environment hides detailed error messages
@@ -30,15 +30,15 @@ DEBUG_MODE = os.environ.get("DEBUG", "false").lower() == "true" and not IS_PRODU
 
 
 class ErrorSeverity(Enum):
-    """에러 심각도 레벨"""
-    LOW = "low"          # 경고 수준, 서비스 지속 가능
-    MEDIUM = "medium"    # 일부 기능 제한, 복구 시도 필요
-    HIGH = "high"        # 주요 기능 영향, 즉시 대응 필요
-    CRITICAL = "critical"  # 시스템 중단 위험, 긴급 대응
+    """[EMOJI] [EMOJI] [EMOJI]"""
+    LOW = "low"          # [EMOJI] [EMOJI], [EMOJI] [EMOJI] [EMOJI]
+    MEDIUM = "medium"    # [EMOJI] [EMOJI] [EMOJI], [EMOJI] [EMOJI] [EMOJI]
+    HIGH = "high"        # [EMOJI] [EMOJI] [EMOJI], [EMOJI] [EMOJI] [EMOJI]
+    CRITICAL = "critical"  # [EMOJI] [EMOJI] [EMOJI], [EMOJI] [EMOJI]
 
 
 class ErrorCategory(Enum):
-    """에러 카테고리"""
+    """[EMOJI] [EMOJI]"""
     DATABASE = "database"
     NETWORK = "network"
     VALIDATION = "validation"
@@ -51,7 +51,7 @@ class ErrorCategory(Enum):
 
 
 class ErrorRecoveryStrategy:
-    """에러 복구 전략"""
+    """[EMOJI] [EMOJI] [EMOJI]"""
 
     def __init__(self):
         self.strategies: Dict[ErrorCategory, Callable] = {
@@ -70,15 +70,15 @@ class ErrorRecoveryStrategy:
         context: Dict[str, Any]
     ) -> Optional[Any]:
         """
-        에러 복구 시도
+        [EMOJI] [EMOJI] [EMOJI]
 
         Args:
-            error: 발생한 에러
-            category: 에러 카테고리
-            context: 복구에 필요한 컨텍스트 정보
+            error: [EMOJI] [EMOJI]
+            category: [EMOJI] [EMOJI]
+            context: [EMOJI] [EMOJI] [EMOJI] [EMOJI]
 
         Returns:
-            복구 성공 시 결과, 실패 시 None
+            [EMOJI] [EMOJI] [EMOJI] [EMOJI], [EMOJI] [EMOJI] None
         """
         if category not in self.strategies:
             logger.warning(f"No recovery strategy for category: {category}")
@@ -116,15 +116,15 @@ class ErrorRecoveryStrategy:
         error: Exception,
         context: Dict[str, Any]
     ) -> Optional[Any]:
-        """데이터베이스 에러 복구"""
+        """[EMOJI] [EMOJI] [EMOJI]"""
         logger.info("Attempting database error recovery...")
 
-        # Mock 서비스로 폴백
+        # Mock [EMOJI] [EMOJI]
         if "service" in context:
             service_name = context["service"]
             logger.info(f"Falling back to mock service for {service_name}")
 
-            # Mock 서비스 활성화
+            # Mock [EMOJI] [EMOJI]
             from app.services.project_context_service import enable_mock_service
             enable_mock_service()
 
@@ -137,10 +137,10 @@ class ErrorRecoveryStrategy:
         error: Exception,
         context: Dict[str, Any]
     ) -> Optional[Any]:
-        """네트워크 에러 복구"""
+        """[EMOJI] [EMOJI] [EMOJI]"""
         logger.info("Attempting network error recovery...")
 
-        # 재시도 로직
+        # [EMOJI] [EMOJI]
         if "request_func" in context:
             request_func = context["request_func"]
             try:
@@ -156,20 +156,20 @@ class ErrorRecoveryStrategy:
         error: Exception,
         context: Dict[str, Any]
     ) -> Optional[Any]:
-        """외부 서비스 에러 복구"""
+        """[EMOJI] [EMOJI] [EMOJI] [EMOJI]"""
         logger.info("Attempting external service error recovery...")
 
-        # 캐시된 데이터 사용
+        # [EMOJI] [EMOJI] [EMOJI]
         if "cache_key" in context:
             cache_key = context["cache_key"]
-            # TODO: 캐시 시스템 구현 후 실제 캐시 조회
+            # TODO: [EMOJI] [EMOJI] [EMOJI] [EMOJI] [EMOJI] [EMOJI] [EMOJI]
             logger.info(f"Looking for cached data with key: {cache_key}")
 
         return None
 
 
 class GlobalErrorHandler:
-    """전역 에러 핸들러"""
+    """[EMOJI] [EMOJI] [EMOJI]"""
 
     def __init__(self):
         self.recovery_strategy = ErrorRecoveryStrategy()
@@ -177,7 +177,7 @@ class GlobalErrorHandler:
         self.max_history_size = 100
 
     def categorize_error(self, error: Exception) -> ErrorCategory:
-        """에러를 카테고리로 분류"""
+        """[EMOJI] [EMOJI] [EMOJI]"""
         error_message = str(error).lower()
 
         if any(word in error_message for word in ["database", "connection", "postgres", "redis"]):
@@ -196,7 +196,7 @@ class GlobalErrorHandler:
             return ErrorCategory.UNKNOWN
 
     def assess_severity(self, error: Exception, category: ErrorCategory) -> ErrorSeverity:
-        """에러 심각도 평가"""
+        """[EMOJI] [EMOJI] [EMOJI]"""
         # Critical errors
         if isinstance(error, SystemError) or isinstance(error, MemoryError):
             return ErrorSeverity.CRITICAL
@@ -222,21 +222,21 @@ class GlobalErrorHandler:
         context: Optional[Dict[str, Any]] = None
     ) -> JSONResponse:
         """
-        통합 에러 처리
+        [EMOJI] [EMOJI] [EMOJI]
 
         Args:
-            request: FastAPI 요청 객체
-            error: 발생한 에러
-            context: 추가 컨텍스트 정보
+            request: FastAPI [EMOJI] [EMOJI]
+            error: [EMOJI] [EMOJI]
+            context: [EMOJI] [EMOJI] [EMOJI]
 
         Returns:
-            JSON 응답
+            JSON [EMOJI]
         """
-        # 에러 분류
+        # [EMOJI] [EMOJI]
         category = self.categorize_error(error)
         severity = self.assess_severity(error, category)
 
-        # 에러 정보 로깅
+        # [EMOJI] [EMOJI] [EMOJI]
         error_info = {
             "timestamp": datetime.now(UTC).isoformat(),
             "path": str(request.url),
@@ -248,7 +248,7 @@ class GlobalErrorHandler:
             "traceback": traceback.format_exc() if severity in [ErrorSeverity.HIGH, ErrorSeverity.CRITICAL] else None
         }
 
-        # 심각도에 따른 로깅
+        # [EMOJI] [EMOJI] [EMOJI]
         if severity == ErrorSeverity.CRITICAL:
             logger.critical(f"Critical error: {json.dumps(error_info)}")
         elif severity == ErrorSeverity.HIGH:
@@ -258,17 +258,17 @@ class GlobalErrorHandler:
         else:
             logger.info(f"Low severity error: {error_info['error_message']}")
 
-        # 에러 히스토리 저장
+        # [EMOJI] [EMOJI] [EMOJI]
         self._record_error(error_info)
 
-        # 복구 시도
+        # [EMOJI] [EMOJI]
         recovery_result = None
         if severity in [ErrorSeverity.MEDIUM, ErrorSeverity.HIGH] and context:
             recovery_result = await self.recovery_strategy.attempt_recovery(
                 error, category, context or {}
             )
 
-        # HTTP 상태 코드 결정
+        # HTTP [EMOJI] [EMOJI] [EMOJI]
         status_code = self._get_status_code(error, category)
 
         # MED-01: Production-safe response generation
@@ -294,7 +294,7 @@ class GlobalErrorHandler:
                 }
             }
 
-        # 복구 성공 시 정보 추가
+        # [EMOJI] [EMOJI] [EMOJI] [EMOJI] [EMOJI]
         if recovery_result:
             response_data["recovery"] = {
                 "status": "success",
@@ -303,7 +303,7 @@ class GlobalErrorHandler:
             # Don't expose recovery result details in production
             if not IS_PRODUCTION:
                 response_data["recovery"]["result"] = recovery_result
-            status_code = 200  # 복구 성공 시 200 반환
+            status_code = 200  # [EMOJI] [EMOJI] [EMOJI] 200 [EMOJI]
 
         # Debug information only in development with DEBUG flag
         if DEBUG_MODE and not IS_PRODUCTION:
@@ -318,15 +318,15 @@ class GlobalErrorHandler:
         )
 
     def _record_error(self, error_info: Dict[str, Any]):
-        """에러 히스토리 기록"""
+        """[EMOJI] [EMOJI] [EMOJI]"""
         self.error_history.append(error_info)
 
-        # 최대 크기 유지
+        # [EMOJI] [EMOJI] [EMOJI]
         if len(self.error_history) > self.max_history_size:
             self.error_history.pop(0)
 
     def _get_status_code(self, error: Exception, category: ErrorCategory) -> int:
-        """적절한 HTTP 상태 코드 반환"""
+        """[EMOJI] HTTP [EMOJI] [EMOJI] [EMOJI]"""
         if isinstance(error, HTTPException):
             return error.status_code
         elif isinstance(error, StarletteHTTPException):
@@ -347,7 +347,7 @@ class GlobalErrorHandler:
         return status_map.get(category, 500)
 
     def _get_user_friendly_message(self, error: Exception, category: ErrorCategory) -> str:
-        """사용자 친화적인 에러 메시지 생성"""
+        """[EMOJI] [EMOJI] [EMOJI] [EMOJI] [EMOJI]"""
         # In production, never expose raw error messages for unknown errors
         if IS_PRODUCTION and category == ErrorCategory.UNKNOWN:
             return "An unexpected error occurred. Please try again later."
@@ -362,15 +362,15 @@ class GlobalErrorHandler:
             return error.detail
 
         message_map = {
-            ErrorCategory.DATABASE: "데이터베이스 연결 문제가 발생했습니다. 잠시 후 다시 시도해주세요.",
-            ErrorCategory.NETWORK: "네트워크 연결에 문제가 있습니다. 연결 상태를 확인해주세요.",
-            ErrorCategory.VALIDATION: "입력한 데이터가 올바르지 않습니다. 확인 후 다시 시도해주세요.",
-            ErrorCategory.AUTHENTICATION: "인증에 실패했습니다. 다시 로그인해주세요.",
-            ErrorCategory.AUTHORIZATION: "이 작업을 수행할 권한이 없습니다.",
-            ErrorCategory.EXTERNAL_SERVICE: "외부 서비스 연결에 문제가 있습니다.",
-            ErrorCategory.BUSINESS_LOGIC: "요청을 처리할 수 없습니다. 입력 데이터를 확인해주세요.",
-            ErrorCategory.SYSTEM: "시스템 오류가 발생했습니다. 관리자에게 문의해주세요.",
-            ErrorCategory.UNKNOWN: "예기치 않은 오류가 발생했습니다."
+            ErrorCategory.DATABASE: "[EMOJI] [EMOJI] [EMOJI] [EMOJI]. [EMOJI] [EMOJI] [EMOJI] [EMOJI].",
+            ErrorCategory.NETWORK: "[EMOJI] [EMOJI] [EMOJI] [EMOJI]. [EMOJI] [EMOJI] [EMOJI].",
+            ErrorCategory.VALIDATION: "[EMOJI] [EMOJI] [EMOJI] [EMOJI]. [EMOJI] [EMOJI] [EMOJI] [EMOJI].",
+            ErrorCategory.AUTHENTICATION: "[EMOJI] [EMOJI]. [EMOJI] [EMOJI].",
+            ErrorCategory.AUTHORIZATION: "[EMOJI] [EMOJI] [EMOJI] [EMOJI] [EMOJI].",
+            ErrorCategory.EXTERNAL_SERVICE: "[EMOJI] [EMOJI] [EMOJI] [EMOJI] [EMOJI].",
+            ErrorCategory.BUSINESS_LOGIC: "[EMOJI] [EMOJI] [EMOJI] [EMOJI]. [EMOJI] [EMOJI] [EMOJI].",
+            ErrorCategory.SYSTEM: "[EMOJI] [EMOJI] [EMOJI]. [EMOJI] [EMOJI].",
+            ErrorCategory.UNKNOWN: "[EMOJI] [EMOJI] [EMOJI] [EMOJI]."
         }
 
         return message_map.get(category, "An error occurred." if IS_PRODUCTION else str(error))
@@ -391,7 +391,7 @@ class GlobalErrorHandler:
         return code_map.get(category, "ERR_UNK")
 
     def get_error_statistics(self) -> Dict[str, Any]:
-        """에러 통계 반환"""
+        """[EMOJI] [EMOJI] [EMOJI]"""
         if not self.error_history:
             return {
                 "total_errors": 0,
@@ -400,7 +400,7 @@ class GlobalErrorHandler:
                 "recent_errors": []
             }
 
-        # 카테고리별 집계
+        # [EMOJI] [EMOJI]
         by_category = {}
         by_severity = {}
 
@@ -415,27 +415,27 @@ class GlobalErrorHandler:
             "total_errors": len(self.error_history),
             "by_category": by_category,
             "by_severity": by_severity,
-            "recent_errors": self.error_history[-10:]  # 최근 10개
+            "recent_errors": self.error_history[-10:]  # [EMOJI] 10[EMOJI]
         }
 
 
-# 전역 에러 핸들러 인스턴스
+# [EMOJI] [EMOJI] [EMOJI] [EMOJI]
 error_handler = GlobalErrorHandler()
 
 
 async def global_exception_handler(request: Request, exc: Exception) -> JSONResponse:
-    """FastAPI 전역 예외 핸들러"""
+    """FastAPI [EMOJI] [EMOJI] [EMOJI]"""
     return await error_handler.handle_error(request, exc)
 
 
 def setup_error_handlers(app):
-    """FastAPI 앱에 에러 핸들러 설정"""
+    """FastAPI [EMOJI] [EMOJI] [EMOJI] [EMOJI]"""
     from fastapi import FastAPI
 
-    # 일반 예외 핸들러
+    # [EMOJI] [EMOJI] [EMOJI]
     app.add_exception_handler(Exception, global_exception_handler)
 
-    # HTTP 예외 핸들러
+    # HTTP [EMOJI] [EMOJI]
     app.add_exception_handler(HTTPException, global_exception_handler)
     app.add_exception_handler(StarletteHTTPException, global_exception_handler)
 

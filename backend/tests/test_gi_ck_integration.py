@@ -5,9 +5,9 @@ Integration tests for GI Formula and C-K Theory services
 
 Updated: 2025-12-13
 - Fixed API mismatches with actual service implementations
-- GIFormulaResult: insight_id → id, stages is Dict, execution_time → total_duration_ms
-- CKTheoryResult: design_id → id, execution_time → total_duration_ms
-- CKTheoryService: generate_alternatives → generate_design, submit_feedback → add_feedback
+- GIFormulaResult: insight_id -> id, stages is Dict, execution_time -> total_duration_ms
+- CKTheoryResult: design_id -> id, execution_time -> total_duration_ms
+- CKTheoryService: generate_alternatives -> generate_design, submit_feedback -> add_feedback
 - Removed unsupported CKTheoryRequest fields (project_context)
 - Use only allowed constraint keys
 """
@@ -198,7 +198,7 @@ class TestServiceIntegration:
 
     @pytest.mark.asyncio
     async def test_gi_to_ck_workflow(self):
-        """Test workflow: GI Formula generates insight → C-K Theory generates alternatives"""
+        """Test workflow: GI Formula generates insight -> C-K Theory generates alternatives"""
         gi_service = GIFormulaService()
         ck_service = CKTheoryService()
 

@@ -65,7 +65,7 @@ class MockProjectService:
         # Current active project (first one)
         self.current_project = self.mock_projects[0]
 
-        logger.info("✅ MockProjectService initialized with sample data (with current_phase)")
+        logger.info("[OK] MockProjectService initialized with sample data (with current_phase)")
 
     async def list_projects(
         self,
@@ -105,7 +105,7 @@ class MockProjectService:
     ) -> Dict[str, Any]:
         """Mock save context - just returns success"""
 
-        logger.info(f"📝 Mock: Saving context for project {project_id}")
+        logger.info(f"[EMOJI] Mock: Saving context for project {project_id}")
 
         # Find project
         project = next((p for p in self.mock_projects if p["id"] == str(project_id)), None)
@@ -146,7 +146,7 @@ class MockProjectService:
     async def load_context(self, project_id: UUID) -> Optional[Dict[str, Any]]:
         """Mock load context - returns mock data"""
 
-        logger.info(f"📂 Mock: Loading context for project {project_id}")
+        logger.info(f"[EMOJI] Mock: Loading context for project {project_id}")
 
         # Find project
         project = next((p for p in self.mock_projects if p["id"] == str(project_id)), None)
@@ -184,7 +184,7 @@ class MockProjectService:
     async def delete_context(self, project_id: UUID) -> bool:
         """Mock delete context"""
 
-        logger.info(f"🗑️ Mock: Deleting context for project {project_id}")
+        logger.info(f"[EMOJI] Mock: Deleting context for project {project_id}")
 
         # Find project
         project = next((p for p in self.mock_projects if p["id"] == str(project_id)), None)
@@ -202,8 +202,8 @@ class MockProjectService:
     ) -> Dict[str, Any]:
         """Mock project switch"""
 
-        logger.error(f"🚨🚨🚨 ENTERING MODIFIED switch_project METHOD 🚨🚨🚨 target={target_project_id}")
-        logger.info(f"🔄 Mock: Switching to project {target_project_id}")
+        logger.error(f"[EMOJI] ENTERING MODIFIED switch_project METHOD [EMOJI] target={target_project_id}")
+        logger.info(f"[EMOJI] Mock: Switching to project {target_project_id}")
 
         # Find target project
         target_project = next(
@@ -244,7 +244,7 @@ class MockProjectService:
         max_history: int = 10
     ) -> None:
         """Mock update execution history"""
-        logger.info(f"📝 Mock: Updating execution history for project {project_id}")
+        logger.info(f"[EMOJI] Mock: Updating execution history for project {project_id}")
         # In mock mode, just log the update
         return
 
@@ -254,7 +254,7 @@ class MockProjectService:
         partial_context: Dict[str, Any]
     ) -> Dict[str, Any]:
         """Mock merge context update with existing context"""
-        logger.info(f"🔄 Mock: Merging context for project {project_id}")
+        logger.info(f"[EMOJI] Mock: Merging context for project {project_id}")
 
         # Return merged context (mock)
         return {
@@ -270,7 +270,7 @@ class MockProjectService:
 
     async def initialize_default_project(self) -> Optional[UUID]:
         """Mock initialize default project"""
-        logger.info("✅ Mock: Initializing default project")
+        logger.info("[OK] Mock: Initializing default project")
 
         # Return the first project's ID as UUID
         if self.mock_projects:

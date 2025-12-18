@@ -57,7 +57,7 @@ class CircuitBreaker:
     def _on_success(self):
         """Handle successful call - transition to CLOSED from any state"""
         if self._state == "HALF_OPEN":
-            # Successful call in HALF_OPEN → move to CLOSED
+            # Successful call in HALF_OPEN -> move to CLOSED
             self._reset()
         elif self._state == "CLOSED":
             # Still closed, just reset failure count
@@ -66,7 +66,7 @@ class CircuitBreaker:
     def _on_failure(self):
         """Handle failed call - increment failures and transition states"""
         if self._state == "HALF_OPEN":
-            # Failure in HALF_OPEN → immediately go back to OPEN
+            # Failure in HALF_OPEN -> immediately go back to OPEN
             self._state = "OPEN"
             self._opened_at = time.time()
             # Keep failure count for monitoring

@@ -264,18 +264,18 @@ class TestRiskAndMonitoring:
 
     def test_risk_level_medium(self):
         """Test medium risk calculation"""
-        # risk_score = 0.3 * (1 - 0.7) = 0.09 → "low"
+        # risk_score = 0.3 * (1 - 0.7) = 0.09 -> "low"
         # Need higher magnitude or lower confidence for "medium"
         risk = _calculate_risk_level(magnitude=0.5, confidence_score=0.7)
-        # risk_score = 0.5 * 0.3 = 0.15 → exactly on boundary, may be "medium"
+        # risk_score = 0.5 * 0.3 = 0.15 -> exactly on boundary, may be "medium"
         assert risk in ["low", "medium"]  # Boundary case
 
     def test_risk_level_high(self):
         """Test high risk calculation"""
-        # risk_score = 0.5 * (1 - 0.5) = 0.25 → "medium"
+        # risk_score = 0.5 * (1 - 0.5) = 0.25 -> "medium"
         # Need higher magnitude for "high"
         risk = _calculate_risk_level(magnitude=0.7, confidence_score=0.5)
-        # risk_score = 0.7 * 0.5 = 0.35 → exactly on boundary for "high"
+        # risk_score = 0.7 * 0.5 = 0.35 -> exactly on boundary for "high"
         assert risk in ["medium", "high"]  # Boundary case
 
     def test_risk_level_critical(self):

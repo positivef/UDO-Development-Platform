@@ -46,7 +46,7 @@ async def test_endpoint():
         print("Calling endpoint...")
         response = await start_uncertainty_aware_tracking(request, uncertainty_map)
 
-        print("✅ Success!")
+        print("[OK] Success!")
         print(f"Session ID: {response.session_id}")
         print(f"Standard Baseline: {response.baseline_seconds}s")
         print(f"Adjusted Baseline: {response.adjusted_baseline_seconds}s")
@@ -55,7 +55,7 @@ async def test_endpoint():
         print(f"Risk Factors: {response.risk_factors}")
 
     except Exception as e:
-        print(f"❌ Error: {e}")
+        print(f"[FAIL] Error: {e}")
         import traceback
         traceback.print_exc()
 

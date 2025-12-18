@@ -66,10 +66,22 @@ export const API_ENDPOINTS = {
     ACK: (mitigationId: string) => `/api/uncertainty/ack/${mitigationId}`,
   },
 
+  // Knowledge (Week 6 Day 4-5)
+  KNOWLEDGE: {
+    SEARCH: '/api/knowledge/search',
+    SEARCH_STATS: '/api/knowledge/search/stats',
+    FEEDBACK: '/api/knowledge/feedback',
+    METRICS: '/api/knowledge/metrics',
+    DOCUMENT_SCORE: (documentId: string) => `/api/knowledge/documents/${documentId}/score`,
+    IMPROVEMENT_SUGGESTIONS: '/api/knowledge/improvement-suggestions',
+  },
+
   // WebSocket
   WEBSOCKET: {
     URL: process.env.NEXT_PUBLIC_WS_URL || 'ws://localhost:8000/ws',
   },
 } as const;
 
+// Export as both ENDPOINTS and API_ENDPOINTS for compatibility
+export const ENDPOINTS = API_ENDPOINTS;
 export default API_ENDPOINTS;

@@ -69,7 +69,7 @@ class Database:
                 **self.config.get_connection_params()
             )
             self._initialized = True
-            logger.info(f"✅ Database pool initialized: {self.config.database}")
+            logger.info(f"[OK] Database pool initialized: {self.config.database}")
         except Exception as e:
             logger.error(f"Failed to initialize database pool: {e}")
             raise
@@ -213,7 +213,7 @@ if __name__ == "__main__":
 
         # Health check
         if db.health_check():
-            print("✅ Database connection successful!")
+            print("[OK] Database connection successful!")
 
             # Test query
             with db.get_cursor(commit=False) as cursor:
@@ -225,9 +225,9 @@ if __name__ == "__main__":
                 result = cursor.fetchone()
                 print(f"Tables in database: {result['count']}")
         else:
-            print("❌ Database connection failed!")
+            print("[FAIL] Database connection failed!")
 
     except Exception as e:
-        print(f"❌ Error: {e}")
+        print(f"[FAIL] Error: {e}")
     finally:
         close_database()

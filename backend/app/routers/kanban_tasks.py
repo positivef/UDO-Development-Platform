@@ -11,7 +11,7 @@ from fastapi import APIRouter, Depends, HTTPException, Query, status
 from fastapi.responses import JSONResponse
 
 from backend.app.core.security import require_role, UserRole, get_current_user
-from backend.app.services.kanban_task_service import kanban_task_service
+from backend.app.services.kanban_task_service import KanbanTaskService
 from backend.app.models.kanban_task import (
     Task,
     TaskCreate,
@@ -27,8 +27,24 @@ from backend.app.models.kanban_task import (
     TaskArchive,
     TaskNotFoundError,
 )
+from backend.async_database import async_db
 
 router = APIRouter(prefix="/api/kanban/tasks", tags=["Kanban Tasks"])
+
+
+# ============================================================================
+# Dependency Injection
+# ============================================================================
+
+def get_kanban_service() -> KanbanTaskService:
+    """
+    Dependency for KanbanTaskService with database pool.
+
+    Returns:
+        KanbanTaskService: Service instance with database connection pool
+    """
+    db_pool = async_db.get_pool()
+    return KanbanTaskService(db_pool=db_pool)
 
 
 # ============================================================================
@@ -69,6 +85,7 @@ def error_response(code: str, message: str, status_code: int, details: dict = No
 )
 async def create_task(
     task_data: TaskCreate,
+    service: KanbanTaskService = Depends(get_kanban_service),
     # DEV_MODE: Auth disabled
 
     # current_user: dict = Depends(get_current_user)
@@ -80,7 +97,7 @@ async def create_task(
     **Q2**: Supports AI-suggested tasks with confidence score.
     """
     try:
-        task = await kanban_task_service.create_task(task_data)
+        task = await service.create_task(task_data)
         return task
     except Exception as e:
         return error_response(
@@ -119,6 +136,7 @@ async def list_tasks(
     sort_by: str = Query("created_at", description="Sort field"),
     sort_desc: bool = Query(True, description="Sort descending"),
 
+    service: KanbanTaskService = Depends(get_kanban_service),
     # DEV_MODE: Auth disabled
 
 
@@ -145,7 +163,7 @@ async def list_tasks(
             quality_gate_passed=quality_gate_passed,
         )
 
-        result = await kanban_task_service.list_tasks(
+        result = await service.list_tasks(
             filters=filters,
             page=page,
             per_page=per_page,
@@ -175,6 +193,7 @@ async def list_tasks(
 )
 async def get_task(
     task_id: UUID,
+    service: KanbanTaskService = Depends(get_kanban_service),
     # DEV_MODE: Auth disabled
 
     # current_user: dict = Depends(get_current_user)
@@ -185,7 +204,7 @@ async def get_task(
     **RBAC**: Requires `viewer` role or higher.
     """
     try:
-        task = await kanban_task_service.get_task(task_id)
+        task = await service.get_task(task_id)
         return task
     except TaskNotFoundError:
         return error_response(
@@ -216,6 +235,7 @@ async def get_task(
 async def update_task(
     task_id: UUID,
     task_update: TaskUpdate,
+    service: KanbanTaskService = Depends(get_kanban_service),
     # DEV_MODE: Auth disabled
 
     # current_user: dict = Depends(get_current_user)
@@ -227,7 +247,7 @@ async def update_task(
     **Note**: Auto-marks as completed if completeness reaches 100%.
     """
     try:
-        task = await kanban_task_service.update_task(task_id, task_update)
+        task = await service.update_task(task_id, task_update)
         return task
     except TaskNotFoundError:
         return error_response(
@@ -257,6 +277,7 @@ async def update_task(
 )
 async def delete_task(
     task_id: UUID,
+    service: KanbanTaskService = Depends(get_kanban_service),
     # DEV_MODE: Auth disabled
 
     # current_user: dict = Depends(get_current_user)
@@ -267,7 +288,7 @@ async def delete_task(
     **RBAC**: Requires `developer` role or higher.
     """
     try:
-        await kanban_task_service.delete_task(task_id)
+        await service.delete_task(task_id)
         return None
     except TaskNotFoundError:
         return error_response(
@@ -302,6 +323,7 @@ async def delete_task(
 async def change_phase(
     task_id: UUID,
     phase_request: PhaseChangeRequest,
+    service: KanbanTaskService = Depends(get_kanban_service),
     # DEV_MODE: Auth disabled
 
     # current_user: dict = Depends(get_current_user)
@@ -313,7 +335,7 @@ async def change_phase(
     **Q1**: Task within Phase relationship.
     """
     try:
-        task = await kanban_task_service.change_phase(task_id, phase_request)
+        task = await service.change_phase(task_id, phase_request)
         return task
     except TaskNotFoundError:
         return error_response(
@@ -348,6 +370,7 @@ async def change_phase(
 async def change_status(
     task_id: UUID,
     status_request: StatusChangeRequest,
+    service: KanbanTaskService = Depends(get_kanban_service),
     # DEV_MODE: Auth disabled
 
     # current_user: dict = Depends(get_current_user)
@@ -359,7 +382,7 @@ async def change_status(
     **Note**: Auto-sets completed_at when status becomes COMPLETED.
     """
     try:
-        task = await kanban_task_service.change_status(task_id, status_request)
+        task = await service.change_status(task_id, status_request)
         return task
     except TaskNotFoundError:
         return error_response(
@@ -390,6 +413,7 @@ async def change_status(
 async def change_priority(
     task_id: UUID,
     priority_request: PriorityChangeRequest,
+    service: KanbanTaskService = Depends(get_kanban_service),
     # DEV_MODE: Auth disabled
 
     # current_user: dict = Depends(get_current_user)
@@ -400,7 +424,7 @@ async def change_priority(
     **RBAC**: Requires `developer` role or higher.
     """
     try:
-        task = await kanban_task_service.change_priority(task_id, priority_request)
+        task = await service.change_priority(task_id, priority_request)
         return task
     except TaskNotFoundError:
         return error_response(
@@ -431,6 +455,7 @@ async def change_priority(
 async def update_completeness(
     task_id: UUID,
     completeness_request: CompletenessUpdateRequest,
+    service: KanbanTaskService = Depends(get_kanban_service),
     # DEV_MODE: Auth disabled
 
     # current_user: dict = Depends(get_current_user)
@@ -442,7 +467,7 @@ async def update_completeness(
     **Note**: Auto-marks as COMPLETED when reaching 100%.
     """
     try:
-        task = await kanban_task_service.update_completeness(task_id, completeness_request)
+        task = await service.update_completeness(task_id, completeness_request)
         return task
     except TaskNotFoundError:
         return error_response(
@@ -476,6 +501,7 @@ async def update_completeness(
 )
 async def get_quality_gates(
     task_id: UUID,
+    service: KanbanTaskService = Depends(get_kanban_service),
     # DEV_MODE: Auth disabled
 
     # current_user: dict = Depends(get_current_user)
@@ -487,7 +513,7 @@ async def get_quality_gates(
     **Q3**: Hybrid completion (Quality gate + User confirmation).
     """
     try:
-        result = await kanban_task_service.get_quality_gates(task_id)
+        result = await service.get_quality_gates(task_id)
         return result
     except TaskNotFoundError:
         return error_response(
@@ -517,6 +543,7 @@ async def get_quality_gates(
 )
 async def run_quality_gates(
     task_id: UUID,
+    service: KanbanTaskService = Depends(get_kanban_service),
     # DEV_MODE: Auth disabled
 
     # current_user: dict = Depends(get_current_user)
@@ -534,7 +561,7 @@ async def run_quality_gates(
     4. Documentation completeness
     """
     try:
-        result = await kanban_task_service.run_quality_gates(task_id)
+        result = await service.run_quality_gates(task_id)
         return result
     except TaskNotFoundError:
         return error_response(
@@ -569,6 +596,7 @@ async def run_quality_gates(
 async def archive_task(
     task_id: UUID,
     archive_request: ArchiveRequest,
+    service: KanbanTaskService = Depends(get_kanban_service),
     # DEV_MODE: Auth disabled
 
     # current_user: dict = Depends(get_current_user)
@@ -577,7 +605,7 @@ async def archive_task(
     Archive task to Done-End.
 
     **RBAC**: Requires `developer` role or higher.
-    **Q6**: Done-End archiving with AI summary (GPT-4o) → Obsidian sync.
+    **Q6**: Done-End archiving with AI summary (GPT-4o) -> Obsidian sync.
 
     Process:
     1. Generate AI summary (optional, default: True)
@@ -586,7 +614,7 @@ async def archive_task(
     4. Sync to Obsidian knowledge base (async)
     """
     try:
-        archive = await kanban_task_service.archive_task(task_id, archive_request)
+        archive = await service.archive_task(task_id, archive_request)
         return archive
     except TaskNotFoundError:
         return error_response(

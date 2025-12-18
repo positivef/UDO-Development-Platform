@@ -31,7 +31,7 @@ def temp_vault():
     (vault_dir / ".obsidian").mkdir()
 
     # Create daily notes directory
-    daily_notes = vault_dir / "개발일지"
+    daily_notes = vault_dir / "[EMOJI]"
     daily_notes.mkdir()
 
     yield vault_dir

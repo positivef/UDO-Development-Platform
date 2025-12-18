@@ -15,11 +15,12 @@ import { useEffect, useState, useMemo } from 'react'
 import dynamic from 'next/dynamic'
 import { KanbanBoard } from '@/components/kanban/KanbanBoard'
 import { TaskCreateModal } from '@/components/kanban/TaskCreateModal'
+import { AISuggestionModal } from '@/components/kanban/AISuggestionModal'
 import { useFilterState } from '@/components/kanban/FilterPanel'
 import { useKanbanStore } from '@/lib/stores/kanban-store'
 import { useKanbanTasks } from '@/hooks/useKanban'
 import { Button } from '@/components/ui/button'
-import { Plus, Download, Upload, RefreshCw, AlertCircle, Wifi, WifiOff } from 'lucide-react'
+import { Plus, Download, Upload, RefreshCw, AlertCircle, Wifi, WifiOff, Sparkles } from 'lucide-react'
 import type { KanbanTask } from '@/lib/types/kanban'
 
 // Dynamic import to prevent SSR issues with lucide-react icons
@@ -98,11 +99,15 @@ const mockTasks: KanbanTask[] = [
 ]
 
 export default function KanbanPage() {
-  const { setTasks, tasks, isLoading: storeLoading, error: storeError, clearError } = useKanbanStore()
+  const { setTasks, tasks: storeTasks, isLoading: storeLoading, error: storeError, clearError } = useKanbanStore()
   const [useMockData, setUseMockData] = useState(false)
   const [isOnline, setIsOnline] = useState(true)
   const [isCreateModalOpen, setIsCreateModalOpen] = useState(false)
+  const [isAISuggestionOpen, setIsAISuggestionOpen] = useState(false)
   const { filters, setFilters, hasActiveFilters } = useFilterState()
+
+  // Ensure tasks is always an array (fix undefined error)
+  const tasks = storeTasks || []
 
   // Filter tasks based on active filters
   const filteredTasks = useMemo(() => {
@@ -179,6 +184,11 @@ export default function KanbanPage() {
     refetch()
   }
 
+  const handleAITaskCreated = () => {
+    // Refetch tasks after AI-suggested task creation
+    refetch()
+  }
+
 
   const handleExport = () => {
     // TODO: Export tasks to JSON/CSV
@@ -242,6 +252,15 @@ export default function KanbanPage() {
           <Button variant="outline" size="sm" onClick={handleExport}>
             <Download className="h-4 w-4 mr-2" />
             Export
+          </Button>
+          <Button
+            variant="outline"
+            size="sm"
+            onClick={() => setIsAISuggestionOpen(true)}
+            className="bg-purple-500/10 hover:bg-purple-500/20 text-purple-600 border-purple-500/20"
+          >
+            <Sparkles className="h-4 w-4 mr-2" />
+            AI Suggest
           </Button>
           <Button size="sm" onClick={handleAddTask}>
             <Plus className="h-4 w-4 mr-2" />
@@ -321,7 +340,7 @@ export default function KanbanPage() {
             </div>
           </div>
         ) : (
-          <KanbanBoard tasks={hasActiveFilters ? filteredTasks : undefined} />
+          <KanbanBoard tasks={hasActiveFilters ? filteredTasks : tasks} />
         )}
       </div>
 
@@ -374,6 +393,14 @@ export default function KanbanPage() {
         open={isCreateModalOpen}
         onClose={() => setIsCreateModalOpen(false)}
         onSuccess={handleCreateSuccess}
+        availableTasks={tasks}  // Q7: Pass tasks for dependency selection
+      />
+
+      {/* AI Suggestion Modal (Q2: AI Hybrid) */}
+      <AISuggestionModal
+        open={isAISuggestionOpen}
+        onClose={() => setIsAISuggestionOpen(false)}
+        onTaskCreated={handleAITaskCreated}
       />
     </div>
   )

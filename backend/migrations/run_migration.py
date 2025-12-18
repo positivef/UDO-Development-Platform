@@ -147,7 +147,7 @@ class MigrationRunner:
             # Commit transaction
             self.conn.commit()
 
-            logger.info(f"✅ Migration completed: {version} ({execution_time_ms}ms)")
+            logger.info(f"[OK] Migration completed: {version} ({execution_time_ms}ms)")
             return True
 
         except Exception as e:
@@ -165,7 +165,7 @@ class MigrationRunner:
             except:
                 pass
 
-            logger.error(f"❌ Migration failed: {version}")
+            logger.error(f"[FAIL] Migration failed: {version}")
             logger.error(f"Error: {e}")
             return False
 
@@ -189,26 +189,26 @@ class MigrationRunner:
         pending = self.get_pending_migrations()
 
         if not pending:
-            logger.info("✅ No pending migrations")
+            logger.info("[OK] No pending migrations")
             self.disconnect()
             return True
 
         if dry_run:
-            logger.info("\n🔍 DRY RUN - Would execute:")
+            logger.info("\n[EMOJI] DRY RUN - Would execute:")
             for filepath in pending:
                 logger.info(f"  - {filepath.name}")
             self.disconnect()
             return True
 
         # Execute migrations
-        logger.info(f"\n🚀 Executing {len(pending)} migration(s):\n")
+        logger.info(f"\n[EMOJI] Executing {len(pending)} migration(s):\n")
 
         success_count = 0
         for filepath in pending:
             if self.execute_migration(filepath):
                 success_count += 1
             else:
-                logger.error(f"\n❌ Migration failed, stopping execution")
+                logger.error(f"\n[FAIL] Migration failed, stopping execution")
                 break
 
         self.disconnect()
@@ -223,10 +223,10 @@ class MigrationRunner:
         logger.info(f"{'='*60}\n")
 
         if success_count == len(pending):
-            logger.info("✅ All migrations completed successfully!")
+            logger.info("[OK] All migrations completed successfully!")
             return True
         else:
-            logger.error("❌ Some migrations failed!")
+            logger.error("[FAIL] Some migrations failed!")
             return False
 
     def rollback_migration(self, version: str) -> bool:
@@ -267,13 +267,13 @@ class MigrationRunner:
 
             self.conn.commit()
 
-            logger.info(f"✅ Rollback completed: {version}")
+            logger.info(f"[OK] Rollback completed: {version}")
             self.disconnect()
             return True
 
         except Exception as e:
             self.conn.rollback()
-            logger.error(f"❌ Rollback failed: {e}")
+            logger.error(f"[FAIL] Rollback failed: {e}")
             self.disconnect()
             return False
 

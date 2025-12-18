@@ -89,7 +89,7 @@ class ConstitutionalViolation(Base):
     """Development phase when violation occurred"""
 
     def __repr__(self):
-        status = "✅ RESOLVED" if self.resolved else "❌ OPEN"
+        status = "[OK] RESOLVED" if self.resolved else "[FAIL] OPEN"
         return f"<ConstitutionalViolation {status} [{self.article}] {self.severity}: {self.violation_type}>"
 
     def to_dict(self) -> Dict[str, Any]:

@@ -51,15 +51,15 @@ except ImportError as e:
     # Add router registration (after Obsidian router)
     old_registration = """if OBSIDIAN_ROUTER_AVAILABLE:
     app.include_router(obsidian_router)
-    logger.info("✅ Obsidian router included (Knowledge Management)")"""
+    logger.info("[OK] Obsidian router included (Knowledge Management)")"""
 
     new_registration = """if OBSIDIAN_ROUTER_AVAILABLE:
     app.include_router(obsidian_router)
-    logger.info("✅ Obsidian router included (Knowledge Management)")
+    logger.info("[OK] Obsidian router included (Knowledge Management)")
 
 if TIME_TRACKING_ROUTER_AVAILABLE:
     app.include_router(time_tracking_router)
-    logger.info("✅ Time Tracking router included (ROI Measurement)")"""
+    logger.info("[OK] Time Tracking router included (ROI Measurement)")"""
 
     content = content.replace(old_registration, new_registration)
 
@@ -67,7 +67,7 @@ if TIME_TRACKING_ROUTER_AVAILABLE:
     with open(main_py, 'w', encoding='utf-8') as f:
         f.write(content)
 
-    print("✅ Time tracking router successfully added to main.py")
+    print("[OK] Time tracking router successfully added to main.py")
     return True
 
 

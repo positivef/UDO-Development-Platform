@@ -78,9 +78,9 @@ class Auto3TierWrapper:
             try:
                 from scripts.unified_error_resolver import UnifiedErrorResolver
                 self._resolver = UnifiedErrorResolver()
-                logger.info("✅ UnifiedErrorResolver initialized")
+                logger.info("[OK] UnifiedErrorResolver initialized")
             except ImportError as e:
-                logger.warning(f"⚠️  UnifiedErrorResolver not available: {e}")
+                logger.warning(f"[WARN]  UnifiedErrorResolver not available: {e}")
                 self._resolver = None
         return self._resolver
 
@@ -95,7 +95,7 @@ class Auto3TierWrapper:
                 elapsed = (datetime.now() - self.circuit_breaker["last_failure_time"]).seconds
                 if elapsed > 60:  # 1 minute cooldown
                     self.circuit_breaker["state"] = "HALF_OPEN"
-                    logger.info("🔄 Circuit breaker: HALF_OPEN (testing recovery)")
+                    logger.info("[EMOJI] Circuit breaker: HALF_OPEN (testing recovery)")
                     return True
             return False
 
@@ -163,7 +163,7 @@ class Auto3TierWrapper:
         Returns:
             Result of retried function or raises exception
         """
-        logger.info(f"🔧 Applying solution: {solution[:100]}")
+        logger.info(f"[EMOJI] Applying solution: {solution[:100]}")
 
         # Execute solution as bash command
         try:
@@ -177,20 +177,20 @@ class Auto3TierWrapper:
             )
 
             if result.returncode == 0:
-                logger.info(f"✅ Solution applied successfully: {result.stdout[:100] if result.stdout else '(no output)'}")
+                logger.info(f"[OK] Solution applied successfully: {result.stdout[:100] if result.stdout else '(no output)'}")
             else:
-                logger.warning(f"⚠️  Solution returned non-zero exit code: {result.returncode}")
+                logger.warning(f"[WARN]  Solution returned non-zero exit code: {result.returncode}")
                 logger.warning(f"stderr: {result.stderr[:200]}")
                 # Continue anyway - might still fix the issue
 
         except subprocess.TimeoutExpired:
-            logger.error("❌ Solution execution timed out after 30 seconds")
+            logger.error("[FAIL] Solution execution timed out after 30 seconds")
             self.statistics["failed_recoveries"] += 1
             self._update_circuit_breaker(failed=True)
             raise Exception(f"Solution timeout: {solution}")
 
         except Exception as e:
-            logger.error(f"❌ Failed to execute solution: {e}")
+            logger.error(f"[FAIL] Failed to execute solution: {e}")
             self.statistics["failed_recoveries"] += 1
             self._update_circuit_breaker(failed=True)
             raise
@@ -200,16 +200,16 @@ class Auto3TierWrapper:
             result = original_func(*args, **kwargs)
 
             if not self._is_error(result):
-                logger.info("✅ Retry successful after applying solution")
+                logger.info("[OK] Retry successful after applying solution")
                 self.statistics["auto_recoveries"] += 1
                 self.circuit_breaker["consecutive_failures"] = 0
                 return result
             else:
-                logger.warning("⚠️  Solution applied but retry still failed")
+                logger.warning("[WARN]  Solution applied but retry still failed")
                 raise Exception(f"Solution didn't work: {self._extract_error_message(result)}")
 
         except Exception as e:
-            logger.error(f"❌ Retry failed: {e}")
+            logger.error(f"[FAIL] Retry failed: {e}")
             self.statistics["failed_recoveries"] += 1
             self._update_circuit_breaker(failed=True)
             raise
@@ -222,12 +222,12 @@ class Auto3TierWrapper:
 
             if self.circuit_breaker["consecutive_failures"] >= self.circuit_breaker["threshold"]:
                 self.circuit_breaker["state"] = "OPEN"
-                logger.error(f"🚨 Circuit breaker OPEN: {self.circuit_breaker['consecutive_failures']} consecutive failures")
+                logger.error(f"[EMOJI] Circuit breaker OPEN: {self.circuit_breaker['consecutive_failures']} consecutive failures")
         else:
             self.circuit_breaker["consecutive_failures"] = 0
             if self.circuit_breaker["state"] == "HALF_OPEN":
                 self.circuit_breaker["state"] = "CLOSED"
-                logger.info("✅ Circuit breaker CLOSED: Recovery successful")
+                logger.info("[OK] Circuit breaker CLOSED: Recovery successful")
 
     def wrap_tool(self, func: F) -> F:
         """
@@ -244,7 +244,7 @@ class Auto3TierWrapper:
 
             # Skip if disabled or circuit breaker open
             if not self.is_enabled():
-                logger.debug(f"⏭️  Auto-resolution disabled for {func.__name__}")
+                logger.debug(f"⏭  Auto-resolution disabled for {func.__name__}")
                 return func(*args, **kwargs)
 
             try:
@@ -255,14 +255,14 @@ class Auto3TierWrapper:
                 if self._is_error(result):
                     self.statistics["total_errors"] += 1
                     error_msg = self._extract_error_message(result)
-                    logger.warning(f"⚠️  Error detected in {func.__name__}: {error_msg[:100]}")
+                    logger.warning(f"[WARN]  Error detected in {func.__name__}: {error_msg[:100]}")
 
                     # Only trigger resolution if resolver is available
                     if self.resolver is None:
-                        logger.warning("⚠️  UnifiedErrorResolver not available, skipping auto-resolution")
+                        logger.warning("[WARN]  UnifiedErrorResolver not available, skipping auto-resolution")
                         return result
 
-                    # 🔥 AUTOMATIC 3-TIER CASCADE
+                    # [EMOJI] AUTOMATIC 3-TIER CASCADE
                     start_time = time.time()
 
                     context = {
@@ -284,21 +284,21 @@ class Auto3TierWrapper:
                             # Obsidian hit
                             self.statistics["tier1_hits"] += 1
                             self.statistics["total_time_saved"] += 8.0  # Assume 8min saved vs manual
-                            logger.info(f"✅ Tier 1 (Obsidian) hit in {elapsed:.1f}ms")
+                            logger.info(f"[OK] Tier 1 (Obsidian) hit in {elapsed:.1f}ms")
 
                         elif stats.get("tier2_auto", 0) > 0:
                             # Context7 auto-applied (HIGH confidence)
                             self.statistics["tier2_hits"] += 1
                             self.statistics["tier2_auto"] += 1
                             self.statistics["total_time_saved"] += 5.0  # Assume 5min saved
-                            logger.info(f"✅ Tier 2 (Context7 HIGH) auto-applied in {elapsed:.1f}ms")
+                            logger.info(f"[OK] Tier 2 (Context7 HIGH) auto-applied in {elapsed:.1f}ms")
 
                         elif stats.get("tier2_confirmed", 0) > 0:
                             # Context7 user-confirmed (MEDIUM confidence)
                             self.statistics["tier2_hits"] += 1
                             self.statistics["tier2_confirmed"] += 1
                             self.statistics["total_time_saved"] += 3.0  # Partial savings
-                            logger.info(f"✅ Tier 2 (Context7 MEDIUM) user-confirmed in {elapsed:.1f}ms")
+                            logger.info(f"[OK] Tier 2 (Context7 MEDIUM) user-confirmed in {elapsed:.1f}ms")
 
                         # Apply solution and retry
                         return self._apply_and_retry(solution, func, args, kwargs, context)
@@ -306,7 +306,7 @@ class Auto3TierWrapper:
                     else:
                         # Tier 3: Escalate to user
                         self.statistics["tier3_escalations"] += 1
-                        logger.error(f"❌ Tier 3 escalation: No automated solution for {error_msg[:100]}")
+                        logger.error(f"[FAIL] Tier 3 escalation: No automated solution for {error_msg[:100]}")
 
                         # Return original error result for user to handle
                         return result
@@ -317,7 +317,7 @@ class Auto3TierWrapper:
             except Exception as e:
                 # Unexpected exception during wrapping
                 self.statistics["total_errors"] += 1
-                logger.error(f"❌ Wrapper exception in {func.__name__}: {e}")
+                logger.error(f"[FAIL] Wrapper exception in {func.__name__}: {e}")
                 logger.debug(traceback.format_exc())
 
                 # Don't re-wrap exceptions, just propagate
@@ -359,17 +359,17 @@ class Auto3TierWrapper:
         for key in self.statistics:
             if isinstance(self.statistics[key], (int, float)):
                 self.statistics[key] = 0
-        logger.info("📊 Statistics reset")
+        logger.info("[EMOJI] Statistics reset")
 
     def enable(self):
         """Enable auto-resolution"""
         self.enabled = True
-        logger.info("✅ Auto-resolution ENABLED")
+        logger.info("[OK] Auto-resolution ENABLED")
 
     def disable(self):
         """Disable auto-resolution"""
         self.enabled = False
-        logger.info("⏸️  Auto-resolution DISABLED")
+        logger.info("⏸  Auto-resolution DISABLED")
 
 
 # Global singleton instance
@@ -381,7 +381,7 @@ def get_wrapper() -> Auto3TierWrapper:
     global _wrapper_instance
     if _wrapper_instance is None:
         _wrapper_instance = Auto3TierWrapper()
-        logger.info("🚀 Auto3TierWrapper initialized")
+        logger.info("[EMOJI] Auto3TierWrapper initialized")
     return _wrapper_instance
 
 
@@ -436,14 +436,14 @@ if __name__ == "__main__":
 
     # Test successful call
     result = test_tool(should_fail=False)
-    print(f"✅ Success result: {result}")
+    print(f"[OK] Success result: {result}")
 
     # Test error detection
     result = test_tool(should_fail=True)
-    print(f"❌ Error result: {result}")
+    print(f"[FAIL] Error result: {result}")
 
     # Print statistics
     stats = get_statistics()
-    print(f"\n📊 Statistics:")
+    print(f"\n[EMOJI] Statistics:")
     for key, value in stats.items():
         print(f"  {key}: {value}")

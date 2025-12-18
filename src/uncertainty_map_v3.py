@@ -4,11 +4,11 @@
 Uncertainty Map v3.0 - Predictive & Self-Learning System
 
 Revolutionary Improvements:
-1. Predictive uncertainty modeling (예측 가능)
-2. Pattern recognition from history (패턴 학습)
-3. Auto-mitigation strategies (자동 해결책)
-4. Real-time risk scoring (실시간 리스크)
-5. Quantum uncertainty states (양자 불확실성)
+1. Predictive uncertainty modeling ([EMOJI] [EMOJI])
+2. Pattern recognition from history ([EMOJI] [EMOJI])
+3. Auto-mitigation strategies ([EMOJI] [EMOJI])
+4. Real-time risk scoring ([EMOJI] [EMOJI])
+5. Quantum uncertainty states ([EMOJI] [EMOJI])
 
 Author: VibeCoding Team
 Date: 2025-11-17
@@ -29,11 +29,11 @@ import math
 import logging
 from filelock import FileLock
 
-# Windows Unicode 인코딩 문제 근본 해결
+# Windows Unicode [EMOJI] [EMOJI] [EMOJI] [EMOJI]
 if sys.platform == 'win32':
-    # 환경변수 설정
+    # [EMOJI] [EMOJI]
     os.environ['PYTHONIOENCODING'] = 'utf-8'
-    # stdout/stderr를 UTF-8 모드로 재구성
+    # stdout/stderr[EMOJI] UTF-8 [EMOJI] [EMOJI]
     if hasattr(sys.stdout, 'reconfigure'):
         sys.stdout.reconfigure(encoding='utf-8')
         sys.stderr.reconfigure(encoding='utf-8')
@@ -72,11 +72,11 @@ class UncertaintyState(Enum):
 @dataclass
 class UncertaintyVector:
     """Multi-dimensional uncertainty representation"""
-    technical: float      # 기술적 불확실성
-    market: float        # 시장 불확실성
-    resource: float      # 리소스 불확실성
-    timeline: float      # 일정 불확실성
-    quality: float       # 품질 불확실성
+    technical: float      # [EMOJI] [EMOJI]
+    market: float        # [EMOJI] [EMOJI]
+    resource: float      # [EMOJI] [EMOJI]
+    timeline: float      # [EMOJI] [EMOJI]
+    quality: float       # [EMOJI] [EMOJI]
 
     def magnitude(self) -> float:
         """Calculate total uncertainty magnitude"""

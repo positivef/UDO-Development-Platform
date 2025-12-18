@@ -9,22 +9,25 @@ This file provides guidance to Claude Code (claude.ai/code) when working with co
 ### 📌 Claude Code 핵심 요약
 
 ```yaml
-현재 상태 (2025-12-16 기준):
+현재 상태 (2025-12-17 기준):
   Backend: 100% ✅ → 496/496 tests passing
   Frontend: 60% ✅ → Kanban UI + E2E tests passing
   CI/CD: 100% ✅ → GitHub Actions workflows deployed
   Feature Flags: 100% ✅ → Tier 1 rollback ready (<10s)
+  Database: 100% ✅ → Kanban schema (7 tables) migrated
 
-완료 상황 (Week 4):
-  ✅ Feature Flags System (Tier 1 Rollback)
-  ✅ CI/CD Pipeline (Backend + Frontend)
-  ✅ Admin API (X-Admin-Key authentication)
-  ✅ 496/496 tests passing (100%)
+완료 상황 (Week 6 Day 1):
+  ✅ Week 5 MVP: Uncertainty UI + Confidence Dashboard E2E testing
+  ✅ Week 6 Database: PostgreSQL + Kanban schema migration
+  ✅ Kanban Backend: 155/155 tests passing (100%)
+  ✅ Q1-Q8 결정사항 모두 DB 반영 완료
 
-다음 단계:
-  1. Frontend: Uncertainty UI 기본 (web-dashboard/app/uncertainty/)
-  2. Frontend: Confidence Dashboard (web-dashboard/app/confidence/)
-  3. DB 마이그레이션 실행 (PostgreSQL + kanban 스키마)
+다음 단계 (Week 6 Day 2-5):
+  1. Frontend: Dependency Graph UI (D3.js force-directed)
+  2. Frontend: Context Upload UI 완성 (현재 placeholder)
+  3. Frontend: AI Task Suggestion Modal
+  4. Frontend: Archive View + ROI Dashboard
+  5. Integration: E2E Tests for new features
 ```
 
 ### 📚 문서 계층 (Document Hierarchy)
@@ -616,15 +619,15 @@ scripts/
 ---
 
 
-## Current Status (2025-12-16) - Week 2 Day 4 Context Operations Complete ✅
+## Current Status (2025-12-17) - Week 6 Day 1 Database Integration Complete ✅
 
-**Phase**: Week 2 Day 4 - Context Operations (ZIP Upload/Download)
+**Phase**: Week 6 Day 1 - Database Integration & Kanban Backend
 **Completion**: 100% (5/5 tasks)
-**Build Status**: ✅ Production build passing (10.9s)
-**New Components**: 2 (Context API client + ContextManager)
-**Integration**: ✅ TaskDetailModal with Tabs
+**Backend Tests**: ✅ 496/496 passing (100%)
+**Kanban Tests**: ✅ 155/155 passing (100%)
+**Database**: ✅ 7 Kanban tables migrated (Q1-Q8 반영)
 
-### Week 0-2 Progress
+### Week 0-6 Progress
 - ✅ **Week 0 Day 1-3**: Foundation setup, pre-commit hooks, RL validation framework
 - ✅ **Week 0 Day 4**: Performance baselines, coverage tracking, RL hypothesis validation
 - ✅ **Week 0 Day 5**: Comprehensive test analysis, Week 0 completion (95%)
@@ -634,10 +637,33 @@ scripts/
 - ✅ **Week 2 Day 2**: TaskCreateModal (COMPLETE)
 - ✅ **Week 2 Day 3**: Filter Functionality (COMPLETE)
 - ✅ **Week 2 Day 4**: Context Operations (COMPLETE)
+- ✅ **Week 5 Day 1**: Uncertainty UI Enhancement (COMPLETE)
+- ✅ **Week 5 Day 2**: Confidence Dashboard Testing (COMPLETE)
+- ✅ **Week 5 Day 3**: E2E Testing Suite + RBAC Restoration (COMPLETE)
+- ✅ **Week 6 Day 1**: Database Integration & Kanban Backend (COMPLETE)
 
-### Recent Achievements (2025-12-16)
+### Recent Achievements (2025-12-17)
 
-**Week 2 Day 4 - Context Operations** 🎉
+**Week 6 Day 1 - Database Integration & Kanban Backend** 🎉
+
+1. ✅ **PostgreSQL 연결 검증**: Docker 컨테이너 `udo_postgres` 정상 작동 (pgvector/pgvector:pg16)
+2. ✅ **Kanban 스키마 마이그레이션**: 7개 테이블 생성 완료
+   - kanban.tasks (25 컬럼, 9 인덱스, 6 제약조건)
+   - kanban.dependencies (DAG 구조, Q7)
+   - kanban.dependency_audit (변경 이력)
+   - kanban.quality_gates (Q3)
+   - kanban.task_archive (Q6)
+   - kanban.task_contexts (Q4)
+   - kanban.task_projects (Q5)
+3. ✅ **Q1-Q8 결정사항 DB 반영**: 모든 전략적 결정 데이터베이스에 완전 반영
+4. ✅ **Kanban 테스트 100% 통과**: 155/155 테스트 성공
+   - test_kanban_tasks.py: 46/46
+   - test_kanban_dependencies.py + projects + contexts: 76/76
+   - test_kanban_ai.py + archive: 33/33
+5. ✅ **전체 백엔드 테스트 100% 통과**: 496/496 테스트 성공 (165.81초)
+6. ✅ **성능 최적화 확인**: 인덱스 전략으로 <50ms 쿼리 목표 달성 준비
+
+**Week 2 Day 4 - Context Operations** (Previous)
 1. ✅ **Kanban Context API Client**: Full backend integration (lib/api/kanban-context.ts)
    - 5 API functions: fetchContextMetadata, uploadContext, trackContextLoad, fetchFullContext, downloadContextZip
    - TypeScript interfaces: ContextMetadata, ContextFile, TaskContext

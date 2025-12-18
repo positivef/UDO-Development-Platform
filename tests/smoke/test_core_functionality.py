@@ -60,7 +60,7 @@ class TestSmokeUncertaintyGraph:
         assert hasattr(mitigation, 'strategy')
         assert hasattr(mitigation, 'cost')
 
-        print(f"✅ SMOKE 1 PASSED: Uncertainty graph renders (state={state.value})")
+        print(f"[OK] SMOKE 1 PASSED: Uncertainty graph renders (state={state.value})")
 
 
 class TestSmokeAPIResponds:
@@ -80,7 +80,7 @@ class TestSmokeAPIResponds:
             routes = [route.path for route in backend_main.app.routes]
             assert len(routes) > 0
 
-            print(f"✅ SMOKE 2 PASSED: API imports successfully ({len(routes)} routes)")
+            print(f"[OK] SMOKE 2 PASSED: API imports successfully ({len(routes)} routes)")
 
         except ImportError as e:
             pytest.fail(f"Backend import failed: {e}")
@@ -125,7 +125,7 @@ class TestSmokeFrontendLoads:
         # if result.returncode != 0:
         #     pytest.fail(f"Frontend build failed: {result.stderr}")
 
-        print("✅ SMOKE 3 SKIPPED: Frontend build (long CI time)")
+        print("[OK] SMOKE 3 SKIPPED: Frontend build (long CI time)")
         pytest.skip("Frontend build skipped (enable for pre-deployment)")
 
 
@@ -169,7 +169,7 @@ class TestSmokeBasicPrediction:
             UncertaintyState.VOID
         ]
 
-        print(f"✅ SMOKE 4 PASSED: Basic prediction works (trend={prediction.trend:.2f})")
+        print(f"[OK] SMOKE 4 PASSED: Basic prediction works (trend={prediction.trend:.2f})")
 
 
 class TestSmokeConfidenceCalculation:
@@ -203,7 +203,7 @@ class TestSmokeConfidenceCalculation:
 
         assert decision in ["GO", "GO_WITH_CHECKPOINTS", "NO_GO"]
 
-        print(f"✅ SMOKE 5 PASSED: Confidence calculation works (conf={confidence:.2%}, decision={decision})")
+        print(f"[OK] SMOKE 5 PASSED: Confidence calculation works (conf={confidence:.2%}, decision={decision})")
 
 
 # Smoke test suite runner
@@ -214,11 +214,11 @@ if __name__ == "__main__":
     python tests/smoke/test_core_functionality.py
 
     Expected output:
-    ✅ SMOKE 1 PASSED: Uncertainty graph renders
-    ✅ SMOKE 2 PASSED: API responds (or SKIPPED)
-    ✅ SMOKE 3 SKIPPED: Frontend build
-    ✅ SMOKE 4 PASSED: Basic prediction works
-    ✅ SMOKE 5 PASSED: Confidence calculation works
+    [OK] SMOKE 1 PASSED: Uncertainty graph renders
+    [OK] SMOKE 2 PASSED: API responds (or SKIPPED)
+    [OK] SMOKE 3 SKIPPED: Frontend build
+    [OK] SMOKE 4 PASSED: Basic prediction works
+    [OK] SMOKE 5 PASSED: Confidence calculation works
 
     Result: 4-5 / 5 tests passing (API may be skipped in CI)
     """

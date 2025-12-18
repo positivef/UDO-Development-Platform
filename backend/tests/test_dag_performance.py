@@ -27,12 +27,12 @@ class MockDAGDatabase:
 
     def __init__(self):
         # Simulate kanban.tasks table
-        self.tasks = {}  # task_id → task_data
+        self.tasks = {}  # task_id -> task_data
 
         # Simulate kanban.dependencies table with indexes
         self.dependencies = []  # List[(source_task_id, target_task_id, dependency_type)]
-        self.dependencies_by_source = {}  # source_task_id → [target_task_ids]
-        self.dependencies_by_target = {}  # target_task_id → [source_task_ids]
+        self.dependencies_by_source = {}  # source_task_id -> [target_task_ids]
+        self.dependencies_by_target = {}  # target_task_id -> [source_task_ids]
 
     async def insert_task(self, task_id: str, title: str, phase_name: str) -> dict:
         """
@@ -61,7 +61,7 @@ class MockDAGDatabase:
         """
         # Cycle detection (simulates kanban.validate_dag() trigger)
         if await self._has_cycle(source_task_id, target_task_id):
-            raise ValueError(f"Circular dependency detected: {source_task_id} → {target_task_id}")
+            raise ValueError(f"Circular dependency detected: {source_task_id} -> {target_task_id}")
 
         # Insert dependency
         self.dependencies.append((source_task_id, target_task_id, dependency_type))
@@ -181,7 +181,7 @@ class TestDAGPerformance:
             await db.insert_task(task_id, f"Task {i}", "implementation")
             task_ids.append(task_id)
 
-        # Insert dependencies (create a chain: task0 → task1 → task2 → ...)
+        # Insert dependencies (create a chain: task0 -> task1 -> task2 -> ...)
         for i in range(999):
             start = time.time()
             await db.insert_dependency(
@@ -216,11 +216,11 @@ class TestDAGPerformance:
             await db.insert_task(task_id, f"Task {i}", "implementation")
             task_ids.append(task_id)
 
-        # Create chain: task0 → task1 → ... → task99
+        # Create chain: task0 -> task1 -> ... -> task99
         for i in range(99):
             await db.insert_dependency(task_ids[i], task_ids[i + 1])
 
-        # Try to create cycle: task99 → task0 (should fail)
+        # Try to create cycle: task99 -> task0 (should fail)
         start = time.time()
         with pytest.raises(ValueError, match="Circular dependency detected"):
             await db.insert_dependency(task_ids[99], task_ids[0])

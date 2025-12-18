@@ -89,7 +89,7 @@ class OptimizedBayesianScorer:
     def _init_cache(self):
         """Initialize LRU cache for performance optimization"""
         # Cache is implemented via @lru_cache decorator on methods
-        logger.info(f"✅ Bayesian scorer initialized with cache_size={self.cache_size}")
+        logger.info(f"[OK] Bayesian scorer initialized with cache_size={self.cache_size}")
 
     @lru_cache(maxsize=128)
     def _beta_mean(self, alpha: float, beta: float) -> float:
@@ -369,51 +369,51 @@ def _generate_recommendations(
 
     # State-specific recommendations
     if state == UncertaintyStateEnum.DETERMINISTIC:
-        recommendations.append("✓ High confidence - proceed with standard monitoring")
-        recommendations.append("📋 Document assumptions for future reference")
+        recommendations.append("[EMOJI] High confidence - proceed with standard monitoring")
+        recommendations.append("[EMOJI] Document assumptions for future reference")
 
     elif state == UncertaintyStateEnum.PROBABILISTIC:
-        recommendations.append("✓ Good confidence - proceed with standard checkpoints")
-        recommendations.append("📋 Document assumptions and validate periodically")
-        recommendations.append(f"🎯 Focus on {dominant_dimension} dimension")
+        recommendations.append("[EMOJI] Good confidence - proceed with standard checkpoints")
+        recommendations.append("[EMOJI] Document assumptions and validate periodically")
+        recommendations.append(f"[EMOJI] Focus on {dominant_dimension} dimension")
 
     elif state == UncertaintyStateEnum.QUANTUM:
-        recommendations.append("⚠️ Moderate uncertainty - increase checkpoint frequency")
-        recommendations.append("🔍 Deep dive into {dominant_dimension} uncertainty")
-        recommendations.append("📊 Gather more data before major decisions")
-        recommendations.append("🔄 Consider iterative approach with validation gates")
+        recommendations.append("[WARN] Moderate uncertainty - increase checkpoint frequency")
+        recommendations.append("[EMOJI] Deep dive into {dominant_dimension} uncertainty")
+        recommendations.append("[EMOJI] Gather more data before major decisions")
+        recommendations.append("[EMOJI] Consider iterative approach with validation gates")
 
     elif state == UncertaintyStateEnum.CHAOTIC:
-        recommendations.append("🚨 High uncertainty - proceed with caution")
-        recommendations.append("🎯 CRITICAL: Address {dominant_dimension} immediately")
-        recommendations.append("📊 Spike/prototype to reduce uncertainty")
-        recommendations.append("👥 Seek expert consultation")
-        recommendations.append("🔄 Break into smaller, validated increments")
+        recommendations.append("[EMOJI] High uncertainty - proceed with caution")
+        recommendations.append("[EMOJI] CRITICAL: Address {dominant_dimension} immediately")
+        recommendations.append("[EMOJI] Spike/prototype to reduce uncertainty")
+        recommendations.append("[EMOJI] Seek expert consultation")
+        recommendations.append("[EMOJI] Break into smaller, validated increments")
 
     elif state == UncertaintyStateEnum.VOID:
-        recommendations.append("❌ Extreme uncertainty - DO NOT PROCEED")
-        recommendations.append("🔍 Research phase required")
-        recommendations.append("📚 Study similar problems/solutions first")
-        recommendations.append("🎓 Upskill team in unknown areas")
-        recommendations.append("💡 Consider pivot or alternative approaches")
+        recommendations.append("[FAIL] Extreme uncertainty - DO NOT PROCEED")
+        recommendations.append("[EMOJI] Research phase required")
+        recommendations.append("[EMOJI] Study similar problems/solutions first")
+        recommendations.append("[EMOJI] Upskill team in unknown areas")
+        recommendations.append("[EMOJI] Consider pivot or alternative approaches")
 
     # Risk-specific recommendations
     if risk_level == "critical":
-        recommendations.append("🚨 CRITICAL RISK: Executive review required")
+        recommendations.append("[EMOJI] CRITICAL RISK: Executive review required")
     elif risk_level == "high":
-        recommendations.append("⚠️ High risk: Daily monitoring needed")
+        recommendations.append("[WARN] High risk: Daily monitoring needed")
 
     # Dimension-specific recommendations
     if dominant_dimension == "technical":
-        recommendations.append("💻 Technical spike recommended")
+        recommendations.append("[EMOJI] Technical spike recommended")
     elif dominant_dimension == "timeline":
-        recommendations.append("⏱️ Review timeline constraints")
+        recommendations.append("⏱ Review timeline constraints")
     elif dominant_dimension == "resource":
-        recommendations.append("👥 Review resource allocation")
+        recommendations.append("[EMOJI] Review resource allocation")
     elif dominant_dimension == "market":
-        recommendations.append("📈 Conduct market validation")
+        recommendations.append("[EMOJI] Conduct market validation")
     elif dominant_dimension == "quality":
-        recommendations.append("🔍 Implement quality gates")
+        recommendations.append("[EMOJI] Implement quality gates")
 
     return recommendations
 

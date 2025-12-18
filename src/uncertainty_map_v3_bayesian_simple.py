@@ -30,7 +30,7 @@ class SimpleBayesianIntegration:
             storage_dir=Path.home() / '.udo' / 'bayesian_integration'
         )
 
-        print("✅ Bayesian-Enhanced Uncertainty System Initialized")
+        print("[OK] Bayesian-Enhanced Uncertainty System Initialized")
 
     def predict_with_learning(self, phase: str = "implementation", hours_ahead: int = 24) -> Dict[str, Any]:
         """
@@ -160,7 +160,7 @@ class SimpleBayesianIntegration:
             outcome_success=actual_magnitude < prediction["prediction"]["magnitude"]  # Success if uncertainty decreased
         )
 
-        print(f"✅ Learned from outcome: predicted={prediction['prediction']['magnitude']:.3f}, actual={actual_magnitude:.3f}")
+        print(f"[OK] Learned from outcome: predicted={prediction['prediction']['magnitude']:.3f}, actual={actual_magnitude:.3f}")
 
     def get_performance_metrics(self) -> Dict[str, Any]:
         """Get performance metrics from Bayesian system"""
@@ -177,7 +177,7 @@ def demo():
     system = SimpleBayesianIntegration()
 
     # Phase 1: Make initial predictions
-    print("\n📊 Phase 1: Initial Predictions")
+    print("\n[EMOJI] Phase 1: Initial Predictions")
     predictions = []
     phases = ["ideation", "design", "mvp", "implementation", "testing"]
 
@@ -188,14 +188,14 @@ def demo():
               f"confidence: {pred['prediction']['confidence']:.1%}")
 
     # Phase 2: Simulate learning from outcomes
-    print("\n📈 Phase 2: Learning from Outcomes")
+    print("\n[EMOJI] Phase 2: Learning from Outcomes")
     for pred in predictions:
         # Simulate actual outcome (slightly different from prediction)
         actual_magnitude = pred['prediction']['magnitude'] * 0.9  # Actual was 10% better
         system.learn_from_outcome(pred, actual_magnitude)
 
     # Phase 3: Make improved predictions
-    print("\n🎯 Phase 3: Improved Predictions (After Learning)")
+    print("\n[EMOJI] Phase 3: Improved Predictions (After Learning)")
     for phase in phases:
         pred = system.predict_with_learning(phase=phase, hours_ahead=24)
         print(f"   {phase:15} -> magnitude: {pred['prediction']['magnitude']:.3f}, "
@@ -203,7 +203,7 @@ def demo():
               f"bias: {pred['bayesian_insights']['bias_detected']}")
 
     # Phase 4: Show performance metrics
-    print("\n📊 Phase 4: Performance Metrics")
+    print("\n[EMOJI] Phase 4: Performance Metrics")
     metrics = system.get_performance_metrics()
     print(f"   Total predictions: {metrics.get('predictions_made', 0)}")
     print(f"   Average confidence: {metrics.get('average_confidence', 0):.1%}")
@@ -212,10 +212,10 @@ def demo():
 
     # Save state for persistence
     system.bayesian_system.save_state()
-    print("\n💾 Learning state saved for future sessions")
+    print("\n[EMOJI] Learning state saved for future sessions")
 
     print("\n" + "=" * 60)
-    print("✅ DEMONSTRATION COMPLETE")
+    print("[OK] DEMONSTRATION COMPLETE")
     print("=" * 60)
 
 

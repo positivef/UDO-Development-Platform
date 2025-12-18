@@ -56,9 +56,9 @@ class SessionManagerV2:
                 )
 
                 self._initialized = True
-                logger.info("✅ SessionManagerV2 initialized with centralized Redis")
+                logger.info("[OK] SessionManagerV2 initialized with centralized Redis")
             else:
-                logger.warning("⚠️ Redis not available, using in-memory mode")
+                logger.warning("[WARN] Redis not available, using in-memory mode")
                 self.redis_client = None
                 self._initialized = True
 
@@ -125,7 +125,7 @@ class SessionManagerV2:
                 }
             )
 
-        logger.info(f"📌 Session created: {session_id} (Primary: {is_primary})")
+        logger.info(f"[EMOJI] Session created: {session_id} (Primary: {is_primary})")
         return session
 
     async def acquire_lock(
@@ -169,7 +169,7 @@ class SessionManagerV2:
                         resource_id
                     )
 
-                    logger.warning(f"🔒 Lock conflict: {resource_id} held by {holder}")
+                    logger.warning(f"[EMOJI] Lock conflict: {resource_id} held by {holder}")
 
                 return None
 
@@ -200,7 +200,7 @@ class SessionManagerV2:
                 }
             )
 
-            logger.info(f"✅ Lock acquired: {resource_id} by {session_id}")
+            logger.info(f"[OK] Lock acquired: {resource_id} by {session_id}")
             return lock
 
         else:
@@ -254,7 +254,7 @@ class SessionManagerV2:
                     }
                 )
 
-                logger.info(f"🔓 Lock released: {resource_id} by {session_id}")
+                logger.info(f"[EMOJI] Lock released: {resource_id} by {session_id}")
 
             return success
 
@@ -350,7 +350,7 @@ class SessionManagerV2:
                         conflict_id
                     )
 
-                    logger.info(f"✅ Conflict resolved: {conflict_id}")
+                    logger.info(f"[OK] Conflict resolved: {conflict_id}")
                     return True
 
         return False
@@ -419,7 +419,7 @@ class SessionManagerV2:
         # Remove locally
         del self.local_sessions[session_id]
 
-        logger.info(f"🛑 Session terminated: {session_id}")
+        logger.info(f"[EMOJI] Session terminated: {session_id}")
         return True
 
     async def heartbeat(self, session_id: str) -> bool:
@@ -577,7 +577,7 @@ class SessionManagerV2:
             if event_type in self.event_handlers:
                 await self.event_handlers[event_type](data)
 
-            logger.debug(f"📨 Event received: {event_type}")
+            logger.debug(f"[EMOJI] Event received: {event_type}")
 
         except Exception as e:
             logger.error(f"Error handling event: {e}")
@@ -597,7 +597,7 @@ class SessionManagerV2:
         if self._event_listener_task:
             self._event_listener_task.cancel()
 
-        logger.info("✅ SessionManagerV2 cleaned up")
+        logger.info("[OK] SessionManagerV2 cleaned up")
 
 
 # Singleton instance

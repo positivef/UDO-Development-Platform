@@ -65,7 +65,7 @@ class IntegratedUncertaintyMapV3:
             "bias_corrections": []
         }
 
-        print("✅ Integrated Uncertainty Map v3 initialized with Bayesian Learning")
+        print("[OK] Integrated Uncertainty Map v3 initialized with Bayesian Learning")
 
     def predict(self, phase: str = "implementation", hours_ahead: int = 24) -> Dict[str, Any]:
         """
@@ -180,7 +180,7 @@ class IntegratedUncertaintyMapV3:
 
         self.metrics["accuracy_improvements"].append(improvement)
 
-        print(f"📈 Learning Complete:")
+        print(f"[EMOJI] Learning Complete:")
         print(f"   - Error reduction: {improvement:.1f}%")
         print(f"   - Total observations: {len(self.metrics['accuracy_improvements'])}")
         print(f"   - Average improvement: {sum(self.metrics['accuracy_improvements'])/max(len(self.metrics['accuracy_improvements']), 1):.1f}%")
@@ -222,7 +222,7 @@ class IntegratedUncertaintyMapV3:
         self.original_map.visualize(save_path)
 
         # Add Bayesian metrics overlay (would need matplotlib in real implementation)
-        print("\n📊 Bayesian Learning Overlay:")
+        print("\n[EMOJI] Bayesian Learning Overlay:")
         perf = self.get_performance_report()
         print(f"   - Predictions made: {perf['summary']['total_predictions']}")
         print(f"   - Average confidence: {perf['summary']['average_confidence']:.1%}")
@@ -295,12 +295,12 @@ class IntegratedUncertaintyMapV3:
     def save_state(self):
         """Save learning state for persistence"""
         self.bayesian_system.save_state()
-        print("💾 Learning state saved")
+        print("[EMOJI] Learning state saved")
 
     def load_state(self):
         """Load previous learning state"""
         self.bayesian_system.load_state()
-        print("📂 Learning state loaded")
+        print("[EMOJI] Learning state loaded")
 
 
 def demo_integration():
@@ -315,13 +315,13 @@ def demo_integration():
     integrated = IntegratedUncertaintyMapV3()
 
     # Make initial prediction
-    print("\n1️⃣ Making Initial Prediction...")
+    print("\n1⃣ Making Initial Prediction...")
     prediction1 = integrated.predict(phase="implementation", hours_ahead=24)
     print(f"   - Predicted magnitude: {prediction1['prediction']['predicted_magnitude']:.3f}")
     print(f"   - Quantum state: {prediction1['prediction']['quantum_state']}")
 
     # Simulate actual outcome
-    print("\n2️⃣ Simulating Actual Outcome...")
+    print("\n2⃣ Simulating Actual Outcome...")
     actual = {
         "technical": 0.4,
         "resource": 0.3,
@@ -333,28 +333,28 @@ def demo_integration():
     print(f"   - Actual magnitude: {actual['magnitude']:.3f}")
 
     # Learn from outcome
-    print("\n3️⃣ Learning from Outcome...")
+    print("\n3⃣ Learning from Outcome...")
     integrated.learn_from_outcome(prediction1, actual)
 
     # Make improved prediction
-    print("\n4️⃣ Making Improved Prediction...")
+    print("\n4⃣ Making Improved Prediction...")
     prediction2 = integrated.predict(phase="implementation", hours_ahead=24)
     print(f"   - Predicted magnitude: {prediction2['prediction']['predicted_magnitude']:.3f}")
     print(f"   - Learning confidence: {prediction2['learning_metadata']['bayesian_confidence']:.1%}")
 
     # Show performance report
-    print("\n5️⃣ Performance Report:")
+    print("\n5⃣ Performance Report:")
     report = integrated.get_performance_report()
     print(f"   - Total predictions: {report['summary']['total_predictions']}")
     print(f"   - Accuracy trend: {report['summary']['accuracy_trend']}")
     print(f"   - Bias detected: {report['bayesian_performance'].get('bias_profile', {}).get('type', 'unbiased')}")
 
     # Save state
-    print("\n6️⃣ Saving Learning State...")
+    print("\n6⃣ Saving Learning State...")
     integrated.save_state()
 
     print("\n" + "=" * 60)
-    print("✅ INTEGRATION DEMONSTRATION COMPLETE")
+    print("[OK] INTEGRATION DEMONSTRATION COMPLETE")
     print("=" * 60)
 
 

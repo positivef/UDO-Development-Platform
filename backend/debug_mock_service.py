@@ -52,9 +52,9 @@ print("\n4. Checking service methods...")
 required_methods = ['list_projects', 'get_current_project', 'save_context', 'load_context']
 for method in required_methods:
     if hasattr(service, method):
-        print(f"   ✓ Has method: {method}")
+        print(f"   [EMOJI] Has method: {method}")
     else:
-        print(f"   ✗ Missing method: {method}")
+        print(f"   [EMOJI] Missing method: {method}")
 
 # Test 5: Check global variables
 print("\n5. Checking global variables...")

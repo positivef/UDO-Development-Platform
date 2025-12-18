@@ -35,16 +35,16 @@ class MigrationTester:
     def connect(self) -> bool:
         """Connect to database (skip in mock mode)"""
         if self.mock_mode:
-            logger.info("✅ Mock mode - skipping database connection")
+            logger.info("[OK] Mock mode - skipping database connection")
             return True
 
         try:
             import psycopg2
             self.conn = psycopg2.connect(**self.db_config)
-            logger.info(f"✅ Connected to database: {self.db_config['database']}")
+            logger.info(f"[OK] Connected to database: {self.db_config['database']}")
             return True
         except Exception as e:
-            logger.error(f"❌ Failed to connect to database: {e}")
+            logger.error(f"[FAIL] Failed to connect to database: {e}")
             return False
 
     def disconnect(self):
@@ -62,17 +62,17 @@ class MigrationTester:
 
         # Test migration file exists
         if not migration_file.exists():
-            logger.error(f"❌ Migration file not found: {migration_file}")
+            logger.error(f"[FAIL] Migration file not found: {migration_file}")
             return False
 
-        logger.info(f"✅ Migration file exists: {migration_file.name}")
+        logger.info(f"[OK] Migration file exists: {migration_file.name}")
 
         # Test rollback file exists
         if not rollback_file.exists():
-            logger.error(f"❌ Rollback file not found: {rollback_file}")
+            logger.error(f"[FAIL] Rollback file not found: {rollback_file}")
             return False
 
-        logger.info(f"✅ Rollback file exists: {rollback_file.name}")
+        logger.info(f"[OK] Rollback file exists: {rollback_file.name}")
 
         # Read and validate SQL
         try:
@@ -94,11 +94,11 @@ class MigrationTester:
             assert "DROP INDEX" in rollback_sql, "Missing DROP INDEX in rollback"
             assert "phase_transitions" in rollback_sql, "Missing table reference in rollback"
 
-            logger.info("✅ SQL syntax validation passed")
+            logger.info("[OK] SQL syntax validation passed")
             return True
 
         except Exception as e:
-            logger.error(f"❌ SQL validation failed: {e}")
+            logger.error(f"[FAIL] SQL validation failed: {e}")
             return False
 
     def test_table_structure(self) -> bool:
@@ -106,7 +106,7 @@ class MigrationTester:
         logger.info("\n=== Testing Table Structure ===")
 
         if self.mock_mode:
-            logger.info("✅ Mock mode - skipping database table check")
+            logger.info("[OK] Mock mode - skipping database table check")
             logger.info("   Expected table: phase_transitions")
             logger.info("   Expected columns: id, from_phase, to_phase, transition_time, duration_seconds, automated, metadata, project_id, created_at")
             return True
@@ -127,10 +127,10 @@ class MigrationTester:
             table_exists = cursor.fetchone()[0]
 
             if not table_exists:
-                logger.error("❌ phase_transitions table not found")
+                logger.error("[FAIL] phase_transitions table not found")
                 return False
 
-            logger.info("✅ phase_transitions table exists")
+            logger.info("[OK] phase_transitions table exists")
 
             # Check columns
             cursor.execute("""
@@ -150,15 +150,15 @@ class MigrationTester:
 
             for expected_col in expected_columns:
                 if expected_col in column_names:
-                    logger.info(f"   ✅ Column: {expected_col}")
+                    logger.info(f"   [OK] Column: {expected_col}")
                 else:
-                    logger.error(f"   ❌ Missing column: {expected_col}")
+                    logger.error(f"   [FAIL] Missing column: {expected_col}")
                     return False
 
             return True
 
         except Exception as e:
-            logger.error(f"❌ Table structure test failed: {e}")
+            logger.error(f"[FAIL] Table structure test failed: {e}")
             return False
 
     def test_task_sessions_columns(self) -> bool:
@@ -166,7 +166,7 @@ class MigrationTester:
         logger.info("\n=== Testing task_sessions Columns ===")
 
         if self.mock_mode:
-            logger.info("✅ Mock mode - skipping database column check")
+            logger.info("[OK] Mock mode - skipping database column check")
             logger.info("   Expected new columns: phase_transition_id, previous_phase")
             return True
 
@@ -185,21 +185,21 @@ class MigrationTester:
             column_names = [col[0] for col in columns]
 
             if 'phase_transition_id' in column_names:
-                logger.info("   ✅ Column: phase_transition_id")
+                logger.info("   [OK] Column: phase_transition_id")
             else:
-                logger.error("   ❌ Missing column: phase_transition_id")
+                logger.error("   [FAIL] Missing column: phase_transition_id")
                 return False
 
             if 'previous_phase' in column_names:
-                logger.info("   ✅ Column: previous_phase")
+                logger.info("   [OK] Column: previous_phase")
             else:
-                logger.error("   ❌ Missing column: previous_phase")
+                logger.error("   [FAIL] Missing column: previous_phase")
                 return False
 
             return True
 
         except Exception as e:
-            logger.error(f"❌ task_sessions column test failed: {e}")
+            logger.error(f"[FAIL] task_sessions column test failed: {e}")
             return False
 
     def test_indexes(self) -> bool:
@@ -207,7 +207,7 @@ class MigrationTester:
         logger.info("\n=== Testing Indexes ===")
 
         if self.mock_mode:
-            logger.info("✅ Mock mode - skipping index check")
+            logger.info("[OK] Mock mode - skipping index check")
             expected_indexes = [
                 'idx_phase_transitions_time',
                 'idx_phase_transitions_project',
@@ -245,14 +245,14 @@ class MigrationTester:
 
             for expected_idx in expected_indexes:
                 if expected_idx in indexes:
-                    logger.info(f"   ✅ Index: {expected_idx}")
+                    logger.info(f"   [OK] Index: {expected_idx}")
                 else:
-                    logger.warning(f"   ⚠️  Missing index: {expected_idx} (optional)")
+                    logger.warning(f"   [WARN]  Missing index: {expected_idx} (optional)")
 
             return True
 
         except Exception as e:
-            logger.error(f"❌ Index test failed: {e}")
+            logger.error(f"[FAIL] Index test failed: {e}")
             return False
 
     def test_data_operations(self) -> bool:
@@ -260,7 +260,7 @@ class MigrationTester:
         logger.info("\n=== Testing Data Operations ===")
 
         if self.mock_mode:
-            logger.info("✅ Mock mode - skipping data operations")
+            logger.info("[OK] Mock mode - skipping data operations")
             logger.info("   Would test: INSERT, SELECT, UPDATE, DELETE on phase_transitions")
             return True
 
@@ -275,7 +275,7 @@ class MigrationTester:
             """)
 
             transition_id = cursor.fetchone()[0]
-            logger.info(f"   ✅ INSERT: Created transition {transition_id}")
+            logger.info(f"   [OK] INSERT: Created transition {transition_id}")
 
             # Test SELECT
             cursor.execute("""
@@ -288,7 +288,7 @@ class MigrationTester:
             assert row[0] == 'IDEATION', "from_phase mismatch"
             assert row[1] == 'DESIGN', "to_phase mismatch"
             assert row[2] == 3600, "duration_seconds mismatch"
-            logger.info(f"   ✅ SELECT: Retrieved transition data")
+            logger.info(f"   [OK] SELECT: Retrieved transition data")
 
             # Test UPDATE
             cursor.execute("""
@@ -296,21 +296,21 @@ class MigrationTester:
                 SET metadata = '{"test": true}'::jsonb
                 WHERE id = %s
             """, (transition_id,))
-            logger.info(f"   ✅ UPDATE: Updated metadata")
+            logger.info(f"   [OK] UPDATE: Updated metadata")
 
             # Test DELETE
             cursor.execute("""
                 DELETE FROM phase_transitions
                 WHERE id = %s
             """, (transition_id,))
-            logger.info(f"   ✅ DELETE: Removed test transition")
+            logger.info(f"   [OK] DELETE: Removed test transition")
 
             self.conn.commit()
             return True
 
         except Exception as e:
             self.conn.rollback()
-            logger.error(f"❌ Data operations test failed: {e}")
+            logger.error(f"[FAIL] Data operations test failed: {e}")
             return False
 
     def run_all_tests(self) -> bool:
@@ -340,7 +340,7 @@ class MigrationTester:
                 else:
                     failed += 1
             except Exception as e:
-                logger.error(f"❌ Test '{test_name}' crashed: {e}")
+                logger.error(f"[FAIL] Test '{test_name}' crashed: {e}")
                 failed += 1
 
         self.disconnect()
@@ -350,15 +350,15 @@ class MigrationTester:
         logger.info("TEST SUMMARY")
         logger.info("="*60)
         logger.info(f"Total tests: {len(tests)}")
-        logger.info(f"Passed: {passed} ✅")
-        logger.info(f"Failed: {failed} ❌")
+        logger.info(f"Passed: {passed} [OK]")
+        logger.info(f"Failed: {failed} [FAIL]")
         logger.info("="*60 + "\n")
 
         if failed == 0:
-            logger.info("✅ ALL TESTS PASSED!")
+            logger.info("[OK] ALL TESTS PASSED!")
             return True
         else:
-            logger.error(f"❌ {failed} TEST(S) FAILED!")
+            logger.error(f"[FAIL] {failed} TEST(S) FAILED!")
             return False
 
 

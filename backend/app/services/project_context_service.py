@@ -87,14 +87,14 @@ class ProjectContextService:
                     json.dumps(context_data["editor_state"])
                 )
 
-                logger.info(f"✅ Saved context for project {project_id}")
+                logger.info(f"[OK] Saved context for project {project_id}")
                 return dict(result)
 
         except asyncpg.ForeignKeyViolationError:
-            logger.error(f"❌ Project {project_id} does not exist")
+            logger.error(f"[FAIL] Project {project_id} does not exist")
             raise ValueError(f"Project with ID {project_id} not found")
         except Exception as e:
-            logger.error(f"❌ Failed to save context: {e}")
+            logger.error(f"[FAIL] Failed to save context: {e}")
             raise
 
     async def load_context(self, project_id: UUID) -> Optional[Dict[str, Any]]:
@@ -117,7 +117,7 @@ class ProjectContextService:
                 result = await conn.fetchrow(query, project_id)
 
                 if result:
-                    logger.info(f"✅ Loaded context for project {project_id}")
+                    logger.info(f"[OK] Loaded context for project {project_id}")
                     # Parse JSONB fields back to dicts
                     context = dict(result)
                     # Parse each JSONB field if it's a string
@@ -127,11 +127,11 @@ class ProjectContextService:
                             context[field] = json.loads(context[field])
                     return context
                 else:
-                    logger.warning(f"⚠️ No context found for project {project_id}")
+                    logger.warning(f"[WARN] No context found for project {project_id}")
                     return None
 
         except Exception as e:
-            logger.error(f"❌ Failed to load context: {e}")
+            logger.error(f"[FAIL] Failed to load context: {e}")
             raise
 
     async def delete_context(self, project_id: UUID) -> bool:
@@ -143,11 +143,11 @@ class ProjectContextService:
 
                 deleted = result.split()[-1] == "1"
                 if deleted:
-                    logger.info(f"✅ Deleted context for project {project_id}")
+                    logger.info(f"[OK] Deleted context for project {project_id}")
                 return deleted
 
         except Exception as e:
-            logger.error(f"❌ Failed to delete context: {e}")
+            logger.error(f"[FAIL] Failed to delete context: {e}")
             raise
 
     # ============================================================
@@ -184,9 +184,9 @@ class ProjectContextService:
                     try:
                         # Note: This would need current context data passed in
                         # For now, we just log the intention
-                        logger.info(f"📝 Auto-save requested for project {previous_project_id}")
+                        logger.info(f"[EMOJI] Auto-save requested for project {previous_project_id}")
                     except Exception as e:
-                        logger.warning(f"⚠️ Failed to auto-save current context: {e}")
+                        logger.warning(f"[WARN] Failed to auto-save current context: {e}")
 
                 # 3. Load target project context
                 context = await self.load_context(target_project_id)
@@ -204,10 +204,10 @@ class ProjectContextService:
                 }
 
         except ValueError as e:
-            logger.error(f"❌ Invalid project: {e}")
+            logger.error(f"[FAIL] Invalid project: {e}")
             raise
         except Exception as e:
-            logger.error(f"❌ Failed to switch project: {e}")
+            logger.error(f"[FAIL] Failed to switch project: {e}")
             raise
 
     # ============================================================
@@ -262,7 +262,7 @@ class ProjectContextService:
                 }
 
         except Exception as e:
-            logger.error(f"❌ Failed to list projects: {e}")
+            logger.error(f"[FAIL] Failed to list projects: {e}")
             raise
 
     async def get_current_project(self) -> Optional[Dict[str, Any]]:
@@ -285,7 +285,7 @@ class ProjectContextService:
                 return dict(project) if project else None
 
         except Exception as e:
-            logger.error(f"❌ Failed to get current project: {e}")
+            logger.error(f"[FAIL] Failed to get current project: {e}")
             raise
 
     # ============================================================
@@ -325,12 +325,12 @@ class ProjectContextService:
                     editor_state=context.get("editor_state")
                 )
 
-                logger.info(f"✅ Updated execution history for project {project_id}")
+                logger.info(f"[OK] Updated execution history for project {project_id}")
             else:
-                logger.warning(f"⚠️ No context to update for project {project_id}")
+                logger.warning(f"[WARN] No context to update for project {project_id}")
 
         except Exception as e:
-            logger.error(f"❌ Failed to update execution history: {e}")
+            logger.error(f"[FAIL] Failed to update execution history: {e}")
             raise
 
     async def merge_context(
@@ -370,7 +370,7 @@ class ProjectContextService:
             return await self.save_context(project_id=project_id, **merged)
 
         except Exception as e:
-            logger.error(f"❌ Failed to merge context: {e}")
+            logger.error(f"[FAIL] Failed to merge context: {e}")
             raise
 
     async def initialize_default_project(self) -> Optional[UUID]:
@@ -391,14 +391,14 @@ class ProjectContextService:
 
                 if result:
                     self.current_project_id = result
-                    logger.info(f"✅ Initialized default project: {result}")
+                    logger.info(f"[OK] Initialized default project: {result}")
                     return result
                 else:
-                    logger.warning("⚠️ Default project not found")
+                    logger.warning("[WARN] Default project not found")
                     return None
 
         except Exception as e:
-            logger.error(f"❌ Failed to initialize default project: {e}")
+            logger.error(f"[FAIL] Failed to initialize default project: {e}")
             return None
 
 
@@ -425,7 +425,7 @@ def get_project_context_service() -> Optional[Any]:
             # Always create new instance in development
             try:
                 from app.services.mock_project_service import MockProjectService
-                logger.debug("🔄 Development mode: Creating fresh MockProjectService instance")
+                logger.debug("[EMOJI] Development mode: Creating fresh MockProjectService instance")
                 return MockProjectService()
             except ImportError as e:
                 logger.error(f"Failed to import MockProjectService: {e}")
@@ -439,7 +439,7 @@ def get_project_context_service() -> Optional[Any]:
             try:
                 from app.services.mock_project_service import MockProjectService
                 _mock_service_instance = MockProjectService()
-                logger.info("✅ MockProjectService instance created and cached")
+                logger.info("[OK] MockProjectService instance created and cached")
                 return _mock_service_instance
             except ImportError as e:
                 logger.error(f"Failed to import MockProjectService: {e}")
@@ -464,7 +464,7 @@ def enable_mock_service():
     try:
         from app.services.mock_project_service import MockProjectService
         _mock_service_instance = MockProjectService()
-        logger.info("✅ MockProjectService instance initialized")
+        logger.info("[OK] MockProjectService instance initialized")
     except Exception as e:
         logger.error(f"Failed to initialize MockProjectService: {e}")
         _mock_service_instance = None

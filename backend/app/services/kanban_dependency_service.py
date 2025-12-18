@@ -125,7 +125,7 @@ class KanbanDependencyService:
             self._invalidate_caches()
 
         logger.info(
-            f"Created dependency: {temp_dep.depends_on_task_id} → {temp_dep.task_id} "
+            f"Created dependency: {temp_dep.depends_on_task_id} -> {temp_dep.task_id} "
             f"({temp_dep.dependency_type.value})"
         )
 

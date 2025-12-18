@@ -24,22 +24,22 @@ def test_git_service():
 
     try:
         git_service = GitService(str(repo_path))
-        print(f"✅ Git service initialized for: {repo_path}")
+        print(f"[OK] Git service initialized for: {repo_path}")
 
         # Test: Get current branch
         current_branch = git_service.get_current_branch()
         assert isinstance(current_branch, str) and current_branch, "Branch should be a non-empty string"
-        print(f"✅ Current branch: {current_branch}")
+        print(f"[OK] Current branch: {current_branch}")
 
         # Test: Get commit count
         total_commits = git_service.get_commit_count()
         assert isinstance(total_commits, int) and total_commits >= 0, "Total commits should be non-negative int"
-        print(f"✅ Total commits: {total_commits}")
+        print(f"[OK] Total commits: {total_commits}")
 
         # Test: Get recent commits
         commits = git_service.get_commits(limit=5)
         assert isinstance(commits, list), "Commits should be a list"
-        print(f"✅ Fetched {len(commits)} recent commits")
+        print(f"[OK] Fetched {len(commits)} recent commits")
 
         for i, commit in enumerate(commits, 1):
             print(f"\n  Commit {i}:")
@@ -51,7 +51,7 @@ def test_git_service():
 
         # Test: Get version history
         history = git_service.get_version_history(limit=10)
-        print(f"\n✅ Version history:")
+        print(f"\n[OK] Version history:")
         print(f"    Project: {history.project_name}")
         print(f"    Branch: {history.current_branch}")
         print(f"    Total commits: {history.total_commits}")
@@ -64,18 +64,18 @@ def test_git_service():
                 commits[0].commit_hash
             )
             assert comparison.files_changed is not None, "Comparison should include files_changed"
-            print(f"\n✅ Commit comparison:")
+            print(f"\n[OK] Commit comparison:")
             print(f"    From: {comparison.from_commit}")
             print(f"    To: {comparison.to_commit}")
             print(f"    Files changed: {len(comparison.files_changed)}")
             print(f"    Lines: +{comparison.total_lines_added} -{comparison.total_lines_deleted}")
 
         print("\n" + "=" * 60)
-        print("✅ All Git service tests passed!")
+        print("[OK] All Git service tests passed!")
         print("=" * 60)
 
     except Exception as e:
-        print(f"\n❌ Test failed: {e}")
+        print(f"\n[FAIL] Test failed: {e}")
         import traceback
         traceback.print_exc()
         raise
@@ -124,11 +124,11 @@ def test_api_models():
         assert history.commits[0].commit_hash == commit.commit_hash
 
         print("\n" + "=" * 60)
-        print("✅ All model tests passed!")
+        print("[OK] All model tests passed!")
         print("=" * 60)
 
     except Exception as e:
-        print(f"\n❌ Model test failed: {e}")
+        print(f"\n[FAIL] Model test failed: {e}")
         import traceback
         traceback.print_exc()
         raise
@@ -151,7 +151,7 @@ def main():
 
     all_passed = True
     for test_name, passed in results:
-        status = "✅ PASSED" if passed else "❌ FAILED"
+        status = "[OK] PASSED" if passed else "[FAIL] FAILED"
         print(f"{test_name}: {status}")
         if not passed:
             all_passed = False

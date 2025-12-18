@@ -2,7 +2,7 @@
 
 import Link from "next/link"
 import { usePathname } from "next/navigation"
-import { Home, BarChart3, Clock, Lightbulb, Palette, KanbanSquare, AlertTriangle, Gauge } from "lucide-react"
+import { Home, BarChart3, Clock, Lightbulb, Palette, KanbanSquare, AlertTriangle, Gauge, Archive } from "lucide-react"
 import { cn } from "@/lib/utils"
 
 const navItems = [
@@ -15,6 +15,11 @@ const navItems = [
     href: "/kanban",
     label: "Kanban Board",
     icon: KanbanSquare,
+  },
+  {
+    href: "/archive",
+    label: "Archive",
+    icon: Archive,
   },
   {
     href: "/uncertainty",

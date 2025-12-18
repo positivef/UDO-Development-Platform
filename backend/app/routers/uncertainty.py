@@ -689,7 +689,7 @@ async def calculate_confidence(
     - Phase-specific priors (ideation: 40%, testing: 80%)
     - Fast mode (<5ms) for real-time use
     - Full mode (10-20ms) with credible intervals
-    - 5 uncertainty states (Deterministic → Void)
+    - 5 uncertainty states (Deterministic -> Void)
     - Automatic decision logic (GO/GO_WITH_CHECKPOINTS/NO_GO)
     - Actionable recommendations
 
@@ -722,10 +722,10 @@ async def calculate_confidence(
 
     **Uncertainty States:**
     - 🟢 DETERMINISTIC (<10%): High confidence, proceed normally
-    - 🔵 PROBABILISTIC (10-30%): Good confidence, standard checkpoints
+    - [EMOJI] PROBABILISTIC (10-30%): Good confidence, standard checkpoints
     - 🟠 QUANTUM (30-60%): Moderate uncertainty, increase monitoring
-    - 🔴 CHAOTIC (60-90%): High uncertainty, proceed with caution
-    - ⚫ VOID (>90%): Extreme uncertainty, do not proceed
+    - [EMOJI] CHAOTIC (60-90%): High uncertainty, proceed with caution
+    - [EMOJI] VOID (>90%): Extreme uncertainty, do not proceed
     """
     try:
         # Call Bayesian service

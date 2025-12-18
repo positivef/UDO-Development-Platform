@@ -724,7 +724,7 @@ class TestQualityGates:
 # ============================================================================
 
 class TestArchiveOperations:
-    """Test archive operations (Q6: Done-End + AI → Obsidian)"""
+    """Test archive operations (Q6: Done-End + AI -> Obsidian)"""
 
     @pytest.mark.asyncio
     async def test_archive_task_success(self, created_task):

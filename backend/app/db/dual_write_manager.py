@@ -392,7 +392,7 @@ class DualWriteManager:
         self.shadow_mode = False
 
         logger.info(
-            "🎉 PostgreSQL promoted to PRIMARY data store!",
+            "[EMOJI] PostgreSQL promoted to PRIMARY data store!",
             stats=self.write_stats,
             consistency=final_check
         )

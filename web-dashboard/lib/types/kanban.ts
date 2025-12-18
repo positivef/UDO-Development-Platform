@@ -40,6 +40,18 @@ export interface KanbanTask {
   // AI metadata
   ai_suggested?: boolean
   ai_confidence?: number
+
+  // Comments (Week 6 Day 4)
+  comments?: TaskComment[]
+}
+
+// Comment type for task discussions
+export interface TaskComment {
+  id: string
+  author: string
+  content: string
+  created_at: string
+  edited_at?: string
 }
 
 export interface KanbanColumn {

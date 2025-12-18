@@ -765,7 +765,7 @@ class KanbanTaskService:
         archive_request: ArchiveRequest
     ) -> TaskArchive:
         """
-        Archive task to Done-End (Q6: Done-End + AI → Obsidian).
+        Archive task to Done-End (Q6: Done-End + AI -> Obsidian).
 
         Updates task status to 'done_end' and sets archived_at.
 

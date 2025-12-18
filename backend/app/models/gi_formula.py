@@ -149,7 +149,7 @@ class GIFormulaResult(BaseModel):
                 },
                 "total_duration_ms": 28500,
                 "created_at": "2025-11-20T14:30:00",
-                "obsidian_path": "개발일지/2025-11-20/GI-Insight-API-Performance.md"
+                "obsidian_path": "[EMOJI]/2025-11-20/GI-Insight-API-Performance.md"
             }
         }
 

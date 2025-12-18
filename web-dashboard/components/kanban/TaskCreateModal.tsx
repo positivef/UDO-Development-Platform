@@ -9,12 +9,15 @@
  * - Tags input
  * - Time estimation
  * - Context notes
+ * - Dependencies selection (Q7: Hard Block support)
  * - API integration with useCreateTask hook
+ *
+ * Week 6 Day 2: Added Dependencies UI
  */
 
 import { useState, useCallback } from 'react'
 import { useCreateTask } from '@/hooks/useKanban'
-import type { Phase, Priority, TaskStatus } from '@/lib/types/kanban'
+import type { Phase, Priority, TaskStatus, KanbanTask } from '@/lib/types/kanban'
 import type { CreateTaskRequest } from '@/lib/api/kanban'
 import {
   Dialog,
@@ -40,7 +43,10 @@ import {
   X,
   Loader2,
   AlertCircle,
+  Link2,
+  Calendar,
 } from 'lucide-react'
+import { TaskDependencySelect } from './TaskDependencySelect'
 
 interface TaskCreateModalProps {
   open: boolean
@@ -48,6 +54,8 @@ interface TaskCreateModalProps {
   onSuccess?: () => void
   defaultPhase?: Phase
   defaultStatus?: TaskStatus
+  /** Available tasks for dependency selection */
+  availableTasks?: KanbanTask[]
 }
 
 interface FormData {
@@ -58,7 +66,9 @@ interface FormData {
   status: TaskStatus
   tags: string
   estimated_hours: string
+  due_date: string  // Week 6 Day 4: Due date support
   context_notes: string
+  dependencies: string[]  // Q7: Task IDs this task depends on
 }
 
 interface FormErrors {
@@ -97,7 +107,9 @@ const initialFormData: FormData = {
   status: 'pending',
   tags: '',
   estimated_hours: '',
+  due_date: '',
   context_notes: '',
+  dependencies: [],
 }
 
 export function TaskCreateModal({
@@ -106,6 +118,7 @@ export function TaskCreateModal({
   onSuccess,
   defaultPhase,
   defaultStatus,
+  availableTasks = [],
 }: TaskCreateModalProps) {
   const createTaskMutation = useCreateTask()
 
@@ -173,7 +186,13 @@ export function TaskCreateModal({
       estimated_hours: formData.estimated_hours
         ? parseFloat(formData.estimated_hours)
         : undefined,
+      // Week 6 Day 4: Due date
+      due_date: formData.due_date
+        ? new Date(formData.due_date).toISOString()
+        : undefined,
       context_notes: formData.context_notes.trim() || undefined,
+      // Q7: Hard Block dependencies
+      dependencies: formData.dependencies.length > 0 ? formData.dependencies : undefined,
     }
 
     try {
@@ -364,20 +383,60 @@ export function TaskCreateModal({
             </p>
           </div>
 
-          {/* Estimated Hours */}
-          <div className="space-y-2">
-            <Label htmlFor="estimated_hours">Estimated Hours</Label>
-            <Input
-              id="estimated_hours"
-              type="number"
-              min="0"
-              step="0.5"
-              value={formData.estimated_hours}
-              onChange={(e) => handleChange('estimated_hours', e.target.value)}
-              placeholder="e.g., 4"
-              disabled={isSubmitting}
-            />
+          {/* Estimated Hours and Due Date - Grid */}
+          <div className="grid grid-cols-2 gap-4">
+            {/* Estimated Hours */}
+            <div className="space-y-2">
+              <Label htmlFor="estimated_hours">Estimated Hours</Label>
+              <Input
+                id="estimated_hours"
+                type="number"
+                min="0"
+                step="0.5"
+                value={formData.estimated_hours}
+                onChange={(e) => handleChange('estimated_hours', e.target.value)}
+                placeholder="e.g., 4"
+                disabled={isSubmitting}
+              />
+            </div>
+
+            {/* Due Date (Week 6 Day 4) */}
+            <div className="space-y-2">
+              <Label htmlFor="due_date" className="flex items-center gap-2">
+                <Calendar className="h-4 w-4" />
+                Due Date
+              </Label>
+              <Input
+                id="due_date"
+                type="date"
+                value={formData.due_date}
+                onChange={(e) => handleChange('due_date', e.target.value)}
+                disabled={isSubmitting}
+              />
+            </div>
           </div>
+
+          {/* Dependencies (Q7: Hard Block) */}
+          {availableTasks.length > 0 && (
+            <div className="space-y-2">
+              <Label className="flex items-center gap-2">
+                <Link2 className="h-4 w-4" />
+                Dependencies
+              </Label>
+              <TaskDependencySelect
+                availableTasks={availableTasks}
+                selectedTaskIds={formData.dependencies}
+                onSelectionChange={(taskIds) =>
+                  setFormData((prev) => ({ ...prev, dependencies: taskIds }))
+                }
+                placeholder="Select tasks this depends on..."
+                disabled={isSubmitting}
+              />
+              <p className="text-xs text-muted-foreground">
+                Q7: Selected tasks must be completed before this task can start
+              </p>
+            </div>
+          )}
 
           {/* Context Notes */}
           <div className="space-y-2">

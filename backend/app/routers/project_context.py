@@ -55,7 +55,7 @@ def get_service():
             service = get_project_context_service()
 
             logger.info(f"[DEBUG] After enable: service={type(service) if service else 'None'}")
-            logger.info("✅ Mock service enabled as fallback")
+            logger.info("[OK] Mock service enabled as fallback")
         except Exception as e:
             logger.error(f"Failed to enable mock service: {e}")
             import traceback
@@ -93,7 +93,7 @@ async def save_project_context(
     **Response:** Complete saved context with timestamps
     """
     try:
-        logger.info(f"💾 Saving context for project {context_data.project_id}")
+        logger.info(f"[EMOJI] Saving context for project {context_data.project_id}")
 
         result = await service.save_context(
             project_id=context_data.project_id,
@@ -107,10 +107,10 @@ async def save_project_context(
         return ProjectContextResponse(**result)
 
     except ValueError as e:
-        logger.error(f"❌ Validation error: {e}")
+        logger.error(f"[FAIL] Validation error: {e}")
         raise HTTPException(status_code=status.HTTP_404_NOT_FOUND, detail=str(e))
     except Exception as e:
-        logger.error(f"❌ Failed to save context: {e}")
+        logger.error(f"[FAIL] Failed to save context: {e}")
         raise HTTPException(
             status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
             detail=f"Failed to save project context: {str(e)}"
@@ -133,7 +133,7 @@ async def load_project_context(
     **Response:** Complete project context or 404 if not found
     """
     try:
-        logger.info(f"📂 Loading context for project {project_id}")
+        logger.info(f"[EMOJI] Loading context for project {project_id}")
 
         result = await service.load_context(project_id)
 
@@ -148,7 +148,7 @@ async def load_project_context(
     except HTTPException:
         raise
     except Exception as e:
-        logger.error(f"❌ Failed to load context: {e}")
+        logger.error(f"[FAIL] Failed to load context: {e}")
         raise HTTPException(
             status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
             detail=f"Failed to load project context: {str(e)}"
@@ -175,7 +175,7 @@ async def update_project_context(
     **Response:** Complete updated context
     """
     try:
-        logger.info(f"🔄 Updating context for project {project_id}")
+        logger.info(f"[EMOJI] Updating context for project {project_id}")
 
         # Prepare partial update
         partial_context = {}
@@ -196,7 +196,7 @@ async def update_project_context(
         return ProjectContextResponse(**result)
 
     except Exception as e:
-        logger.error(f"❌ Failed to update context: {e}")
+        logger.error(f"[FAIL] Failed to update context: {e}")
         raise HTTPException(
             status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
             detail=f"Failed to update project context: {str(e)}"
@@ -217,7 +217,7 @@ async def delete_project_context(
     **Response:** 204 No Content on success
     """
     try:
-        logger.info(f"🗑️ Deleting context for project {project_id}")
+        logger.info(f"[EMOJI] Deleting context for project {project_id}")
 
         deleted = await service.delete_context(project_id)
 
@@ -232,7 +232,7 @@ async def delete_project_context(
     except HTTPException:
         raise
     except Exception as e:
-        logger.error(f"❌ Failed to delete context: {e}")
+        logger.error(f"[FAIL] Failed to delete context: {e}")
         raise HTTPException(
             status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
             detail=f"Failed to delete project context: {str(e)}"
@@ -260,7 +260,7 @@ async def switch_project(
     **Response:** Switch result with loaded context
     """
     try:
-        logger.info(f"🔄 Switching to project {switch_request.project_id}")
+        logger.info(f"[EMOJI] Switching to project {switch_request.project_id}")
 
         result = await service.switch_project(
             target_project_id=switch_request.project_id,
@@ -270,10 +270,10 @@ async def switch_project(
         return ProjectSwitchResponse(**result)
 
     except ValueError as e:
-        logger.error(f"❌ Invalid project: {e}")
+        logger.error(f"[FAIL] Invalid project: {e}")
         raise HTTPException(status_code=status.HTTP_404_NOT_FOUND, detail=str(e))
     except Exception as e:
-        logger.error(f"❌ Failed to switch project: {e}")
+        logger.error(f"[FAIL] Failed to switch project: {e}")
         raise HTTPException(
             status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
             detail=f"Failed to switch project: {str(e)}"
@@ -302,7 +302,7 @@ async def list_projects(
     **Response:** List of projects sorted by last_active_at (most recent first)
     """
     try:
-        logger.info(f"📋 Listing projects (limit={limit}, offset={offset})")
+        logger.info(f"[EMOJI] Listing projects (limit={limit}, offset={offset})")
 
         result = await service.list_projects(
             include_archived=include_archived,
@@ -313,7 +313,7 @@ async def list_projects(
         return ProjectsListResponse(**result)
 
     except Exception as e:
-        logger.error(f"❌ Failed to list projects: {e}")
+        logger.error(f"[FAIL] Failed to list projects: {e}")
         raise HTTPException(
             status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
             detail=f"Failed to list projects: {str(e)}"
@@ -330,7 +330,7 @@ async def get_current_project(
     **Response:** Current project info or null if no project is active
     """
     try:
-        logger.info("📍 Getting current project")
+        logger.info("[EMOJI] Getting current project")
 
         result = await service.get_current_project()
 
@@ -340,7 +340,7 @@ async def get_current_project(
         return ProjectListResponse(**result)
 
     except Exception as e:
-        logger.error(f"❌ Failed to get current project: {e}")
+        logger.error(f"[FAIL] Failed to get current project: {e}")
         raise HTTPException(
             status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
             detail=f"Failed to get current project: {str(e)}"

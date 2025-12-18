@@ -129,9 +129,9 @@ def sample_evidence():
     }
 
 
-# ═══════════════════════════════════════════════════
+# [EMOJI]
 # P1: Design Review First Tests
-# ═══════════════════════════════════════════════════
+# [EMOJI]
 
 @pytest.mark.asyncio
 async def test_p1_valid_design(guard, sample_design):
@@ -183,7 +183,7 @@ async def test_p1_missing_user_approval(guard, sample_design):
 async def test_p1_valid_exemption(guard, sample_design):
     """Test P1 with valid exemption"""
     sample_design["exemption_claimed"] = True
-    sample_design["exemption_reason"] = "오타 수정"
+    sample_design["exemption_reason"] = "[EMOJI] [EMOJI]"
     sample_design["user_approved"] = False
 
     result = await guard.validate_design(sample_design)
@@ -193,9 +193,9 @@ async def test_p1_valid_exemption(guard, sample_design):
     assert result.article == "P1_design_review_first"
 
 
-# ═══════════════════════════════════════════════════
+# [EMOJI]
 # P2: Uncertainty Disclosure Tests
-# ═══════════════════════════════════════════════════
+# [EMOJI]
 
 @pytest.mark.asyncio
 async def test_p2_valid_high_confidence(guard, sample_confidence):
@@ -297,9 +297,9 @@ async def test_p2_low_confidence_insufficient_alternatives(guard, sample_confide
     assert any("2 alternatives" in v for v in result.violations)
 
 
-# ═══════════════════════════════════════════════════
+# [EMOJI]
 # P3: Evidence-Based Decision Tests
-# ═══════════════════════════════════════════════════
+# [EMOJI]
 
 @pytest.mark.asyncio
 async def test_p3_valid_optimization(guard, sample_evidence):
@@ -370,9 +370,9 @@ async def test_p3_not_statistically_significant(guard, sample_evidence):
     assert any("significant" in w.lower() for w in result.warnings)
 
 
-# ═══════════════════════════════════════════════════
+# [EMOJI]
 # P4: Phase-Aware Compliance Tests
-# ═══════════════════════════════════════════════════
+# [EMOJI]
 
 @pytest.mark.asyncio
 async def test_p4_valid_phase_action(guard):
@@ -432,10 +432,10 @@ async def test_p4_phase_transition_success(guard):
     context = {
         "quality_score": 0.70,
         "completed_deliverables": [
-            "완전한 기능 구현",
-            "80% 이상 테스트 커버리지",
-            "코드 리뷰 완료",
-            "API 문서"
+            "[EMOJI] [EMOJI] [EMOJI]",
+            "80% [EMOJI] [EMOJI] [EMOJI]",
+            "[EMOJI] [EMOJI] [EMOJI]",
+            "API [EMOJI]"
         ],
         "approved": True
     }
@@ -454,7 +454,7 @@ async def test_p4_phase_transition_missing_deliverables(guard):
     """Test P4 phase transition with missing deliverables"""
     context = {
         "quality_score": 0.70,
-        "completed_deliverables": ["완전한 기능 구현"],  # Missing others
+        "completed_deliverables": ["[EMOJI] [EMOJI] [EMOJI]"],  # Missing others
         "approved": True
     }
 
@@ -474,10 +474,10 @@ async def test_p4_phase_transition_no_approval(guard):
     context = {
         "quality_score": 0.70,
         "completed_deliverables": [
-            "완전한 기능 구현",
-            "80% 이상 테스트 커버리지",
-            "코드 리뷰 완료",
-            "API 문서"
+            "[EMOJI] [EMOJI] [EMOJI]",
+            "80% [EMOJI] [EMOJI] [EMOJI]",
+            "[EMOJI] [EMOJI] [EMOJI]",
+            "API [EMOJI]"
         ],
         "approved": False
     }
@@ -492,9 +492,9 @@ async def test_p4_phase_transition_no_approval(guard):
     assert any("approval" in v.lower() for v in result.violations)
 
 
-# ═══════════════════════════════════════════════════
+# [EMOJI]
 # P5: Multi-AI Consistency Tests
-# ═══════════════════════════════════════════════════
+# [EMOJI]
 
 @pytest.mark.asyncio
 async def test_p5_unanimous_consensus(guard):
@@ -599,9 +599,9 @@ async def test_p5_single_ai(guard):
     assert result.metadata.get("skipped") is not None
 
 
-# ═══════════════════════════════════════════════════
+# [EMOJI]
 # General Tests
-# ═══════════════════════════════════════════════════
+# [EMOJI]
 
 def test_guard_initialization(guard):
     """Test ConstitutionalGuard initialization"""
@@ -681,9 +681,9 @@ def test_violation_export(guard, tmp_path):
     assert data[0]["article"] == "P1_design_review_first"
 
 
-# ═══════════════════════════════════════════════════
+# [EMOJI]
 # Integration Tests
-# ═══════════════════════════════════════════════════
+# [EMOJI]
 
 @pytest.mark.asyncio
 async def test_validate_all_design(guard, sample_design):
@@ -712,9 +712,9 @@ async def test_validate_all_optimization(guard, sample_evidence):
     assert all(isinstance(r, ValidationResult) for r in results)
 
 
-# ═══════════════════════════════════════════════════
+# [EMOJI]
 # Performance Tests
-# ═══════════════════════════════════════════════════
+# [EMOJI]
 
 @pytest.mark.asyncio
 async def test_validation_performance(guard, sample_design):

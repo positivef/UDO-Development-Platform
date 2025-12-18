@@ -96,7 +96,7 @@ class PhaseTransitionListener:
         """
         try:
             logger.info(
-                f"Handling phase transition: {from_phase.value if from_phase else 'None'} → {to_phase.value}"
+                f"Handling phase transition: {from_phase.value if from_phase else 'None'} -> {to_phase.value}"
             )
 
             # 1. End previous phase session (if exists)
@@ -151,7 +151,7 @@ class PhaseTransitionListener:
             )
 
             logger.info(
-                f"✅ Phase transition completed: {from_phase.value if from_phase else 'None'} → {to_phase.value} "
+                f"[OK] Phase transition completed: {from_phase.value if from_phase else 'None'} -> {to_phase.value} "
                 f"(transition_id: {transition_id}, session_id: {self.current_session_id})"
             )
 

@@ -1,8 +1,8 @@
 """
 Task Management Router
 
-작업(Task) 관리 관련 엔드포인트를 제공합니다.
-CLI 통합을 위한 컨텍스트 정보도 제공합니다.
+[EMOJI](Task) [EMOJI] [EMOJI] [EMOJI] [EMOJI].
+CLI [EMOJI] [EMOJI] [EMOJI] [EMOJI] [EMOJI].
 """
 
 from typing import List, Dict, Any, Optional
@@ -26,7 +26,7 @@ router = APIRouter(
 
 # Request/Response models
 class TaskSummary(BaseModel):
-    """작업 요약 정보"""
+    """[EMOJI] [EMOJI] [EMOJI]"""
     id: str
     title: str
     description: str
@@ -43,7 +43,7 @@ class TaskSummary(BaseModel):
 
 
 class TodoGroup(BaseModel):
-    """TODO 그룹"""
+    """TODO [EMOJI]"""
     id: str
     title: str
     status: str
@@ -52,7 +52,7 @@ class TodoGroup(BaseModel):
 
 
 class TaskDetail(BaseModel):
-    """작업 상세 정보"""
+    """[EMOJI] [EMOJI] [EMOJI]"""
     id: str
     title: str
     description: str
@@ -72,7 +72,7 @@ class TaskDetail(BaseModel):
 
 
 class TaskContext(BaseModel):
-    """작업 컨텍스트 (CLI 연동용)"""
+    """[EMOJI] [EMOJI] (CLI [EMOJI])"""
     task_id: str
     title: str
     description: str
@@ -89,44 +89,44 @@ class TaskContext(BaseModel):
 
 
 class CreateTaskRequest(BaseModel):
-    """작업 생성 요청"""
-    title: str = Field(..., description="작업 제목")
-    description: str = Field(..., description="작업 설명")
-    project: str = Field(..., description="프로젝트 이름")
-    project_id: str = Field(..., description="프로젝트 ID")
-    phase: str = Field("planning", description="개발 단계")
-    estimated_hours: float = Field(8, description="예상 시간")
-    git_branch: Optional[str] = Field(None, description="Git 브랜치")
+    """[EMOJI] [EMOJI] [EMOJI]"""
+    title: str = Field(..., description="[EMOJI] [EMOJI]")
+    description: str = Field(..., description="[EMOJI] [EMOJI]")
+    project: str = Field(..., description="[EMOJI] [EMOJI]")
+    project_id: str = Field(..., description="[EMOJI] ID")
+    phase: str = Field("planning", description="[EMOJI] [EMOJI]")
+    estimated_hours: float = Field(8, description="[EMOJI] [EMOJI]")
+    git_branch: Optional[str] = Field(None, description="Git [EMOJI]")
 
 
 class UpdateProgressRequest(BaseModel):
-    """진행 상황 업데이트 요청"""
-    status: Optional[str] = Field(None, description="작업 상태")
-    completeness: Optional[int] = Field(None, description="완성도 (0-100)")
-    actual_hours: Optional[float] = Field(None, description="실제 소요 시간")
-    current_step: Optional[Dict[str, Any]] = Field(None, description="현재 단계")
-    todo_update: Optional[Dict[str, Any]] = Field(None, description="TODO 업데이트")
+    """[EMOJI] [EMOJI] [EMOJI] [EMOJI]"""
+    status: Optional[str] = Field(None, description="[EMOJI] [EMOJI]")
+    completeness: Optional[int] = Field(None, description="[EMOJI] (0-100)")
+    actual_hours: Optional[float] = Field(None, description="[EMOJI] [EMOJI] [EMOJI]")
+    current_step: Optional[Dict[str, Any]] = Field(None, description="[EMOJI] [EMOJI]")
+    todo_update: Optional[Dict[str, Any]] = Field(None, description="TODO [EMOJI]")
 
 
 class SaveContextRequest(BaseModel):
-    """컨텍스트 저장 요청"""
-    files: Optional[List[str]] = Field(None, description="관련 파일 목록")
-    prompt_history: Optional[List[str]] = Field(None, description="프롬프트 히스토리")
-    checkpoint: Optional[Dict[str, Any]] = Field(None, description="체크포인트")
-    git_branch: Optional[str] = Field(None, description="Git 브랜치")
+    """[EMOJI] [EMOJI] [EMOJI]"""
+    files: Optional[List[str]] = Field(None, description="[EMOJI] [EMOJI] [EMOJI]")
+    prompt_history: Optional[List[str]] = Field(None, description="[EMOJI] [EMOJI]")
+    checkpoint: Optional[Dict[str, Any]] = Field(None, description="[EMOJI]")
+    git_branch: Optional[str] = Field(None, description="Git [EMOJI]")
 
 
 @router.get("/", response_model=List[TaskSummary])
 async def list_tasks(
-    project_id: Optional[str] = Query(None, description="프로젝트 ID로 필터링"),
-    status: Optional[str] = Query(None, description="상태로 필터링"),
-    phase: Optional[str] = Query(None, description="단계로 필터링")
+    project_id: Optional[str] = Query(None, description="[EMOJI] ID[EMOJI] [EMOJI]"),
+    status: Optional[str] = Query(None, description="[EMOJI] [EMOJI]"),
+    phase: Optional[str] = Query(None, description="[EMOJI] [EMOJI]")
 ):
     """
-    작업 목록 조회
+    [EMOJI] [EMOJI] [EMOJI]
 
-    개발 중인 모든 작업을 목록으로 반환합니다.
-    프로젝트, 상태, 단계별로 필터링할 수 있습니다.
+    [EMOJI] [EMOJI] [EMOJI] [EMOJI] [EMOJI] [EMOJI].
+    [EMOJI], [EMOJI], [EMOJI] [EMOJI] [EMOJI] [EMOJI].
     """
     try:
         tasks = await task_service.list_tasks(
@@ -135,7 +135,7 @@ async def list_tasks(
             phase=phase
         )
 
-        # TaskSummary 형태로 변환
+        # TaskSummary [EMOJI] [EMOJI]
         summaries = []
         for task in tasks:
             summaries.append(TaskSummary(
@@ -168,10 +168,10 @@ async def list_tasks(
 @router.get("/{task_id}", response_model=TaskDetail)
 async def get_task(task_id: str):
     """
-    작업 상세 정보 조회
+    [EMOJI] [EMOJI] [EMOJI] [EMOJI]
 
-    특정 작업의 상세 정보를 반환합니다.
-    TODO 리스트, 진행 상황 등 모든 정보를 포함합니다.
+    [EMOJI] [EMOJI] [EMOJI] [EMOJI] [EMOJI].
+    TODO [EMOJI], [EMOJI] [EMOJI] [EMOJI] [EMOJI] [EMOJI] [EMOJI].
     """
     try:
         task = await task_service.get_task(task_id)
@@ -197,10 +197,10 @@ async def get_task(task_id: str):
 @router.get("/{task_id}/context", response_model=TaskContext)
 async def get_task_context(task_id: str):
     """
-    작업 컨텍스트 조회 (CLI 연동용)
+    [EMOJI] [EMOJI] [EMOJI] (CLI [EMOJI])
 
-    CLI에서 작업을 계속하기 위한 컨텍스트 정보를 반환합니다.
-    현재 진행 중인 TODO, 관련 파일, Git 브랜치, 프롬프트 히스토리 등을 포함합니다.
+    CLI[EMOJI] [EMOJI] [EMOJI] [EMOJI] [EMOJI] [EMOJI] [EMOJI].
+    [EMOJI] [EMOJI] [EMOJI] TODO, [EMOJI] [EMOJI], Git [EMOJI], [EMOJI] [EMOJI] [EMOJI] [EMOJI].
     """
     try:
         context = await task_service.get_task_context(task_id)
@@ -226,14 +226,14 @@ async def get_task_context(task_id: str):
 @router.post("/", response_model=Dict[str, str])
 async def create_task(request: CreateTaskRequest):
     """
-    새 작업 생성
+    [EMOJI] [EMOJI] [EMOJI]
 
-    새로운 개발 작업을 생성합니다.
+    [EMOJI] [EMOJI] [EMOJI] [EMOJI].
     """
     try:
         task_data = request.dict(exclude_none=True)
 
-        # 기본 TODO 그룹 생성
+        # [EMOJI] TODO [EMOJI] [EMOJI]
         if "todo_groups" not in task_data:
             task_data["todo_groups"] = [
                 {
@@ -278,9 +278,9 @@ async def update_task_progress(
     request: UpdateProgressRequest
 ):
     """
-    작업 진행 상황 업데이트
+    [EMOJI] [EMOJI] [EMOJI] [EMOJI]
 
-    작업의 진행 상황, TODO 상태 등을 업데이트합니다.
+    [EMOJI] [EMOJI] [EMOJI], TODO [EMOJI] [EMOJI] [EMOJI].
     """
     try:
         progress = request.dict(exclude_none=True)
@@ -293,7 +293,7 @@ async def update_task_progress(
                 detail=f"Task {task_id} not found"
             )
 
-        # 완성도 재계산
+        # [EMOJI] [EMOJI]
         completeness = await task_service.calculate_completeness(task_id)
         await task_service.update_task_progress(
             task_id,
@@ -318,9 +318,9 @@ async def save_task_context(
     request: SaveContextRequest
 ):
     """
-    작업 컨텍스트 저장
+    [EMOJI] [EMOJI] [EMOJI]
 
-    CLI 작업 종료 시 컨텍스트를 저장하여 나중에 이어서 작업할 수 있도록 합니다.
+    CLI [EMOJI] [EMOJI] [EMOJI] [EMOJI] [EMOJI] [EMOJI] [EMOJI] [EMOJI] [EMOJI] [EMOJI] [EMOJI].
     """
     try:
         context = request.dict(exclude_none=True)
@@ -348,9 +348,9 @@ async def save_task_context(
 @router.get("/stats/summary")
 async def get_task_statistics():
     """
-    작업 통계 요약
+    [EMOJI] [EMOJI] [EMOJI]
 
-    전체 작업 통계를 반환합니다.
+    [EMOJI] [EMOJI] [EMOJI] [EMOJI].
     """
     try:
         tasks = await task_service.list_tasks()
@@ -363,7 +363,7 @@ async def get_task_statistics():
             "blocked_count": task_service.get_blocked_task_count()
         }
 
-        # 상태별 집계
+        # [EMOJI] [EMOJI]
         for task in tasks:
             status = task.get("status", "unknown")
             stats["by_status"][status] = stats["by_status"].get(status, 0) + 1

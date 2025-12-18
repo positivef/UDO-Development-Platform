@@ -2,10 +2,10 @@
 """
 Standard Level Git Hooks Installer
 
-Standard 레벨 규칙을 강제하는 Git Hooks 설치
-- pre-commit: 브랜치 이름 검증, 모듈 점유 확인
-- pre-push: 테스트 실행 확인
-- post-commit: 모듈 상태 업데이트
+Standard [EMOJI] [EMOJI] [EMOJI] Git Hooks [EMOJI]
+- pre-commit: [EMOJI] [EMOJI] [EMOJI], [EMOJI] [EMOJI] [EMOJI]
+- pre-push: [EMOJI] [EMOJI] [EMOJI]
+- post-commit: [EMOJI] [EMOJI] [EMOJI]
 """
 
 import os
@@ -22,32 +22,32 @@ class StandardGitHooksInstaller:
         self.scripts_dir = self.project_root / "scripts" / "git-hooks"
 
     def install_all(self):
-        """모든 Git hooks 설치"""
-        print("🔧 Installing Standard Level Git Hooks...")
+        """[EMOJI] Git hooks [EMOJI]"""
+        print("[EMOJI] Installing Standard Level Git Hooks...")
 
-        # hooks 디렉토리 생성
+        # hooks [EMOJI] [EMOJI]
         self.scripts_dir.mkdir(parents=True, exist_ok=True)
 
-        # 각 hook 설치
+        # [EMOJI] hook [EMOJI]
         self.install_pre_commit()
         self.install_pre_push()
         self.install_post_commit()
 
-        print("✅ Standard Git Hooks installed successfully!")
-        print("\n📋 Installed hooks:")
-        print("  - pre-commit: 브랜치 이름, 모듈 점유 체크")
-        print("  - pre-push: 테스트 실행 확인")
-        print("  - post-commit: 모듈 상태 자동 업데이트")
+        print("[OK] Standard Git Hooks installed successfully!")
+        print("\n[EMOJI] Installed hooks:")
+        print("  - pre-commit: [EMOJI] [EMOJI], [EMOJI] [EMOJI] [EMOJI]")
+        print("  - pre-push: [EMOJI] [EMOJI] [EMOJI]")
+        print("  - post-commit: [EMOJI] [EMOJI] [EMOJI] [EMOJI]")
 
     def install_pre_commit(self):
-        """pre-commit hook 설치"""
+        """pre-commit hook [EMOJI]"""
 
         hook_content = '''#!/usr/bin/env python3
 """
 Standard Level Pre-commit Hook
-- 브랜치 이름 검증
-- 모듈 점유 확인
-- 커밋 메시지 형식 검증
+- [EMOJI] [EMOJI] [EMOJI]
+- [EMOJI] [EMOJI] [EMOJI]
+- [EMOJI] [EMOJI] [EMOJI] [EMOJI]
 """
 
 import subprocess
@@ -57,7 +57,7 @@ import json
 from pathlib import Path
 
 def get_current_branch():
-    """현재 브랜치 이름 가져오기"""
+    """[EMOJI] [EMOJI] [EMOJI] [EMOJI]"""
     result = subprocess.run(
         ["git", "rev-parse", "--abbrev-ref", "HEAD"],
         capture_output=True,
@@ -66,7 +66,7 @@ def get_current_branch():
     return result.stdout.strip()
 
 def get_module_from_files():
-    """변경된 파일에서 모듈 ID 추출"""
+    """[EMOJI] [EMOJI] [EMOJI] ID [EMOJI]"""
     result = subprocess.run(
         ["git", "diff", "--cached", "--name-only"],
         capture_output=True,
@@ -75,7 +75,7 @@ def get_module_from_files():
 
     files = result.stdout.strip().split("\\n")
 
-    # 파일 경로에서 모듈 ID 추출 (예: backend/auth/login.py -> auth/login)
+    # [EMOJI] [EMOJI] [EMOJI] ID [EMOJI] ([EMOJI]: backend/auth/login.py -> auth/login)
     modules = set()
     for file in files:
         if file.startswith("backend/") and file.endswith(".py"):
@@ -87,9 +87,9 @@ def get_module_from_files():
     return list(modules)
 
 def check_module_ownership(module_id):
-    """모듈 점유 확인 (Standard 레벨)"""
-    # TODO: Redis에서 실제 점유 정보 확인
-    # 여기서는 간단히 구현
+    """[EMOJI] [EMOJI] [EMOJI] (Standard [EMOJI])"""
+    # TODO: Redis[EMOJI] [EMOJI] [EMOJI] [EMOJI] [EMOJI]
+    # [EMOJI] [EMOJI] [EMOJI]
 
     ownership_file = Path(".udo/module_ownership.json")
     if not ownership_file.exists():
@@ -100,7 +100,7 @@ def check_module_ownership(module_id):
 
     if module_id in ownerships:
         owner = ownerships[module_id].get("developer")
-        # 현재 사용자와 비교 (git config user.name)
+        # [EMOJI] [EMOJI] [EMOJI] (git config user.name)
         result = subprocess.run(
             ["git", "config", "user.name"],
             capture_output=True,
@@ -114,46 +114,46 @@ def check_module_ownership(module_id):
     return True, None
 
 def check_commit_message():
-    """커밋 메시지 형식 확인"""
+    """[EMOJI] [EMOJI] [EMOJI] [EMOJI]"""
     with open(".git/COMMIT_EDITMSG", "r") as f:
         message = f.read()
 
-    # Standard 레벨: 모듈 ID가 포함되어야 함
+    # Standard [EMOJI]: [EMOJI] ID[EMOJI] [EMOJI] [EMOJI]
     module_pattern = r"\\[(\\w+/\\w+)\\]"
     if not re.search(module_pattern, message):
-        return False, "커밋 메시지에 모듈 ID를 포함해주세요. 예: [auth/login] 로그인 기능 구현"
+        return False, "[EMOJI] [EMOJI] [EMOJI] ID[EMOJI] [EMOJI]. [EMOJI]: [auth/login] [EMOJI] [EMOJI] [EMOJI]"
 
     return True, None
 
 def main():
-    print("🔍 Standard Level Pre-commit checks...")
+    print("[EMOJI] Standard Level Pre-commit checks...")
 
-    # 1. 브랜치 이름 체크
+    # 1. [EMOJI] [EMOJI] [EMOJI]
     branch = get_current_branch()
     modules = get_module_from_files()
 
     if modules and branch != "main" and branch != "develop":
-        # Standard 레벨: feature/module-id 형식 권장
+        # Standard [EMOJI]: feature/module-id [EMOJI] [EMOJI]
         for module_id in modules:
             expected_branch = f"feature/{module_id.replace('/', '-')}"
             if not branch.startswith(expected_branch):
-                print(f"⚠️  WARNING: 브랜치 이름 '{expected_branch}'를 권장합니다 (현재: {branch})")
+                print(f"[WARN]  WARNING: [EMOJI] [EMOJI] '{expected_branch}'[EMOJI] [EMOJI] ([EMOJI]: {branch})")
 
-    # 2. 모듈 점유 체크
+    # 2. [EMOJI] [EMOJI] [EMOJI]
     for module_id in modules:
         owned, owner = check_module_ownership(module_id)
         if not owned:
-            print(f"❌ ERROR: 모듈 '{module_id}'은(는) {owner}님이 개발 중입니다!")
-            print("   먼저 모듈을 점유하거나 완료를 기다려주세요.")
+            print(f"[FAIL] ERROR: [EMOJI] '{module_id}'[EMOJI]([EMOJI]) {owner}[EMOJI] [EMOJI] [EMOJI]!")
+            print("   [EMOJI] [EMOJI] [EMOJI] [EMOJI] [EMOJI].")
             return 1
 
-    # 3. 커밋 메시지 체크
+    # 3. [EMOJI] [EMOJI] [EMOJI]
     msg_valid, msg_error = check_commit_message()
     if not msg_valid:
-        print(f"❌ ERROR: {msg_error}")
+        print(f"[FAIL] ERROR: {msg_error}")
         return 1
 
-    print("✅ Pre-commit checks passed!")
+    print("[OK] Pre-commit checks passed!")
     return 0
 
 if __name__ == "__main__":
@@ -164,13 +164,13 @@ if __name__ == "__main__":
         self.write_hook(hook_path, hook_content)
 
     def install_pre_push(self):
-        """pre-push hook 설치"""
+        """pre-push hook [EMOJI]"""
 
         hook_content = '''#!/usr/bin/env python3
 """
 Standard Level Pre-push Hook
-- 테스트 실행 확인 (필수)
-- 테스트 커버리지 체크 (권장)
+- [EMOJI] [EMOJI] [EMOJI] ([EMOJI])
+- [EMOJI] [EMOJI] [EMOJI] ([EMOJI])
 """
 
 import subprocess
@@ -179,10 +179,10 @@ import json
 from pathlib import Path
 
 def run_tests():
-    """테스트 실행"""
+    """[EMOJI] [EMOJI]"""
     print("🧪 Running tests before push (Standard Level requirement)...")
 
-    # Python 테스트 실행
+    # Python [EMOJI] [EMOJI]
     if Path("pytest.ini").exists() or Path("setup.cfg").exists():
         result = subprocess.run(
             ["python", "-m", "pytest", "--tb=short"],
@@ -191,11 +191,11 @@ def run_tests():
         )
 
         if result.returncode != 0:
-            print("❌ Tests failed! Fix tests before pushing.")
+            print("[FAIL] Tests failed! Fix tests before pushing.")
             print(result.stdout)
             return False
 
-    # JavaScript 테스트 실행
+    # JavaScript [EMOJI] [EMOJI]
     if Path("package.json").exists():
         with open("package.json") as f:
             package = json.load(f)
@@ -208,15 +208,15 @@ def run_tests():
             )
 
             if result.returncode != 0:
-                print("❌ JavaScript tests failed!")
+                print("[FAIL] JavaScript tests failed!")
                 print(result.stdout)
                 return False
 
     return True
 
 def check_test_coverage():
-    """테스트 커버리지 체크 (경고만)"""
-    # Standard 레벨: 커버리지는 경고만
+    """[EMOJI] [EMOJI] [EMOJI] ([EMOJI])"""
+    # Standard [EMOJI]: [EMOJI] [EMOJI]
     try:
         result = subprocess.run(
             ["python", "-m", "pytest", "--cov", "--cov-report=term-missing", "--quiet"],
@@ -224,29 +224,29 @@ def check_test_coverage():
             text=True
         )
 
-        # 커버리지 파싱 (간단한 예시)
+        # [EMOJI] [EMOJI] ([EMOJI] [EMOJI])
         for line in result.stdout.split("\\n"):
             if "TOTAL" in line:
                 parts = line.split()
                 if len(parts) >= 4:
                     coverage = int(parts[-1].replace("%", ""))
                     if coverage < 60:
-                        print(f"⚠️  WARNING: Test coverage is {coverage}% (recommend >60%)")
+                        print(f"[WARN]  WARNING: Test coverage is {coverage}% (recommend >60%)")
     except:
         pass
 
 def main():
-    print("🚀 Standard Level Pre-push checks...")
+    print("[EMOJI] Standard Level Pre-push checks...")
 
-    # Standard 레벨: 테스트는 필수
+    # Standard [EMOJI]: [EMOJI] [EMOJI]
     if not run_tests():
-        print("\\n❌ Push blocked: Tests must pass (Standard Level requirement)")
+        print("\\n[FAIL] Push blocked: Tests must pass (Standard Level requirement)")
         return 1
 
-    # 커버리지 체크 (경고만)
+    # [EMOJI] [EMOJI] ([EMOJI])
     check_test_coverage()
 
-    print("✅ Pre-push checks passed!")
+    print("[OK] Pre-push checks passed!")
     return 0
 
 if __name__ == "__main__":
@@ -257,13 +257,13 @@ if __name__ == "__main__":
         self.write_hook(hook_path, hook_content)
 
     def install_post_commit(self):
-        """post-commit hook 설치"""
+        """post-commit hook [EMOJI]"""
 
         hook_content = '''#!/usr/bin/env python3
 """
 Standard Level Post-commit Hook
-- 모듈 상태 자동 업데이트
-- 진행률 업데이트
+- [EMOJI] [EMOJI] [EMOJI] [EMOJI]
+- [EMOJI] [EMOJI]
 """
 
 import subprocess
@@ -272,7 +272,7 @@ from pathlib import Path
 from datetime import datetime
 
 def get_commit_info():
-    """커밋 정보 가져오기"""
+    """[EMOJI] [EMOJI] [EMOJI]"""
     result = subprocess.run(
         ["git", "log", "-1", "--pretty=format:%H|%s|%an"],
         capture_output=True,
@@ -287,7 +287,7 @@ def get_commit_info():
     }
 
 def extract_module_id(message):
-    """커밋 메시지에서 모듈 ID 추출"""
+    """[EMOJI] [EMOJI] [EMOJI] ID [EMOJI]"""
     import re
     match = re.search(r"\\[(\\w+/\\w+)\\]", message)
     if match:
@@ -295,13 +295,13 @@ def extract_module_id(message):
     return None
 
 def update_module_status(module_id, commit_info):
-    """모듈 상태 업데이트"""
+    """[EMOJI] [EMOJI] [EMOJI]"""
 
-    # .udo 디렉토리 생성
+    # .udo [EMOJI] [EMOJI]
     udo_dir = Path(".udo")
     udo_dir.mkdir(exist_ok=True)
 
-    # 상태 파일 업데이트
+    # [EMOJI] [EMOJI] [EMOJI]
     status_file = udo_dir / "module_status.json"
 
     if status_file.exists():
@@ -318,11 +318,11 @@ def update_module_status(module_id, commit_info):
             "last_update": None
         }
 
-    # 상태 업데이트
+    # [EMOJI] [EMOJI]
     statuses[module_id]["commits"].append(commit_info["hash"][:8])
     statuses[module_id]["last_update"] = datetime.now().isoformat()
 
-    # 진행률 자동 증가
+    # [EMOJI] [EMOJI] [EMOJI]
     current_progress = statuses[module_id]["progress"]
     commit_count = len(statuses[module_id]["commits"])
 
@@ -334,7 +334,7 @@ def update_module_status(module_id, commit_info):
     else:
         statuses[module_id]["progress"] = min(60, current_progress + 10)
 
-    # 저장
+    # [EMOJI]
     with open(status_file, "w") as f:
         json.dump(statuses, f, indent=2)
 
@@ -346,7 +346,7 @@ def main():
 
     if module_id:
         status = update_module_status(module_id, commit_info)
-        print(f"📊 Module '{module_id}' status updated:")
+        print(f"[EMOJI] Module '{module_id}' status updated:")
         print(f"   Status: {status['status']}")
         print(f"   Progress: {status['progress']}%")
         print(f"   Commits: {len(status['commits'])}")
@@ -359,26 +359,26 @@ if __name__ == "__main__":
         self.write_hook(hook_path, hook_content)
 
     def write_hook(self, path, content):
-        """Hook 파일 작성 및 실행 권한 설정"""
+        """Hook [EMOJI] [EMOJI] [EMOJI] [EMOJI] [EMOJI] [EMOJI]"""
         path.write_text(content)
         path.chmod(0o755)
-        print(f"  ✓ Installed: {path.name}")
+        print(f"  [EMOJI] Installed: {path.name}")
 
     def uninstall_all(self):
-        """모든 Git hooks 제거"""
+        """[EMOJI] Git hooks [EMOJI]"""
         hooks = ["pre-commit", "pre-push", "post-commit"]
 
         for hook in hooks:
             hook_path = self.git_hooks_dir / hook
             if hook_path.exists():
                 hook_path.unlink()
-                print(f"  ✓ Removed: {hook}")
+                print(f"  [EMOJI] Removed: {hook}")
 
-        print("✅ Standard Git Hooks uninstalled")
+        print("[OK] Standard Git Hooks uninstalled")
 
 
 def main():
-    """메인 함수"""
+    """[EMOJI] [EMOJI]"""
     import argparse
 
     parser = argparse.ArgumentParser(

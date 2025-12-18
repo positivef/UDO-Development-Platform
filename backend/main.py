@@ -48,7 +48,7 @@ except ImportError:
 # NOTE: Mock service will be enabled in startup_event if database fails
 # Do NOT enable it unconditionally here, let database connection try first
 # ============================================================
-logger.info("💡 Mock service will be enabled ONLY if database connection fails")
+logger.info("[EMOJI] Mock service will be enabled ONLY if database connection fails")
 
 # Import routers
 try:
@@ -323,7 +323,7 @@ app.add_middleware(
 
 # Add security headers middleware
 app.add_middleware(SecurityHeadersMiddleware)
-logger.info("✅ Security headers middleware configured")
+logger.info("[OK] Security headers middleware configured")
 
 # ============================================================
 # Adaptive cache for expensive operations (uncertainty-aware TTL)
@@ -370,77 +370,77 @@ def set_cached(key: str, data: any, ttl_seconds: int = None):
 # Setup global error handlers
 if ERROR_HANDLER_AVAILABLE:
     setup_error_handlers(app)
-    logger.info("✅ Global error handlers configured")
+    logger.info("[OK] Global error handlers configured")
 
 # Setup security middleware
 if SECURITY_AVAILABLE:
     setup_security(app)
-    logger.info("✅ Security middleware configured")
+    logger.info("[OK] Security middleware configured")
 
 # Setup performance monitoring
 if MONITORING_AVAILABLE:
     setup_monitoring(app)
-    logger.info("✅ Performance monitoring configured")
+    logger.info("[OK] Performance monitoring configured")
 
 # Include routers
 if ROUTERS_AVAILABLE:
     app.include_router(version_history_router)
-    logger.info("✅ Version History router included")
+    logger.info("[OK] Version History router included")
     app.include_router(quality_metrics_router)
     app.include_router(constitutional_router)
-    logger.info("✅ Constitutional router included (AI Governance)")
-    logger.info("✅ Quality Metrics router included")
+    logger.info("[OK] Constitutional router included (AI Governance)")
+    logger.info("[OK] Quality Metrics router included")
 
     if PROJECT_CONTEXT_AVAILABLE:
         app.include_router(project_context_router)
-        logger.info("✅ Project Context router included")
+        logger.info("[OK] Project Context router included")
         app.include_router(projects_router)
-        logger.info("✅ Projects router included")
+        logger.info("[OK] Projects router included")
 
 # Include auth router
 if AUTH_ROUTER_AVAILABLE:
     app.include_router(auth_router)
-    logger.info("✅ Authentication router included")
+    logger.info("[OK] Authentication router included")
 
 if MODULES_ROUTER_AVAILABLE:
     app.include_router(modules_router)
-    logger.info("✅ Modules router included (Standard Level MDO)")
+    logger.info("[OK] Modules router included (Standard Level MDO)")
 
 if TASKS_ROUTER_AVAILABLE:
     app.include_router(tasks_router)
-    logger.info("✅ Tasks router included (Task Management)")
+    logger.info("[OK] Tasks router included (Task Management)")
 
 if OBSIDIAN_ROUTER_AVAILABLE:
     app.include_router(obsidian_router)
-    logger.info("✅ Obsidian router included (Knowledge Management)")
+    logger.info("[OK] Obsidian router included (Knowledge Management)")
 
 if KANBAN_TASKS_ROUTER_AVAILABLE:
     app.include_router(kanban_tasks_router)
-    logger.info("✅ Kanban Tasks router included (Kanban-UDO Integration: /api/kanban/tasks)")
+    logger.info("[OK] Kanban Tasks router included (Kanban-UDO Integration: /api/kanban/tasks)")
 
 if KANBAN_DEPENDENCIES_ROUTER_AVAILABLE:
     app.include_router(kanban_dependencies_router)
-    logger.info("✅ Kanban Dependencies router included (DAG Management: /api/kanban/dependencies)")
+    logger.info("[OK] Kanban Dependencies router included (DAG Management: /api/kanban/dependencies)")
 
 if KANBAN_PROJECTS_ROUTER_AVAILABLE:
     app.include_router(kanban_projects_router)
-    logger.info("✅ Kanban Projects router included (Multi-Project Q5: /api/kanban/projects)")
+    logger.info("[OK] Kanban Projects router included (Multi-Project Q5: /api/kanban/projects)")
 
 if KANBAN_CONTEXT_ROUTER_AVAILABLE:
     app.include_router(kanban_context_router)
-    logger.info("✅ Kanban Context router included (Context Operations Q4: /api/kanban/context)")
+    logger.info("[OK] Kanban Context router included (Context Operations Q4: /api/kanban/context)")
 
 if KANBAN_AI_ROUTER_AVAILABLE:
     app.include_router(kanban_ai_router)
-    logger.info("✅ Kanban AI router included (AI Task Suggestions Q2: /api/kanban/ai)")
+    logger.info("[OK] Kanban AI router included (AI Task Suggestions Q2: /api/kanban/ai)")
 
 if KANBAN_ARCHIVE_ROUTER_AVAILABLE:
     app.include_router(kanban_archive_router)
-    logger.info("✅ Kanban Archive router included (Done-End Archive Q6: /api/kanban/archive)")
+    logger.info("[OK] Kanban Archive router included (Done-End Archive Q6: /api/kanban/archive)")
 
 if ADMIN_ROUTER_AVAILABLE:
     app.include_router(admin_router)
-    logger.info("✅ Admin router included (Feature Flags Tier 1 Rollback: /api/admin)")
+    logger.info("[OK] Admin router included (Feature Flags Tier 1 Rollback: /api/admin)")
 
 if KNOWLEDGE_FEEDBACK_ROUTER_AVAILABLE:
     logger.info(f"[DEBUG] knowledge_feedback_router object: {knowledge_feedback_router}")
@@ -459,32 +459,32 @@ if KNOWLEDGE_FEEDBACK_ROUTER_AVAILABLE:
     knowledge_routes = [route for route in app.routes if hasattr(route, 'path') and '/knowledge' in route.path]
     logger.info(f"[DEBUG] Knowledge routes: {[route.path for route in knowledge_routes]}")
 
-    logger.info("✅ Knowledge Feedback router included (Accuracy Tracking Week 6: /api/knowledge)")
+    logger.info("[OK] Knowledge Feedback router included (Accuracy Tracking Week 6: /api/knowledge)")
 
 if KNOWLEDGE_SEARCH_ROUTER_AVAILABLE:
     app.include_router(knowledge_search_router)
-    logger.info("✅ Knowledge Search router included (3-Tier Search Week 6: /api/knowledge/search)")
+    logger.info("[OK] Knowledge Search router included (3-Tier Search Week 6: /api/knowledge/search)")
 
 if TIME_TRACKING_ROUTER_AVAILABLE:
     app.include_router(time_tracking_router)
-    logger.info("✅ Time Tracking router included (ROI Measurement)")
+    logger.info("[OK] Time Tracking router included (ROI Measurement)")
 
 if GI_FORMULA_ROUTER_AVAILABLE:
     app.include_router(gi_formula_router)
-    logger.info("✅ GI Formula router included (Genius Insight Formula)")
+    logger.info("[OK] GI Formula router included (Genius Insight Formula)")
 
 if CK_THEORY_ROUTER_AVAILABLE:
     app.include_router(ck_theory_router)
-    logger.info("✅ C-K Theory router included (Design Alternatives)")
+    logger.info("[OK] C-K Theory router included (Design Alternatives)")
 
 # Force reload to register Uncertainty Map router
 if UNCERTAINTY_ROUTER_AVAILABLE:
     app.include_router(uncertainty_router)
-    logger.info("✅ Uncertainty Map router included (Predictive Uncertainty)")
+    logger.info("[OK] Uncertainty Map router included (Predictive Uncertainty)")
 
 if WEBSOCKET_AVAILABLE:
     app.include_router(websocket_handler.router)
-    logger.info("✅ WebSocket handler included")
+    logger.info("[OK] WebSocket handler included")
 
 # ============================================================
 # Lazy Initialization Pattern for UDO System
@@ -509,25 +509,25 @@ def get_udo_system():
 
     # Thread-safe initialization check
     if _udo_initialization_lock:
-        logger.warning("⚠️ UDO system initialization already in progress")
+        logger.warning("[WARN] UDO system initialization already in progress")
         return None
 
     # Initialize UDO system
     if UDO_AVAILABLE:
         try:
             _udo_initialization_lock = True
-            logger.info("🔄 Initializing UDO system (first request)...")
+            logger.info("[EMOJI] Initializing UDO system (first request)...")
             _udo_system_instance = IntegratedUDOSystem(project_name="UDO-Dashboard")
             # Expose as module-level alias for routers that resolve via main.udo_system
             udo_system = _udo_system_instance
-            logger.info("✅ UDO system initialized (lazy loading complete)")
+            logger.info("[OK] UDO system initialized (lazy loading complete)")
         except Exception as e:
-            logger.error(f"❌ Failed to initialize UDO: {e}")
+            logger.error(f"[FAIL] Failed to initialize UDO: {e}")
             _udo_system_instance = None
         finally:
             _udo_initialization_lock = False
     else:
-        logger.warning("⚠️ UDO not available - running in mock mode")
+        logger.warning("[WARN] UDO not available - running in mock mode")
 
     return _udo_system_instance
 
@@ -568,25 +568,25 @@ async def startup_event():
         try:
             redis_client = await get_redis_client()
             if await redis_client.ensure_connected():
-                logger.info("✅ Redis client initialized")
+                logger.info("[OK] Redis client initialized")
             else:
-                logger.warning("⚠️ Redis not available, distributed features disabled")
+                logger.warning("[WARN] Redis not available, distributed features disabled")
         except Exception as e:
-            logger.warning(f"⚠️ Redis initialization failed: {e}")
+            logger.warning(f"[WARN] Redis initialization failed: {e}")
 
     # Initialize SessionManagerV2
     if WEBSOCKET_AVAILABLE:
         try:
             session_manager = await get_session_manager()
-            logger.info("✅ SessionManagerV2 initialized")
+            logger.info("[OK] SessionManagerV2 initialized")
         except Exception as e:
-            logger.warning(f"⚠️ SessionManager initialization failed: {e}")
+            logger.warning(f"[WARN] SessionManager initialization failed: {e}")
 
     # Initialize async database and project context service
     if ASYNC_DB_AVAILABLE:
         try:
             await initialize_async_database()
-            logger.info("✅ Async database initialized")
+            logger.info("[OK] Async database initialized")
 
             # Initialize project context service with database pool
             db_pool = async_db.get_pool()
@@ -594,35 +594,35 @@ async def startup_event():
 
             # Initialize default project
             await project_context_service.initialize_default_project()
-            logger.info("✅ Project context service initialized")
+            logger.info("[OK] Project context service initialized")
         except Exception as e:
-            logger.warning(f"⚠️  Database not available, falling back to mock service: {e}")
-            logger.info("💡 To enable database features, ensure PostgreSQL is running and database is created")
+            logger.warning(f"[WARN]  Database not available, falling back to mock service: {e}")
+            logger.info("[EMOJI] To enable database features, ensure PostgreSQL is running and database is created")
             # Enable mock service as fallback
             from app.services.project_context_service import enable_mock_service
             enable_mock_service()
-            logger.info("✅ Mock service enabled as fallback")
+            logger.info("[OK] Mock service enabled as fallback")
     else:
         # If async database module is not available at all
-        logger.warning("⚠️ Async database module not available, using mock service")
+        logger.warning("[WARN] Async database module not available, using mock service")
         from app.services.project_context_service import enable_mock_service
         enable_mock_service()
-        logger.info("✅ Mock service enabled (async_database module missing)")
+        logger.info("[OK] Mock service enabled (async_database module missing)")
 
     # Initialize UDO system immediately (eager initialization)
     # Required for uncertainty router and WebSocket broadcasting
     if UDO_AVAILABLE:
         try:
-            logger.info("🔄 Initializing UDO system (startup)...")
+            logger.info("[EMOJI] Initializing UDO system (startup)...")
             from src.integrated_udo_system import IntegratedUDOSystem
             udo_system = IntegratedUDOSystem(project_name="UDO-Dashboard")
-            logger.info("✅ UDO system initialized with all components")
+            logger.info("[OK] UDO system initialized with all components")
         except Exception as e:
-            logger.error(f"❌ Failed to initialize UDO system: {e}")
-            logger.warning("⚠️ Uncertainty Map and related features will be unavailable")
+            logger.error(f"[FAIL] Failed to initialize UDO system: {e}")
+            logger.warning("[WARN] Uncertainty Map and related features will be unavailable")
             udo_system = None
     else:
-        logger.warning("⚠️ UDO system not available (src modules missing)")
+        logger.warning("[WARN] UDO system not available (src modules missing)")
 
     # Initialize Phase Transition System
     global phase_state_manager, phase_transition_listener
@@ -630,7 +630,7 @@ async def startup_event():
         try:
             # Initialize PhaseStateManager
             phase_state_manager = PhaseStateManager()
-            logger.info("✅ PhaseStateManager initialized")
+            logger.info("[OK] PhaseStateManager initialized")
 
             # Initialize TimeTrackingService (requires database pool)
             if ASYNC_DB_AVAILABLE:
@@ -648,7 +648,7 @@ async def startup_event():
                             session_manager = await get_session_manager()
                             broadcast_func = session_manager.broadcast_to_all
                         except Exception as e:
-                            logger.warning(f"⚠️ WebSocket broadcast not available for phase transitions: {e}")
+                            logger.warning(f"[WARN] WebSocket broadcast not available for phase transitions: {e}")
 
                     # Initialize PhaseTransitionListener
                     phase_transition_listener = PhaseTransitionListener(
@@ -661,16 +661,16 @@ async def startup_event():
                     callback = create_listener_callback(phase_transition_listener)
                     phase_state_manager.register_listener(callback)
 
-                    logger.info("✅ PhaseTransitionListener initialized and registered")
+                    logger.info("[OK] PhaseTransitionListener initialized and registered")
                 except Exception as e:
-                    logger.warning(f"⚠️ Phase Transition with database failed: {e}")
-                    logger.info("💡 Phase transitions will not auto-track time without database")
+                    logger.warning(f"[WARN] Phase Transition with database failed: {e}")
+                    logger.info("[EMOJI] Phase transitions will not auto-track time without database")
             else:
-                logger.info("💡 Phase Transition System requires database for time tracking")
+                logger.info("[EMOJI] Phase Transition System requires database for time tracking")
         except Exception as e:
-            logger.error(f"❌ Failed to initialize Phase Transition System: {e}")
+            logger.error(f"[FAIL] Failed to initialize Phase Transition System: {e}")
     else:
-        logger.info("💡 Phase Transition System not available")
+        logger.info("[EMOJI] Phase Transition System not available")
 
     # Start background Obsidian sync (periodic backup every 1-2 hours)
     try:
@@ -679,9 +679,9 @@ async def startup_event():
         # Get sync interval from environment or use default (1 hour)
         sync_interval = int(os.getenv("OBSIDIAN_SYNC_INTERVAL_HOURS", "1"))
         await start_background_sync(sync_interval_hours=sync_interval)
-        logger.info(f"✅ Background Obsidian sync started (every {sync_interval}h)")
+        logger.info(f"[OK] Background Obsidian sync started (every {sync_interval}h)")
     except Exception as e:
-        logger.warning(f"⚠️ Background sync not available: {e}")
+        logger.warning(f"[WARN] Background sync not available: {e}")
 
 
 # Shutdown event
@@ -694,42 +694,42 @@ async def shutdown_event():
         try:
             session_manager = await get_session_manager()
             await session_manager.cleanup()
-            logger.info("✅ SessionManagerV2 cleaned up")
+            logger.info("[OK] SessionManagerV2 cleaned up")
         except Exception as e:
-            logger.error(f"❌ Failed to cleanup SessionManager: {e}")
+            logger.error(f"[FAIL] Failed to cleanup SessionManager: {e}")
 
     # Cleanup Phase Transition System
     global phase_transition_listener
     if phase_transition_listener is not None:
         try:
             await phase_transition_listener.stop()
-            logger.info("✅ PhaseTransitionListener stopped")
+            logger.info("[OK] PhaseTransitionListener stopped")
         except Exception as e:
-            logger.error(f"❌ Failed to stop PhaseTransitionListener: {e}")
+            logger.error(f"[FAIL] Failed to stop PhaseTransitionListener: {e}")
 
     # Cleanup Redis
     if REDIS_AVAILABLE:
         try:
             await cleanup_redis()
-            logger.info("✅ Redis client cleaned up")
+            logger.info("[OK] Redis client cleaned up")
         except Exception as e:
-            logger.error(f"❌ Failed to cleanup Redis: {e}")
+            logger.error(f"[FAIL] Failed to cleanup Redis: {e}")
 
     # Cleanup async database
     if ASYNC_DB_AVAILABLE:
         try:
             await close_async_database()
-            logger.info("✅ Async database closed")
+            logger.info("[OK] Async database closed")
         except Exception as e:
-            logger.error(f"❌ Failed to close async database: {e}")
+            logger.error(f"[FAIL] Failed to close async database: {e}")
 
     # Stop background sync
     try:
         from app.background_tasks import stop_background_sync
         await stop_background_sync()
-        logger.info("✅ Background sync stopped")
+        logger.info("[OK] Background sync stopped")
     except Exception as e:
-        logger.error(f"❌ Failed to stop background sync: {e}")
+        logger.error(f"[FAIL] Failed to stop background sync: {e}")
 
 # Error statistics endpoint (if error handler available)
 # HIGH-04: Protected in production (internal debugging endpoint)

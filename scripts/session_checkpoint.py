@@ -89,7 +89,7 @@ class SessionCheckpoint:
             RuntimeError if critical components unavailable
         """
         logger.info("=" * 60)
-        logger.info("🚀 SESSION START CHECKPOINT")
+        logger.info("[EMOJI] SESSION START CHECKPOINT")
         logger.info("=" * 60)
 
         self.session_start_time = datetime.now()
@@ -109,11 +109,11 @@ class SessionCheckpoint:
 
             if wrapper.is_enabled():
                 result.checks["auto_3tier_wrapper_enabled"] = True
-                logger.info("✅ Auto3TierWrapper: ENABLED")
+                logger.info("[OK] Auto3TierWrapper: ENABLED")
             else:
                 result.checks["auto_3tier_wrapper_enabled"] = False
                 result.warnings.append("Auto3TierWrapper is DISABLED")
-                logger.warning("⚠️  Auto3TierWrapper: DISABLED")
+                logger.warning("[WARN]  Auto3TierWrapper: DISABLED")
 
             # Check circuit breaker
             stats = wrapper.get_statistics()
@@ -121,16 +121,16 @@ class SessionCheckpoint:
 
             if cb_state == "CLOSED":
                 result.checks["circuit_breaker_ok"] = True
-                logger.info(f"✅ Circuit Breaker: {cb_state}")
+                logger.info(f"[OK] Circuit Breaker: {cb_state}")
             else:
                 result.checks["circuit_breaker_ok"] = False
                 result.warnings.append(f"Circuit breaker: {cb_state}")
-                logger.warning(f"⚠️  Circuit Breaker: {cb_state}")
+                logger.warning(f"[WARN]  Circuit Breaker: {cb_state}")
 
         except ImportError as e:
             result.checks["auto_3tier_wrapper_available"] = False
             result.errors.append(f"Auto3TierWrapper import failed: {e}")
-            logger.error(f"❌ Auto3TierWrapper: UNAVAILABLE - {e}")
+            logger.error(f"[FAIL] Auto3TierWrapper: UNAVAILABLE - {e}")
             result.success = False
 
         # Check 2: UnifiedErrorResolver
@@ -139,12 +139,12 @@ class SessionCheckpoint:
             resolver = UnifiedErrorResolver()
 
             result.checks["unified_error_resolver_available"] = True
-            logger.info("✅ UnifiedErrorResolver: AVAILABLE")
+            logger.info("[OK] UnifiedErrorResolver: AVAILABLE")
 
         except ImportError as e:
             result.checks["unified_error_resolver_available"] = False
             result.errors.append(f"UnifiedErrorResolver import failed: {e}")
-            logger.error(f"❌ UnifiedErrorResolver: UNAVAILABLE - {e}")
+            logger.error(f"[FAIL] UnifiedErrorResolver: UNAVAILABLE - {e}")
             result.success = False
 
         # Check 3: Obsidian auto-search (optional, just warn)
@@ -153,16 +153,16 @@ class SessionCheckpoint:
             auto_ctx = AutoObsidianContext()
 
             result.checks["obsidian_auto_search_available"] = True
-            logger.info("✅ Obsidian Auto-Search: AVAILABLE")
+            logger.info("[OK] Obsidian Auto-Search: AVAILABLE")
 
         except ImportError as e:
             result.checks["obsidian_auto_search_available"] = False
             result.warnings.append(f"Obsidian auto-search not available: {e}")
-            logger.warning(f"⚠️  Obsidian Auto-Search: UNAVAILABLE - {e}")
+            logger.warning(f"[WARN]  Obsidian Auto-Search: UNAVAILABLE - {e}")
 
         # Summary
         logger.info("")
-        logger.info("📋 Checkpoint Summary:")
+        logger.info("[EMOJI] Checkpoint Summary:")
         logger.info(f"  Total Checks: {len(result.checks)}")
         logger.info(f"  Passed: {sum(result.checks.values())}")
         logger.info(f"  Warnings: {len(result.warnings)}")
@@ -171,12 +171,12 @@ class SessionCheckpoint:
         if result.success:
             self.session_stats["checkpoints_passed"] += 1
             logger.info("")
-            logger.info("✅ SESSION START: All critical systems operational")
+            logger.info("[OK] SESSION START: All critical systems operational")
             logger.info("=" * 60)
         else:
             self.session_stats["checkpoints_failed"] += 1
             logger.error("")
-            logger.error("❌ SESSION START: Critical systems missing!")
+            logger.error("[FAIL] SESSION START: Critical systems missing!")
             logger.error("=" * 60)
             raise RuntimeError(
                 f"Session start failed: {len(result.errors)} critical errors. "
@@ -203,11 +203,11 @@ class SessionCheckpoint:
         if self.last_checkpoint_time:
             elapsed = now - self.last_checkpoint_time
             if elapsed < self.checkpoint_interval:
-                logger.debug(f"⏭️  Checkpoint not due yet ({elapsed.seconds}s < {self.checkpoint_interval.seconds}s)")
+                logger.debug(f"⏭  Checkpoint not due yet ({elapsed.seconds}s < {self.checkpoint_interval.seconds}s)")
                 return CheckpointResult(success=True, timestamp=now)
 
         logger.info("=" * 60)
-        logger.info("🔄 PERIODIC CHECKPOINT")
+        logger.info("[EMOJI] PERIODIC CHECKPOINT")
         logger.info("=" * 60)
 
         self.last_checkpoint_time = now
@@ -230,7 +230,7 @@ class SessionCheckpoint:
             automation_rate = stats.get("automation_rate", 0.0)
             total_errors = stats.get("total_errors", 0)
 
-            logger.info(f"📊 Progress Report:")
+            logger.info(f"[EMOJI] Progress Report:")
             logger.info(f"  Total Errors: {total_errors}")
             logger.info(f"  Automation Rate: {automation_rate * 100:.1f}%")
             logger.info(f"  Tier 1 Hits: {stats.get('tier1_hits', 0)}")
@@ -240,7 +240,7 @@ class SessionCheckpoint:
 
             # Warn if automation rate below target
             if total_errors >= 5 and automation_rate < 0.90:
-                warning = f"⚠️  Automation rate {automation_rate * 100:.1f}% below 90% target"
+                warning = f"[WARN]  Automation rate {automation_rate * 100:.1f}% below 90% target"
                 result.warnings.append(warning)
                 logger.warning(warning)
                 self.session_stats["warnings_issued"] += 1
@@ -248,7 +248,7 @@ class SessionCheckpoint:
             # Check circuit breaker
             cb_state = stats.get("circuit_breaker_state", "UNKNOWN")
             if cb_state != "CLOSED":
-                warning = f"⚠️  Circuit breaker: {cb_state}"
+                warning = f"[WARN]  Circuit breaker: {cb_state}"
                 result.warnings.append(warning)
                 logger.warning(warning)
 
@@ -257,7 +257,7 @@ class SessionCheckpoint:
         except Exception as e:
             result.checks["statistics_available"] = False
             result.errors.append(f"Statistics retrieval failed: {e}")
-            logger.error(f"❌ Failed to get statistics: {e}")
+            logger.error(f"[FAIL] Failed to get statistics: {e}")
             result.success = False
             self.session_stats["checkpoints_failed"] += 1
 
@@ -281,7 +281,7 @@ class SessionCheckpoint:
         - Zero errors encountered (system not tested)
         """
         logger.info("=" * 60)
-        logger.info("🏁 SESSION END CHECKPOINT")
+        logger.info("[EMOJI] SESSION END CHECKPOINT")
         logger.info("=" * 60)
 
         now = datetime.now()
@@ -306,7 +306,7 @@ class SessionCheckpoint:
             time_saved = stats.get("time_saved_minutes", 0.0)
 
             logger.info("")
-            logger.info("📊 FINAL SESSION REPORT:")
+            logger.info("[EMOJI] FINAL SESSION REPORT:")
             logger.info(f"  Session Duration: {session_duration:.1f} minutes")
             logger.info(f"  Total Errors: {total_errors}")
             logger.info(f"  Automation Rate: {automation_rate * 100:.1f}%")
@@ -324,48 +324,48 @@ class SessionCheckpoint:
 
             # Validation: Automation rate
             if total_errors == 0:
-                warning = "⚠️  No errors encountered - system not tested this session"
+                warning = "[WARN]  No errors encountered - system not tested this session"
                 result.warnings.append(warning)
                 logger.warning(warning)
                 self.session_stats["warnings_issued"] += 1
             elif automation_rate < 0.90:
-                warning = f"⚠️  Automation rate {automation_rate * 100:.1f}% below 90% target (Goal: 95%)"
+                warning = f"[WARN]  Automation rate {automation_rate * 100:.1f}% below 90% target (Goal: 95%)"
                 result.warnings.append(warning)
                 logger.warning(warning)
                 self.session_stats["warnings_issued"] += 1
 
                 # Provide remediation suggestions
                 logger.warning("")
-                logger.warning("💡 Remediation Suggestions:")
+                logger.warning("[EMOJI] Remediation Suggestions:")
                 if stats.get("tier3_escalations", 0) > total_errors * 0.1:
                     logger.warning("  - Too many Tier 3 escalations: Review Obsidian documentation coverage")
                 if stats.get("failed_recoveries", 0) > 0:
                     logger.warning("  - Failed recoveries detected: Review solution accuracy")
                 logger.warning("  - Target: 70% Tier 1, 25% Tier 2, 5% Tier 3")
             else:
-                logger.info(f"✅ Automation rate {automation_rate * 100:.1f}% meets target!")
+                logger.info(f"[OK] Automation rate {automation_rate * 100:.1f}% meets target!")
                 result.checks["automation_rate_ok"] = True
 
             # Circuit breaker check
             cb_state = stats.get("circuit_breaker_state", "UNKNOWN")
             if cb_state == "CLOSED":
                 result.checks["circuit_breaker_ok"] = True
-                logger.info(f"✅ Circuit Breaker: {cb_state}")
+                logger.info(f"[OK] Circuit Breaker: {cb_state}")
             else:
                 result.warnings.append(f"Circuit breaker: {cb_state}")
-                logger.warning(f"⚠️  Circuit Breaker: {cb_state}")
+                logger.warning(f"[WARN]  Circuit Breaker: {cb_state}")
 
             self.session_stats["checkpoints_passed"] += 1
 
         except Exception as e:
             result.errors.append(f"Failed to get final statistics: {e}")
-            logger.error(f"❌ Session end validation failed: {e}")
+            logger.error(f"[FAIL] Session end validation failed: {e}")
             result.success = False
             self.session_stats["checkpoints_failed"] += 1
 
         # Session summary
         logger.info("")
-        logger.info("📋 Session Summary:")
+        logger.info("[EMOJI] Session Summary:")
         logger.info(f"  Automation Checks: {self.session_stats['automation_checks']}")
         logger.info(f"  Warnings Issued: {self.session_stats['warnings_issued']}")
         logger.info(f"  Checkpoints Passed: {self.session_stats['checkpoints_passed']}")
@@ -373,13 +373,13 @@ class SessionCheckpoint:
 
         if result.success and not result.warnings:
             logger.info("")
-            logger.info("✅ SESSION END: All targets met! Excellent automation.")
+            logger.info("[OK] SESSION END: All targets met! Excellent automation.")
         elif result.success and result.warnings:
             logger.info("")
-            logger.info("⚠️  SESSION END: Completed with warnings. Review above.")
+            logger.info("[WARN]  SESSION END: Completed with warnings. Review above.")
         else:
             logger.error("")
-            logger.error("❌ SESSION END: Failed validation. Review errors.")
+            logger.error("[FAIL] SESSION END: Failed validation. Review errors.")
 
         logger.info("=" * 60)
 
@@ -403,7 +403,7 @@ def get_checkpoint() -> SessionCheckpoint:
     global _checkpoint_instance
     if _checkpoint_instance is None:
         _checkpoint_instance = SessionCheckpoint()
-        logger.info("🚀 SessionCheckpoint initialized")
+        logger.info("[EMOJI] SessionCheckpoint initialized")
     return _checkpoint_instance
 
 
@@ -425,11 +425,11 @@ if __name__ == "__main__":
     # Test session start
     try:
         result = session_checkpoint.session_start()
-        print(f"\n✅ Session start: {result.success}")
+        print(f"\n[OK] Session start: {result.success}")
         print(f"Checks passed: {sum(result.checks.values())}/{len(result.checks)}")
         print(f"Warnings: {len(result.warnings)}")
     except RuntimeError as e:
-        print(f"\n❌ Session start failed: {e}")
+        print(f"\n[FAIL] Session start failed: {e}")
 
     # Simulate some work
     print("\n... simulating work for 5 seconds ...\n")
@@ -437,11 +437,11 @@ if __name__ == "__main__":
 
     # Test periodic check
     result = session_checkpoint.periodic_check()
-    print(f"\n✅ Periodic check: {result.success}")
+    print(f"\n[OK] Periodic check: {result.success}")
 
     # Test session end
     result = session_checkpoint.session_end()
-    print(f"\n✅ Session end: {result.success}")
+    print(f"\n[OK] Session end: {result.success}")
     print(f"Final automation rate: {result.statistics.get('automation_rate', 0) * 100:.1f}%")
 
     print("\n" + "=" * 60)

@@ -517,10 +517,10 @@ if __name__ == '__main__':
     success = run_tests()
     if success:
         print("\n" + "="*60)
-        print("✅ All Bayesian Learning tests passed!")
+        print("[OK] All Bayesian Learning tests passed!")
         print("="*60)
     else:
         print("\n" + "="*60)
-        print("❌ Some tests failed. Please review the output above.")
+        print("[FAIL] Some tests failed. Please review the output above.")
         print("="*60)
     sys.exit(0 if success else 1)

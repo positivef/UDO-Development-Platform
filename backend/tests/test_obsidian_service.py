@@ -31,7 +31,7 @@ def temp_vault():
     (vault_dir / ".obsidian").mkdir()
 
     # Create daily notes directory
-    daily_notes = vault_dir / "개발일지"
+    daily_notes = vault_dir / "[EMOJI]"
     daily_notes.mkdir()
 
     yield vault_dir
@@ -56,7 +56,7 @@ class TestObsidianServiceInitialization:
 
         assert service.vault_path == temp_vault
         assert service.vault_available is True
-        assert service.daily_notes_dir == temp_vault / "개발일지"
+        assert service.daily_notes_dir == temp_vault / "[EMOJI]"
 
     def test_init_with_invalid_vault(self):
         """Test initialization with invalid vault path"""

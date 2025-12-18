@@ -141,10 +141,10 @@ class TestDependencyCRUD:
 
     @pytest.mark.asyncio
     async def test_create_dependency_cycle_detection(self, available_task_ids):
-        """Test cycle detection: A→B, B→C, C→A should fail"""
+        """Test cycle detection: A->B, B->C, C->A should fail"""
         task_list = list(available_task_ids)
 
-        # Create A→B
+        # Create A->B
         dep1 = DependencyCreate(
             task_id=task_list[0],
             depends_on_task_id=task_list[1],
@@ -152,7 +152,7 @@ class TestDependencyCRUD:
         )
         await kanban_dependency_service.create_dependency(dep1, available_task_ids)
 
-        # Create B→C
+        # Create B->C
         dep2 = DependencyCreate(
             task_id=task_list[1],
             depends_on_task_id=task_list[2],
@@ -160,7 +160,7 @@ class TestDependencyCRUD:
         )
         await kanban_dependency_service.create_dependency(dep2, available_task_ids)
 
-        # Try to create C→A (should create cycle)
+        # Try to create C->A (should create cycle)
         dep3 = DependencyCreate(
             task_id=task_list[2],
             depends_on_task_id=task_list[0],
@@ -388,7 +388,7 @@ class TestTaskDependencies:
         """Test dependency graph respects depth limit"""
         task_list = list(available_task_ids)
 
-        # Create chain: task[0]→task[1]→task[2]→task[3]
+        # Create chain: task[0]->task[1]->task[2]->task[3]
         for i in range(3):
             dep_data = DependencyCreate(
                 task_id=task_list[i],
@@ -494,7 +494,7 @@ class TestDAGOperations:
         """Test topological sort with linear dependency chain"""
         task_list = list(available_task_ids)[:4]
 
-        # Create chain: task[3]→task[2]→task[1]→task[0]
+        # Create chain: task[3]->task[2]->task[1]->task[0]
         for i in range(3):
             dep_data = DependencyCreate(
                 task_id=task_list[i],
@@ -531,10 +531,10 @@ class TestDAGOperations:
 
     @pytest.mark.asyncio
     async def test_cycle_detection_direct_cycle(self, available_task_ids):
-        """Test cycle detection with direct cycle A→B→A"""
+        """Test cycle detection with direct cycle A->B->A"""
         task_list = list(available_task_ids)
 
-        # Create A→B
+        # Create A->B
         dep1 = DependencyCreate(
             task_id=task_list[0],
             depends_on_task_id=task_list[1],
@@ -542,7 +542,7 @@ class TestDAGOperations:
         )
         await kanban_dependency_service.create_dependency(dep1, available_task_ids)
 
-        # Try to create B→A (should fail)
+        # Try to create B->A (should fail)
         dep2 = DependencyCreate(
             task_id=task_list[1],
             depends_on_task_id=task_list[0],
@@ -558,20 +558,20 @@ class TestDAGOperations:
 
     @pytest.mark.asyncio
     async def test_cycle_detection_indirect_cycle(self, available_task_ids):
-        """Test cycle detection with indirect cycle A→B→C→D→A"""
+        """Test cycle detection with indirect cycle A->B->C->D->A"""
         task_list = list(available_task_ids)
 
-        # Create A→B→C→D→A (4-node cycle)
+        # Create A->B->C->D->A (4-node cycle)
         # Fixed: Use % 4 instead of % 5 to create actual cycle
         for i in range(4):
             dep = DependencyCreate(
                 task_id=task_list[i],
-                depends_on_task_id=task_list[(i + 1) % 4],  # % 4 creates cycle: task[3] → task[0]
+                depends_on_task_id=task_list[(i + 1) % 4],  # % 4 creates cycle: task[3] -> task[0]
                 dependency_type=DependencyType.FINISH_TO_START,
             )
-            if i < 3:  # Create first 3 dependencies (A→B, B→C, C→D)
+            if i < 3:  # Create first 3 dependencies (A->B, B->C, C->D)
                 await kanban_dependency_service.create_dependency(dep, available_task_ids)
-            else:  # 4th dependency (D→A) should fail with CircularDependencyError
+            else:  # 4th dependency (D->A) should fail with CircularDependencyError
                 with pytest.raises(CircularDependencyError):
                     await kanban_dependency_service.create_dependency(dep, available_task_ids)
 
@@ -611,7 +611,7 @@ class TestDAGOperations:
         """Test max depth calculation in statistics"""
         task_list = list(available_task_ids)
 
-        # Create chain of depth 3: task[0]→task[1]→task[2]
+        # Create chain of depth 3: task[0]->task[1]->task[2]
         for i in range(2):
             dep = DependencyCreate(
                 task_id=task_list[i],

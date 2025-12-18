@@ -2,10 +2,10 @@
 Tests for Circuit Breaker state machine (P0 Critical Issue #1).
 
 Verifies all state transitions:
-- CLOSED → OPEN (failures >= threshold)
-- OPEN → HALF_OPEN (after recovery_timeout)
-- HALF_OPEN → CLOSED (on success)
-- HALF_OPEN → OPEN (on failure)
+- CLOSED -> OPEN (failures >= threshold)
+- OPEN -> HALF_OPEN (after recovery_timeout)
+- HALF_OPEN -> CLOSED (on success)
+- HALF_OPEN -> OPEN (on failure)
 """
 
 import pytest
@@ -25,7 +25,7 @@ class TestCircuitBreakerStateMachine:
 
     @pytest.mark.asyncio
     async def test_closed_to_open_transition(self):
-        """CLOSED → OPEN when failures >= threshold"""
+        """CLOSED -> OPEN when failures >= threshold"""
         cb = CircuitBreaker(failure_threshold=3, recovery_timeout=1)
 
         @cb
@@ -65,7 +65,7 @@ class TestCircuitBreakerStateMachine:
 
     @pytest.mark.asyncio
     async def test_open_to_half_open_transition(self):
-        """OPEN → HALF_OPEN after recovery_timeout"""
+        """OPEN -> HALF_OPEN after recovery_timeout"""
         cb = CircuitBreaker(failure_threshold=2, recovery_timeout=1)  # 1 sec timeout
 
         @cb
@@ -93,7 +93,7 @@ class TestCircuitBreakerStateMachine:
 
     @pytest.mark.asyncio
     async def test_half_open_to_closed_on_success(self):
-        """HALF_OPEN → CLOSED on successful call"""
+        """HALF_OPEN -> CLOSED on successful call"""
         cb = CircuitBreaker(failure_threshold=2, recovery_timeout=1)
         success_count = 0
 
@@ -114,7 +114,7 @@ class TestCircuitBreakerStateMachine:
         # Wait for recovery timeout
         await asyncio.sleep(1.1)
 
-        # Next call: OPEN → HALF_OPEN, then success → CLOSED
+        # Next call: OPEN -> HALF_OPEN, then success -> CLOSED
         success_count = 2  # Make it succeed
         result = await sometimes_failing_func()
 
@@ -123,7 +123,7 @@ class TestCircuitBreakerStateMachine:
 
     @pytest.mark.asyncio
     async def test_half_open_to_open_on_failure(self):
-        """HALF_OPEN → OPEN immediately on failure"""
+        """HALF_OPEN -> OPEN immediately on failure"""
         cb = CircuitBreaker(failure_threshold=2, recovery_timeout=1)
 
         @cb
@@ -141,7 +141,7 @@ class TestCircuitBreakerStateMachine:
         # Wait for recovery timeout
         await asyncio.sleep(1.1)
 
-        # Next call: OPEN → HALF_OPEN, then fail → back to OPEN
+        # Next call: OPEN -> HALF_OPEN, then fail -> back to OPEN
         with pytest.raises(ValueError):
             await failing_func()
 
@@ -178,7 +178,7 @@ class TestCircuitBreakerStateMachine:
 
     @pytest.mark.asyncio
     async def test_full_cycle_closed_open_halfopen_closed(self):
-        """Test complete state cycle: CLOSED → OPEN → HALF_OPEN → CLOSED"""
+        """Test complete state cycle: CLOSED -> OPEN -> HALF_OPEN -> CLOSED"""
         cb = CircuitBreaker(failure_threshold=2, recovery_timeout=0.5)
         call_count = 0
 
@@ -193,7 +193,7 @@ class TestCircuitBreakerStateMachine:
         # 1. Start CLOSED
         assert cb.state == "CLOSED"
 
-        # 2. CLOSED → OPEN (2 failures)
+        # 2. CLOSED -> OPEN (2 failures)
         for _ in range(2):
             with pytest.raises(ValueError):
                 await controlled_func()
@@ -202,7 +202,7 @@ class TestCircuitBreakerStateMachine:
         # 3. Wait for recovery timeout
         await asyncio.sleep(0.6)
 
-        # 4. OPEN → HALF_OPEN → CLOSED (success)
+        # 4. OPEN -> HALF_OPEN -> CLOSED (success)
         result = await controlled_func()
         assert result == "recovered"
         assert cb.state == "CLOSED"

@@ -303,8 +303,8 @@ class BayesianConfidenceResponse(BaseModel):
                     "dominant_dimension": "timeline"
                 },
                 "recommendations": [
-                    "✓ Good confidence - proceed with standard checkpoints",
-                    "📋 Document assumptions and validate periodically"
+                    "[EMOJI] Good confidence - proceed with standard checkpoints",
+                    "[EMOJI] Document assumptions and validate periodically"
                 ],
                 "timestamp": "2025-12-01T02:30:00Z"
             }

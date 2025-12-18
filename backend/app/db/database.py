@@ -78,4 +78,4 @@ def init_db():
     # Create tables in both databases
     Base.metadata.create_all(bind=engine)
     Base.metadata.create_all(bind=sqlite_engine)
-    logger.info("✅ Database tables created")
+    logger.info("[OK] Database tables created")

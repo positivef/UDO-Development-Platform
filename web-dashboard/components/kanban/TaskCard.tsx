@@ -9,6 +9,9 @@
  * - Tags display
  * - Click to view details
  * - React.memo for performance optimization
+ * - Dependencies/Blocked indicator (Q7: Hard Block)
+ *
+ * Week 6 Day 2: Added Dependencies visualization
  */
 
 import { memo, useMemo } from 'react'
@@ -17,8 +20,27 @@ import { CSS } from '@dnd-kit/utilities'
 import { Badge } from '@/components/ui/badge'
 import { Card } from '@/components/ui/card'
 import type { KanbanTask } from '@/lib/types/kanban'
-import { AlertCircle, Clock, Layers } from 'lucide-react'
+import { AlertCircle, Clock, Layers, Link2, AlertTriangle, Calendar, MessageSquare } from 'lucide-react'
 import { cn } from '@/lib/utils'
+
+// Due date helpers
+const isDueSoon = (dateStr: string) => {
+  const date = new Date(dateStr)
+  const now = new Date()
+  const diffDays = Math.ceil((date.getTime() - now.getTime()) / (1000 * 60 * 60 * 24))
+  return diffDays <= 3 && diffDays >= 0
+}
+
+const isOverdue = (dateStr: string) => {
+  const date = new Date(dateStr)
+  const now = new Date()
+  return date < now
+}
+
+const formatDueDateShort = (dateStr: string) => {
+  const date = new Date(dateStr)
+  return date.toLocaleDateString('ko-KR', { month: 'short', day: 'numeric' })
+}
 
 interface TaskCardProps {
   task: KanbanTask
@@ -115,13 +137,50 @@ function TaskCardComponent({ task, onClick }: TaskCardProps) {
           </div>
         )}
 
+        {/* Dependencies/Blocked indicator (Q7) */}
+        {(task.blocked_by && task.blocked_by.length > 0) && (
+          <div className="flex items-center gap-1 mb-2 text-xs text-red-500 bg-red-50 dark:bg-red-900/20 px-2 py-1 rounded">
+            <AlertTriangle className="h-3 w-3 flex-shrink-0" />
+            <span className="truncate">
+              Blocked by {task.blocked_by.length} task{task.blocked_by.length > 1 ? 's' : ''}
+            </span>
+          </div>
+        )}
+
+        {/* Dependencies indicator */}
+        {(task.dependencies && task.dependencies.length > 0) && (
+          <div className="flex items-center gap-1 mb-2 text-xs text-blue-500 bg-blue-50 dark:bg-blue-900/20 px-2 py-1 rounded">
+            <Link2 className="h-3 w-3 flex-shrink-0" />
+            <span className="truncate">
+              Depends on {task.dependencies.length} task{task.dependencies.length > 1 ? 's' : ''}
+            </span>
+          </div>
+        )}
+
         {/* Footer metadata */}
-        <div className="flex items-center gap-3 text-xs text-muted-foreground">
+        <div className="flex items-center gap-3 text-xs text-muted-foreground flex-wrap">
           {/* Phase */}
           <div className="flex items-center gap-1">
             <Layers className="h-3 w-3" />
             <span className="capitalize">{task.phase}</span>
           </div>
+
+          {/* Due date (Week 6 Day 4) */}
+          {task.due_date && (
+            <div
+              className={cn(
+                'flex items-center gap-1',
+                isOverdue(task.due_date) && 'text-red-500',
+                isDueSoon(task.due_date) && !isOverdue(task.due_date) && 'text-yellow-600'
+              )}
+            >
+              <Calendar className="h-3 w-3" />
+              <span>{formatDueDateShort(task.due_date)}</span>
+              {isOverdue(task.due_date) && (
+                <AlertTriangle className="h-3 w-3" />
+              )}
+            </div>
+          )}
 
           {/* Estimated hours */}
           {task.estimated_hours && (
@@ -131,7 +190,15 @@ function TaskCardComponent({ task, onClick }: TaskCardProps) {
             </div>
           )}
 
-          {/* Blocked indicator */}
+          {/* Comments count (Week 6 Day 4) */}
+          {task.comments && task.comments.length > 0 && (
+            <div className="flex items-center gap-1">
+              <MessageSquare className="h-3 w-3" />
+              <span>{task.comments.length}</span>
+            </div>
+          )}
+
+          {/* Blocked status indicator */}
           {task.status === 'blocked' && (
             <div className="flex items-center gap-1 text-red-500">
               <AlertCircle className="h-3 w-3" />

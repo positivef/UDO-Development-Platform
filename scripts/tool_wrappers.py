@@ -17,11 +17,11 @@ Usage:
 
     # Instead of subprocess.run()
     result = bash_with_recovery("pip install pandas")
-    # → Auto-resolves ModuleNotFoundError via 3-Tier system
+    # -> Auto-resolves ModuleNotFoundError via 3-Tier system
 
     # Instead of open(file).read()
     content = read_with_recovery("/path/to/file.py")
-    # → Auto-resolves PermissionError, FileNotFoundError
+    # -> Auto-resolves PermissionError, FileNotFoundError
 """
 
 import subprocess
@@ -69,16 +69,16 @@ def bash_with_recovery(
 
     Examples:
         >>> result = bash_with_recovery("pip install pandas")
-        >>> # ModuleNotFoundError → Tier 1 (Obsidian) → Auto-fixed!
+        >>> # ModuleNotFoundError -> Tier 1 (Obsidian) -> Auto-fixed!
 
         >>> result = bash_with_recovery("chmod +x script.sh")
-        >>> # PermissionError → Tier 2 (Context7) → chmod applied
+        >>> # PermissionError -> Tier 2 (Context7) -> chmod applied
 
         >>> result = bash_with_recovery("nonexistent-command")
-        >>> # Command not found → Tier 3 (User) → Escalated
+        >>> # Command not found -> Tier 3 (User) -> Escalated
     """
     try:
-        logger.info(f"🔧 Executing: {cmd[:100]}")
+        logger.info(f"[EMOJI] Executing: {cmd[:100]}")
 
         # For security, split command unless shell=True explicitly requested
         if shell:
@@ -104,14 +104,14 @@ def bash_with_recovery(
         }
 
         if result["success"]:
-            logger.info(f"✅ Command successful: {cmd[:50]}")
+            logger.info(f"[OK] Command successful: {cmd[:50]}")
         else:
-            logger.warning(f"⚠️  Command failed (exit={result['exit_code']}): {cmd[:50]}")
+            logger.warning(f"[WARN]  Command failed (exit={result['exit_code']}): {cmd[:50]}")
 
         return result
 
     except subprocess.TimeoutExpired as e:
-        logger.error(f"❌ Command timeout: {cmd[:100]}")
+        logger.error(f"[FAIL] Command timeout: {cmd[:100]}")
         return {
             "exit_code": -1,
             "stdout": "",
@@ -121,7 +121,7 @@ def bash_with_recovery(
         }
 
     except FileNotFoundError as e:
-        logger.error(f"❌ Command not found: {cmd[:100]}")
+        logger.error(f"[FAIL] Command not found: {cmd[:100]}")
         return {
             "exit_code": 127,
             "stdout": "",
@@ -131,7 +131,7 @@ def bash_with_recovery(
         }
 
     except Exception as e:
-        logger.error(f"❌ Command exception: {e}")
+        logger.error(f"[FAIL] Command exception: {e}")
         return {
             "exit_code": -1,
             "stdout": "",
@@ -170,21 +170,21 @@ def read_with_recovery(
 
     Examples:
         >>> result = read_with_recovery("/path/to/file.py")
-        >>> # FileNotFoundError → Tier 1 → Past solution found
+        >>> # FileNotFoundError -> Tier 1 -> Past solution found
 
         >>> result = read_with_recovery("/restricted/file.log")
-        >>> # PermissionError → Tier 2 → chmod +r applied
+        >>> # PermissionError -> Tier 2 -> chmod +r applied
 
         >>> result = read_with_recovery("/binary/file.dat")
-        >>> # UnicodeDecodeError → Tier 2 → encoding=latin-1 suggested
+        >>> # UnicodeDecodeError -> Tier 2 -> encoding=latin-1 suggested
     """
     try:
-        logger.info(f"📖 Reading: {file_path}")
+        logger.info(f"[EMOJI] Reading: {file_path}")
 
         path = Path(file_path)
 
         if not path.exists():
-            logger.error(f"❌ File not found: {file_path}")
+            logger.error(f"[FAIL] File not found: {file_path}")
             return {
                 "success": False,
                 "content": "",
@@ -194,7 +194,7 @@ def read_with_recovery(
             }
 
         if not path.is_file():
-            logger.error(f"❌ Not a file: {file_path}")
+            logger.error(f"[FAIL] Not a file: {file_path}")
             return {
                 "success": False,
                 "content": "",
@@ -208,7 +208,7 @@ def read_with_recovery(
 
         size_bytes = path.stat().st_size
 
-        logger.info(f"✅ Read {size_bytes} bytes from {path.name}")
+        logger.info(f"[OK] Read {size_bytes} bytes from {path.name}")
 
         return {
             "success": True,
@@ -218,7 +218,7 @@ def read_with_recovery(
         }
 
     except PermissionError as e:
-        logger.error(f"❌ Permission denied: {file_path}")
+        logger.error(f"[FAIL] Permission denied: {file_path}")
         return {
             "success": False,
             "content": "",
@@ -228,7 +228,7 @@ def read_with_recovery(
         }
 
     except UnicodeDecodeError as e:
-        logger.error(f"❌ Encoding error: {file_path}")
+        logger.error(f"[FAIL] Encoding error: {file_path}")
         return {
             "success": False,
             "content": "",
@@ -238,7 +238,7 @@ def read_with_recovery(
         }
 
     except Exception as e:
-        logger.error(f"❌ Read error: {e}")
+        logger.error(f"[FAIL] Read error: {e}")
         return {
             "success": False,
             "content": "",
@@ -287,17 +287,17 @@ def edit_with_recovery(
         ...     "old_function()",
         ...     "new_function()"
         ... )
-        >>> # PermissionError → Tier 2 → chmod +w applied
+        >>> # PermissionError -> Tier 2 -> chmod +w applied
 
         >>> result = edit_with_recovery(
         ...     "/readonly/file.txt",
         ...     "search",
         ...     "replace"
         ... )
-        >>> # Read-only filesystem → Tier 3 → User escalation
+        >>> # Read-only filesystem -> Tier 3 -> User escalation
     """
     try:
-        logger.info(f"✏️  Editing: {file_path}")
+        logger.info(f"[EMOJI]  Editing: {file_path}")
 
         path = Path(file_path)
 
@@ -317,7 +317,7 @@ def edit_with_recovery(
         count = original.count(old_string)
 
         if count == 0:
-            logger.warning(f"⚠️  String not found in {path.name}")
+            logger.warning(f"[WARN]  String not found in {path.name}")
             return {
                 "success": False,
                 "file_path": file_path,
@@ -351,7 +351,7 @@ def edit_with_recovery(
         with open(file_path, 'w', encoding=encoding) as f:
             f.write(modified)
 
-        logger.info(f"✅ Edited {path.name} ({replacements} replacement{'s' if replacements > 1 else ''})")
+        logger.info(f"[OK] Edited {path.name} ({replacements} replacement{'s' if replacements > 1 else ''})")
 
         return {
             "success": True,
@@ -361,7 +361,7 @@ def edit_with_recovery(
         }
 
     except PermissionError as e:
-        logger.error(f"❌ Permission denied: {file_path}")
+        logger.error(f"[FAIL] Permission denied: {file_path}")
         return {
             "success": False,
             "file_path": file_path,
@@ -370,7 +370,7 @@ def edit_with_recovery(
         }
 
     except Exception as e:
-        logger.error(f"❌ Edit error: {e}")
+        logger.error(f"[FAIL] Edit error: {e}")
         return {
             "success": False,
             "file_path": file_path,
@@ -415,22 +415,22 @@ def write_with_recovery(
         ...     "/new/path/file.py",
         ...     "print('hello')"
         ... )
-        >>> # Parent dir doesn't exist → create_dirs=True → Created
+        >>> # Parent dir doesn't exist -> create_dirs=True -> Created
 
         >>> result = write_with_recovery(
         ...     "/readonly/file.txt",
         ...     "content"
         ... )
-        >>> # PermissionError → Tier 2 → mkdir/chmod suggested
+        >>> # PermissionError -> Tier 2 -> mkdir/chmod suggested
     """
     try:
-        logger.info(f"📝 Writing: {file_path}")
+        logger.info(f"[EMOJI] Writing: {file_path}")
 
         path = Path(file_path)
 
         # Create parent directories if needed
         if create_dirs and not path.parent.exists():
-            logger.info(f"📁 Creating directory: {path.parent}")
+            logger.info(f"[EMOJI] Creating directory: {path.parent}")
             path.parent.mkdir(parents=True, exist_ok=True)
 
         # Backup existing file
@@ -441,7 +441,7 @@ def write_with_recovery(
                 original = f.read()
             with open(backup_path, 'w', encoding=encoding) as f:
                 f.write(original)
-            logger.info(f"💾 Backup created: {Path(backup_path).name}")
+            logger.info(f"[EMOJI] Backup created: {Path(backup_path).name}")
 
         # Write content
         with open(file_path, 'w', encoding=encoding) as f:
@@ -449,7 +449,7 @@ def write_with_recovery(
 
         size_bytes = len(content.encode(encoding))
 
-        logger.info(f"✅ Wrote {size_bytes} bytes to {path.name}")
+        logger.info(f"[OK] Wrote {size_bytes} bytes to {path.name}")
 
         return {
             "success": True,
@@ -459,7 +459,7 @@ def write_with_recovery(
         }
 
     except PermissionError as e:
-        logger.error(f"❌ Permission denied: {file_path}")
+        logger.error(f"[FAIL] Permission denied: {file_path}")
         return {
             "success": False,
             "file_path": file_path,
@@ -468,7 +468,7 @@ def write_with_recovery(
         }
 
     except OSError as e:
-        logger.error(f"❌ OS error: {e}")
+        logger.error(f"[FAIL] OS error: {e}")
         return {
             "success": False,
             "file_path": file_path,
@@ -477,7 +477,7 @@ def write_with_recovery(
         }
 
     except Exception as e:
-        logger.error(f"❌ Write error: {e}")
+        logger.error(f"[FAIL] Write error: {e}")
         return {
             "success": False,
             "file_path": file_path,
@@ -515,7 +515,7 @@ def print_wrapper_report():
     stats = get_wrapper_statistics()
 
     print("\n" + "=" * 60)
-    print("📊 Tool Wrapper Statistics")
+    print("[EMOJI] Tool Wrapper Statistics")
     print("=" * 60)
     print(f"Total Calls: {stats['total_calls']}")
     print(f"Total Errors: {stats['total_errors']}")
@@ -567,4 +567,4 @@ if __name__ == "__main__":
     # Print statistics
     print_wrapper_report()
 
-    print("✅ All self-tests passed!")
+    print("[OK] All self-tests passed!")

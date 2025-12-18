@@ -77,15 +77,15 @@ def annotate_prediction(prediction_entry: Dict) -> Optional[Dict]:
     """
     print(f"\n{'='*70}")
     print(f"⏰ Prediction made at: {prediction_entry['prediction_timestamp']}")
-    print(f"🔮 Predicted global uncertainty: {prediction_entry['predicted_global_level']:.1%}")
-    print(f"📊 Predicted trend: {prediction_entry['predicted_global_trend']}")
-    print(f"🎯 Predicted state: {prediction_entry['predicted_global_state']}")
+    print(f"[EMOJI] Predicted global uncertainty: {prediction_entry['predicted_global_level']:.1%}")
+    print(f"[EMOJI] Predicted trend: {prediction_entry['predicted_global_trend']}")
+    print(f"[EMOJI] Predicted state: {prediction_entry['predicted_global_state']}")
     print(f"⏳ Hours ahead: {prediction_entry['hours_ahead']}h")
-    print(f"✅ Validation time: {prediction_entry['validation_timestamp']}")
+    print(f"[OK] Validation time: {prediction_entry['validation_timestamp']}")
     print(f"{'='*70}\n")
 
     # Ask annotator to observe actual uncertainty
-    print("📋 Based on what happened in the last 24 hours:\n")
+    print("[EMOJI] Based on what happened in the last 24 hours:\n")
 
     print("1. Did unexpected blockers occur? [y/n/s(kip)]")
     blockers_input = input("> ").lower()
@@ -117,7 +117,7 @@ def annotate_prediction(prediction_entry: Dict) -> Optional[Dict]:
     # Clamp to 0-1 range
     actual_level = max(0.0, min(1.0, actual_level))
 
-    print(f"\n💡 Calculated actual uncertainty: {actual_level:.1%}")
+    print(f"\n[EMOJI] Calculated actual uncertainty: {actual_level:.1%}")
     print("Confirm this value? [y/n] or enter custom value [0-1]:")
     confirm = input("> ")
 
@@ -125,10 +125,10 @@ def annotate_prediction(prediction_entry: Dict) -> Optional[Dict]:
         try:
             actual_level = float(confirm)
             if not (0 <= actual_level <= 1):
-                print("⚠️  Value out of range, using calculated value")
+                print("[WARN]  Value out of range, using calculated value")
                 actual_level = max(0.0, min(1.0, actual_level))
         except ValueError:
-            print("⚠️  Invalid input, using calculated value")
+            print("[WARN]  Invalid input, using calculated value")
 
     # Determine actual trend
     prev_level = prediction_entry.get("previous_level", 0.30)
@@ -136,7 +136,7 @@ def annotate_prediction(prediction_entry: Dict) -> Optional[Dict]:
 
     actual_state = level_to_state(actual_level)
 
-    print(f"\n📝 Annotation Summary:")
+    print(f"\n[EMOJI] Annotation Summary:")
     print(f"   Actual level: {actual_level:.1%}")
     print(f"   Actual trend: {actual_trend}")
     print(f"   Actual state: {actual_state}")
@@ -183,7 +183,7 @@ def load_predictions_to_annotate(
     predictions_file = storage_dir / "predictions_log.jsonl"
 
     if not predictions_file.exists():
-        print(f"❌ No predictions log found at: {predictions_file}")
+        print(f"[FAIL] No predictions log found at: {predictions_file}")
         print("Run UDO with predictions first to generate data.")
         return []
 
@@ -271,7 +271,7 @@ def main():
         try:
             target_date = datetime.fromisoformat(args.date)
         except ValueError:
-            print(f"❌ Invalid date format: {args.date}")
+            print(f"[FAIL] Invalid date format: {args.date}")
             print("Use YYYY-MM-DD format")
             return
 
@@ -288,30 +288,30 @@ def main():
     )
 
     if not predictions:
-        print("✅ No predictions to annotate!")
+        print("[OK] No predictions to annotate!")
         print("\nPossible reasons:")
         print("  - All predictions are already annotated")
         print("  - Validation time hasn't passed yet (need to wait 24h)")
         print("  - No predictions logged yet")
         return
 
-    print(f"📊 Found {len(predictions)} predictions to annotate\n")
+    print(f"[EMOJI] Found {len(predictions)} predictions to annotate\n")
 
     # Annotate each
     ground_truth = []
     for i, pred in enumerate(predictions, 1):
         print(f"\n{'#'*70}")
-        print(f"📌 Annotation {i}/{len(predictions)}")
+        print(f"[EMOJI] Annotation {i}/{len(predictions)}")
         print(f"{'#'*70}")
 
         annotated = annotate_prediction(pred)
 
         if annotated is None:
-            print("⏭️  Skipped")
+            print("⏭  Skipped")
             continue
 
         ground_truth.append(annotated)
-        print("✅ Saved")
+        print("[OK] Saved")
 
     # Save ground truth
     if ground_truth:
@@ -323,11 +323,11 @@ def main():
                 f.write(json.dumps(entry) + "\n")
 
         print(f"\n{'='*70}")
-        print(f"✅ Saved {len(ground_truth)} ground truth annotations")
-        print(f"📁 Location: {output_file}")
+        print(f"[OK] Saved {len(ground_truth)} ground truth annotations")
+        print(f"[EMOJI] Location: {output_file}")
         print(f"{'='*70}\n")
     else:
-        print("\n⚠️  No annotations saved (all skipped)")
+        print("\n[WARN]  No annotations saved (all skipped)")
 
 
 if __name__ == "__main__":

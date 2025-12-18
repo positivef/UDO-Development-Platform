@@ -1,0 +1,291 @@
+#!/usr/bin/env python3
+"""
+Phase State Manager - Development Phase Tracking and Transition Management
+
+Manages current development phase state and emits transition events
+for integration with time tracking and analytics systems.
+
+Author: UDO Platform Team
+Date: 2025-11-21
+Version: 1.0.0
+"""
+
+import logging
+from dataclasses import dataclass, field
+from datetime import datetime
+from typing import Optional, List, Dict, Any, Callable
+from enum import Enum
+
+logger = logging.getLogger(__name__)
+
+
+class Phase(str, Enum):
+    """
+    Development phases (compatible with both UDO v2 and backend)
+
+    These match:
+    - backend/app/models/time_tracking.py::Phase
+    - src/unified_development_orchestrator_v2.py::DevelopmentStage
+    """
+    IDEATION = "ideation"
+    DESIGN = "design"
+    MVP = "mvp"
+    IMPLEMENTATION = "implementation"
+    TESTING = "testing"
+
+
+@dataclass
+class PhaseTransitionEvent:
+    """
+    Event emitted when development phase changes
+
+    Attributes:
+        from_phase: Previous phase (None if first phase)
+        to_phase: New phase being entered
+        transition_time: When the transition occurred
+        duration_seconds: Time spent in previous phase (None if first phase)
+        metadata: Additional context about the transition
+    """
+    from_phase: Optional[Phase]
+    to_phase: Phase
+    transition_time: datetime
+    duration_seconds: Optional[int] = None
+    metadata: Dict[str, Any] = field(default_factory=dict)
+
+    def to_dict(self) -> Dict[str, Any]:
+        """Convert to dictionary for serialization"""
+        return {
+            "from_phase": self.from_phase.value if self.from_phase else None,
+            "to_phase": self.to_phase.value,
+            "transition_time": self.transition_time.isoformat(),
+            "duration_seconds": self.duration_seconds,
+            "metadata": self.metadata
+        }
+
+
+class PhaseStateManager:
+    """
+    Manages current development phase state and transitions
+
+    Features:
+    - Tracks current phase
+    - Records phase start/end times
+    - Emits phase transition events
+    - Calculates phase duration
+    - Maintains phase history
+    - Notifies registered listeners
+
+    Example:
+        >>> manager = PhaseStateManager()
+        >>> manager.register_listener(on_phase_change)
+        >>> manager.set_phase(Phase.IDEATION)  # Starts ideation phase
+        >>> manager.set_phase(Phase.DESIGN)    # Transitions to design
+        >>> history = manager.get_phase_history()
+    """
+
+    def __init__(self):
+        """Initialize phase state manager"""
+        self.current_phase: Optional[Phase] = None
+        self.phase_start_time: Optional[datetime] = None
+        self.phase_history: List[Dict[str, Any]] = []
+        self.listeners: List[Callable[[PhaseTransitionEvent], None]] = []
+
+        logger.info("PhaseStateManager initialized")
+
+    def set_phase(self, new_phase: Phase, metadata: Optional[Dict[str, Any]] = None):
+        """
+        Set current phase and emit transition event
+
+        Args:
+            new_phase: New development phase
+            metadata: Optional metadata about the transition
+
+        Example:
+            >>> manager.set_phase(Phase.IMPLEMENTATION, {"reason": "MVP approved"})
+        """
+        old_phase = self.current_phase
+        old_start_time = self.phase_start_time
+        transition_time = datetime.utcnow()
+
+        # Calculate duration if transitioning from existing phase
+        duration_seconds = None
+        if old_phase and old_start_time:
+            duration_seconds = int((transition_time - old_start_time).total_seconds())
+
+        # Update state
+        self.current_phase = new_phase
+        self.phase_start_time = transition_time
+
+        # Record in history
+        history_entry = {
+            "from_phase": old_phase.value if old_phase else None,
+            "to_phase": new_phase.value,
+            "transition_time": transition_time,
+            "duration_seconds": duration_seconds,
+            "metadata": metadata or {}
+        }
+        self.phase_history.append(history_entry)
+
+        # Create and emit event
+        event = PhaseTransitionEvent(
+            from_phase=old_phase,
+            to_phase=new_phase,
+            transition_time=transition_time,
+            duration_seconds=duration_seconds,
+            metadata=metadata or {}
+        )
+
+        self._emit_event(event)
+
+        logger.info(
+            f"Phase transition: {old_phase.value if old_phase else 'None'} → {new_phase.value} "
+            f"(duration: {duration_seconds}s)" if duration_seconds
+            else f"Phase set: {new_phase.value}"
+        )
+
+    def get_current_phase(self) -> Optional[Phase]:
+        """
+        Get current development phase
+
+        Returns:
+            Current phase or None if no phase set
+        """
+        return self.current_phase
+
+    def get_phase_duration(self) -> Optional[int]:
+        """
+        Get duration of current phase in seconds
+
+        Returns:
+            Seconds since phase started, or None if no phase active
+        """
+        if not self.current_phase or not self.phase_start_time:
+            return None
+
+        duration = datetime.utcnow() - self.phase_start_time
+        return int(duration.total_seconds())
+
+    def get_phase_history(self) -> List[Dict[str, Any]]:
+        """
+        Get history of all phase transitions
+
+        Returns:
+            List of phase transition records
+        """
+        return self.phase_history.copy()
+
+    def register_listener(self, listener: Callable[[PhaseTransitionEvent], None]):
+        """
+        Register a callback for phase transition events
+
+        Args:
+            listener: Callback function that receives PhaseTransitionEvent
+
+        Example:
+            >>> def on_phase_change(event: PhaseTransitionEvent):
+            ...     print(f"Phase changed to {event.to_phase.value}")
+            >>> manager.register_listener(on_phase_change)
+        """
+        if listener not in self.listeners:
+            self.listeners.append(listener)
+            logger.info(f"Registered phase transition listener: {listener.__name__}")
+
+    def unregister_listener(self, listener: Callable[[PhaseTransitionEvent], None]):
+        """
+        Unregister a callback
+
+        Args:
+            listener: Previously registered listener to remove
+        """
+        if listener in self.listeners:
+            self.listeners.remove(listener)
+            logger.info(f"Unregistered phase transition listener: {listener.__name__}")
+
+    def _emit_event(self, event: PhaseTransitionEvent):
+        """
+        Emit event to all registered listeners
+
+        Args:
+            event: Phase transition event to emit
+        """
+        for listener in self.listeners:
+            try:
+                listener(event)
+            except Exception as e:
+                logger.error(f"Listener {listener.__name__} error: {e}", exc_info=True)
+
+    def reset(self):
+        """
+        Reset phase state (useful for testing)
+
+        Clears:
+        - Current phase
+        - Phase start time
+        - Phase history
+        """
+        self.current_phase = None
+        self.phase_start_time = None
+        self.phase_history = []
+        logger.info("Phase state reset")
+
+    def get_statistics(self) -> Dict[str, Any]:
+        """
+        Get statistics about phase transitions
+
+        Returns:
+            Dictionary with transition count, total duration, etc.
+        """
+        if not self.phase_history:
+            return {
+                "total_transitions": 0,
+                "current_phase": None,
+                "current_duration_seconds": None,
+                "total_duration_seconds": 0
+            }
+
+        # Calculate total duration across all phases
+        total_duration = sum(
+            entry["duration_seconds"]
+            for entry in self.phase_history
+            if entry["duration_seconds"] is not None
+        )
+
+        # Add current phase duration if active
+        current_duration = self.get_phase_duration()
+        if current_duration:
+            total_duration += current_duration
+
+        return {
+            "total_transitions": len(self.phase_history),
+            "current_phase": self.current_phase.value if self.current_phase else None,
+            "current_duration_seconds": current_duration,
+            "total_duration_seconds": total_duration,
+            "phases_visited": list(set(
+                entry["to_phase"] for entry in self.phase_history
+            ))
+        }
+
+
+# Singleton instance for global access (optional)
+_global_phase_manager: Optional[PhaseStateManager] = None
+
+
+def get_global_phase_manager() -> PhaseStateManager:
+    """
+    Get or create global phase manager instance
+
+    Returns:
+        Global PhaseStateManager singleton
+    """
+    global _global_phase_manager
+    if _global_phase_manager is None:
+        _global_phase_manager = PhaseStateManager()
+    return _global_phase_manager
+
+
+def reset_global_phase_manager():
+    """Reset global phase manager (useful for testing)"""
+    global _global_phase_manager
+    if _global_phase_manager:
+        _global_phase_manager.reset()
+        _global_phase_manager = None

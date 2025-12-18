@@ -988,7 +988,7 @@ class TimeTrackingService:
             new_state = uncertainty_map.classify_state(magnitude)
 
             logger.warning(
-                "Time tracking overrun for task %s (ratio=%.2f) -> risk ↑ (tech +%.2f, timeline +%.2f), state=%s",
+                "Time tracking overrun for task %s (ratio=%.2f) -> risk ^ (tech +%.2f, timeline +%.2f), state=%s",
                 task_id,
                 ratio,
                 technical_delta,

@@ -144,6 +144,70 @@ export async function uploadContext(
 }
 
 /**
+ * Upload context ZIP file (Week 6 Day 5: FormData file upload)
+ * @param taskId - Task ID to upload context for
+ * @param file - ZIP file to upload
+ * @returns Upload response with metadata
+ * @throws KanbanContextAPIError if upload fails or file exceeds 50MB
+ */
+export async function uploadContextFile(
+  taskId: string,
+  file: File
+): Promise<ContextUploadResponse> {
+  // Validate file size (50MB = 52,428,800 bytes)
+  const MAX_SIZE = 50 * 1024 * 1024
+  if (file.size > MAX_SIZE) {
+    throw new KanbanContextAPIError(
+      `File size ${(file.size / 1024 / 1024).toFixed(2)}MB exceeds 50MB limit`,
+      413,
+      'CONTEXT_SIZE_LIMIT_EXCEEDED'
+    )
+  }
+
+  // Validate file type (ZIP only)
+  if (!file.name.endsWith('.zip') && file.type !== 'application/zip') {
+    throw new KanbanContextAPIError(
+      'Only ZIP files are allowed',
+      400,
+      'INVALID_FILE_TYPE'
+    )
+  }
+
+  const formData = new FormData()
+  formData.append('file', file)
+
+  const response = await fetch(
+    `${API_BASE_URL}/api/kanban/context/${taskId}/upload`,
+    {
+      method: 'POST',
+      body: formData,
+      // Note: Don't set Content-Type header - browser will set it with boundary
+    }
+  )
+
+  if (!response.ok) {
+    const errorData = await response.json().catch(() => ({}))
+
+    // Special handling for size limit exceeded
+    if (response.status === 413) {
+      throw new KanbanContextAPIError(
+        'Context size limit exceeded (50MB max)',
+        413,
+        'CONTEXT_SIZE_LIMIT_EXCEEDED'
+      )
+    }
+
+    throw new KanbanContextAPIError(
+      errorData.error?.message || `Failed to upload context: ${response.statusText}`,
+      response.status,
+      errorData.error?.code
+    )
+  }
+
+  return response.json()
+}
+
+/**
  * Track context load event (Q4: double-click auto-load)
  */
 export async function trackContextLoad(

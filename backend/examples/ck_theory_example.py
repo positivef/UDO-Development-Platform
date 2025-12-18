@@ -39,11 +39,11 @@ async def main():
 
     result1 = await service.generate_design(request1)
 
-    print(f"\n✅ Design ID: {result1.id}")
-    print(f"⏱️  Duration: {result1.total_duration_ms}ms ({result1.total_duration_ms / 1000:.1f}s)")
+    print(f"\n[OK] Design ID: {result1.id}")
+    print(f"⏱  Duration: {result1.total_duration_ms}ms ({result1.total_duration_ms / 1000:.1f}s)")
 
     # Show alternatives
-    print(f"\n🔀 Design Alternatives:")
+    print(f"\n[EMOJI] Design Alternatives:")
     for alt in result1.alternatives:
         print(f"\n  Alternative {alt.id}: {alt.title}")
         print(f"  RICE Score: {alt.rice.score:.2f} (R:{alt.rice.reach} I:{alt.rice.impact} C:{alt.rice.confidence} E:{alt.rice.effort})")
@@ -53,17 +53,17 @@ async def main():
         print(f"  Cons: {', '.join(alt.cons[:2])}...")
 
     # Show trade-off analysis
-    print(f"\n⚖️  Trade-off Analysis:")
+    print(f"\n[EMOJI]  Trade-off Analysis:")
     print(f"  Summary: {result1.tradeoff_analysis.summary[:150]}...")
     print(f"  Recommendation: {result1.tradeoff_analysis.recommendation[:150]}...")
 
     # Show decision tree
-    print(f"\n🌳 Decision Tree:")
+    print(f"\n[EMOJI] Decision Tree:")
     for i, criterion in enumerate(result1.tradeoff_analysis.decision_tree[:3], 1):
         print(f"  {i}. {criterion}")
 
     if result1.obsidian_path:
-        print(f"\n📝 Saved to Obsidian: {result1.obsidian_path}")
+        print(f"\n[EMOJI] Saved to Obsidian: {result1.obsidian_path}")
 
     # Example 2: Performance Optimization Design
     print("\n" + "=" * 60)
@@ -82,16 +82,16 @@ async def main():
 
     result2 = await service.generate_design(request2)
 
-    print(f"\n✅ Design ID: {result2.id}")
-    print(f"⏱️  Duration: {result2.total_duration_ms}ms")
+    print(f"\n[OK] Design ID: {result2.id}")
+    print(f"⏱  Duration: {result2.total_duration_ms}ms")
 
     # Show RICE scores
-    print(f"\n📊 RICE Score Comparison:")
+    print(f"\n[EMOJI] RICE Score Comparison:")
     for alt in result2.alternatives:
         print(f"  {alt.id}: {alt.rice.score:>5.2f} - {alt.title}")
 
     # Show recommended alternative
-    print(f"\n⭐ Recommendation:")
+    print(f"\n[EMOJI] Recommendation:")
     print(f"{result2.tradeoff_analysis.recommendation[:200]}...")
 
     # Example 3: Add feedback
@@ -111,13 +111,13 @@ async def main():
     success = await service.add_feedback(result1.id, feedback)
 
     if success:
-        print(f"\n✅ Feedback added successfully")
+        print(f"\n[OK] Feedback added successfully")
         print(f"   Design: {result1.id}")
         print(f"   Selected: Alternative {feedback.selected_alternative}")
         print(f"   Rating: {feedback.rating}/5")
         print(f"   Outcome: {feedback.outcome}")
     else:
-        print(f"\n❌ Failed to add feedback")
+        print(f"\n[FAIL] Failed to add feedback")
 
     # Example 4: Retrieve feedback
     print("\n" + "=" * 60)
@@ -158,12 +158,12 @@ async def main():
     retrieved = await service.get_design(result1.id)
 
     if retrieved:
-        print(f"\n✅ Successfully retrieved design: {retrieved.id}")
+        print(f"\n[OK] Successfully retrieved design: {retrieved.id}")
         print(f"   Challenge: {retrieved.challenge}")
         print(f"   Alternatives: {', '.join(a.id for a in retrieved.alternatives)}")
         print(f"   Created: {retrieved.created_at}")
     else:
-        print(f"\n❌ Design not found: {result1.id}")
+        print(f"\n[FAIL] Design not found: {result1.id}")
 
 
 if __name__ == "__main__":

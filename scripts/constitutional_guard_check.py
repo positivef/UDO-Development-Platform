@@ -28,7 +28,7 @@ sys.path.insert(0, str(project_root))
 try:
     from backend.app.core.constitutional_guard import ConstitutionalGuard, Severity
 except ImportError:
-    print("❌ Error: Cannot import ConstitutionalGuard")
+    print("[FAIL] Error: Cannot import ConstitutionalGuard")
     print("   Make sure you're in the UDO-Development-Platform directory")
     sys.exit(1)
 
@@ -52,7 +52,7 @@ class ConstitutionalPreCommitHook:
             )
             return [f.strip() for f in result.stdout.split('\n') if f.strip()]
         except subprocess.CalledProcessError as e:
-            print(f"❌ Error getting staged files: {e}")
+            print(f"[FAIL] Error getting staged files: {e}")
             return []
 
     def get_staged_diff(self) -> str:
@@ -66,7 +66,7 @@ class ConstitutionalPreCommitHook:
             )
             return result.stdout
         except subprocess.CalledProcessError as e:
-            print(f"❌ Error getting diff: {e}")
+            print(f"[FAIL] Error getting diff: {e}")
             return ""
 
     def count_file_changes(self, staged_files: List[str]) -> Tuple[int, int, int]:
@@ -260,12 +260,12 @@ class ConstitutionalPreCommitHook:
         Returns:
             True if all checks pass, False otherwise
         """
-        print("🔍 Running Constitutional Guard checks...")
+        print("[EMOJI] Running Constitutional Guard checks...")
 
         # Get staged files
         staged_files = self.get_staged_files()
         if not staged_files:
-            print("ℹ️  No staged files to check")
+            print("ℹ  No staged files to check")
             return True
 
         print(f"   Checking {len(staged_files)} staged files")
@@ -288,12 +288,12 @@ class ConstitutionalPreCommitHook:
         for check_name, check_coro in checks:
             try:
                 result = await check_coro
-                status = "✅" if result else "❌"
+                status = "[OK]" if result else "[FAIL]"
                 print(f"   {status} {check_name}")
                 if not result:
                     all_passed = False
             except Exception as e:
-                print(f"   ⚠️  {check_name}: Error - {e}")
+                print(f"   [WARN]  {check_name}: Error - {e}")
                 self.warnings.append(f"{check_name}: Check failed with error")
 
         return all_passed
@@ -301,12 +301,12 @@ class ConstitutionalPreCommitHook:
     def print_results(self):
         """Print violations and warnings"""
         if self.violations:
-            print("\n❌ CONSTITUTIONAL VIOLATIONS:")
+            print("\n[FAIL] CONSTITUTIONAL VIOLATIONS:")
             for violation in self.violations:
                 print(f"\n{violation}")
 
         if self.warnings:
-            print("\n⚠️  WARNINGS:")
+            print("\n[WARN]  WARNINGS:")
             for warning in self.warnings:
                 print(f"   {warning}")
 
@@ -319,9 +319,9 @@ class ConstitutionalPreCommitHook:
 
 async def main():
     """Main entry point"""
-    print("═" * 60)
+    print("[EMOJI]" * 60)
     print("UDO Constitutional Guard - Pre-commit Hook")
-    print("═" * 60)
+    print("[EMOJI]" * 60)
 
     hook = ConstitutionalPreCommitHook()
 
@@ -332,12 +332,12 @@ async def main():
     hook.print_results()
 
     # Summary
-    print("\n" + "═" * 60)
+    print("\n" + "[EMOJI]" * 60)
     if passed and not hook.violations:
-        print("✅ All constitutional checks passed!")
+        print("[OK] All constitutional checks passed!")
         print("   Commit allowed")
     else:
-        print("❌ Constitutional violations detected!")
+        print("[FAIL] Constitutional violations detected!")
         print("   Commit blocked - fix violations before committing")
         print("\nTips:")
         print("   - Create design review doc for major changes (P1)")
@@ -345,7 +345,7 @@ async def main():
         print("   - Remove hardcoded secrets (P8)")
         print("\nTo bypass (NOT RECOMMENDED):")
         print("   git commit --no-verify")
-    print("═" * 60)
+    print("[EMOJI]" * 60)
 
     return hook.get_exit_code()
 

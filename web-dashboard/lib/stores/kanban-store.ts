@@ -61,8 +61,98 @@ const initialFilters: KanbanFilters = {
   priorities: [],
 }
 
+// Mock data for Week 6 testing (temporary)
+const mockTasks: KanbanTask[] = [
+  {
+    id: '1',
+    title: 'Setup authentication system',
+    description: 'Implement JWT-based authentication with refresh tokens',
+    status: 'in_progress',
+    phase: 'implementation',
+    priority: 'critical',
+    tags: ['backend', 'security'],
+    created_at: '2025-12-01T00:00:00Z',
+    updated_at: '2025-12-16T00:00:00Z',
+    estimated_hours: 8,
+    actual_hours: 5,
+    due_date: '2025-12-20T00:00:00Z',  // Week 6 Day 4: Due date
+    dependencies: ['2'],  // Week 6 Day 2: Dependencies
+    ai_suggested: true,  // Week 6 Day 3: AI suggested
+    ai_confidence: 0.85,
+    comments: [  // Week 6 Day 4: Comments
+      {
+        id: 'c1',
+        author: 'developer',
+        content: 'Started implementation, JWT library selected',
+        created_at: '2025-12-16T10:00:00Z',
+      },
+    ],
+  },
+  {
+    id: '2',
+    title: 'Design database schema',
+    description: 'Create PostgreSQL schema for user management',
+    status: 'completed',
+    phase: 'design',
+    priority: 'high',
+    tags: ['database', 'architecture'],
+    created_at: '2025-11-28T00:00:00Z',
+    updated_at: '2025-12-15T00:00:00Z',
+    estimated_hours: 4,
+    actual_hours: 3,
+    due_date: '2025-12-10T00:00:00Z',  // Overdue (for testing)
+  },
+  {
+    id: '3',
+    title: 'Implement API rate limiting',
+    description: 'Add rate limiting middleware to prevent abuse',
+    status: 'blocked',
+    phase: 'implementation',
+    priority: 'medium',
+    tags: ['backend', 'performance'],
+    created_at: '2025-12-05T00:00:00Z',
+    updated_at: '2025-12-16T00:00:00Z',
+    estimated_hours: 6,
+    blocked_by: ['1'],  // Week 6 Day 2: Blocked by task 1
+    due_date: '2025-12-18T00:00:00Z',  // Due soon (testing)
+    comments: [
+      {
+        id: 'c2',
+        author: 'tech-lead',
+        content: 'Blocked until auth system is complete',
+        created_at: '2025-12-16T14:00:00Z',
+      },
+    ],
+  },
+  {
+    id: '4',
+    title: 'Write E2E tests',
+    description: 'Create Playwright tests for critical user flows',
+    status: 'pending',
+    phase: 'testing',
+    priority: 'high',
+    tags: ['testing', 'quality'],
+    created_at: '2025-12-10T00:00:00Z',
+    updated_at: '2025-12-16T00:00:00Z',
+    estimated_hours: 10,
+    due_date: '2025-12-25T00:00:00Z',
+  },
+  {
+    id: '5',
+    title: 'UI polish and accessibility',
+    description: 'Improve UI consistency and WCAG compliance',
+    status: 'pending',
+    phase: 'implementation',
+    priority: 'low',
+    tags: ['frontend', 'accessibility'],
+    created_at: '2025-12-12T00:00:00Z',
+    updated_at: '2025-12-16T00:00:00Z',
+    estimated_hours: 12,
+  },
+]
+
 const initialState = {
-  tasks: [],
+  tasks: mockTasks,  // Use mock tasks for testing
   columns: initialColumns,
   filteredColumns: initialColumns,
   filters: initialFilters,
@@ -127,9 +217,11 @@ export const useKanbanStore = create<KanbanState>()(
       // Update columns based on tasks
       updateColumns: () => {
         const { tasks } = get()
+        // Ensure tasks is an array (fix undefined error)
+        const safeTasks = tasks || []
         const newColumns: KanbanColumn[] = initialColumns.map((col) => ({
           ...col,
-          tasks: tasks.filter((task) => task.status === col.id),
+          tasks: safeTasks.filter((task) => task.status === col.id),
         }))
         set({ columns: newColumns })
       },

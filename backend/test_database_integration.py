@@ -43,13 +43,13 @@ async def test_database_connection():
         pool = async_db.get_pool()
 
         if pool is None:
-            print("❌ Database pool is None")
+            print("[FAIL] Database pool is None")
             return False
 
         # Test simple query
         async with pool.acquire() as conn:
             result = await conn.fetchval("SELECT 1")
-            print(f"✅ Database connection successful: {result}")
+            print(f"[OK] Database connection successful: {result}")
 
             # Check if project_states table exists
             table_exists = await conn.fetchval("""
@@ -59,11 +59,11 @@ async def test_database_connection():
                     AND table_name = 'project_states'
                 )
             """)
-            print(f"✅ project_states table exists: {table_exists}")
+            print(f"[OK] project_states table exists: {table_exists}")
 
             return True
     except Exception as e:
-        print(f"❌ Database connection failed: {e}")
+        print(f"[FAIL] Database connection failed: {e}")
         return False
 
 
@@ -79,7 +79,7 @@ async def test_list_projects():
 
         result = await service.list_projects(limit=10)
 
-        print(f"✅ Projects listed successfully")
+        print(f"[OK] Projects listed successfully")
         print(f"   Total projects: {result['total']}")
         print(f"   Projects returned: {len(result['projects'])}")
         print(f"   Current project ID: {result['current_project_id']}")
@@ -89,7 +89,7 @@ async def test_list_projects():
 
         return True
     except Exception as e:
-        print(f"❌ Failed to list projects: {e}")
+        print(f"[FAIL] Failed to list projects: {e}")
         import traceback
         traceback.print_exc()
         return False
@@ -125,22 +125,22 @@ async def test_save_and_load_context():
         ]
 
         # Save context
-        print(f"\n📝 Saving context for project {project_id}")
+        print(f"\n[EMOJI] Saving context for project {project_id}")
         saved = await service.save_context(
             project_id=project_id,
             udo_state=test_udo_state,
             ml_models=test_ml_models,
             recent_executions=test_executions
         )
-        print(f"✅ Context saved successfully")
+        print(f"[OK] Context saved successfully")
         print(f"   Saved at: {saved['saved_at']}")
 
         # Load context
-        print(f"\n📖 Loading context for project {project_id}")
+        print(f"\n[EMOJI] Loading context for project {project_id}")
         loaded = await service.load_context(project_id)
 
         if loaded:
-            print(f"✅ Context loaded successfully")
+            print(f"[OK] Context loaded successfully")
             print(f"   Loaded at: {loaded['loaded_at']}")
             print(f"   UDO state phase: {loaded['udo_state'].get('phase')}")
             print(f"   ML models: {list(loaded['ml_models'].keys())}")
@@ -150,15 +150,15 @@ async def test_save_and_load_context():
             assert loaded['udo_state']['phase'] == test_udo_state['phase']
             assert loaded['udo_state']['confidence'] == test_udo_state['confidence']
             assert len(loaded['recent_executions']) == len(test_executions)
-            print("✅ Data integrity verified")
+            print("[OK] Data integrity verified")
 
             return True
         else:
-            print("❌ Failed to load context")
+            print("[FAIL] Failed to load context")
             return False
 
     except Exception as e:
-        print(f"❌ Failed to save/load context: {e}")
+        print(f"[FAIL] Failed to save/load context: {e}")
         import traceback
         traceback.print_exc()
         return False
@@ -177,20 +177,20 @@ async def test_switch_project():
         # Use existing test project ID
         target_project_id = UUID("22222222-2222-2222-2222-222222222222")
 
-        print(f"\n🔄 Switching to project {target_project_id}")
+        print(f"\n[EMOJI] Switching to project {target_project_id}")
         result = await service.switch_project(
             target_project_id=target_project_id,
             auto_save_current=False
         )
 
-        print(f"✅ Project switched successfully")
+        print(f"[OK] Project switched successfully")
         print(f"   Project name: {result['project_name']}")
         print(f"   Context loaded: {result['context_loaded']}")
         print(f"   Message: {result['message']}")
 
         return True
     except Exception as e:
-        print(f"❌ Failed to switch project: {e}")
+        print(f"[FAIL] Failed to switch project: {e}")
         import traceback
         traceback.print_exc()
         return False
@@ -216,7 +216,7 @@ async def main():
             result = await test_func()
             results.append((test_name, result))
         except Exception as e:
-            print(f"\n❌ Test '{test_name}' crashed: {e}")
+            print(f"\n[FAIL] Test '{test_name}' crashed: {e}")
             results.append((test_name, False))
 
     # Cleanup
@@ -231,7 +231,7 @@ async def main():
     total = len(results)
 
     for test_name, result in results:
-        status = "✅ PASS" if result else "❌ FAIL"
+        status = "[OK] PASS" if result else "[FAIL] FAIL"
         print(f"{status}: {test_name}")
 
     print("\n" + "=" * 60)

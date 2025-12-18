@@ -39,26 +39,26 @@ async def main():
 
     result1 = await service.generate_insight(request1)
 
-    print(f"\n✅ Insight ID: {result1.id}")
-    print(f"⏱️  Duration: {result1.total_duration_ms}ms ({result1.total_duration_ms / 1000:.1f}s)")
-    print(f"🎯 Confidence: {result1.bias_check.confidence_score:.2%}")
-    print(f"\n💡 Final Insight:")
+    print(f"\n[OK] Insight ID: {result1.id}")
+    print(f"⏱  Duration: {result1.total_duration_ms}ms ({result1.total_duration_ms / 1000:.1f}s)")
+    print(f"[EMOJI] Confidence: {result1.bias_check.confidence_score:.2%}")
+    print(f"\n[EMOJI] Final Insight:")
     print(f"{result1.final_insight[:200]}...")
 
     # Show stage breakdown
-    print(f"\n📊 Stage Breakdown:")
+    print(f"\n[EMOJI] Stage Breakdown:")
     for stage_name, stage_result in result1.stages.items():
         print(f"  {stage_name:15s}: {stage_result.duration_ms:>6}ms - {stage_result.content[:50]}...")
 
     # Show bias check results
     if result1.bias_check.biases_detected:
-        print(f"\n⚠️  Biases Detected: {', '.join(result1.bias_check.biases_detected)}")
-        print(f"🛡️  Mitigation: {', '.join(result1.bias_check.mitigation_strategies)}")
+        print(f"\n[WARN]  Biases Detected: {', '.join(result1.bias_check.biases_detected)}")
+        print(f"[EMOJI]  Mitigation: {', '.join(result1.bias_check.mitigation_strategies)}")
     else:
-        print(f"\n✅ No biases detected")
+        print(f"\n[OK] No biases detected")
 
     if result1.obsidian_path:
-        print(f"\n📝 Saved to Obsidian: {result1.obsidian_path}")
+        print(f"\n[EMOJI] Saved to Obsidian: {result1.obsidian_path}")
 
     # Example 2: Architecture Decision
     print("\n" + "=" * 60)
@@ -78,9 +78,9 @@ async def main():
 
     result2 = await service.generate_insight(request2)
 
-    print(f"\n✅ Insight ID: {result2.id}")
-    print(f"⏱️  Duration: {result2.total_duration_ms}ms")
-    print(f"\n💡 Final Insight:")
+    print(f"\n[OK] Insight ID: {result2.id}")
+    print(f"⏱  Duration: {result2.total_duration_ms}ms")
+    print(f"\n[EMOJI] Final Insight:")
     print(f"{result2.final_insight[:200]}...")
 
     # Example 3: List recent insights
@@ -105,11 +105,11 @@ async def main():
     retrieved = await service.get_insight(result1.id)
 
     if retrieved:
-        print(f"\n✅ Successfully retrieved insight: {retrieved.id}")
+        print(f"\n[OK] Successfully retrieved insight: {retrieved.id}")
         print(f"   Problem: {retrieved.problem}")
         print(f"   Stages: {', '.join(retrieved.stages.keys())}")
     else:
-        print(f"\n❌ Insight not found: {result1.id}")
+        print(f"\n[FAIL] Insight not found: {result1.id}")
 
 
 if __name__ == "__main__":

@@ -1,7 +1,7 @@
 """
 Performance Monitoring System
 
-Prometheus 기반 메트릭 수집 및 모니터링 시스템입니다.
+Prometheus [EMOJI] [EMOJI] [EMOJI] [EMOJI] [EMOJI] [EMOJI].
 """
 
 import time
@@ -78,25 +78,25 @@ cache_size = Gauge('cache_size_bytes', 'Current cache size in bytes')
 
 
 class PerformanceMonitor:
-    """성능 모니터링 클래스"""
+    """[EMOJI] [EMOJI] [EMOJI]"""
 
     def __init__(self):
-        """PerformanceMonitor 초기화"""
+        """PerformanceMonitor [EMOJI]"""
         self.start_time = time.time()
         self.request_times = []
         self.error_counts = {}
         self.is_collecting = False
 
-        # 시스템 메트릭 수집 시작
+        # [EMOJI] [EMOJI] [EMOJI] [EMOJI]
         self._start_system_monitoring()
 
     def _start_system_monitoring(self):
-        """시스템 메트릭 수집 시작"""
+        """[EMOJI] [EMOJI] [EMOJI] [EMOJI]"""
         self.is_collecting = True
         logger.info("System monitoring started")
 
     def collect_system_metrics(self):
-        """시스템 메트릭 수집"""
+        """[EMOJI] [EMOJI] [EMOJI]"""
         try:
             # CPU usage
             cpu_percent = psutil.cpu_percent(interval=1)
@@ -122,11 +122,11 @@ class PerformanceMonitor:
     @contextmanager
     def measure_request(self, method: str, endpoint: str):
         """
-        HTTP 요청 측정 컨텍스트 매니저
+        HTTP [EMOJI] [EMOJI] [EMOJI] [EMOJI]
 
         Args:
-            method: HTTP 메소드
-            endpoint: 엔드포인트 경로
+            method: HTTP [EMOJI]
+            endpoint: [EMOJI] [EMOJI]
         """
         start_time = time.time()
         status_code = 200  # Default
@@ -162,13 +162,13 @@ class PerformanceMonitor:
         uncertainty: float
     ):
         """
-        UDO 실행 메트릭 추적
+        UDO [EMOJI] [EMOJI] [EMOJI]
 
         Args:
-            phase: 개발 단계
-            decision: 의사결정 (GO/NO_GO/GO_WITH_CHECKPOINTS)
-            confidence: 신뢰도 점수
-            uncertainty: 불확실성 수준
+            phase: [EMOJI] [EMOJI]
+            decision: [EMOJI] (GO/NO_GO/GO_WITH_CHECKPOINTS)
+            confidence: [EMOJI] [EMOJI]
+            uncertainty: [EMOJI] [EMOJI]
         """
         udo_execution_count.labels(phase=phase, decision=decision).inc()
         udo_confidence_histogram.labels(phase=phase).observe(confidence)
@@ -176,20 +176,20 @@ class PerformanceMonitor:
 
     def track_database_query(self, operation: str, duration: float):
         """
-        데이터베이스 쿼리 메트릭 추적
+        [EMOJI] [EMOJI] [EMOJI] [EMOJI]
 
         Args:
-            operation: 작업 유형 (select/insert/update/delete)
-            duration: 쿼리 실행 시간
+            operation: [EMOJI] [EMOJI] (select/insert/update/delete)
+            duration: [EMOJI] [EMOJI] [EMOJI]
         """
         db_query_duration.labels(operation=operation).observe(duration)
 
     def track_cache_access(self, hit: bool):
         """
-        캐시 접근 메트릭 추적
+        [EMOJI] [EMOJI] [EMOJI] [EMOJI]
 
         Args:
-            hit: 캐시 적중 여부
+            hit: [EMOJI] [EMOJI] [EMOJI]
         """
         if hit:
             cache_hits.inc()
@@ -197,19 +197,19 @@ class PerformanceMonitor:
             cache_misses.inc()
 
     def update_connection_count(self, count: int):
-        """활성 연결 수 업데이트"""
+        """[EMOJI] [EMOJI] [EMOJI] [EMOJI]"""
         active_connections.set(count)
 
     def update_task_queue_size(self, size: int):
-        """태스크 큐 크기 업데이트"""
+        """[EMOJI] [EMOJI] [EMOJI] [EMOJI]"""
         task_queue_size.set(size)
 
     def get_metrics_summary(self) -> Dict[str, Any]:
         """
-        메트릭 요약 정보 반환
+        [EMOJI] [EMOJI] [EMOJI] [EMOJI]
 
         Returns:
-            메트릭 요약 딕셔너리
+            [EMOJI] [EMOJI] [EMOJI]
         """
         uptime = time.time() - self.start_time
 
@@ -240,10 +240,10 @@ class PerformanceMonitor:
 
     def get_prometheus_metrics(self) -> bytes:
         """
-        Prometheus 형식의 메트릭 반환
+        Prometheus [EMOJI] [EMOJI] [EMOJI]
 
         Returns:
-            메트릭 데이터 (bytes)
+            [EMOJI] [EMOJI] (bytes)
         """
         # Collect current system metrics
         self.collect_system_metrics()
@@ -254,13 +254,13 @@ class PerformanceMonitor:
 
 def monitor_performance(func: Callable) -> Callable:
     """
-    함수 성능 모니터링 데코레이터
+    [EMOJI] [EMOJI] [EMOJI] [EMOJI]
 
     Args:
-        func: 모니터링할 함수
+        func: [EMOJI] [EMOJI]
 
     Returns:
-        래핑된 함수
+        [EMOJI] [EMOJI]
     """
     @wraps(func)
     async def async_wrapper(*args, **kwargs):
@@ -289,27 +289,27 @@ def monitor_performance(func: Callable) -> Callable:
 
 
 class RequestTracker:
-    """요청 추적 클래스 (미들웨어용)"""
+    """[EMOJI] [EMOJI] [EMOJI] ([EMOJI])"""
 
     def __init__(self, monitor: PerformanceMonitor):
         """
-        RequestTracker 초기화
+        RequestTracker [EMOJI]
 
         Args:
-            monitor: PerformanceMonitor 인스턴스
+            monitor: PerformanceMonitor [EMOJI]
         """
         self.monitor = monitor
 
     async def __call__(self, request, call_next):
         """
-        미들웨어 실행
+        [EMOJI] [EMOJI]
 
         Args:
-            request: FastAPI 요청 객체
-            call_next: 다음 미들웨어/핸들러
+            request: FastAPI [EMOJI] [EMOJI]
+            call_next: [EMOJI] [EMOJI]/[EMOJI]
 
         Returns:
-            응답 객체
+            [EMOJI] [EMOJI]
         """
         method = request.method
         path = request.url.path
@@ -351,10 +351,10 @@ performance_monitor = PerformanceMonitor()
 
 def setup_monitoring(app):
     """
-    FastAPI 앱에 모니터링 설정
+    FastAPI [EMOJI] [EMOJI] [EMOJI]
 
     Args:
-        app: FastAPI 애플리케이션 인스턴스
+        app: FastAPI [EMOJI] [EMOJI]
     """
     from fastapi import FastAPI
     from starlette.middleware.base import BaseHTTPMiddleware
@@ -367,7 +367,7 @@ def setup_monitoring(app):
     # Add metrics endpoint
     @app.get("/metrics", include_in_schema=False)
     async def get_metrics():
-        """Prometheus 메트릭 엔드포인트"""
+        """Prometheus [EMOJI] [EMOJI]"""
         metrics = performance_monitor.get_prometheus_metrics()
         return Response(content=metrics, media_type=CONTENT_TYPE_LATEST)
 

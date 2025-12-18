@@ -346,7 +346,7 @@ class QualityGateResult(BaseModel):
 
 
 # ============================================================================
-# Archive Models (Q6: Done-End + AI → Obsidian)
+# Archive Models (Q6: Done-End + AI -> Obsidian)
 # ============================================================================
 
 class ArchiveRequest(BaseModel):

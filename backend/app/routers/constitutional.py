@@ -102,9 +102,9 @@ def get_database():
     return Database()
 
 
-# ═══════════════════════════════════════════════════
+# [EMOJI]
 # Constitution Endpoints
-# ═══════════════════════════════════════════════════
+# [EMOJI]
 
 @router.get("/")
 async def get_constitution(guard: ConstitutionalGuard = Depends(get_constitutional_guard)):
@@ -190,9 +190,9 @@ async def get_article(article: str, guard: ConstitutionalGuard = Depends(get_con
         raise HTTPException(status_code=500, detail=str(e))
 
 
-# ═══════════════════════════════════════════════════
+# [EMOJI]
 # Validation Endpoints
-# ═══════════════════════════════════════════════════
+# [EMOJI]
 
 @router.post("/validate/design")
 async def validate_design(
@@ -337,9 +337,9 @@ async def validate_ai_consensus(
         raise HTTPException(status_code=500, detail=str(e))
 
 
-# ═══════════════════════════════════════════════════
+# [EMOJI]
 # Violation Management Endpoints
-# ═══════════════════════════════════════════════════
+# [EMOJI]
 
 @router.get("/violations")
 async def get_violations(
@@ -468,9 +468,9 @@ async def export_violations(
         raise HTTPException(status_code=500, detail=str(e))
 
 
-# ═══════════════════════════════════════════════════
+# [EMOJI]
 # Compliance Metrics Endpoints
-# ═══════════════════════════════════════════════════
+# [EMOJI]
 
 @router.get("/compliance/score")
 async def get_compliance_score(guard: ConstitutionalGuard = Depends(get_constitutional_guard)):

@@ -88,7 +88,7 @@ class CircularDependencyError(Exception):
     """Raised when circular dependency detected"""
     def __init__(self, cycle: List[UUID]):
         self.cycle = cycle
-        cycle_str = " → ".join(str(t) for t in cycle)
+        cycle_str = " -> ".join(str(t) for t in cycle)
         super().__init__(f"Circular dependency detected: {cycle_str}")
 
 

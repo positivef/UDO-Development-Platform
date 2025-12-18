@@ -101,8 +101,8 @@ def get_project_name() -> str:
         if result.returncode == 0 and result.stdout.strip():
             url = result.stdout.strip()
             # Extract project name from URL
-            # https://github.com/user/project-name.git → project-name
-            # git@github.com:user/project-name.git → project-name
+            # https://github.com/user/project-name.git -> project-name
+            # git@github.com:user/project-name.git -> project-name
             name = url.rstrip("/").rstrip(".git").split("/")[-1]
             if name:
                 return name
@@ -353,18 +353,18 @@ def cleanup_claudedocs(
     print(f"Stage 2 (External): {'Yes' if process_external else 'No (use --external)'}")
     print()
     print(f"Reference Point: {last_activity_str} (last git commit)")
-    print("  → Files are aged relative to last project activity,")
+    print("  -> Files are aged relative to last project activity,")
     print("    NOT from today's calendar date.")
     print()
 
     # Print retention policy
     print("Retention Policy:")
-    print("  [Stage 1] In-project → _archived/")
+    print("  [Stage 1] In-project -> _archived/")
     for folder, days in RETENTION_POLICY.items():
         policy = "PERMANENT" if days == 0 else f"{days} days"
         print(f"    - {folder}/: {policy}")
-    print(f"  [Stage 2] _archived/ → {external_archive}")
-    print(f"    - Grace period: {ARCHIVE_GRACE_DAYS} days → External archive")
+    print(f"  [Stage 2] _archived/ -> {external_archive}")
+    print(f"    - Grace period: {ARCHIVE_GRACE_DAYS} days -> External archive")
     print()
 
     results = {
@@ -510,7 +510,7 @@ def cleanup_claudedocs(
         print("[OK] No Stage 1 expired files found.")
 
     # ========================================
-    # STAGE 2: In-project archive → External archive
+    # STAGE 2: In-project archive -> External archive
     # ========================================
     if process_external:
         print()
@@ -611,7 +611,7 @@ Examples:
   # Preview what would be cleaned (Stage 1 only)
   python scripts/cleanup_claudedocs.py --verbose
 
-  # Execute Stage 1 cleanup (move expired → _archived/)
+  # Execute Stage 1 cleanup (move expired -> _archived/)
   python scripts/cleanup_claudedocs.py --execute
 
   # Execute both Stage 1 and Stage 2 (move to D: drive)

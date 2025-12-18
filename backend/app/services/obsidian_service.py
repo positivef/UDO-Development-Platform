@@ -50,7 +50,7 @@ class ObsidianService:
             self.vault_available = True
 
         # Daily notes directory
-        self.daily_notes_dir = self.vault_path / "개발일지" if self.vault_available else None
+        self.daily_notes_dir = self.vault_path / "[EMOJI]" if self.vault_available else None
 
         # In-memory sync history (would be database in production)
         self.sync_history: List[Dict[str, Any]] = []
@@ -96,9 +96,9 @@ class ObsidianService:
         Multiple events within debounce_window (default 3s) are batched into a single note.
 
         Strategy:
-        - If 3s passed since last sync → flush immediately
-        - Otherwise → queue event and schedule flush after 3s
-        - Multiple events within window → batched into one sync
+        - If 3s passed since last sync -> flush immediately
+        - Otherwise -> queue event and schedule flush after 3s
+        - Multiple events within window -> batched into one sync
 
         Args:
             event_type: Type of event (phase_transition, error_resolution, task_completion, etc.)
@@ -340,7 +340,7 @@ class ObsidianService:
     def _generate_event_title(self, event_type: str, data: Dict[str, Any]) -> str:
         """Generate title for event"""
         event_titles = {
-            "phase_transition": f"Phase Transition: {data.get('from_phase', 'Unknown')} → {data.get('to_phase', 'Unknown')}",
+            "phase_transition": f"Phase Transition: {data.get('from_phase', 'Unknown')} -> {data.get('to_phase', 'Unknown')}",
             "error_resolution": f"Error Resolved: {data.get('error_type', 'Unknown Error')}",
             "task_completion": f"Task Completed: {data.get('task_title', 'Unknown Task')}",
             "architecture_decision": f"ADR: {data.get('decision_title', 'Architecture Decision')}",

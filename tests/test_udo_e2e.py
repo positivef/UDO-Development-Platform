@@ -75,7 +75,7 @@ class TestUDOv2EndToEnd:
         # Verify phase-aware confidence
         assert 0.0 <= result["confidence"] <= 1.0
 
-        print(f"✅ Ideation phase E2E test passed")
+        print(f"[OK] Ideation phase E2E test passed")
         print(f"   Decision: {result['decision']}")
         print(f"   Confidence: {result['confidence']:.2%}")
         print(f"   System: {result['system']}")
@@ -97,7 +97,7 @@ class TestUDOv2EndToEnd:
         assert result["decision"] in ["GO", "GO_WITH_MONITORING", "PROTOTYPE_FIRST", "NEED_MORE_INFO"]
         assert "confidence" in result
 
-        print(f"✅ Design phase E2E test passed")
+        print(f"[OK] Design phase E2E test passed")
         print(f"   Decision: {result['decision']}")
         print(f"   Confidence: {result['confidence']:.2%}")
 
@@ -119,7 +119,7 @@ class TestUDOv2EndToEnd:
         # MVP should have moderate confidence requirements
         assert 0.0 <= result["confidence"] <= 1.0
 
-        print(f"✅ MVP phase E2E test passed")
+        print(f"[OK] MVP phase E2E test passed")
         print(f"   Confidence: {result['confidence']:.2%}")
 
     def test_e2e_implementation_phase_workflow(self, monkeypatch, tmp_path):
@@ -138,7 +138,7 @@ class TestUDOv2EndToEnd:
         assert "confidence" in result
 
         # Implementation phase should have higher quality requirements
-        print(f"✅ Implementation phase E2E test passed")
+        print(f"[OK] Implementation phase E2E test passed")
         print(f"   Decision: {result['decision']}")
 
     def test_e2e_testing_phase_workflow(self, monkeypatch, tmp_path):
@@ -165,7 +165,7 @@ class TestUDOv2EndToEnd:
         assert "decision" in result
         assert "confidence" in result
 
-        print(f"✅ Testing phase E2E test passed")
+        print(f"[OK] Testing phase E2E test passed")
         print(f"   Decision: {result['decision']}")
 
     def test_e2e_uncertainty_prediction_workflow(self, monkeypatch, tmp_path):
@@ -217,7 +217,7 @@ class TestUDOv2EndToEnd:
         assert prediction is not None
         assert hasattr(prediction, 'trend')
 
-        print(f"✅ Uncertainty prediction E2E test passed")
+        print(f"[OK] Uncertainty prediction E2E test passed")
         print(f"   State: {classified_state}")
         print(f"   Magnitude: {magnitude:.2f}")
         print(f"   Trend: {prediction.trend}")
@@ -250,7 +250,7 @@ class TestUDOv2EndToEnd:
         assert ideation_confidence != design_confidence, \
             "Phase-specific weights should produce different confidence scores"
 
-        print(f"✅ Config-based phase weights test passed")
+        print(f"[OK] Config-based phase weights test passed")
         print(f"   Ideation confidence: {ideation_confidence:.2%}")
         print(f"   Design confidence: {design_confidence:.2%}")
 
@@ -279,7 +279,7 @@ class TestUDOv2EndToEnd:
             assert "decision" in result
             assert result["decision"] in ["GO", "GO_WITH_MONITORING", "PROTOTYPE_FIRST", "NEED_MORE_INFO"]
 
-        print(f"✅ Full lifecycle E2E test passed")
+        print(f"[OK] Full lifecycle E2E test passed")
         print(f"   Tested {len(phases)} phases successfully")
         for result in results:
             print(f"   - {result['phase']}: {result['decision']} (confidence: {result['confidence']:.2%})")

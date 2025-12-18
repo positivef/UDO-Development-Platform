@@ -2,7 +2,7 @@
 # -*- coding: utf-8 -*-
 """
 Adaptive Bayesian Uncertainty System v1.0
-━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+[EMOJI]
 
 Real-time Bayesian Learning for Uncertainty Prediction Enhancement
 
@@ -21,7 +21,7 @@ Mathematical Foundation:
 - Exponentially Weighted Moving Average (EWMA) for trend detection
 
 Performance Targets:
-- Long-term prediction accuracy: 60% → 80%+
+- Long-term prediction accuracy: 60% -> 80%+
 - Self-improvement speed: 10x faster than static models
 - Bias detection threshold: ±20% systematic deviation
 - Confidence interval accuracy: 95% containment
@@ -762,9 +762,9 @@ def demonstrate_bayesian_learning():
     # Initialize Bayesian system
     bayesian = AdaptiveBayesianUncertainty("test-project")
 
-    print("\n📊 Initial System State:")
-    print(f"  • Predictions made: {bayesian.metrics['predictions_made']}")
-    print(f"  • Learning status: {bayesian._get_learning_status()}")
+    print("\n[EMOJI] Initial System State:")
+    print(f"  * Predictions made: {bayesian.metrics['predictions_made']}")
+    print(f"  * Learning status: {bayesian._get_learning_status()}")
 
     # Simulate project phases with observations
     test_scenarios = [
@@ -788,7 +788,7 @@ def demonstrate_bayesian_learning():
         }
     ]
 
-    print("\n🔄 Running Learning Cycles...\n")
+    print("\n[EMOJI] Running Learning Cycles...\n")
 
     for i, scenario in enumerate(test_scenarios, 1):
         print(f"\n--- Cycle {i}: {scenario['description']} ---")
@@ -800,25 +800,25 @@ def demonstrate_bayesian_learning():
             horizon_hours=24
         )
 
-        print(f"\n📍 Current State:")
-        print(f"  • Phase: {scenario['phase']}")
-        print(f"  • Current magnitude: {scenario['current'].magnitude():.2%}")
-        print(f"  • Predicted magnitude: {prediction['predicted_magnitude']:.2%}")
-        print(f"  • Trend: {prediction['overall_trend']}")
-        print(f"  • Confidence: {prediction['confidence']:.2%}")
-        print(f"  • Bias type: {prediction['bias_profile']['type']}")
+        print(f"\n[EMOJI] Current State:")
+        print(f"  * Phase: {scenario['phase']}")
+        print(f"  * Current magnitude: {scenario['current'].magnitude():.2%}")
+        print(f"  * Predicted magnitude: {prediction['predicted_magnitude']:.2%}")
+        print(f"  * Trend: {prediction['overall_trend']}")
+        print(f"  * Confidence: {prediction['confidence']:.2%}")
+        print(f"  * Bias type: {prediction['bias_profile']['type']}")
 
         # Show top recommendation
         if prediction['recommendations']:
             top_rec = prediction['recommendations'][0]
-            print(f"\n💡 Top Recommendation:")
-            print(f"  • Action: {top_rec['action']}")
-            print(f"  • Urgency: {top_rec['urgency']}")
-            print(f"  • Expected impact: {top_rec['expected_impact']:.1%}")
+            print(f"\n[EMOJI] Top Recommendation:")
+            print(f"  * Action: {top_rec['action']}")
+            print(f"  * Urgency: {top_rec['urgency']}")
+            print(f"  * Expected impact: {top_rec['expected_impact']:.1%}")
 
         # Simulate observation and update
-        print(f"\n🔍 Observed Outcome:")
-        print(f"  • Actual magnitude: {scenario['observed'].magnitude():.2%}")
+        print(f"\n[EMOJI] Observed Outcome:")
+        print(f"  * Actual magnitude: {scenario['observed'].magnitude():.2%}")
 
         # Update Bayesian beliefs
         bayesian.update_with_observation(
@@ -830,8 +830,8 @@ def demonstrate_bayesian_learning():
 
         # Show learning progress
         accuracy = 1.0 - abs(prediction['predicted_magnitude'] - scenario['observed'].magnitude())
-        print(f"  • Prediction accuracy: {accuracy:.1%}")
-        print(f"  • Improvement rate: {bayesian.metrics['improvement_rate']:.1%}")
+        print(f"  * Prediction accuracy: {accuracy:.1%}")
+        print(f"  * Improvement rate: {bayesian.metrics['improvement_rate']:.1%}")
 
     print("\n" + "="*80)
     print(" Final Performance Report")
@@ -839,23 +839,23 @@ def demonstrate_bayesian_learning():
 
     report = bayesian.get_performance_report()
 
-    print(f"\n📈 Overall Performance:")
-    print(f"  • Total predictions: {report['total_predictions']}")
-    print(f"  • Overall accuracy: {report['overall_accuracy']:.1f}%")
-    print(f"  • Recent accuracy: {report['recent_accuracy']:.1f}%")
-    print(f"  • Improvement rate: {report['improvement_rate']:.1f}%")
-    print(f"  • Learning status: {report['learning_status']}")
+    print(f"\n[EMOJI] Overall Performance:")
+    print(f"  * Total predictions: {report['total_predictions']}")
+    print(f"  * Overall accuracy: {report['overall_accuracy']:.1f}%")
+    print(f"  * Recent accuracy: {report['recent_accuracy']:.1f}%")
+    print(f"  * Improvement rate: {report['improvement_rate']:.1f}%")
+    print(f"  * Learning status: {report['learning_status']}")
 
-    print(f"\n🎯 Phase-Specific Biases:")
+    print(f"\n[EMOJI] Phase-Specific Biases:")
     for phase, bias_info in report['phase_biases'].items():
         if bias_info['mean_error'] != 0:  # Only show phases with data
-            print(f"  • {phase}: {bias_info['bias_type']} (error: {bias_info['mean_error']:.3f})")
+            print(f"  * {phase}: {bias_info['bias_type']} (error: {bias_info['mean_error']:.3f})")
 
-    print(f"\n🔧 Kalman Filter Parameters (auto-optimized):")
-    print(f"  • Measurement noise (R): {report['kalman_parameters']['measurement_noise']:.3f}")
-    print(f"  • Process noise (Q): {report['kalman_parameters']['process_noise']:.3f}")
+    print(f"\n[EMOJI] Kalman Filter Parameters (auto-optimized):")
+    print(f"  * Measurement noise (R): {report['kalman_parameters']['measurement_noise']:.3f}")
+    print(f"  * Process noise (Q): {report['kalman_parameters']['process_noise']:.3f}")
 
-    print("\n✅ Bayesian Learning System Successfully Demonstrated!")
+    print("\n[OK] Bayesian Learning System Successfully Demonstrated!")
     print("   The system improved its predictions through real-time learning.")
 
     return bayesian

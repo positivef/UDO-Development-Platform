@@ -198,10 +198,10 @@ def track_uncertainty(component: str, score: float):
         emoji = "🟠"
     elif score < 0.7:
         state = "CHAOTIC"
-        emoji = "🔴"
+        emoji = "[EMOJI]"
     else:
         state = "VOID"
-        emoji = "⚫"
+        emoji = "[EMOJI]"
 
     logger.info(
         f"{emoji} Uncertainty update",

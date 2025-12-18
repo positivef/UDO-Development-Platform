@@ -26,7 +26,7 @@ class TestObsidian3StageSearch:
     def setup_method(self):
         """Create temporary Obsidian vault structure"""
         self.temp_vault = tempfile.mkdtemp()
-        self.dev_log = Path(self.temp_vault) / "개발일지" / "2025-11-21"
+        self.dev_log = Path(self.temp_vault) / "[EMOJI]" / "2025-11-21"
         self.dev_log.mkdir(parents=True)
 
         # Create sample files for testing
@@ -43,17 +43,17 @@ class TestObsidian3StageSearch:
         """Create test markdown files"""
         # File 1: ModuleNotFoundError (for Stage 1 filename match)
         module_error_file = self.dev_log / "Debug-ModuleNotFound-pandas.md"
-        module_error_file.write_text("""# ModuleNotFoundError 디버깅
+        module_error_file.write_text("""# ModuleNotFoundError [EMOJI]
 
-## ✅ 최종 해결 방법
+## [OK] [EMOJI] [EMOJI] [EMOJI]
 
-pip install pandas로 해결했습니다.
+pip install pandas[EMOJI] [EMOJI].
 
 ```bash
 pip install pandas
 ```
 
-성공!
+[EMOJI]!
 """, encoding='utf-8')
 
         # File 2: Permission error with frontmatter (for Stage 2)
@@ -64,38 +64,38 @@ error_category: "permission"
 tags: [debug, permission]
 ---
 
-# Permission 문제 해결
+# Permission [EMOJI] [EMOJI]
 
-## 해결
+## [EMOJI]
 
-chmod +r로 읽기 권한 부여했습니다.
+chmod +r[EMOJI] [EMOJI] [EMOJI] [EMOJI].
 """, encoding='utf-8')
 
         # File 3: Generic file for Stage 3 full-text search
         generic_file = self.dev_log / "General-Notes.md"
-        generic_file.write_text("""# 일반 개발 노트
+        generic_file.write_text("""# [EMOJI] [EMOJI] [EMOJI]
 
-여기서는 timeout 문제를 다룹니다.
-network connection timeout 해결 방법:
-- 네트워크 확인
-- 타임아웃 늘리기
+[EMOJI] timeout [EMOJI] [EMOJI].
+network connection timeout [EMOJI] [EMOJI]:
+- [EMOJI] [EMOJI]
+- [EMOJI] [EMOJI]
 
-성공했습니다.
+[EMOJI].
 """, encoding='utf-8')
 
         # File 4: WebSocket debugging (recent)
         websocket_file = self.dev_log / "WebSocket-Debugging-Complete.md"
-        websocket_file.write_text("""# WebSocket 404 오류 디버깅
+        websocket_file.write_text("""# WebSocket 404 [EMOJI] [EMOJI]
 
-## ✅ 최종 해결 방법
+## [OK] [EMOJI] [EMOJI] [EMOJI]
 
-main.py의 중복 엔드포인트를 제거했습니다.
+main.py[EMOJI] [EMOJI] [EMOJI] [EMOJI].
 
-Line 534-562 삭제:
-- @app.websocket("/ws") 중복
-- 새 라우터가 동작하도록 수정
+Line 534-562 [EMOJI]:
+- @app.websocket("/ws") [EMOJI]
+- [EMOJI] [EMOJI] [EMOJI] [EMOJI]
 
-성공!
+[EMOJI]!
 """, encoding='utf-8')
 
     def test_initialization(self):
@@ -120,7 +120,7 @@ Line 534-562 삭제:
 
         assert result.found is True
         assert result.stage == 1
-        assert "중복 엔드포인트" in result.solution or "WebSocket" in result.solution
+        assert "[EMOJI] [EMOJI]" in result.solution or "WebSocket" in result.solution
         assert result.search_time_ms < 100
 
     def test_stage1_no_match(self):
@@ -147,7 +147,7 @@ Line 534-562 삭제:
 
         assert result.found is True
         # Should find the generic notes file
-        assert "timeout" in result.solution.lower() or "네트워크" in result.solution
+        assert "timeout" in result.solution.lower() or "[EMOJI]" in result.solution
 
     def test_no_solution_found(self):
         """Test when no solution exists"""
@@ -194,16 +194,16 @@ class TestConvenienceFunction:
     def setup_method(self):
         """Create temporary vault"""
         self.temp_vault = tempfile.mkdtemp()
-        self.dev_log = Path(self.temp_vault) / "개발일지" / "2025-11-21"
+        self.dev_log = Path(self.temp_vault) / "[EMOJI]" / "2025-11-21"
         self.dev_log.mkdir(parents=True)
 
         # Create a simple test file
         test_file = self.dev_log / "Debug-404-NotFound.md"
-        test_file.write_text("""# 404 오류
+        test_file.write_text("""# 404 [EMOJI]
 
 ## Solution
 
-엔드포인트 경로 확인했습니다.
+[EMOJI] [EMOJI] [EMOJI].
 """, encoding='utf-8')
 
     def teardown_method(self):
@@ -231,7 +231,7 @@ class TestPerformance:
     def setup_method(self):
         """Create vault with many files"""
         self.temp_vault = tempfile.mkdtemp()
-        self.dev_log = Path(self.temp_vault) / "개발일지"
+        self.dev_log = Path(self.temp_vault) / "[EMOJI]"
 
         # Create multiple date folders
         for i in range(1, 10):
@@ -286,12 +286,12 @@ Test solution {i}-{j}
 def mock_vault_with_files(tmp_path):
     """Fixture for temporary vault with test files"""
     vault = tmp_path / "test_vault"
-    dev_log = vault / "개발일지" / "2025-11-21"
+    dev_log = vault / "[EMOJI]" / "2025-11-21"
     dev_log.mkdir(parents=True)
 
     # Create test file
     test_file = dev_log / "Debug-ModuleNotFound-test.md"
-    test_file.write_text("""## ✅ Solution
+    test_file.write_text("""## [OK] Solution
 
 Install the module:
 ```bash

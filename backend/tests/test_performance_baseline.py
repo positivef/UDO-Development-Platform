@@ -43,7 +43,7 @@ class TestTier2ResolutionSpeed:
         assert result.confidence >= 0.95
         assert duration_ms < TIER2_SINGLE_TARGET_MS, f"Tier 2 too slow: {duration_ms:.3f}ms (target <{TIER2_SINGLE_TARGET_MS}ms)"
 
-        print(f"✅ Tier 2 resolution: {duration_ms:.3f}ms")
+        print(f"[OK] Tier 2 resolution: {duration_ms:.3f}ms")
 
     def test_permission_error_resolution_speed(self):
         """PermissionError pattern matching"""
@@ -59,7 +59,7 @@ class TestTier2ResolutionSpeed:
         assert "chmod +x" in result.solution
         assert duration_ms < TIER2_SINGLE_TARGET_MS, f"Tier 2 too slow: {duration_ms:.3f}ms (target <{TIER2_SINGLE_TARGET_MS}ms)"
 
-        print(f"✅ Permission error resolution: {duration_ms:.3f}ms")
+        print(f"[OK] Permission error resolution: {duration_ms:.3f}ms")
 
     def test_bulk_resolutions_performance(self):
         """100 resolutions performance (average matters)"""
@@ -81,7 +81,7 @@ class TestTier2ResolutionSpeed:
         assert duration_ms < 2000, f"Bulk resolution too slow: {duration_ms:.1f}ms (target <2000ms for 100 errors)"
         assert avg_duration_ms < 20, f"Average too slow: {avg_duration_ms:.3f}ms (target <20ms)"
 
-        print(f"✅ 100 resolutions: {duration_ms:.1f}ms total ({avg_duration_ms:.3f}ms avg)")
+        print(f"[OK] 100 resolutions: {duration_ms:.1f}ms total ({avg_duration_ms:.3f}ms avg)")
 
 
 class TestStatisticsOverhead:
@@ -108,7 +108,7 @@ class TestStatisticsOverhead:
             assert stats["total"] == 10
             assert duration_ms < STATS_TARGET_MS, f"Statistics too slow: {duration_ms:.3f}ms (target <{STATS_TARGET_MS}ms)"
 
-            print(f"✅ Statistics retrieval: {duration_ms:.3f}ms")
+            print(f"[OK] Statistics retrieval: {duration_ms:.3f}ms")
 
     def test_knowledge_reuse_rate_calculation_speed(self):
         """get_knowledge_reuse_rate() <50ms"""
@@ -125,7 +125,7 @@ class TestStatisticsOverhead:
         assert isinstance(rate, float)
         assert duration_ms < STATS_TARGET_MS, f"Rate calculation too slow: {duration_ms:.3f}ms (target <{STATS_TARGET_MS}ms)"
 
-        print(f"✅ Knowledge reuse rate calculation: {duration_ms:.3f}ms")
+        print(f"[OK] Knowledge reuse rate calculation: {duration_ms:.3f}ms")
 
     def test_statistics_persistence_speed(self):
         """Statistics save/load <50ms (disk I/O)"""
@@ -156,7 +156,7 @@ class TestStatisticsOverhead:
 
             assert load_duration_ms < 50, f"Load too slow: {load_duration_ms:.1f}ms (target <50ms)"
 
-            print(f"✅ Statistics persistence: save={save_duration_ms:.1f}ms, load={load_duration_ms:.1f}ms")
+            print(f"[OK] Statistics persistence: save={save_duration_ms:.1f}ms, load={load_duration_ms:.1f}ms")
 
 
 class TestKeywordExtractionSpeed:
@@ -181,7 +181,7 @@ class TestKeywordExtractionSpeed:
         assert "ModuleNotFoundError" in keywords or "pandas" in keywords
         assert duration_ms < KEYWORD_TARGET_MS, f"Keyword extraction too slow: {duration_ms:.3f}ms (target <{KEYWORD_TARGET_MS}ms)"
 
-        print(f"✅ Keyword extraction: {duration_ms:.3f}ms (keywords={keywords})")
+        print(f"[OK] Keyword extraction: {duration_ms:.3f}ms (keywords={keywords})")
 
     def test_bulk_keyword_extraction_performance(self):
         """1000 keyword extractions <10000ms (10ms average)"""
@@ -202,7 +202,7 @@ class TestKeywordExtractionSpeed:
         assert duration_ms < 10000, f"Bulk extraction too slow: {duration_ms:.1f}ms (target <10000ms)"
         assert avg_duration_ms < KEYWORD_TARGET_MS, f"Average too slow: {avg_duration_ms:.3f}ms (target <{KEYWORD_TARGET_MS}ms)"
 
-        print(f"✅ 1000 extractions: {duration_ms:.1f}ms total ({avg_duration_ms:.3f}ms avg)")
+        print(f"[OK] 1000 extractions: {duration_ms:.1f}ms total ({avg_duration_ms:.3f}ms avg)")
 
 
 class TestOverallPerformance:
@@ -238,7 +238,7 @@ class TestOverallPerformance:
             assert isinstance(rate, float)
             assert duration_ms < 100, f"Complete workflow too slow: {duration_ms:.1f}ms (target <100ms)"
 
-            print(f"✅ Complete workflow: {duration_ms:.1f}ms")
+            print(f"[OK] Complete workflow: {duration_ms:.1f}ms")
 
     def test_concurrent_resolutions_performance(self):
         """10 concurrent resolutions <200ms total"""
@@ -267,7 +267,7 @@ class TestOverallPerformance:
         assert duration_ms < 200, f"Concurrent resolutions too slow: {duration_ms:.1f}ms (target <200ms)"
         assert avg_duration_ms < 20.0, f"Average too slow: {avg_duration_ms:.3f}ms (target <20ms)"
 
-        print(f"✅ 10 concurrent resolutions: {duration_ms:.1f}ms total ({avg_duration_ms:.3f}ms avg)")
+        print(f"[OK] 10 concurrent resolutions: {duration_ms:.1f}ms total ({avg_duration_ms:.3f}ms avg)")
 
 
 # Benchmark Summary

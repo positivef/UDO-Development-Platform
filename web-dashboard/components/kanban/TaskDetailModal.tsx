@@ -12,10 +12,10 @@
  * - Delete/Archive actions
  */
 
-import { useState, useEffect } from 'react'
+import { useState, useEffect, useCallback } from 'react'
 import { useKanbanStore } from '@/lib/stores/kanban-store'
 import { kanbanAPI } from '@/lib/api/kanban'
-import type { KanbanTask, TaskStatus, Priority, Phase } from '@/lib/types/kanban'
+import type { KanbanTask, TaskStatus, Priority, Phase, TaskComment } from '@/lib/types/kanban'
 import {
   Dialog,
   DialogContent,
@@ -46,8 +46,28 @@ import {
   Tag,
   FileText,
   AlertCircle,
+  Calendar,
+  MessageSquare,
+  Send,
+  User,
+  AlertTriangle,
 } from 'lucide-react'
+import { ScrollArea } from '@/components/ui/scroll-area'
 import { ContextManager } from './ContextManager'
+import dynamic from 'next/dynamic'
+
+// Dynamic import for DependencyGraph (D3.js) - reduces initial bundle by ~343KB
+const DependencyGraph = dynamic(
+  () => import('./DependencyGraph').then((mod) => mod.DependencyGraph),
+  {
+    loading: () => (
+      <div className="flex items-center justify-center h-64">
+        <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-primary"></div>
+      </div>
+    ),
+    ssr: false, // D3.js requires window object
+  }
+)
 
 interface TaskDetailModalProps {
   task: KanbanTask | null
@@ -64,13 +84,83 @@ export function TaskDetailModal({ task, open, onClose }: TaskDetailModalProps) {
   // Form state
   const [formData, setFormData] = useState<Partial<KanbanTask>>({})
 
+  // Comments state
+  const [newComment, setNewComment] = useState('')
+  const [isAddingComment, setIsAddingComment] = useState(false)
+
   // Initialize form when task changes
   useEffect(() => {
     if (task) {
       setFormData(task)
       setIsEditing(false)
+      setNewComment('')
     }
   }, [task])
+
+  // Add comment handler
+  const handleAddComment = useCallback(async () => {
+    if (!newComment.trim() || !task?.id || isAddingComment) return
+
+    setIsAddingComment(true)
+
+    try {
+      const comment: TaskComment = {
+        id: `comment-${Date.now()}`,
+        author: 'Current User', // TODO: Replace with actual user
+        content: newComment.trim(),
+        created_at: new Date().toISOString(),
+      }
+
+      const updatedComments = [...(formData.comments || []), comment]
+
+      // Update task with new comment
+      const updatedTask = await kanbanAPI.updateTask(task.id, {
+        comments: updatedComments,
+      })
+
+      updateTaskInStore(task.id, { ...updatedTask, comments: updatedComments })
+      setFormData((prev) => ({ ...prev, comments: updatedComments }))
+      setNewComment('')
+      console.log(`✅ Comment added to task ${task.id}`)
+    } catch (error) {
+      console.error('Failed to add comment:', error)
+      // Fallback: Update local state only
+      const comment: TaskComment = {
+        id: `comment-${Date.now()}`,
+        author: 'Current User',
+        content: newComment.trim(),
+        created_at: new Date().toISOString(),
+      }
+      const updatedComments = [...(formData.comments || []), comment]
+      setFormData((prev) => ({ ...prev, comments: updatedComments }))
+      setNewComment('')
+    } finally {
+      setIsAddingComment(false)
+    }
+  }, [newComment, task?.id, isAddingComment, formData.comments, updateTaskInStore])
+
+  // Due date helpers
+  const formatDueDate = (dateStr: string) => {
+    const date = new Date(dateStr)
+    return date.toLocaleDateString('ko-KR', {
+      year: 'numeric',
+      month: 'long',
+      day: 'numeric',
+    })
+  }
+
+  const isDueSoon = (dateStr: string) => {
+    const date = new Date(dateStr)
+    const now = new Date()
+    const diffDays = Math.ceil((date.getTime() - now.getTime()) / (1000 * 60 * 60 * 24))
+    return diffDays <= 3 && diffDays >= 0
+  }
+
+  const isOverdue = (dateStr: string) => {
+    const date = new Date(dateStr)
+    const now = new Date()
+    return date < now
+  }
 
   if (!task) return null
 
@@ -89,6 +179,8 @@ export function TaskDetailModal({ task, open, onClose }: TaskDetailModalProps) {
         estimated_hours: formData.estimated_hours,
         actual_hours: formData.actual_hours,
         context_notes: formData.context_notes,
+        due_date: formData.due_date,
+        comments: formData.comments,
       }
 
       const updatedTask = await kanbanAPI.updateTask(task.id, updates)
@@ -206,8 +298,26 @@ export function TaskDetailModal({ task, open, onClose }: TaskDetailModalProps) {
         </DialogHeader>
 
         <Tabs defaultValue="details" className="mt-4">
-          <TabsList className="grid w-full grid-cols-2">
+          <TabsList className="grid w-full grid-cols-4">
             <TabsTrigger value="details">Details</TabsTrigger>
+            <TabsTrigger value="comments" className="flex items-center gap-1">
+              <MessageSquare className="h-3 w-3" />
+              Comments
+              {(formData.comments?.length || 0) > 0 && (
+                <Badge variant="secondary" className="ml-1 text-xs px-1.5 py-0">
+                  {formData.comments?.length}
+                </Badge>
+              )}
+            </TabsTrigger>
+            <TabsTrigger value="dependencies" className="flex items-center gap-1">
+              <AlertTriangle className="h-3 w-3" />
+              Dependencies
+              {((formData.dependencies?.length || 0) + (formData.blocked_by?.length || 0)) > 0 && (
+                <Badge variant="secondary" className="ml-1 text-xs px-1.5 py-0">
+                  {(formData.dependencies?.length || 0) + (formData.blocked_by?.length || 0)}
+                </Badge>
+              )}
+            </TabsTrigger>
             <TabsTrigger value="context">Context</TabsTrigger>
           </TabsList>
 
@@ -301,6 +411,55 @@ export function TaskDetailModal({ task, open, onClose }: TaskDetailModalProps) {
             </div>
           </div>
 
+          {/* Due Date (Week 6 Day 4) */}
+          <div>
+            <Label className="flex items-center gap-2">
+              <Calendar className="h-4 w-4" />
+              Due Date
+            </Label>
+            {isEditing ? (
+              <Input
+                type="date"
+                value={formData.due_date ? formData.due_date.split('T')[0] : ''}
+                onChange={(e) =>
+                  setFormData({
+                    ...formData,
+                    due_date: e.target.value ? new Date(e.target.value).toISOString() : undefined,
+                  })
+                }
+                className="mt-2 w-[200px]"
+              />
+            ) : formData.due_date ? (
+              <div className="mt-2 flex items-center gap-2">
+                <span
+                  className={
+                    isOverdue(formData.due_date)
+                      ? 'text-red-600 font-medium'
+                      : isDueSoon(formData.due_date)
+                      ? 'text-yellow-600 font-medium'
+                      : ''
+                  }
+                >
+                  {formatDueDate(formData.due_date)}
+                </span>
+                {isOverdue(formData.due_date) && (
+                  <Badge variant="destructive" className="text-xs">
+                    <AlertTriangle className="h-3 w-3 mr-1" />
+                    Overdue
+                  </Badge>
+                )}
+                {isDueSoon(formData.due_date) && !isOverdue(formData.due_date) && (
+                  <Badge variant="outline" className="text-xs bg-yellow-500/10 text-yellow-600 border-yellow-500/20">
+                    <Clock className="h-3 w-3 mr-1" />
+                    Due Soon
+                  </Badge>
+                )}
+              </div>
+            ) : (
+              <p className="mt-2 text-sm text-muted-foreground">No due date set</p>
+            )}
+          </div>
+
           {/* Dependencies (Read-only for now) */}
           {task.dependencies && task.dependencies.length > 0 && (
             <div>
@@ -370,6 +529,106 @@ export function TaskDetailModal({ task, open, onClose }: TaskDetailModalProps) {
               </div>
             </div>
           )}
+          </TabsContent>
+
+          {/* Comments Tab (Week 6 Day 4) */}
+          <TabsContent value="comments" className="py-4">
+            <div className="space-y-4">
+              {/* Add Comment Form */}
+              <div className="space-y-2">
+                <Label className="flex items-center gap-2">
+                  <MessageSquare className="h-4 w-4" />
+                  Add Comment
+                </Label>
+                <div className="flex gap-2">
+                  <Textarea
+                    value={newComment}
+                    onChange={(e) => setNewComment(e.target.value)}
+                    placeholder="Write a comment..."
+                    rows={2}
+                    className="flex-1"
+                    onKeyDown={(e) => {
+                      if (e.key === 'Enter' && (e.metaKey || e.ctrlKey)) {
+                        handleAddComment()
+                      }
+                    }}
+                  />
+                  <Button
+                    onClick={handleAddComment}
+                    disabled={!newComment.trim() || isAddingComment}
+                    className="self-end"
+                  >
+                    {isAddingComment ? (
+                      <Clock className="h-4 w-4 animate-spin" />
+                    ) : (
+                      <Send className="h-4 w-4" />
+                    )}
+                  </Button>
+                </div>
+                <p className="text-xs text-muted-foreground">
+                  Press Ctrl+Enter (Cmd+Enter on Mac) to send
+                </p>
+              </div>
+
+              {/* Comments List */}
+              <div className="space-y-2">
+                <Label>
+                  {(formData.comments?.length || 0) > 0
+                    ? `${formData.comments?.length} Comment${(formData.comments?.length || 0) > 1 ? 's' : ''}`
+                    : 'No comments yet'}
+                </Label>
+                {(formData.comments?.length || 0) > 0 && (
+                  <ScrollArea className="h-[250px]">
+                    <div className="space-y-3 pr-4">
+                      {[...(formData.comments || [])].reverse().map((comment) => (
+                        <div
+                          key={comment.id}
+                          className="rounded-lg border bg-muted/30 p-3 space-y-2"
+                        >
+                          <div className="flex items-center justify-between">
+                            <div className="flex items-center gap-2">
+                              <div className="h-6 w-6 rounded-full bg-primary/10 flex items-center justify-center">
+                                <User className="h-3 w-3 text-primary" />
+                              </div>
+                              <span className="text-sm font-medium">{comment.author}</span>
+                            </div>
+                            <span className="text-xs text-muted-foreground">
+                              {new Date(comment.created_at).toLocaleDateString('ko-KR', {
+                                month: 'short',
+                                day: 'numeric',
+                                hour: '2-digit',
+                                minute: '2-digit',
+                              })}
+                            </span>
+                          </div>
+                          <p className="text-sm whitespace-pre-wrap">{comment.content}</p>
+                        </div>
+                      ))}
+                    </div>
+                  </ScrollArea>
+                )}
+              </div>
+            </div>
+          </TabsContent>
+
+          <TabsContent value="dependencies" className="py-4">
+            <DependencyGraph
+              tasks={useKanbanStore.getState().tasks || []}
+              currentTaskId={task.id}
+              onTaskClick={(taskId) => {
+                // Find and select the clicked task
+                const clickedTask = useKanbanStore.getState().tasks?.find(t => t.id === taskId)
+                if (clickedTask) {
+                  useKanbanStore.getState().setSelectedTask(clickedTask)
+                }
+              }}
+              onEmergencyOverride={(taskId, dependencyId) => {
+                // Q7: Emergency override implementation
+                console.log(`Emergency override: Task ${taskId} unblocked from ${dependencyId}`)
+                // TODO: Call API to remove dependency
+                // await kanbanAPI.removeDependency(taskId, dependencyId)
+              }}
+            />
           </TabsContent>
 
           <TabsContent value="context" className="py-4">

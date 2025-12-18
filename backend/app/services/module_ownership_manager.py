@@ -1,11 +1,11 @@
 """
 Module Ownership Manager for Standard Level MDO System
 
-Standard 레벨 모듈 개발 조정 시스템
-- 모듈 단위 점유 관리
-- 개발 상태 추적
-- 의존성 체크
-- Standard 레벨 규칙 강제
+Standard [EMOJI] [EMOJI] [EMOJI] [EMOJI] [EMOJI]
+- [EMOJI] [EMOJI] [EMOJI] [EMOJI]
+- [EMOJI] [EMOJI] [EMOJI]
+- [EMOJI] [EMOJI]
+- Standard [EMOJI] [EMOJI] [EMOJI]
 """
 
 import json
@@ -23,41 +23,41 @@ logger = logging.getLogger(__name__)
 
 
 class ModuleStatus(Enum):
-    """모듈 개발 상태"""
-    AVAILABLE = "available"        # 개발 가능
-    PLANNING = "planning"          # 계획 중
-    CODING = "coding"             # 코딩 중
-    TESTING = "testing"           # 테스트 중
-    REVIEW = "review"             # 리뷰 중
-    COMPLETED = "completed"       # 완료
-    BLOCKED = "blocked"           # 차단됨
+    """[EMOJI] [EMOJI] [EMOJI]"""
+    AVAILABLE = "available"        # [EMOJI] [EMOJI]
+    PLANNING = "planning"          # [EMOJI] [EMOJI]
+    CODING = "coding"             # [EMOJI] [EMOJI]
+    TESTING = "testing"           # [EMOJI] [EMOJI]
+    REVIEW = "review"             # [EMOJI] [EMOJI]
+    COMPLETED = "completed"       # [EMOJI]
+    BLOCKED = "blocked"           # [EMOJI]
 
 
 class CompletionCriteria(Enum):
-    """Standard 레벨 완료 기준"""
-    COMMIT = "commit"             # 커밋 완료
-    PUSH = "push"                 # 푸시 완료
-    TESTS_PASS = "tests_pass"     # 테스트 통과
-    USER_CONFIRM = "user_confirm" # 사용자 확인
+    """Standard [EMOJI] [EMOJI] [EMOJI]"""
+    COMMIT = "commit"             # [EMOJI] [EMOJI]
+    PUSH = "push"                 # [EMOJI] [EMOJI]
+    TESTS_PASS = "tests_pass"     # [EMOJI] [EMOJI]
+    USER_CONFIRM = "user_confirm" # [EMOJI] [EMOJI]
 
 
 @dataclass
 class ModuleDefinition:
-    """모듈 정의"""
-    id: str                           # 예: "auth/login"
-    name: str                         # 표시명
-    description: str                  # 설명
+    """[EMOJI] [EMOJI]"""
+    id: str                           # [EMOJI]: "auth/login"
+    name: str                         # [EMOJI]
+    description: str                  # [EMOJI]
     type: str                        # feature, bugfix, refactor
-    dependencies: List[str]          # 의존 모듈들
-    estimated_hours: float           # 예상 시간
+    dependencies: List[str]          # [EMOJI] [EMOJI]
+    estimated_hours: float           # [EMOJI] [EMOJI]
     priority: str                    # high, medium, low
-    files: List[str]                # 관련 파일들
-    test_files: List[str]           # 테스트 파일들
+    files: List[str]                # [EMOJI] [EMOJI]
+    test_files: List[str]           # [EMOJI] [EMOJI]
 
 
 @dataclass
 class ModuleOwnership:
-    """모듈 점유 정보"""
+    """[EMOJI] [EMOJI] [EMOJI]"""
     module_id: str
     owner_session: str
     developer_name: str
@@ -96,7 +96,7 @@ class ModuleOwnership:
 
 @dataclass
 class ModuleAvailability:
-    """모듈 가용성 정보"""
+    """[EMOJI] [EMOJI] [EMOJI]"""
     available: bool
     reason: Optional[str] = None
     owner: Optional[str] = None
@@ -109,7 +109,7 @@ class ModuleAvailability:
 
 class ModuleOwnershipManager:
     """
-    Standard 레벨 모듈 점유 관리자
+    Standard [EMOJI] [EMOJI] [EMOJI] [EMOJI]
     """
 
     def __init__(self):
@@ -121,7 +121,7 @@ class ModuleOwnershipManager:
         self._initialized = False
 
     async def initialize(self):
-        """초기화"""
+        """[EMOJI]"""
         if self._initialized:
             return
 
@@ -129,29 +129,29 @@ class ModuleOwnershipManager:
             self.redis_client = await get_redis_client()
             self.session_manager = await get_session_manager()
 
-            # 모듈 정의 로드
+            # [EMOJI] [EMOJI] [EMOJI]
             await self._load_module_definitions()
 
-            # 활성 점유 복구
+            # [EMOJI] [EMOJI] [EMOJI]
             await self._recover_active_ownerships()
 
             self._initialized = True
-            logger.info("✅ ModuleOwnershipManager initialized (Standard Level)")
+            logger.info("[OK] ModuleOwnershipManager initialized (Standard Level)")
 
         except Exception as e:
             logger.error(f"Failed to initialize ModuleOwnershipManager: {e}")
             raise
 
     async def _load_module_definitions(self):
-        """프로젝트 모듈 정의 로드"""
-        # 실제로는 설정 파일이나 DB에서 로드
-        # 여기서는 예시로 하드코딩
+        """[EMOJI] [EMOJI] [EMOJI] [EMOJI]"""
+        # [EMOJI] [EMOJI] [EMOJI] DB[EMOJI] [EMOJI]
+        # [EMOJI] [EMOJI] [EMOJI]
 
         self.module_definitions = {
             "auth/login": ModuleDefinition(
                 id="auth/login",
-                name="로그인 기능",
-                description="사용자 인증 및 로그인",
+                name="[EMOJI] [EMOJI]",
+                description="[EMOJI] [EMOJI] [EMOJI] [EMOJI]",
                 type="feature",
                 dependencies=[],
                 estimated_hours=4,
@@ -161,8 +161,8 @@ class ModuleOwnershipManager:
             ),
             "auth/register": ModuleDefinition(
                 id="auth/register",
-                name="회원가입 기능",
-                description="신규 사용자 등록",
+                name="[EMOJI] [EMOJI]",
+                description="[EMOJI] [EMOJI] [EMOJI]",
                 type="feature",
                 dependencies=["auth/validators"],
                 estimated_hours=6,
@@ -172,8 +172,8 @@ class ModuleOwnershipManager:
             ),
             "payment/checkout": ModuleDefinition(
                 id="payment/checkout",
-                name="결제 처리",
-                description="결제 프로세스",
+                name="[EMOJI] [EMOJI]",
+                description="[EMOJI] [EMOJI]",
                 type="feature",
                 dependencies=["auth/login", "cart/calculate"],
                 estimated_hours=8,
@@ -183,15 +183,15 @@ class ModuleOwnershipManager:
             )
         }
 
-        logger.info(f"📚 Loaded {len(self.module_definitions)} module definitions")
+        logger.info(f"[EMOJI] Loaded {len(self.module_definitions)} module definitions")
 
     async def _recover_active_ownerships(self):
-        """Redis에서 활성 점유 복구"""
+        """Redis[EMOJI] [EMOJI] [EMOJI] [EMOJI]"""
         if not self.redis_client:
             return
 
         try:
-            # Redis에서 모든 점유 정보 가져오기
+            # Redis[EMOJI] [EMOJI] [EMOJI] [EMOJI] [EMOJI]
             pattern = "udo:module:ownership:*"
             keys = await self.redis_client._client.keys(pattern)
 
@@ -201,7 +201,7 @@ class ModuleOwnershipManager:
                     ownership = ModuleOwnership.from_dict(json.loads(data))
                     self.active_ownerships[ownership.module_id] = ownership
 
-            logger.info(f"🔄 Recovered {len(self.active_ownerships)} active ownerships")
+            logger.info(f"[EMOJI] Recovered {len(self.active_ownerships)} active ownerships")
 
         except Exception as e:
             logger.error(f"Failed to recover ownerships: {e}")
@@ -213,42 +213,42 @@ class ModuleOwnershipManager:
         developer_name: str
     ) -> ModuleAvailability:
         """
-        모듈 개발 가능 여부 체크 (Standard 레벨)
+        [EMOJI] [EMOJI] [EMOJI] [EMOJI] [EMOJI] (Standard [EMOJI])
         """
 
-        # 1. 모듈 정의 확인
+        # 1. [EMOJI] [EMOJI] [EMOJI]
         if module_id not in self.module_definitions:
             return ModuleAvailability(
                 available=False,
-                reason=f"모듈 '{module_id}'이 정의되지 않음"
+                reason=f"[EMOJI] '{module_id}'[EMOJI] [EMOJI] [EMOJI]"
             )
 
         module_def = self.module_definitions[module_id]
 
-        # 2. 현재 점유 확인
+        # 2. [EMOJI] [EMOJI] [EMOJI]
         if module_id in self.active_ownerships:
             ownership = self.active_ownerships[module_id]
 
             if ownership.owner_session == session_id:
-                # 이미 본인이 점유
+                # [EMOJI] [EMOJI] [EMOJI]
                 return ModuleAvailability(
                     available=True,
-                    reason="이미 점유 중인 모듈",
-                    warnings=["중복 점유 요청"]
+                    reason="[EMOJI] [EMOJI] [EMOJI] [EMOJI]",
+                    warnings=["[EMOJI] [EMOJI] [EMOJI]"]
                 )
 
-            # 다른 사람이 점유 중
+            # [EMOJI] [EMOJI] [EMOJI] [EMOJI]
             return ModuleAvailability(
                 available=False,
-                reason=f"{ownership.developer_name}님이 개발 중",
+                reason=f"{ownership.developer_name}[EMOJI] [EMOJI] [EMOJI]",
                 owner=ownership.developer_name,
                 status=ownership.status,
                 estimated_available=ownership.estimated_completion,
                 alternatives=await self._suggest_alternatives(module_id),
-                can_override=False  # Standard 레벨은 override 불가
+                can_override=False  # Standard [EMOJI] override [EMOJI]
             )
 
-        # 3. 의존성 체크
+        # 3. [EMOJI] [EMOJI]
         blocked_by = []
         for dep_module_id in module_def.dependencies:
             if dep_module_id in self.active_ownerships:
@@ -259,24 +259,24 @@ class ModuleOwnershipManager:
         if blocked_by:
             return ModuleAvailability(
                 available=False,
-                reason="의존 모듈이 아직 개발 중",
-                warnings=[f"대기 중: {', '.join(blocked_by)}"],
+                reason="[EMOJI] [EMOJI] [EMOJI] [EMOJI] [EMOJI]",
+                warnings=[f"[EMOJI] [EMOJI]: {', '.join(blocked_by)}"],
                 estimated_available=await self._estimate_availability(module_id)
             )
 
-        # 4. 경고 체크 (Standard 레벨은 경고만, 차단 안함)
+        # 4. [EMOJI] [EMOJI] (Standard [EMOJI] [EMOJI], [EMOJI] [EMOJI])
         warnings = []
 
-        # 관련 파일 체크
+        # [EMOJI] [EMOJI] [EMOJI]
         for file_path in module_def.files:
             if await self._is_file_being_edited(file_path):
-                warnings.append(f"파일 '{file_path}'이 수정 중일 수 있음")
+                warnings.append(f"[EMOJI] '{file_path}'[EMOJI] [EMOJI] [EMOJI] [EMOJI] [EMOJI]")
 
-        # 시간대 체크
+        # [EMOJI] [EMOJI]
         if datetime.now().hour >= 22 or datetime.now().hour <= 6:
-            warnings.append("늦은 시간 작업 - 충분한 테스트 권장")
+            warnings.append("[EMOJI] [EMOJI] [EMOJI] - [EMOJI] [EMOJI] [EMOJI]")
 
-        # 5. 개발 가능
+        # 5. [EMOJI] [EMOJI]
         return ModuleAvailability(
             available=True,
             warnings=warnings,
@@ -291,22 +291,22 @@ class ModuleOwnershipManager:
         estimated_hours: Optional[float] = None
     ) -> Tuple[bool, ModuleOwnership]:
         """
-        모듈 점유 (Standard 레벨)
+        [EMOJI] [EMOJI] (Standard [EMOJI])
         """
 
-        # 가용성 체크
+        # [EMOJI] [EMOJI]
         availability = await self.check_module_availability(
             module_id, session_id, developer_name
         )
 
         if not availability.available:
-            raise ValueError(f"모듈 점유 불가: {availability.reason}")
+            raise ValueError(f"[EMOJI] [EMOJI] [EMOJI]: {availability.reason}")
 
-        # 예상 시간 설정
+        # [EMOJI] [EMOJI] [EMOJI]
         module_def = self.module_definitions[module_id]
         hours = estimated_hours or module_def.estimated_hours
 
-        # 점유 생성
+        # [EMOJI] [EMOJI]
         ownership = ModuleOwnership(
             module_id=module_id,
             owner_session=session_id,
@@ -322,16 +322,16 @@ class ModuleOwnershipManager:
             warnings=availability.warnings
         )
 
-        # Redis에 저장
+        # Redis[EMOJI] [EMOJI]
         if self.redis_client:
             key = f"udo:module:ownership:{module_id}"
             await self.redis_client._client.set(
                 key,
                 json.dumps(ownership.to_dict()),
-                ex=int(hours * 3600 * 2)  # 예상 시간의 2배로 TTL 설정
+                ex=int(hours * 3600 * 2)  # [EMOJI] [EMOJI] 2[EMOJI] TTL [EMOJI]
             )
 
-            # 이벤트 브로드캐스트
+            # [EMOJI] [EMOJI]
             await self.redis_client.publish(
                 "udo:channel:module",
                 {
@@ -342,15 +342,15 @@ class ModuleOwnershipManager:
                 }
             )
 
-        # 로컬 저장
+        # [EMOJI] [EMOJI]
         self.active_ownerships[module_id] = ownership
 
-        # 파일 락 획득 (Standard 레벨은 경고만, 강제 락은 안함)
+        # [EMOJI] [EMOJI] [EMOJI] (Standard [EMOJI] [EMOJI], [EMOJI] [EMOJI] [EMOJI])
         for file_path in module_def.files:
-            logger.info(f"📝 File '{file_path}' associated with module '{module_id}'")
+            logger.info(f"[EMOJI] File '{file_path}' associated with module '{module_id}'")
 
         logger.info(
-            f"✅ Module '{module_id}' claimed by {developer_name} "
+            f"[OK] Module '{module_id}' claimed by {developer_name} "
             f"(until {ownership.estimated_completion.strftime('%H:%M')})"
         )
 
@@ -365,7 +365,7 @@ class ModuleOwnershipManager:
         commit_hash: Optional[str] = None
     ) -> bool:
         """
-        모듈 상태 업데이트
+        [EMOJI] [EMOJI] [EMOJI]
         """
 
         if module_id not in self.active_ownerships:
@@ -373,11 +373,11 @@ class ModuleOwnershipManager:
 
         ownership = self.active_ownerships[module_id]
 
-        # 권한 체크
+        # [EMOJI] [EMOJI]
         if ownership.owner_session != session_id:
-            raise ValueError("다른 사람의 모듈은 수정할 수 없습니다")
+            raise ValueError("[EMOJI] [EMOJI] [EMOJI] [EMOJI] [EMOJI] [EMOJI]")
 
-        # 상태 업데이트
+        # [EMOJI] [EMOJI]
         ownership.status = new_status
 
         if progress is not None:
@@ -386,7 +386,7 @@ class ModuleOwnershipManager:
         if commit_hash:
             ownership.commits.append(commit_hash)
 
-        # 자동 진행률 계산
+        # [EMOJI] [EMOJI] [EMOJI]
         if not progress:
             status_progress = {
                 ModuleStatus.PLANNING: 10,
@@ -397,7 +397,7 @@ class ModuleOwnershipManager:
             }
             ownership.progress = status_progress.get(new_status, ownership.progress)
 
-        # Redis 업데이트
+        # Redis [EMOJI]
         if self.redis_client:
             key = f"udo:module:ownership:{module_id}"
             await self.redis_client._client.set(
@@ -405,7 +405,7 @@ class ModuleOwnershipManager:
                 json.dumps(ownership.to_dict())
             )
 
-            # 상태 변경 이벤트
+            # [EMOJI] [EMOJI] [EMOJI]
             await self.redis_client.publish(
                 "udo:channel:module",
                 {
@@ -417,12 +417,12 @@ class ModuleOwnershipManager:
                 }
             )
 
-        # 완료 처리
+        # [EMOJI] [EMOJI]
         if new_status == ModuleStatus.COMPLETED:
             await self._complete_module(module_id)
 
         logger.info(
-            f"📊 Module '{module_id}' status: {new_status.value} ({ownership.progress}%)"
+            f"[EMOJI] Module '{module_id}' status: {new_status.value} ({ownership.progress}%)"
         )
 
         return True
@@ -434,7 +434,7 @@ class ModuleOwnershipManager:
         reason: Optional[str] = None
     ) -> bool:
         """
-        모듈 점유 해제
+        [EMOJI] [EMOJI] [EMOJI]
         """
 
         if module_id not in self.active_ownerships:
@@ -442,16 +442,16 @@ class ModuleOwnershipManager:
 
         ownership = self.active_ownerships[module_id]
 
-        # 권한 체크
+        # [EMOJI] [EMOJI]
         if ownership.owner_session != session_id:
-            raise ValueError("다른 사람의 모듈은 해제할 수 없습니다")
+            raise ValueError("[EMOJI] [EMOJI] [EMOJI] [EMOJI] [EMOJI] [EMOJI]")
 
-        # Redis에서 삭제
+        # Redis[EMOJI] [EMOJI]
         if self.redis_client:
             key = f"udo:module:ownership:{module_id}"
             await self.redis_client._client.delete(key)
 
-            # 해제 이벤트
+            # [EMOJI] [EMOJI]
             await self.redis_client.publish(
                 "udo:channel:module",
                 {
@@ -462,19 +462,19 @@ class ModuleOwnershipManager:
                 }
             )
 
-        # 로컬에서 삭제
+        # [EMOJI] [EMOJI]
         del self.active_ownerships[module_id]
 
-        # 대기 중인 개발자에게 알림
+        # [EMOJI] [EMOJI] [EMOJI] [EMOJI]
         await self._notify_waiting_developers(module_id)
 
-        logger.info(f"🔓 Module '{module_id}' released by {ownership.developer_name}")
+        logger.info(f"[EMOJI] Module '{module_id}' released by {ownership.developer_name}")
 
         return True
 
     async def _complete_module(self, module_id: str):
         """
-        모듈 완료 처리
+        [EMOJI] [EMOJI] [EMOJI]
         """
 
         ownership = self.active_ownerships.get(module_id)
@@ -485,19 +485,19 @@ class ModuleOwnershipManager:
         ownership.status = ModuleStatus.COMPLETED
         ownership.progress = 100
 
-        # 완료 큐에 추가
+        # [EMOJI] [EMOJI] [EMOJI]
         self.completion_queue.append(module_id)
 
-        # 의존하는 모듈들 알림
+        # [EMOJI] [EMOJI] [EMOJI]
         for other_module_id, other_def in self.module_definitions.items():
             if module_id in other_def.dependencies:
                 await self._notify_module_available(other_module_id, module_id)
 
-        logger.info(f"🎉 Module '{module_id}' completed!")
+        logger.info(f"[EMOJI] Module '{module_id}' completed!")
 
     async def _suggest_alternatives(self, module_id: str) -> List[str]:
         """
-        대체 가능한 모듈 추천
+        [EMOJI] [EMOJI] [EMOJI] [EMOJI]
         """
 
         alternatives = []
@@ -506,11 +506,11 @@ class ModuleOwnershipManager:
         if not module_def:
             return alternatives
 
-        # 같은 타입의 다른 모듈들
+        # [EMOJI] [EMOJI] [EMOJI] [EMOJI]
         for other_id, other_def in self.module_definitions.items():
             if other_id != module_id and other_id not in self.active_ownerships:
                 if other_def.type == module_def.type:
-                    # 의존성 체크
+                    # [EMOJI] [EMOJI]
                     deps_available = all(
                         dep not in self.active_ownerships or
                         self.active_ownerships[dep].status == ModuleStatus.COMPLETED
@@ -520,14 +520,14 @@ class ModuleOwnershipManager:
                     if deps_available:
                         alternatives.append(other_id)
 
-        return alternatives[:3]  # 최대 3개 추천
+        return alternatives[:3]  # [EMOJI] 3[EMOJI] [EMOJI]
 
     async def _estimate_availability(self, module_id: str) -> Optional[datetime]:
         """
-        모듈 가용 시간 예측
+        [EMOJI] [EMOJI] [EMOJI] [EMOJI]
         """
 
-        # 의존성 체크
+        # [EMOJI] [EMOJI]
         module_def = self.module_definitions.get(module_id)
         if not module_def:
             return None
@@ -544,19 +544,19 @@ class ModuleOwnershipManager:
 
     async def _is_file_being_edited(self, file_path: str) -> bool:
         """
-        파일이 수정 중인지 체크
+        [EMOJI] [EMOJI] [EMOJI] [EMOJI]
         """
 
-        # SessionManager와 연동하여 파일 락 체크
+        # SessionManager[EMOJI] [EMOJI] [EMOJI] [EMOJI] [EMOJI]
         if self.session_manager:
-            # 간단히 구현 (실제로는 더 복잡할 수 있음)
+            # [EMOJI] [EMOJI] ([EMOJI] [EMOJI] [EMOJI] [EMOJI] [EMOJI])
             return False
 
         return False
 
     async def _notify_waiting_developers(self, module_id: str):
         """
-        대기 중인 개발자들에게 알림
+        [EMOJI] [EMOJI] [EMOJI] [EMOJI]
         """
 
         if self.redis_client:
@@ -565,13 +565,13 @@ class ModuleOwnershipManager:
                 {
                     "type": "module_available",
                     "module_id": module_id,
-                    "message": f"모듈 '{module_id}'을(를) 이제 개발할 수 있습니다!"
+                    "message": f"[EMOJI] '{module_id}'[EMOJI]([EMOJI]) [EMOJI] [EMOJI] [EMOJI] [EMOJI]!"
                 }
             )
 
     async def _notify_module_available(self, module_id: str, completed_dependency: str):
         """
-        의존성 완료로 인한 모듈 가용 알림
+        [EMOJI] [EMOJI] [EMOJI] [EMOJI] [EMOJI] [EMOJI]
         """
 
         if self.redis_client:
@@ -581,13 +581,13 @@ class ModuleOwnershipManager:
                     "type": "dependency_completed",
                     "module_id": module_id,
                     "completed": completed_dependency,
-                    "message": f"'{completed_dependency}' 완료로 '{module_id}' 개발 가능"
+                    "message": f"'{completed_dependency}' [EMOJI] '{module_id}' [EMOJI] [EMOJI]"
                 }
             )
 
     async def get_module_status_board(self) -> Dict[str, Any]:
         """
-        모듈 현황판 데이터
+        [EMOJI] [EMOJI] [EMOJI]
         """
 
         board = {
@@ -616,7 +616,7 @@ class ModuleOwnershipManager:
                 })
 
             else:
-                # 가용성 체크
+                # [EMOJI] [EMOJI]
                 deps_blocked = any(
                     dep in self.active_ownerships and
                     self.active_ownerships[dep].status != ModuleStatus.COMPLETED
@@ -642,7 +642,7 @@ class ModuleOwnershipManager:
 
     async def check_standard_rules(self, action: str, context: Dict) -> Tuple[bool, List[str]]:
         """
-        Standard 레벨 규칙 체크
+        Standard [EMOJI] [EMOJI] [EMOJI]
 
         Returns:
             (allowed, warnings)
@@ -651,24 +651,24 @@ class ModuleOwnershipManager:
         warnings = []
 
         if action == "push_without_test":
-            # Standard 레벨: 테스트 없이 푸시 차단
-            return False, ["Standard 레벨: 테스트 없이 푸시 불가"]
+            # Standard [EMOJI]: [EMOJI] [EMOJI] [EMOJI] [EMOJI]
+            return False, ["Standard [EMOJI]: [EMOJI] [EMOJI] [EMOJI] [EMOJI]"]
 
         elif action == "claim_without_branch":
-            # Standard 레벨: 브랜치 규칙 위반 경고만
+            # Standard [EMOJI]: [EMOJI] [EMOJI] [EMOJI] [EMOJI]
             branch_name = context.get("branch")
             module_id = context.get("module_id")
 
             if branch_name and module_id:
                 expected = f"feature/{module_id.replace('/', '-')}"
                 if not branch_name.startswith(expected):
-                    warnings.append(f"브랜치 명명 규칙: {expected}를 권장")
+                    warnings.append(f"[EMOJI] [EMOJI] [EMOJI]: {expected}[EMOJI] [EMOJI]")
 
         elif action == "long_hold":
-            # Standard 레벨: 장시간 점유 경고
+            # Standard [EMOJI]: [EMOJI] [EMOJI] [EMOJI]
             hold_hours = context.get("hours", 0)
             if hold_hours > 8:
-                warnings.append(f"모듈을 {hold_hours}시간 점유 중 - 진행 상황 공유 권장")
+                warnings.append(f"[EMOJI] {hold_hours}[EMOJI] [EMOJI] [EMOJI] - [EMOJI] [EMOJI] [EMOJI] [EMOJI]")
 
         return True, warnings
 

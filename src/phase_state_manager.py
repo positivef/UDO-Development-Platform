@@ -138,7 +138,7 @@ class PhaseStateManager:
         self._emit_event(event)
 
         logger.info(
-            f"Phase transition: {old_phase.value if old_phase else 'None'} → {new_phase.value} "
+            f"Phase transition: {old_phase.value if old_phase else 'None'} -> {new_phase.value} "
             f"(duration: {duration_seconds}s)" if duration_seconds
             else f"Phase set: {new_phase.value}"
         )
