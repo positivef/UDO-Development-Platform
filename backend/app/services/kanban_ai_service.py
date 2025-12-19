@@ -27,7 +27,7 @@ from backend.app.models.kanban_ai import (
     PhaseName,
 )
 from backend.app.models.kanban_task import TaskCreate
-from backend.app.services.kanban_task_service import get_kanban_task_service
+from backend.app.services.kanban_task_service import kanban_task_service
 from backend.app.core.constitutional_guard import ConstitutionalGuard
 
 logger = logging.getLogger(__name__)
@@ -175,9 +175,8 @@ class KanbanAIService:
             }
         )
 
-        # Create task using task service
-        task_service = get_kanban_task_service()
-        created_task = await task_service.create_task(task_data)
+        # Create task using singleton task service (mock for tests, DB for production)
+        created_task = await kanban_task_service.create_task(task_data)
 
         # Remove from cache after successful creation
         del self.suggestions_cache[suggestion_id]

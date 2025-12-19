@@ -9,7 +9,7 @@ import asyncio
 from pathlib import Path
 from datetime import datetime
 
-from app.core.constitutional_guard import (
+from backend.app.core.constitutional_guard import (
     ConstitutionalGuard,
     ValidationResult,
     Severity,
@@ -429,13 +429,14 @@ async def test_p4_low_quality_score(guard):
 @pytest.mark.asyncio
 async def test_p4_phase_transition_success(guard):
     """Test P4 successful phase transition"""
+    # Required deliverables for implementation phase (from UDO_CONSTITUTION.yaml)
     context = {
         "quality_score": 0.70,
         "completed_deliverables": [
-            "[EMOJI] [EMOJI] [EMOJI]",
-            "80% [EMOJI] [EMOJI] [EMOJI]",
-            "[EMOJI] [EMOJI] [EMOJI]",
-            "API [EMOJI]"
+            "완전한 기능 구현",
+            "80% 이상 테스트 커버리지",
+            "코드 리뷰 완료",
+            "API 문서"
         ],
         "approved": True
     }
@@ -452,9 +453,10 @@ async def test_p4_phase_transition_success(guard):
 @pytest.mark.asyncio
 async def test_p4_phase_transition_missing_deliverables(guard):
     """Test P4 phase transition with missing deliverables"""
+    # Only one deliverable provided (missing 3 others)
     context = {
         "quality_score": 0.70,
-        "completed_deliverables": ["[EMOJI] [EMOJI] [EMOJI]"],  # Missing others
+        "completed_deliverables": ["완전한 기능 구현"],  # Missing: 테스트 커버리지, 코드 리뷰, API 문서
         "approved": True
     }
 
@@ -474,10 +476,10 @@ async def test_p4_phase_transition_no_approval(guard):
     context = {
         "quality_score": 0.70,
         "completed_deliverables": [
-            "[EMOJI] [EMOJI] [EMOJI]",
-            "80% [EMOJI] [EMOJI] [EMOJI]",
-            "[EMOJI] [EMOJI] [EMOJI]",
-            "API [EMOJI]"
+            "완전한 기능 구현",
+            "80% 이상 테스트 커버리지",
+            "코드 리뷰 완료",
+            "API 문서"
         ],
         "approved": False
     }

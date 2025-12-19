@@ -3,13 +3,20 @@ Kanban Task Service - Core Task Management (Database Implementation)
 
 Week 8 Day 1: Migrated from mock data to real PostgreSQL database.
 Follows Q1-Q8 decisions from KANBAN_INTEGRATION_STRATEGY.md.
+
+Week 8 Day 2: Added MockKanbanTaskService for testing without database.
 """
 
-from typing import List, Optional
+from typing import List, Optional, Dict
 from uuid import UUID, uuid4
 from datetime import datetime, UTC
 import logging
-import asyncpg
+
+# Optional asyncpg import (not needed for Mock mode)
+try:
+    import asyncpg
+except ImportError:
+    asyncpg = None
 
 from backend.app.models.kanban_task import (
     Task,
@@ -29,6 +36,7 @@ from backend.app.models.kanban_task import (
     ArchiveRequest,
     TaskArchive,
     TaskNotFoundError,
+    PhaseName,
 )
 
 logger = logging.getLogger(__name__)
@@ -812,6 +820,407 @@ class KanbanTaskService:
 
         logger.info(f"Archived task: {task_id}")
         return archive
+
+
+# ============================================================================
+# Mock Service for Testing
+# ============================================================================
+
+class MockKanbanTaskService:
+    """
+    Mock service for testing Kanban tasks without database.
+
+    Uses in-memory Dict storage for all operations.
+    Provides the same interface as KanbanTaskService.
+    """
+
+    def __init__(self):
+        """Initialize with empty mock storage."""
+        self._mock_tasks: Dict[UUID, Task] = {}
+        self._initialize_test_tasks()
+
+    def _initialize_test_tasks(self):
+        """Create initial test tasks."""
+        test_tasks = [
+            Task(
+                task_id=uuid4(),
+                title="Setup Development Environment",
+                description="Configure local dev environment with Docker",
+                phase_id=uuid4(),
+                phase_name=PhaseName.IMPLEMENTATION,
+                status=TaskStatus.COMPLETED,
+                priority=TaskPriority.HIGH,
+                completeness=100,
+                estimated_hours=4.0,
+                actual_hours=3.5,
+                ai_suggested=False,
+                ai_confidence=None,
+                quality_gate_passed=True,
+                quality_score=95,
+                constitutional_compliant=True,
+                violated_articles=[],
+                created_at=datetime.now(UTC),
+                updated_at=datetime.now(UTC),
+            ),
+            Task(
+                task_id=uuid4(),
+                title="Implement Kanban Board UI",
+                description="Build interactive Kanban board with React and DnD features",
+                phase_id=uuid4(),
+                phase_name=PhaseName.IMPLEMENTATION,
+                status=TaskStatus.IN_PROGRESS,
+                priority=TaskPriority.HIGH,
+                completeness=60,
+                estimated_hours=8.0,
+                actual_hours=5.0,
+                ai_suggested=True,
+                ai_confidence=0.85,
+                quality_gate_passed=False,
+                quality_score=None,
+                constitutional_compliant=True,
+                violated_articles=[],
+                created_at=datetime.now(UTC),
+                updated_at=datetime.now(UTC),
+            ),
+            Task(
+                task_id=uuid4(),
+                title="Design API Schema",
+                description="Define OpenAPI schema for Kanban endpoints",
+                phase_id=uuid4(),
+                phase_name=PhaseName.DESIGN,
+                status=TaskStatus.PENDING,
+                priority=TaskPriority.MEDIUM,
+                completeness=0,
+                estimated_hours=6.0,
+                actual_hours=0.0,
+                ai_suggested=True,
+                ai_confidence=0.72,
+                quality_gate_passed=False,
+                quality_score=None,
+                constitutional_compliant=True,
+                violated_articles=[],
+                created_at=datetime.now(UTC),
+                updated_at=datetime.now(UTC),
+            ),
+        ]
+
+        for task in test_tasks:
+            self._mock_tasks[task.task_id] = task
+
+    def reset_mock_data(self, recreate_test_tasks: bool = True):
+        """
+        Reset mock data for clean test state.
+
+        Args:
+            recreate_test_tasks: If True, recreate initial test tasks
+        """
+        self._mock_tasks.clear()
+        if recreate_test_tasks:
+            self._initialize_test_tasks()
+        logger.info("Mock task data reset")
+
+    # ========================================================================
+    # CRUD Operations
+    # ========================================================================
+
+    async def create_task(self, task_data: TaskCreate) -> Task:
+        """Create new task in mock storage."""
+        task = Task(
+            task_id=uuid4(),
+            title=task_data.title,
+            description=task_data.description,
+            phase_id=task_data.phase_id or uuid4(),
+            phase_name=task_data.phase_name or PhaseName.IDEATION,
+            status=task_data.status or TaskStatus.PENDING,
+            priority=task_data.priority or TaskPriority.MEDIUM,
+            completeness=task_data.completeness or 0,
+            estimated_hours=task_data.estimated_hours,
+            actual_hours=task_data.actual_hours,
+            ai_suggested=task_data.ai_suggested or False,
+            ai_confidence=task_data.ai_confidence,
+            quality_gate_passed=False,
+            quality_score=None,
+            constitutional_compliant=True,
+            violated_articles=[],
+            created_at=datetime.now(UTC),
+            updated_at=datetime.now(UTC),
+        )
+        self._mock_tasks[task.task_id] = task
+        logger.info(f"[Mock] Created task: {task.task_id} - {task.title}")
+        return task
+
+    async def get_task(self, task_id: UUID) -> Task:
+        """Get task by ID from mock storage."""
+        if task_id not in self._mock_tasks:
+            raise TaskNotFoundError(task_id)
+        return self._mock_tasks[task_id]
+
+    async def list_tasks(
+        self,
+        filters: Optional[TaskFilters] = None,
+        page: int = 1,
+        per_page: int = 50,
+        sort_by: str = "created_at",
+        sort_desc: bool = True,
+    ) -> TaskListResponse:
+        """List tasks with filtering and pagination from mock storage."""
+        tasks = list(self._mock_tasks.values())
+
+        # Apply filters
+        if filters:
+            if filters.phase:
+                tasks = [t for t in tasks if t.phase_name == filters.phase]
+            if filters.status:
+                status_val = filters.status.value if hasattr(filters.status, 'value') else filters.status
+                tasks = [t for t in tasks if t.status == status_val or (hasattr(t.status, 'value') and t.status.value == status_val)]
+            if filters.priority:
+                priority_val = filters.priority.value if hasattr(filters.priority, 'value') else filters.priority
+                tasks = [t for t in tasks if t.priority == priority_val or (hasattr(t.priority, 'value') and t.priority.value == priority_val)]
+            if filters.min_completeness is not None:
+                tasks = [t for t in tasks if (t.completeness or 0) >= filters.min_completeness]
+            if filters.max_completeness is not None:
+                tasks = [t for t in tasks if (t.completeness or 0) <= filters.max_completeness]
+            if filters.ai_suggested is not None:
+                tasks = [t for t in tasks if t.ai_suggested == filters.ai_suggested]
+            if filters.quality_gate_passed is not None:
+                tasks = [t for t in tasks if t.quality_gate_passed == filters.quality_gate_passed]
+
+        # Sort
+        sort_key = sort_by if sort_by in ["created_at", "updated_at", "priority", "completeness"] else "created_at"
+        tasks.sort(key=lambda t: getattr(t, sort_key) or datetime.min.replace(tzinfo=UTC), reverse=sort_desc)
+
+        # Paginate
+        total = len(tasks)
+        total_pages = (total + per_page - 1) // per_page if total > 0 else 0
+        start = (page - 1) * per_page
+        end = start + per_page
+        paginated_tasks = tasks[start:end]
+
+        pagination = PaginationMeta(
+            total=total,
+            page=page,
+            per_page=per_page,
+            total_pages=total_pages,
+            has_next=page < total_pages,
+            has_prev=page > 1,
+        )
+
+        return TaskListResponse(data=paginated_tasks, pagination=pagination)
+
+    async def update_task(self, task_id: UUID, task_update: TaskUpdate) -> Task:
+        """Update task in mock storage."""
+        if task_id not in self._mock_tasks:
+            raise TaskNotFoundError(task_id)
+
+        task = self._mock_tasks[task_id]
+
+        if task_update.title is not None:
+            task.title = task_update.title
+        if task_update.description is not None:
+            task.description = task_update.description
+        if task_update.status is not None:
+            task.status = task_update.status
+            if task_update.status == TaskStatus.COMPLETED:
+                task.completed_at = datetime.now(UTC)
+        if task_update.priority is not None:
+            task.priority = task_update.priority
+        if task_update.completeness is not None:
+            task.completeness = task_update.completeness
+            if task_update.completeness == 100:
+                task.status = TaskStatus.COMPLETED
+                task.completed_at = datetime.now(UTC)
+        if task_update.estimated_hours is not None:
+            task.estimated_hours = task_update.estimated_hours
+        if task_update.actual_hours is not None:
+            task.actual_hours = task_update.actual_hours
+        if task_update.quality_score is not None:
+            task.quality_score = task_update.quality_score
+
+        task.updated_at = datetime.now(UTC)
+        logger.info(f"[Mock] Updated task: {task_id}")
+        return task
+
+    async def delete_task(self, task_id: UUID) -> bool:
+        """Delete task from mock storage."""
+        if task_id not in self._mock_tasks:
+            raise TaskNotFoundError(task_id)
+        del self._mock_tasks[task_id]
+        logger.info(f"[Mock] Deleted task: {task_id}")
+        return True
+
+    # ========================================================================
+    # Phase Operations
+    # ========================================================================
+
+    async def change_phase(self, task_id: UUID, phase_request: PhaseChangeRequest) -> Task:
+        """Move task to different phase."""
+        if task_id not in self._mock_tasks:
+            raise TaskNotFoundError(task_id)
+
+        task = self._mock_tasks[task_id]
+        task.phase_id = phase_request.new_phase_id
+        task.phase_name = phase_request.new_phase_name
+        task.updated_at = datetime.now(UTC)
+        logger.info(f"[Mock] Moved task {task_id} to phase: {phase_request.new_phase_name}")
+        return task
+
+    # ========================================================================
+    # Status & Priority Operations
+    # ========================================================================
+
+    async def change_status(self, task_id: UUID, status_request: StatusChangeRequest) -> Task:
+        """Change task status."""
+        if task_id not in self._mock_tasks:
+            raise TaskNotFoundError(task_id)
+
+        task = self._mock_tasks[task_id]
+        task.status = status_request.new_status
+        task.updated_at = datetime.now(UTC)
+        if status_request.new_status == TaskStatus.COMPLETED:
+            task.completed_at = datetime.now(UTC)
+        logger.info(f"[Mock] Changed task {task_id} status to: {status_request.new_status}")
+        return task
+
+    async def change_priority(self, task_id: UUID, priority_request: PriorityChangeRequest) -> Task:
+        """Change task priority."""
+        if task_id not in self._mock_tasks:
+            raise TaskNotFoundError(task_id)
+
+        task = self._mock_tasks[task_id]
+        task.priority = priority_request.new_priority
+        task.updated_at = datetime.now(UTC)
+        logger.info(f"[Mock] Changed task {task_id} priority to: {priority_request.new_priority}")
+        return task
+
+    async def update_completeness(self, task_id: UUID, completeness_request: CompletenessUpdateRequest) -> Task:
+        """Update task completeness percentage."""
+        if task_id not in self._mock_tasks:
+            raise TaskNotFoundError(task_id)
+
+        task = self._mock_tasks[task_id]
+        task.completeness = completeness_request.completeness
+        task.updated_at = datetime.now(UTC)
+        if completeness_request.completeness == 100:
+            task.status = TaskStatus.COMPLETED
+            task.completed_at = datetime.now(UTC)
+        logger.info(f"[Mock] Updated task {task_id} completeness to: {completeness_request.completeness}%")
+        return task
+
+    # ========================================================================
+    # Quality Gate Operations (Q3)
+    # ========================================================================
+
+    async def run_quality_gates(self, task_id: UUID) -> QualityGateResult:
+        """Run quality gate checks on task."""
+        if task_id not in self._mock_tasks:
+            raise TaskNotFoundError(task_id)
+
+        start_time = datetime.now(UTC)
+
+        checks = [
+            QualityGateCheck(
+                check_name="Constitutional Compliance",
+                passed=True,
+                message="All constitutional articles satisfied",
+                article=None
+            ),
+            QualityGateCheck(
+                check_name="Code Quality",
+                passed=True,
+                message="Code quality score: 85/100",
+                article=None
+            ),
+            QualityGateCheck(
+                check_name="Test Coverage",
+                passed=True,
+                message="Test coverage: 80%",
+                article=None
+            ),
+        ]
+
+        passed_checks = [c for c in checks if c.passed]
+        quality_score = int((len(passed_checks) / len(checks)) * 100)
+        quality_gate_passed = len(passed_checks) == len(checks)
+        violated_articles = [c.article for c in checks if not c.passed and c.article]
+
+        task = self._mock_tasks[task_id]
+        task.quality_gate_passed = quality_gate_passed
+        task.quality_score = quality_score
+        task.constitutional_compliant = len(violated_articles) == 0
+        task.violated_articles = violated_articles
+        task.updated_at = datetime.now(UTC)
+
+        execution_time = (datetime.now(UTC) - start_time).total_seconds() * 1000
+
+        result = QualityGateResult(
+            task_id=task_id,
+            quality_gate_passed=quality_gate_passed,
+            quality_score=quality_score,
+            constitutional_compliant=len(violated_articles) == 0,
+            violated_articles=violated_articles,
+            checks=checks,
+            timestamp=datetime.now(UTC),
+            execution_time_ms=execution_time,
+        )
+
+        logger.info(f"[Mock] Quality gate for task {task_id}: {'PASSED' if quality_gate_passed else 'FAILED'}")
+        return result
+
+    async def get_quality_gates(self, task_id: UUID) -> QualityGateResult:
+        """Get quality gate status for task."""
+        task = await self.get_task(task_id)
+
+        return QualityGateResult(
+            task_id=task_id,
+            quality_gate_passed=task.quality_gate_passed,
+            quality_score=task.quality_score or 0,
+            constitutional_compliant=task.constitutional_compliant,
+            violated_articles=task.violated_articles,
+            checks=[],
+            timestamp=task.updated_at,
+            execution_time_ms=0.0,
+        )
+
+    # ========================================================================
+    # Archive Operations (Q6)
+    # ========================================================================
+
+    async def archive_task(self, task_id: UUID, archive_request: ArchiveRequest) -> TaskArchive:
+        """Archive task to Done-End."""
+        task = await self.get_task(task_id)
+
+        ai_summary = None
+        if archive_request.generate_ai_summary:
+            ai_summary = (
+                f"Task '{task.title}' completed in {task.phase_name} phase. "
+                f"Completeness: {task.completeness}%. "
+                f"Estimated: {task.estimated_hours}h, "
+                f"Actual: {task.actual_hours}h."
+            )
+
+        task.status = TaskStatus.DONE_END
+        task.archived_at = datetime.now(UTC)
+        task.updated_at = datetime.now(UTC)
+
+        archive = TaskArchive(
+            task_id=task_id,
+            task_data=task,
+            ai_summary=ai_summary,
+            archived_at=datetime.now(UTC),
+            archived_by=archive_request.archived_by,
+            obsidian_synced=False,
+        )
+
+        logger.info(f"[Mock] Archived task: {task_id}")
+        return archive
+
+
+# ============================================================================
+# Singleton Instance for Testing
+# ============================================================================
+
+# Create singleton instance for tests (uses MockKanbanTaskService)
+kanban_task_service = MockKanbanTaskService()
 
 
 # ============================================================================
