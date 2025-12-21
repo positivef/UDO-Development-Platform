@@ -222,12 +222,15 @@ async def get_rate_limit_status(
     """
     try:
         user_id = current_user.get("username", current_user.get("email"))
-        status = kanban_ai_service._check_rate_limit(user_id)
-        return status
+        # ⚠️ CRITICAL: Use rate_status (NOT status) to avoid shadowing FastAPI status module
+        # Variable named 'status' would make status.HTTP_500_INTERNAL_SERVER_ERROR fail
+        # See: docs/guides/ERROR_PREVENTION_GUIDE.md#variable-naming-conventions
+        rate_status = kanban_ai_service._check_rate_limit(user_id)
+        return rate_status
 
     except Exception as e:
         return error_response(
             code="RATE_LIMIT_CHECK_FAILED",
             message=f"Failed to check rate limit status: {str(e)}",
-            status_code=status.HTTP_500_INTERNAL_SERVER_ERROR
+            status_code=status.HTTP_500_INTERNAL_SERVER_ERROR  # Requires 'status' not shadowed
         )

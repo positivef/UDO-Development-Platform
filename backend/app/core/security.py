@@ -16,6 +16,7 @@ import hashlib
 import os
 from datetime import datetime, timedelta, UTC
 from typing import Optional, Dict, Any, List, Set
+from pathlib import Path
 from fastapi import HTTPException, Request, status, Depends
 from fastapi.security import HTTPBearer, HTTPAuthorizationCredentials
 from pydantic import BaseModel, validator, Field
@@ -23,6 +24,18 @@ import jwt
 import logging
 from functools import wraps
 from threading import Lock
+
+# Load environment variables for development auth bypass
+from dotenv import load_dotenv
+project_root = Path(__file__).parent.parent.parent.parent  # Go up to project root
+dotenv_path = project_root / ".env"
+print(f"[DEBUG security.py] Project root: {project_root}")
+print(f"[DEBUG security.py] .env path: {dotenv_path}")
+print(f"[DEBUG security.py] .env exists: {dotenv_path.exists()}")
+if dotenv_path.exists():
+    load_dotenv(dotenv_path=dotenv_path)
+    disable_auth = os.environ.get("DISABLE_AUTH_IN_DEV", "")
+    print(f"[DEBUG security.py] DISABLE_AUTH_IN_DEV after load: '{disable_auth}'")
 
 # MED-04: Import log sanitizer for secure logging
 from .log_sanitizer import sanitize_log_message, sanitize_exception
@@ -120,8 +133,8 @@ class TokenBlacklist:
 # Global token blacklist instance
 token_blacklist = TokenBlacklist()
 
-# Security bearer
-security = HTTPBearer()
+# Security bearer (auto_error=False allows optional authentication)
+security = HTTPBearer(auto_error=False)
 
 
 # RBAC (Role-Based Access Control) Configuration
@@ -801,6 +814,13 @@ class SecurityMiddleware:
     async def __call__(self, request: Request, call_next):
         """[EMOJI] [EMOJI]"""
 
+        # Skip WebSocket connections (let them pass through without security checks)
+        upgrade_header = request.headers.get("upgrade", "")
+        logger.info(f"[DEBUG] SecurityMiddleware: path={request.url.path}, upgrade={upgrade_header}")
+        if upgrade_header.lower() == "websocket":
+            logger.info(f"[DEBUG] WebSocket detected, bypassing security checks")
+            return await call_next(request)
+
         # Check rate limit
         client_ip = self.rate_limiter.get_client_ip(request)
         if not self.rate_limiter.check_rate_limit(client_ip):
@@ -961,7 +981,30 @@ def require_role(required_role: str):
         2. [EMOJI] role [EMOJI]
         3. [EMOJI] [EMOJI] [EMOJI]
         """
+        # Development bypass: Allow testing without authentication
+        # ⚠️ CRITICAL: Keep this schema in sync with get_current_user() dev bypass
+        # ⚠️ REQUIRED FIELDS: username, email (for rate-limit endpoints)
+        # See: docs/guides/ERROR_PREVENTION_GUIDE.md#dev-bypass-checklist
+        if os.environ.get("DISABLE_AUTH_IN_DEV", "").lower() == "true":
+            logger.warning(f"DEVELOPMENT MODE: Bypassing role check for {required_role}")
+            return {
+                "sub": "dev_user",
+                "user_id": "dev-user-id",
+                "username": "dev_user",        # ⚠️ REQUIRED for rate-limit endpoints
+                "email": "dev@example.com",     # ⚠️ REQUIRED for rate-limit endpoints
+                "role": UserRole.ADMIN,         # Grant admin for dev testing
+                "type": "access",
+                "exp": (datetime.now(UTC) + timedelta(hours=24)).timestamp()
+            }
+
         try:
+            # Check if credentials exist
+            if not credentials:
+                raise HTTPException(
+                    status_code=status.HTTP_401_UNAUTHORIZED,
+                    detail="Not authenticated"
+                )
+
             # [EMOJI] [EMOJI]
             payload = JWTManager.verify_token(credentials)
 
@@ -996,11 +1039,12 @@ def require_role(required_role: str):
     return role_checker
 
 
-def get_current_user(credentials: HTTPAuthorizationCredentials = Depends(security)) -> Dict[str, Any]:
+def get_current_user(credentials: Optional[HTTPAuthorizationCredentials] = Depends(security)) -> Dict[str, Any]:
     """
     [EMOJI] [EMOJI] [EMOJI] [EMOJI] [EMOJI]
 
     RBAC RESTORED (2025-12-17 Week 5 Day 3): JWT [EMOJI] [EMOJI]
+    Development bypass (2025-12-22): Optional credentials for dev testing
 
     Usage:
         @router.get("/profile")
@@ -1013,6 +1057,28 @@ def get_current_user(credentials: HTTPAuthorizationCredentials = Depends(securit
     Raises:
         HTTPException: [EMOJI] [EMOJI] [EMOJI] [EMOJI] [EMOJI] 401 Unauthorized
     """
+    # Development bypass: Allow testing without authentication
+    # ⚠️ CRITICAL: Keep this schema in sync with require_role() dev bypass
+    # ⚠️ REQUIRED FIELDS: username, email (for rate-limit endpoints)
+    # See: docs/guides/ERROR_PREVENTION_GUIDE.md#dev-bypass-checklist
+    if os.environ.get("DISABLE_AUTH_IN_DEV", "").lower() == "true":
+        logger.warning("DEVELOPMENT MODE: Authentication disabled! DO NOT use in production.")
+        return {
+            "sub": "dev_user",
+            "user_id": "dev-user-id",
+            "username": "dev_user",        # ⚠️ REQUIRED for rate-limit endpoints
+            "email": "dev@example.com",     # ⚠️ REQUIRED for rate-limit endpoints
+            "role": UserRole.DEVELOPER,
+            "type": "access",
+            "exp": (datetime.now(UTC) + timedelta(hours=24)).timestamp()
+        }
+
+    if not credentials:
+        raise HTTPException(
+            status_code=status.HTTP_401_UNAUTHORIZED,
+            detail="Not authenticated"
+        )
+
     return JWTManager.verify_token(credentials)
 
 
