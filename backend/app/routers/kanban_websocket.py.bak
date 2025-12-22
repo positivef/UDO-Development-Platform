@@ -91,7 +91,7 @@ class KanbanConnectionManager:
         websocket = self.active_connections.get(client_id)
         if websocket:
             try:
-                # [WARN] CRITICAL: Use client_state (NOT application_state)
+                # ⚠️ CRITICAL: Use client_state (NOT application_state)
                 # Starlette WebSocket uses client_state for connection tracking
                 # See: docs/guides/ERROR_PREVENTION_GUIDE.md#websocket-state-checking
                 if websocket.client_state == WebSocketState.CONNECTED:

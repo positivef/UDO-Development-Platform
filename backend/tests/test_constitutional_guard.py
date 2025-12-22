@@ -433,10 +433,10 @@ async def test_p4_phase_transition_success(guard):
     context = {
         "quality_score": 0.70,
         "completed_deliverables": [
-            "완전한 기능 구현",
-            "80% 이상 테스트 커버리지",
-            "코드 리뷰 완료",
-            "API 문서"
+            "[EMOJI] [EMOJI] [EMOJI]",
+            "80% [EMOJI] [EMOJI] [EMOJI]",
+            "[EMOJI] [EMOJI] [EMOJI]",
+            "API [EMOJI]"
         ],
         "approved": True
     }
@@ -456,7 +456,7 @@ async def test_p4_phase_transition_missing_deliverables(guard):
     # Only one deliverable provided (missing 3 others)
     context = {
         "quality_score": 0.70,
-        "completed_deliverables": ["완전한 기능 구현"],  # Missing: 테스트 커버리지, 코드 리뷰, API 문서
+        "completed_deliverables": ["[EMOJI] [EMOJI] [EMOJI]"],  # Missing: [EMOJI] [EMOJI], [EMOJI] [EMOJI], API [EMOJI]
         "approved": True
     }
 
@@ -476,10 +476,10 @@ async def test_p4_phase_transition_no_approval(guard):
     context = {
         "quality_score": 0.70,
         "completed_deliverables": [
-            "완전한 기능 구현",
-            "80% 이상 테스트 커버리지",
-            "코드 리뷰 완료",
-            "API 문서"
+            "[EMOJI] [EMOJI] [EMOJI]",
+            "80% [EMOJI] [EMOJI] [EMOJI]",
+            "[EMOJI] [EMOJI] [EMOJI]",
+            "API [EMOJI]"
         ],
         "approved": False
     }

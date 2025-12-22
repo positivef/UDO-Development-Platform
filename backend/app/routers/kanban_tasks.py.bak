@@ -11,7 +11,7 @@ from fastapi import APIRouter, Depends, HTTPException, Query, status
 from fastapi.responses import JSONResponse
 
 from backend.app.core.security import require_role, UserRole, get_current_user
-from backend.app.services.kanban_task_service import KanbanTaskService
+from backend.app.services.kanban_task_service import KanbanTaskService, MockKanbanTaskService
 from backend.app.models.kanban_task import (
     Task,
     TaskCreate,
@@ -29,6 +29,9 @@ from backend.app.models.kanban_task import (
 )
 from backend.async_database import async_db
 
+# WebSocket support for real-time updates
+from backend.app.routers.kanban_websocket import kanban_manager
+
 router = APIRouter(prefix="/api/kanban/tasks", tags=["Kanban Tasks"])
 
 
@@ -36,15 +39,28 @@ router = APIRouter(prefix="/api/kanban/tasks", tags=["Kanban Tasks"])
 # Dependency Injection
 # ============================================================================
 
-def get_kanban_service() -> KanbanTaskService:
+def get_kanban_service():
     """
     Dependency for KanbanTaskService with database pool.
+    Falls back to MockKanbanTaskService when database is unavailable.
+
+    ⚠️ CRITICAL: Always provide mock fallback for services requiring database
+    This allows E2E tests to run without PostgreSQL running
+    See: docs/guides/ERROR_PREVENTION_GUIDE.md#service-fallback-pattern
 
     Returns:
-        KanbanTaskService: Service instance with database connection pool
+        KanbanTaskService or MockKanbanTaskService: Service instance
     """
-    db_pool = async_db.get_pool()
-    return KanbanTaskService(db_pool=db_pool)
+    import logging
+    logger = logging.getLogger(__name__)
+
+    try:
+        db_pool = async_db.get_pool()
+        return KanbanTaskService(db_pool=db_pool)
+    except RuntimeError as e:
+        # Database not initialized - use mock service for E2E testing
+        logger.warning(f"[KANBAN] Database not available, using MockKanbanTaskService: {e}")
+        return MockKanbanTaskService()
 
 
 # ============================================================================
@@ -75,29 +91,38 @@ def error_response(code: str, message: str, status_code: int, details: dict = No
     "",
     response_model=Task,
     status_code=status.HTTP_201_CREATED,
-    # DEV_MODE: RBAC disabled for development
-
-    # TODO: Re-enable RBAC in Week 5 Day 2 (see UNCERTAINTY_MAP_WEEK5_ANALYSIS.md P0-1)
-
-    # dependencies=[Depends(require_role(UserRole.DEVELOPER))],
+    dependencies=[Depends(require_role(UserRole.DEVELOPER))],
     summary="Create new task",
     description="Create new task (requires developer role or higher)"
 )
 async def create_task(
     task_data: TaskCreate,
     service: KanbanTaskService = Depends(get_kanban_service),
-    # DEV_MODE: Auth disabled
-
-    # current_user: dict = Depends(get_current_user)
+    current_user: dict = Depends(get_current_user)
 ):
     """
     Create new task.
 
     **RBAC**: Requires `developer` role or higher.
     **Q2**: Supports AI-suggested tasks with confidence score.
+    **WebSocket**: Broadcasts task_created event to all connected clients.
     """
     try:
         task = await service.create_task(task_data)
+
+        # Broadcast task creation to WebSocket clients
+        # TODO(Q5): Use actual project_id when multi-project support is implemented
+        project_id = "default"
+        await kanban_manager.broadcast_to_project(
+            {
+                "type": "task_created",
+                "task": task.model_dump(),  # Convert Pydantic model to dict
+                "created_by": current_user.get("username", current_user.get("email")),
+                "timestamp": task.created_at.isoformat() if hasattr(task, 'created_at') else None
+            },
+            project_id
+        )
+
         return task
     except Exception as e:
         return error_response(
@@ -110,11 +135,7 @@ async def create_task(
 @router.get(
     "",
     response_model=TaskListResponse,
-    # DEV_MODE: RBAC disabled for development
-
-    # TODO: Re-enable RBAC in Week 5 Day 2 (see UNCERTAINTY_MAP_WEEK5_ANALYSIS.md P0-1)
-
-    # dependencies=[Depends(require_role(UserRole.VIEWER))],
+    dependencies=[Depends(require_role(UserRole.VIEWER))],
     summary="List tasks with filtering and pagination",
     description="List tasks with filters, sorting, and pagination (requires viewer role)"
 )
@@ -137,10 +158,7 @@ async def list_tasks(
     sort_desc: bool = Query(True, description="Sort descending"),
 
     service: KanbanTaskService = Depends(get_kanban_service),
-    # DEV_MODE: Auth disabled
-
-
-    # current_user: dict = Depends(get_current_user)
+    current_user: dict = Depends(get_current_user)
 ):
     """
     List tasks with filtering, sorting, and pagination.
@@ -183,20 +201,14 @@ async def list_tasks(
 @router.get(
     "/{task_id}",
     response_model=Task,
-    # DEV_MODE: RBAC disabled for development
-
-    # TODO: Re-enable RBAC in Week 5 Day 2 (see UNCERTAINTY_MAP_WEEK5_ANALYSIS.md P0-1)
-
-    # dependencies=[Depends(require_role(UserRole.VIEWER))],
+    dependencies=[Depends(require_role(UserRole.VIEWER))],
     summary="Get task details",
     description="Get task by ID (requires viewer role)"
 )
 async def get_task(
     task_id: UUID,
     service: KanbanTaskService = Depends(get_kanban_service),
-    # DEV_MODE: Auth disabled
-
-    # current_user: dict = Depends(get_current_user)
+    current_user: dict = Depends(get_current_user)
 ):
     """
     Get task by ID.
@@ -224,11 +236,7 @@ async def get_task(
 @router.put(
     "/{task_id}",
     response_model=Task,
-    # DEV_MODE: RBAC disabled for development
-
-    # TODO: Re-enable RBAC in Week 5 Day 2 (see UNCERTAINTY_MAP_WEEK5_ANALYSIS.md P0-1)
-
-    # dependencies=[Depends(require_role(UserRole.DEVELOPER))],
+    dependencies=[Depends(require_role(UserRole.DEVELOPER))],
     summary="Update task",
     description="Update task (requires developer role or higher)"
 )
@@ -236,18 +244,33 @@ async def update_task(
     task_id: UUID,
     task_update: TaskUpdate,
     service: KanbanTaskService = Depends(get_kanban_service),
-    # DEV_MODE: Auth disabled
-
-    # current_user: dict = Depends(get_current_user)
+    current_user: dict = Depends(get_current_user)
 ):
     """
     Update task.
 
     **RBAC**: Requires `developer` role or higher.
     **Note**: Auto-marks as completed if completeness reaches 100%.
+    **WebSocket**: Broadcasts task_updated event to all connected clients.
     """
     try:
         task = await service.update_task(task_id, task_update)
+
+        # Broadcast task update to WebSocket clients
+        # TODO(Q5): Use actual project_id when multi-project support is implemented
+        project_id = "default"
+        await kanban_manager.broadcast_to_project(
+            {
+                "type": "task_updated",
+                "task_id": str(task_id),
+                "updates": task_update.model_dump(exclude_unset=True),  # Only changed fields
+                "task": task.model_dump(),  # Full updated task
+                "updated_by": current_user.get("username", current_user.get("email")),
+                "timestamp": task.updated_at.isoformat() if hasattr(task, 'updated_at') else None
+            },
+            project_id
+        )
+
         return task
     except TaskNotFoundError:
         return error_response(
@@ -267,28 +290,38 @@ async def update_task(
 @router.delete(
     "/{task_id}",
     status_code=status.HTTP_204_NO_CONTENT,
-    # DEV_MODE: RBAC disabled for development
-
-    # TODO: Re-enable RBAC in Week 5 Day 2 (see UNCERTAINTY_MAP_WEEK5_ANALYSIS.md P0-1)
-
-    # dependencies=[Depends(require_role(UserRole.DEVELOPER))],
+    dependencies=[Depends(require_role(UserRole.DEVELOPER))],
     summary="Delete task",
     description="Delete task (requires developer role or higher)"
 )
 async def delete_task(
     task_id: UUID,
     service: KanbanTaskService = Depends(get_kanban_service),
-    # DEV_MODE: Auth disabled
-
-    # current_user: dict = Depends(get_current_user)
+    current_user: dict = Depends(get_current_user)
 ):
     """
     Delete task (soft delete).
 
     **RBAC**: Requires `developer` role or higher.
+    **WebSocket**: Broadcasts task_deleted event to all connected clients.
     """
     try:
         await service.delete_task(task_id)
+
+        # Broadcast task deletion to WebSocket clients
+        # TODO(Q5): Use actual project_id when multi-project support is implemented
+        project_id = "default"
+        from datetime import datetime, UTC
+        await kanban_manager.broadcast_to_project(
+            {
+                "type": "task_deleted",
+                "task_id": str(task_id),
+                "deleted_by": current_user.get("username", current_user.get("email")),
+                "timestamp": datetime.now(UTC).isoformat()
+            },
+            project_id
+        )
+
         return None
     except TaskNotFoundError:
         return error_response(
@@ -312,11 +345,7 @@ async def delete_task(
 @router.put(
     "/{task_id}/phase",
     response_model=Task,
-    # DEV_MODE: RBAC disabled for development
-
-    # TODO: Re-enable RBAC in Week 5 Day 2 (see UNCERTAINTY_MAP_WEEK5_ANALYSIS.md P0-1)
-
-    # dependencies=[Depends(require_role(UserRole.DEVELOPER))],
+    dependencies=[Depends(require_role(UserRole.DEVELOPER))],
     summary="Move task to different phase",
     description="Move task to different phase (Q1: Task within Phase)"
 )
@@ -324,9 +353,7 @@ async def change_phase(
     task_id: UUID,
     phase_request: PhaseChangeRequest,
     service: KanbanTaskService = Depends(get_kanban_service),
-    # DEV_MODE: Auth disabled
-
-    # current_user: dict = Depends(get_current_user)
+    current_user: dict = Depends(get_current_user)
 ):
     """
     Move task to different phase.
@@ -359,11 +386,7 @@ async def change_phase(
 @router.put(
     "/{task_id}/status",
     response_model=Task,
-    # DEV_MODE: RBAC disabled for development
-
-    # TODO: Re-enable RBAC in Week 5 Day 2 (see UNCERTAINTY_MAP_WEEK5_ANALYSIS.md P0-1)
-
-    # dependencies=[Depends(require_role(UserRole.DEVELOPER))],
+    dependencies=[Depends(require_role(UserRole.DEVELOPER))],
     summary="Change task status",
     description="Change task status"
 )
@@ -371,9 +394,7 @@ async def change_status(
     task_id: UUID,
     status_request: StatusChangeRequest,
     service: KanbanTaskService = Depends(get_kanban_service),
-    # DEV_MODE: Auth disabled
-
-    # current_user: dict = Depends(get_current_user)
+    current_user: dict = Depends(get_current_user)
 ):
     """
     Change task status.
@@ -402,11 +423,7 @@ async def change_status(
 @router.put(
     "/{task_id}/priority",
     response_model=Task,
-    # DEV_MODE: RBAC disabled for development
-
-    # TODO: Re-enable RBAC in Week 5 Day 2 (see UNCERTAINTY_MAP_WEEK5_ANALYSIS.md P0-1)
-
-    # dependencies=[Depends(require_role(UserRole.DEVELOPER))],
+    dependencies=[Depends(require_role(UserRole.DEVELOPER))],
     summary="Change task priority",
     description="Change task priority"
 )
@@ -414,9 +431,7 @@ async def change_priority(
     task_id: UUID,
     priority_request: PriorityChangeRequest,
     service: KanbanTaskService = Depends(get_kanban_service),
-    # DEV_MODE: Auth disabled
-
-    # current_user: dict = Depends(get_current_user)
+    current_user: dict = Depends(get_current_user)
 ):
     """
     Change task priority.
@@ -444,11 +459,7 @@ async def change_priority(
 @router.put(
     "/{task_id}/completeness",
     response_model=Task,
-    # DEV_MODE: RBAC disabled for development
-
-    # TODO: Re-enable RBAC in Week 5 Day 2 (see UNCERTAINTY_MAP_WEEK5_ANALYSIS.md P0-1)
-
-    # dependencies=[Depends(require_role(UserRole.DEVELOPER))],
+    dependencies=[Depends(require_role(UserRole.DEVELOPER))],
     summary="Update task completeness",
     description="Update task completeness percentage (0-100)"
 )
@@ -456,9 +467,7 @@ async def update_completeness(
     task_id: UUID,
     completeness_request: CompletenessUpdateRequest,
     service: KanbanTaskService = Depends(get_kanban_service),
-    # DEV_MODE: Auth disabled
-
-    # current_user: dict = Depends(get_current_user)
+    current_user: dict = Depends(get_current_user)
 ):
     """
     Update task completeness percentage.
@@ -491,20 +500,14 @@ async def update_completeness(
 @router.get(
     "/{task_id}/quality-gates",
     response_model=QualityGateResult,
-    # DEV_MODE: RBAC disabled for development
-
-    # TODO: Re-enable RBAC in Week 5 Day 2 (see UNCERTAINTY_MAP_WEEK5_ANALYSIS.md P0-1)
-
-    # dependencies=[Depends(require_role(UserRole.VIEWER))],
+    dependencies=[Depends(require_role(UserRole.VIEWER))],
     summary="Get quality gate status",
     description="Get quality gate status for task (Q3: Hybrid completion)"
 )
 async def get_quality_gates(
     task_id: UUID,
     service: KanbanTaskService = Depends(get_kanban_service),
-    # DEV_MODE: Auth disabled
-
-    # current_user: dict = Depends(get_current_user)
+    current_user: dict = Depends(get_current_user)
 ):
     """
     Get quality gate status for task.
@@ -533,20 +536,14 @@ async def get_quality_gates(
 @router.post(
     "/{task_id}/quality-gates",
     response_model=QualityGateResult,
-    # DEV_MODE: RBAC disabled for development
-
-    # TODO: Re-enable RBAC in Week 5 Day 2 (see UNCERTAINTY_MAP_WEEK5_ANALYSIS.md P0-1)
-
-    # dependencies=[Depends(require_role(UserRole.DEVELOPER))],
+    dependencies=[Depends(require_role(UserRole.DEVELOPER))],
     summary="Run quality gate checks",
     description="Run quality gate checks on task (Q3: Hybrid completion)"
 )
 async def run_quality_gates(
     task_id: UUID,
     service: KanbanTaskService = Depends(get_kanban_service),
-    # DEV_MODE: Auth disabled
-
-    # current_user: dict = Depends(get_current_user)
+    current_user: dict = Depends(get_current_user)
 ):
     """
     Run quality gate checks on task.
@@ -585,11 +582,7 @@ async def run_quality_gates(
 @router.post(
     "/{task_id}/archive",
     response_model=TaskArchive,
-    # DEV_MODE: RBAC disabled for development
-
-    # TODO: Re-enable RBAC in Week 5 Day 2 (see UNCERTAINTY_MAP_WEEK5_ANALYSIS.md P0-1)
-
-    # dependencies=[Depends(require_role(UserRole.DEVELOPER))],
+    dependencies=[Depends(require_role(UserRole.DEVELOPER))],
     summary="Archive task to Done-End",
     description="Archive task to Done-End with AI summary (Q6: Done-End archiving)"
 )
@@ -597,15 +590,13 @@ async def archive_task(
     task_id: UUID,
     archive_request: ArchiveRequest,
     service: KanbanTaskService = Depends(get_kanban_service),
-    # DEV_MODE: Auth disabled
-
-    # current_user: dict = Depends(get_current_user)
+    current_user: dict = Depends(get_current_user)
 ):
     """
     Archive task to Done-End.
 
     **RBAC**: Requires `developer` role or higher.
-    **Q6**: Done-End archiving with AI summary (GPT-4o) → Obsidian sync.
+    **Q6**: Done-End archiving with AI summary (GPT-4o) -> Obsidian sync.
 
     Process:
     1. Generate AI summary (optional, default: True)

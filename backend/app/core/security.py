@@ -982,16 +982,16 @@ def require_role(required_role: str):
         3. [EMOJI] [EMOJI] [EMOJI]
         """
         # Development bypass: Allow testing without authentication
-        # ⚠️ CRITICAL: Keep this schema in sync with get_current_user() dev bypass
-        # ⚠️ REQUIRED FIELDS: username, email (for rate-limit endpoints)
+        # [WARN] CRITICAL: Keep this schema in sync with get_current_user() dev bypass
+        # [WARN] REQUIRED FIELDS: username, email (for rate-limit endpoints)
         # See: docs/guides/ERROR_PREVENTION_GUIDE.md#dev-bypass-checklist
         if os.environ.get("DISABLE_AUTH_IN_DEV", "").lower() == "true":
             logger.warning(f"DEVELOPMENT MODE: Bypassing role check for {required_role}")
             return {
                 "sub": "dev_user",
                 "user_id": "dev-user-id",
-                "username": "dev_user",        # ⚠️ REQUIRED for rate-limit endpoints
-                "email": "dev@example.com",     # ⚠️ REQUIRED for rate-limit endpoints
+                "username": "dev_user",        # [WARN] REQUIRED for rate-limit endpoints
+                "email": "dev@example.com",     # [WARN] REQUIRED for rate-limit endpoints
                 "role": UserRole.ADMIN,         # Grant admin for dev testing
                 "type": "access",
                 "exp": (datetime.now(UTC) + timedelta(hours=24)).timestamp()
@@ -1058,16 +1058,16 @@ def get_current_user(credentials: Optional[HTTPAuthorizationCredentials] = Depen
         HTTPException: [EMOJI] [EMOJI] [EMOJI] [EMOJI] [EMOJI] 401 Unauthorized
     """
     # Development bypass: Allow testing without authentication
-    # ⚠️ CRITICAL: Keep this schema in sync with require_role() dev bypass
-    # ⚠️ REQUIRED FIELDS: username, email (for rate-limit endpoints)
+    # [WARN] CRITICAL: Keep this schema in sync with require_role() dev bypass
+    # [WARN] REQUIRED FIELDS: username, email (for rate-limit endpoints)
     # See: docs/guides/ERROR_PREVENTION_GUIDE.md#dev-bypass-checklist
     if os.environ.get("DISABLE_AUTH_IN_DEV", "").lower() == "true":
         logger.warning("DEVELOPMENT MODE: Authentication disabled! DO NOT use in production.")
         return {
             "sub": "dev_user",
             "user_id": "dev-user-id",
-            "username": "dev_user",        # ⚠️ REQUIRED for rate-limit endpoints
-            "email": "dev@example.com",     # ⚠️ REQUIRED for rate-limit endpoints
+            "username": "dev_user",        # [WARN] REQUIRED for rate-limit endpoints
+            "email": "dev@example.com",     # [WARN] REQUIRED for rate-limit endpoints
             "role": UserRole.DEVELOPER,
             "type": "access",
             "exp": (datetime.now(UTC) + timedelta(hours=24)).timestamp()
