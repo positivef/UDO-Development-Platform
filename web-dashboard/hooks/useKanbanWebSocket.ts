@@ -42,7 +42,8 @@ export function useKanbanWebSocket({
   const connect = useCallback(() => {
     try {
       const protocol = window.location.protocol === 'https:' ? 'wss:' : 'ws:';
-      const wsUrl = `${protocol}//${window.location.hostname}:8081/ws/kanban`;
+      const defaultProjectId = projectId || 'default';
+      const wsUrl = `${protocol}//${window.location.hostname}:8081/ws/kanban/projects/${defaultProjectId}`;
 
       const ws = new WebSocket(wsUrl);
       wsRef.current = ws;
