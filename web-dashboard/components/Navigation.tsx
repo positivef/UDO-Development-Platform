@@ -2,7 +2,7 @@
 
 import Link from "next/link"
 import { usePathname } from "next/navigation"
-import { Home, BarChart3, Clock, Lightbulb, Palette, KanbanSquare, AlertTriangle, Gauge, Archive } from "lucide-react"
+import { Home, BarChart3, Clock, Lightbulb, Palette, KanbanSquare, AlertTriangle, Gauge, Archive, TrendingUp } from "lucide-react"
 import { cn } from "@/lib/utils"
 
 const navItems = [
@@ -20,6 +20,11 @@ const navItems = [
     href: "/archive",
     label: "Archive",
     icon: Archive,
+  },
+  {
+    href: "/roi-dashboard",
+    label: "ROI Dashboard",
+    icon: TrendingUp,
   },
   {
     href: "/uncertainty",

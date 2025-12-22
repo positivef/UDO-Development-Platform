@@ -96,3 +96,5 @@ secrets/*
 
 # Symlinks to external folders
 C:*
+NUL
+C:*

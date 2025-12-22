@@ -62,9 +62,10 @@ const initialFilters: KanbanFilters = {
 }
 
 // Mock data for Week 6 testing (temporary)
+// Using valid UUIDs for backend compatibility
 const mockTasks: KanbanTask[] = [
   {
-    id: '1',
+    id: '550e8400-e29b-41d4-a716-446655440001',
     title: 'Setup authentication system',
     description: 'Implement JWT-based authentication with refresh tokens',
     status: 'in_progress',
@@ -76,7 +77,7 @@ const mockTasks: KanbanTask[] = [
     estimated_hours: 8,
     actual_hours: 5,
     due_date: '2025-12-20T00:00:00Z',  // Week 6 Day 4: Due date
-    dependencies: ['2'],  // Week 6 Day 2: Dependencies
+    dependencies: ['550e8400-e29b-41d4-a716-446655440002'],  // Week 6 Day 2: Dependencies
     ai_suggested: true,  // Week 6 Day 3: AI suggested
     ai_confidence: 0.85,
     comments: [  // Week 6 Day 4: Comments
@@ -89,7 +90,7 @@ const mockTasks: KanbanTask[] = [
     ],
   },
   {
-    id: '2',
+    id: '550e8400-e29b-41d4-a716-446655440002',
     title: 'Design database schema',
     description: 'Create PostgreSQL schema for user management',
     status: 'completed',
@@ -103,7 +104,7 @@ const mockTasks: KanbanTask[] = [
     due_date: '2025-12-10T00:00:00Z',  // Overdue (for testing)
   },
   {
-    id: '3',
+    id: '550e8400-e29b-41d4-a716-446655440003',
     title: 'Implement API rate limiting',
     description: 'Add rate limiting middleware to prevent abuse',
     status: 'blocked',
@@ -113,7 +114,7 @@ const mockTasks: KanbanTask[] = [
     created_at: '2025-12-05T00:00:00Z',
     updated_at: '2025-12-16T00:00:00Z',
     estimated_hours: 6,
-    blocked_by: ['1'],  // Week 6 Day 2: Blocked by task 1
+    blocked_by: ['550e8400-e29b-41d4-a716-446655440001'],  // Week 6 Day 2: Blocked by task 1
     due_date: '2025-12-18T00:00:00Z',  // Due soon (testing)
     comments: [
       {
@@ -125,7 +126,7 @@ const mockTasks: KanbanTask[] = [
     ],
   },
   {
-    id: '4',
+    id: '550e8400-e29b-41d4-a716-446655440004',
     title: 'Write E2E tests',
     description: 'Create Playwright tests for critical user flows',
     status: 'pending',
@@ -138,7 +139,7 @@ const mockTasks: KanbanTask[] = [
     due_date: '2025-12-25T00:00:00Z',
   },
   {
-    id: '5',
+    id: '550e8400-e29b-41d4-a716-446655440005',
     title: 'UI polish and accessibility',
     description: 'Improve UI consistency and WCAG compliance',
     status: 'pending',
@@ -150,6 +151,9 @@ const mockTasks: KanbanTask[] = [
     estimated_hours: 12,
   },
 ]
+
+// Export function to get mock tasks for page.tsx fallback
+export const getMockTasks = () => mockTasks
 
 const initialState = {
   tasks: mockTasks,  // Use mock tasks for testing

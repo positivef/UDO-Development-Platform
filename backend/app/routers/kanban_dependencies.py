@@ -56,20 +56,14 @@ def error_response(code: str, message: str, status_code: int, details: dict = No
     "",
     response_model=Dependency,
     status_code=status.HTTP_201_CREATED,
-    # DEV_MODE: RBAC disabled for development
-
-    # TODO: Re-enable RBAC in Week 5 Day 2 (see UNCERTAINTY_MAP_WEEK5_ANALYSIS.md P0-1)
-
-    # dependencies=[Depends(require_role(UserRole.DEVELOPER))],
+    dependencies=[Depends(require_role(UserRole.DEVELOPER))],
     summary="Create dependency with DAG cycle validation",
     description="Create task dependency (requires developer role or higher)"
 )
 async def create_dependency(
     dependency_data: DependencyCreate,
     task_service: KanbanTaskService = Depends(get_kanban_task_service),
-    # DEV_MODE: Auth disabled
-
-    # current_user: dict = Depends(get_current_user)
+    current_user: dict = Depends(get_current_user)
 ):
     """
     Create new task dependency with DAG cycle validation.
@@ -124,19 +118,13 @@ async def create_dependency(
 @router.get(
     "/{dependency_id}",
     response_model=Dependency,
-    # DEV_MODE: RBAC disabled for development
-
-    # TODO: Re-enable RBAC in Week 5 Day 2 (see UNCERTAINTY_MAP_WEEK5_ANALYSIS.md P0-1)
-
-    # dependencies=[Depends(require_role(UserRole.VIEWER))],
+    dependencies=[Depends(require_role(UserRole.VIEWER))],
     summary="Get dependency details",
     description="Get dependency by ID (requires viewer role)"
 )
 async def get_dependency(
     dependency_id: UUID,
-    # DEV_MODE: Auth disabled
-
-    # current_user: dict = Depends(get_current_user)
+    current_user: dict = Depends(get_current_user)
 ):
     """
     Get dependency by ID.
@@ -164,19 +152,13 @@ async def get_dependency(
 @router.delete(
     "/{dependency_id}",
     status_code=status.HTTP_204_NO_CONTENT,
-    # DEV_MODE: RBAC disabled for development
-
-    # TODO: Re-enable RBAC in Week 5 Day 2 (see UNCERTAINTY_MAP_WEEK5_ANALYSIS.md P0-1)
-
-    # dependencies=[Depends(require_role(UserRole.DEVELOPER))],
+    dependencies=[Depends(require_role(UserRole.DEVELOPER))],
     summary="Delete dependency",
     description="Delete dependency (requires developer role or higher)"
 )
 async def delete_dependency(
     dependency_id: UUID,
-    # DEV_MODE: Auth disabled
-
-    # current_user: dict = Depends(get_current_user)
+    current_user: dict = Depends(get_current_user)
 ):
     """
     Delete dependency.
@@ -204,20 +186,14 @@ async def delete_dependency(
 @router.get(
     "/audit",
     response_model=list[DependencyAudit],
-    # DEV_MODE: RBAC disabled for development
-
-    # TODO: Re-enable RBAC in Week 5 Day 2 (see UNCERTAINTY_MAP_WEEK5_ANALYSIS.md P0-1)
-
-    # dependencies=[Depends(require_role(UserRole.VIEWER))],
+    dependencies=[Depends(require_role(UserRole.VIEWER))],
     summary="Get dependency audit log",
     description="Get emergency override audit log (requires viewer role)"
 )
 async def get_audit_log(
     limit: int = Query(50, ge=1, le=100, description="Number of entries (max 100)"),
     offset: int = Query(0, ge=0, description="Offset for pagination"),
-    # DEV_MODE: Auth disabled
-
-    # current_user: dict = Depends(get_current_user)
+    current_user: dict = Depends(get_current_user)
 ):
     """
     Get dependency audit log (emergency overrides).
@@ -243,19 +219,13 @@ async def get_audit_log(
 @router.get(
     "/tasks/{task_id}/dependencies",
     response_model=list[Dependency],
-    # DEV_MODE: RBAC disabled for development
-
-    # TODO: Re-enable RBAC in Week 5 Day 2 (see UNCERTAINTY_MAP_WEEK5_ANALYSIS.md P0-1)
-
-    # dependencies=[Depends(require_role(UserRole.VIEWER))],
+    dependencies=[Depends(require_role(UserRole.VIEWER))],
     summary="Get task dependencies (upstream/predecessors)",
     description="Get all dependencies for a task (tasks this task depends on)"
 )
 async def get_task_dependencies(
     task_id: UUID,
-    # DEV_MODE: Auth disabled
-
-    # current_user: dict = Depends(get_current_user)
+    current_user: dict = Depends(get_current_user)
 ):
     """
     Get all dependencies for a task (upstream/predecessors).
@@ -277,19 +247,13 @@ async def get_task_dependencies(
 @router.get(
     "/tasks/{task_id}/dependents",
     response_model=list[Dependency],
-    # DEV_MODE: RBAC disabled for development
-
-    # TODO: Re-enable RBAC in Week 5 Day 2 (see UNCERTAINTY_MAP_WEEK5_ANALYSIS.md P0-1)
-
-    # dependencies=[Depends(require_role(UserRole.VIEWER))],
+    dependencies=[Depends(require_role(UserRole.VIEWER))],
     summary="Get task dependents (downstream/successors)",
     description="Get all dependents for a task (tasks that depend on this task)"
 )
 async def get_task_dependents(
     task_id: UUID,
-    # DEV_MODE: Auth disabled
-
-    # current_user: dict = Depends(get_current_user)
+    current_user: dict = Depends(get_current_user)
 ):
     """
     Get all dependents for a task (downstream/successors).
@@ -311,20 +275,14 @@ async def get_task_dependents(
 @router.get(
     "/tasks/{task_id}/dependency-graph",
     response_model=DependencyGraph,
-    # DEV_MODE: RBAC disabled for development
-
-    # TODO: Re-enable RBAC in Week 5 Day 2 (see UNCERTAINTY_MAP_WEEK5_ANALYSIS.md P0-1)
-
-    # dependencies=[Depends(require_role(UserRole.VIEWER))],
+    dependencies=[Depends(require_role(UserRole.VIEWER))],
     summary="Get dependency graph for D3.js visualization",
     description="Get dependency graph with nodes and edges for force-directed layout"
 )
 async def get_dependency_graph(
     task_id: UUID,
     depth: int = Query(3, ge=1, le=10, description="Maximum depth to traverse (default: 3)"),
-    # DEV_MODE: Auth disabled
-
-    # current_user: dict = Depends(get_current_user)
+    current_user: dict = Depends(get_current_user)
 ):
     """
     Get dependency graph for D3.js force-directed visualization.
@@ -348,19 +306,13 @@ async def get_dependency_graph(
 @router.get(
     "/topological-sort",
     response_model=TopologicalSortResult,
-    # DEV_MODE: RBAC disabled for development
-
-    # TODO: Re-enable RBAC in Week 5 Day 2 (see UNCERTAINTY_MAP_WEEK5_ANALYSIS.md P0-1)
-
-    # dependencies=[Depends(require_role(UserRole.VIEWER))],
+    dependencies=[Depends(require_role(UserRole.VIEWER))],
     summary="Get topological sort of tasks",
     description="Topological sort using Kahn's Algorithm (<50ms for 1,000 tasks)"
 )
 async def topological_sort(
     task_ids: str = Query(..., description="Comma-separated list of task IDs"),
-    # DEV_MODE: Auth disabled
-
-    # current_user: dict = Depends(get_current_user)
+    current_user: dict = Depends(get_current_user)
 ):
     """
     Perform topological sort on task dependencies using Kahn's Algorithm.
@@ -402,19 +354,13 @@ async def topological_sort(
 @router.get(
     "/statistics",
     response_model=DAGStatistics,
-    # DEV_MODE: RBAC disabled for development
-
-    # TODO: Re-enable RBAC in Week 5 Day 2 (see UNCERTAINTY_MAP_WEEK5_ANALYSIS.md P0-1)
-
-    # dependencies=[Depends(require_role(UserRole.VIEWER))],
+    dependencies=[Depends(require_role(UserRole.VIEWER))],
     summary="Get DAG performance statistics",
     description="DAG performance metrics for monitoring and debugging"
 )
 async def get_statistics(
     task_ids: str = Query(..., description="Comma-separated list of task IDs"),
-    # DEV_MODE: Auth disabled
-
-    # current_user: dict = Depends(get_current_user)
+    current_user: dict = Depends(get_current_user)
 ):
     """
     Get DAG performance statistics.
@@ -461,20 +407,14 @@ async def get_statistics(
 @router.post(
     "/{dependency_id}/override",
     response_model=Dependency,
-    # DEV_MODE: RBAC disabled for development
-
-    # TODO: Re-enable RBAC in Week 5 Day 2 (see UNCERTAINTY_MAP_WEEK5_ANALYSIS.md P0-1)
-
-    # dependencies=[Depends(require_role(UserRole.PROJECT_OWNER))],
+    dependencies=[Depends(require_role(UserRole.PROJECT_OWNER))],
     summary="Emergency override dependency",
     description="Emergency override for hard-blocked dependency (Q7)"
 )
 async def emergency_override(
     dependency_id: UUID,
     override_request: EmergencyOverride,
-    # DEV_MODE: Auth disabled
-
-    # current_user: dict = Depends(get_current_user)
+    current_user: dict = Depends(get_current_user)
 ):
     """
     Emergency override for dependency (Q7: Hard Block with emergency override).

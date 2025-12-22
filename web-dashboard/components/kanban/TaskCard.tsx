@@ -14,7 +14,7 @@
  * Week 6 Day 2: Added Dependencies visualization
  */
 
-import { memo, useMemo } from 'react'
+import { memo, useMemo, useRef, useCallback, useEffect } from 'react'
 import { useSortable } from '@dnd-kit/sortable'
 import { CSS } from '@dnd-kit/utilities'
 import { Badge } from '@/components/ui/badge'
@@ -45,6 +45,7 @@ const formatDueDateShort = (dateStr: string) => {
 interface TaskCardProps {
   task: KanbanTask
   onClick?: () => void
+  onDoubleClick?: () => void  // Q4: Double-click for context auto-load
 }
 
 const priorityColors = {
@@ -61,7 +62,7 @@ const priorityBorderColors = {
   critical: 'border-l-red-500',
 }
 
-function TaskCardComponent({ task, onClick }: TaskCardProps) {
+function TaskCardComponent({ task, onClick, onDoubleClick }: TaskCardProps) {
   const {
     attributes,
     listeners,
@@ -70,6 +71,51 @@ function TaskCardComponent({ task, onClick }: TaskCardProps) {
     transition,
     isDragging,
   } = useSortable({ id: task.id })
+
+  // Q4: Click delay to distinguish single vs double click
+  const clickTimeoutRef = useRef<NodeJS.Timeout | null>(null)
+  const CLICK_DELAY = 250 // ms to wait before registering single click
+
+  const handleClick = useCallback(() => {
+    // Clear any existing timeout
+    if (clickTimeoutRef.current) {
+      clearTimeout(clickTimeoutRef.current)
+    }
+    // Set a delayed single-click handler
+    clickTimeoutRef.current = setTimeout(() => {
+      onClick?.()
+    }, CLICK_DELAY)
+  }, [onClick])
+
+  const handleDoubleClick = useCallback(() => {
+    // Cancel the pending single-click
+    if (clickTimeoutRef.current) {
+      clearTimeout(clickTimeoutRef.current)
+      clickTimeoutRef.current = null
+    }
+    // Execute double-click handler
+    onDoubleClick?.()
+  }, [onDoubleClick])
+
+  // Keyboard accessibility: Enter for detail, Ctrl+C for context
+  const handleKeyDown = useCallback((e: React.KeyboardEvent) => {
+    if (e.key === 'Enter' && !e.ctrlKey) {
+      e.preventDefault()
+      onClick?.()
+    } else if ((e.key === 'c' || e.key === 'C') && e.ctrlKey) {
+      e.preventDefault()
+      onDoubleClick?.()
+    }
+  }, [onClick, onDoubleClick])
+
+  // Cleanup timeout on unmount to prevent memory leaks
+  useEffect(() => {
+    return () => {
+      if (clickTimeoutRef.current) {
+        clearTimeout(clickTimeoutRef.current)
+      }
+    }
+  }, [])
 
   // Memoize style object to prevent unnecessary re-renders
   const style = useMemo(() => ({
@@ -94,7 +140,12 @@ function TaskCardComponent({ task, onClick }: TaskCardProps) {
       style={style}
       {...attributes}
       {...listeners}
-      onClick={onClick}
+      onClick={handleClick}
+      onDoubleClick={handleDoubleClick}
+      onKeyDown={handleKeyDown}
+      role="button"
+      tabIndex={0}
+      aria-label={`${task.title}. 클릭하면 상세보기, 더블클릭 또는 Ctrl+C로 컨텍스트 열기`}
       className="cursor-pointer"
     >
       <Card

@@ -73,13 +73,25 @@ interface TaskDetailModalProps {
   task: KanbanTask | null
   open: boolean
   onClose: () => void
+  /** WebSocket broadcast functions for real-time updates */
+  onBroadcastTaskUpdated?: (taskId: string, updates: Partial<KanbanTask>) => void
+  onBroadcastTaskDeleted?: (taskId: string) => void
+  onBroadcastTaskArchived?: (taskId: string) => void
 }
 
-export function TaskDetailModal({ task, open, onClose }: TaskDetailModalProps) {
+export function TaskDetailModal({
+  task,
+  open,
+  onClose,
+  onBroadcastTaskUpdated,
+  onBroadcastTaskDeleted,
+  onBroadcastTaskArchived,
+}: TaskDetailModalProps) {
   const { updateTask: updateTaskInStore, deleteTask } = useKanbanStore()
   const [isEditing, setIsEditing] = useState(false)
   const [isSaving, setIsSaving] = useState(false)
   const [isDeleting, setIsDeleting] = useState(false)
+  const [isArchiving, setIsArchiving] = useState(false)
 
   // Form state
   const [formData, setFormData] = useState<Partial<KanbanTask>>({})
@@ -186,6 +198,11 @@ export function TaskDetailModal({ task, open, onClose }: TaskDetailModalProps) {
       const updatedTask = await kanbanAPI.updateTask(task.id, updates)
       updateTaskInStore(task.id, updatedTask)
 
+      // Broadcast to other users via WebSocket (Week 7)
+      if (onBroadcastTaskUpdated) {
+        onBroadcastTaskUpdated(task.id, updates)
+      }
+
       setIsEditing(false)
       console.log(`✅ Task ${task.id} updated successfully`)
     } catch (error) {
@@ -214,6 +231,12 @@ export function TaskDetailModal({ task, open, onClose }: TaskDetailModalProps) {
     try {
       await kanbanAPI.deleteTask(task.id)
       deleteTask(task.id)
+
+      // Broadcast to other users via WebSocket (Week 7)
+      if (onBroadcastTaskDeleted) {
+        onBroadcastTaskDeleted(task.id)
+      }
+
       onClose()
       console.log(`✅ Task ${task.id} deleted successfully`)
     } catch (error) {
@@ -225,6 +248,40 @@ export function TaskDetailModal({ task, open, onClose }: TaskDetailModalProps) {
       )
     } finally {
       setIsDeleting(false)
+    }
+  }
+
+  const handleArchive = async () => {
+    if (!task.id || isArchiving) return
+
+    const confirmed = confirm(
+      `Archive task "${task.title}"?\n\nArchived tasks can be restored later.`
+    )
+
+    if (!confirmed) return
+
+    setIsArchiving(true)
+
+    try {
+      await kanbanAPI.archiveTask(task.id)
+      deleteTask(task.id) // Remove from board (same as delete for UI purposes)
+
+      // Broadcast to other users via WebSocket (Week 7 Task 6)
+      if (onBroadcastTaskArchived) {
+        onBroadcastTaskArchived(task.id)
+      }
+
+      onClose()
+      console.log(`✅ Task ${task.id} archived successfully`)
+    } catch (error) {
+      console.error('Failed to archive task:', error)
+      alert(
+        `Failed to archive task: ${
+          error instanceof Error ? error.message : 'Unknown error'
+        }`
+      )
+    } finally {
+      setIsArchiving(false)
     }
   }
 
@@ -661,7 +718,7 @@ export function TaskDetailModal({ task, open, onClose }: TaskDetailModalProps) {
               <Button
                 variant="destructive"
                 onClick={handleDelete}
-                disabled={isDeleting}
+                disabled={isDeleting || isArchiving}
               >
                 {isDeleting ? (
                   <>
@@ -672,6 +729,23 @@ export function TaskDetailModal({ task, open, onClose }: TaskDetailModalProps) {
                   <>
                     <Trash2 className="mr-2 h-4 w-4" />
                     Delete
+                  </>
+                )}
+              </Button>
+              <Button
+                variant="secondary"
+                onClick={handleArchive}
+                disabled={isDeleting || isArchiving}
+              >
+                {isArchiving ? (
+                  <>
+                    <Clock className="mr-2 h-4 w-4 animate-spin" />
+                    Archiving...
+                  </>
+                ) : (
+                  <>
+                    <Archive className="mr-2 h-4 w-4" />
+                    Archive
                   </>
                 )}
               </Button>

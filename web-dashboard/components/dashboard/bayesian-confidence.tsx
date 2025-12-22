@@ -1,5 +1,6 @@
 "use client"
 
+import { memo } from "react"
 import { motion } from "framer-motion"
 import { TrendingUp, AlertTriangle, CheckCircle2, Activity, Target, Zap } from "lucide-react"
 import { cn } from "@/lib/utils"
@@ -73,7 +74,7 @@ const priorityConfig = {
   low: { color: "text-blue-400", badge: "bg-blue-500/20 border-blue-500/50" }
 }
 
-export function BayesianConfidence({
+export const BayesianConfidence = memo(function BayesianConfidence({
   decision,
   confidence_score,
   state,
@@ -284,4 +285,4 @@ export function BayesianConfidence({
       </div>
     </motion.div>
   )
-}
+})

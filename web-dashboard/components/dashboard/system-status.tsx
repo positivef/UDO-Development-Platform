@@ -1,5 +1,6 @@
 "use client"
 
+import { memo } from "react"
 import { motion } from "framer-motion"
 import { CheckCircle2, XCircle, Loader2, Activity } from "lucide-react"
 import { cn } from "@/lib/utils"
@@ -15,7 +16,7 @@ interface SystemStatusProps {
   }
 }
 
-export function SystemStatus({ status }: SystemStatusProps) {
+export const SystemStatus = memo(function SystemStatus({ status }: SystemStatusProps) {
   const components = [
     { name: "UDO Orchestrator", key: "udo", icon: Activity },
     { name: "Uncertainty Map", key: "uncertainty", icon: Activity },
@@ -76,4 +77,4 @@ export function SystemStatus({ status }: SystemStatusProps) {
       </div>
     </motion.div>
   )
-}
+})

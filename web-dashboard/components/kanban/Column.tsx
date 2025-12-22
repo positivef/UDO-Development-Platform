@@ -23,6 +23,7 @@ import { cn } from '@/lib/utils'
 interface ColumnProps {
   column: KanbanColumn
   onTaskClick?: (task: KanbanTask) => void
+  onTaskDoubleClick?: (task: KanbanTask) => void  // Q4: Context auto-load
 }
 
 const columnColors = {
@@ -39,7 +40,7 @@ const columnBadgeColors = {
   completed: 'bg-green-500/10 text-green-600 border-green-500/20',
 }
 
-function ColumnComponent({ column, onTaskClick }: ColumnProps) {
+function ColumnComponent({ column, onTaskClick, onTaskDoubleClick }: ColumnProps) {
   const { setNodeRef, isOver } = useDroppable({
     id: column.id,
   })
@@ -88,6 +89,7 @@ function ColumnComponent({ column, onTaskClick }: ColumnProps) {
                   key={task.id}
                   task={task}
                   onClick={() => onTaskClick?.(task)}
+                  onDoubleClick={() => onTaskDoubleClick?.(task)}
                 />
               ))
             )}

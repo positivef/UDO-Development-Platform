@@ -1,6 +1,6 @@
 # UDO Project Glossary (Single Source of Truth)
 
-**Last Updated**: 2025-12-13
+**Last Updated**: 2025-12-20
 **Purpose**: 프로젝트 전체에서 사용하는 용어의 단일 정의 소스
 **Maintainer**: @claude-code
 **Related**: [SSOT_REGISTRY.md](SSOT_REGISTRY.md)
@@ -66,17 +66,24 @@
 
 ## Time Units
 
-시간/진행 단위를 나타내는 용어들. **Week vs Phase 혼동 주의**.
+시간/진행 단위를 나타내는 용어들. **Week vs Phase vs Stage 구분 주의**.
 
 | Term | Definition | Example | Notes |
 |------|------------|---------|-------|
 | **Week N** | 프로젝트 주차 (0-indexed) | Week 0 = 첫 주 | 시간 단위 |
 | **Day N** | 주 내 일차 (1-indexed) | Day 1 = 월요일 | 시간 단위 |
-| **Phase A/B/C** | 프로젝트 단계 | Phase A = Design | 프로세스 단위 |
+| **Phase A/B/C** | 프로젝트 프로세스 단계 | Phase A = Design | 프로세스 단위 |
+| **Stage** | 제품 성숙도 단계 | Stage: MVP | **= Development Phases** |
+
+**Stage vs Phase 구분** (2025-12-20 추가):
+- **Phase**: 프로젝트 **프로세스** 단계 (Design → Implementation → Testing)
+- **Stage**: 제품 **성숙도** 수준 (MVP → Prototype → Beta → Production)
+- Stage는 [Development Phases](#development-phases)와 동의어로 사용
 
 **Usage Rules**:
 - 문서 파일명: `WEEK{N}_DAY{N}_*.md` (예: WEEK1_DAY2_API.md)
-- Phase는 시간이 아닌 **프로세스 단계**를 의미
+- Phase는 **프로세스 단계**를 의미 (A/B/C)
+- Stage는 **제품 성숙도**를 의미 (MVP/Prototype/Beta/Production)
 - Week과 Phase를 혼용하지 말 것
 
 **Phase-Week Mapping** (현재 프로젝트):
@@ -85,13 +92,14 @@ Phase A (Design): 2025-11-17 ~ 11-20
 Phase B (Implementation): 2025-12-06 ~ 현재
   └── Week 0: Baseline (12-06 ~ 12-07)
   └── Week 1: Foundation (12-08 ~ 12-14)
-  └── Week 2+: Kanban Integration
+  └── Week 2-4: Kanban Core
+  └── Week 5-6: Database & Testing (현재: Stage MVP)
 ```
 
 **Anti-patterns**:
 - ❌ "WEEK_0" (언더스코어 금지, WEEK0 사용)
 - ❌ "Phase Week 0" (Phase와 Week 혼용)
-- ❌ "Stage N" (정의되지 않은 용어)
+- ❌ Phase와 Stage 혼용 (각각 다른 의미)
 
 ---
 
@@ -193,6 +201,7 @@ Session Start → Work → Checkpoint (30min) → Handoff → Session End
 
 | Version | Date | Changes |
 |---------|------|---------|
+| 1.1 | 2025-12-20 | Added Stage definition, clarified Stage vs Phase distinction |
 | 1.0 | 2025-12-13 | Initial glossary creation |
 
 ---

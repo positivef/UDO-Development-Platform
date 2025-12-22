@@ -6,7 +6,7 @@ Implements Q4 (Double-click auto-load, single-click popup)
 """
 
 from uuid import UUID
-from fastapi import APIRouter, Depends, HTTPException, status
+from fastapi import APIRouter, Depends, HTTPException, status, UploadFile, File
 from fastapi.responses import JSONResponse
 
 from backend.app.core.security import require_role, UserRole, get_current_user
@@ -53,19 +53,13 @@ def error_response(code: str, message: str, status_code: int, details: dict = No
 @router.get(
     "/{task_id}",
     response_model=ContextMetadata,
-    # DEV_MODE: RBAC disabled for development
-
-    # TODO: Re-enable RBAC in Week 5 Day 2 (see UNCERTAINTY_MAP_WEEK5_ANALYSIS.md P0-1)
-
-    # dependencies=[Depends(require_role(UserRole.VIEWER))],
+    dependencies=[Depends(require_role(UserRole.VIEWER))],
     summary="Get context metadata",
     description="Get context metadata without full files list (Q4: Context info)"
 )
 async def get_context_metadata(
     task_id: UUID,
-    # DEV_MODE: Auth disabled
-
-    # current_user: dict = Depends(get_current_user)
+    current_user: dict = Depends(get_current_user)
 ):
     """
     Get context metadata for task.
@@ -99,20 +93,14 @@ async def get_context_metadata(
     "/{task_id}",
     response_model=ContextUploadResponse,
     status_code=status.HTTP_201_CREATED,
-    # DEV_MODE: RBAC disabled for development
-
-    # TODO: Re-enable RBAC in Week 5 Day 2 (see UNCERTAINTY_MAP_WEEK5_ANALYSIS.md P0-1)
-
-    # dependencies=[Depends(require_role(UserRole.DEVELOPER))],
+    dependencies=[Depends(require_role(UserRole.DEVELOPER))],
     summary="Upload context as ZIP",
     description="Upload context files as ZIP (<50MB limit)"
 )
 async def upload_context(
     task_id: UUID,
     upload_request: ContextUploadRequest,
-    # DEV_MODE: Auth disabled
-
-    # current_user: dict = Depends(get_current_user)
+    current_user: dict = Depends(get_current_user)
 ):
     """
     Upload context for task as ZIP file.
@@ -161,20 +149,14 @@ async def upload_context(
 @router.post(
     "/{task_id}/load",
     response_model=ContextLoadResponse,
-    # DEV_MODE: RBAC disabled for development
-
-    # TODO: Re-enable RBAC in Week 5 Day 2 (see UNCERTAINTY_MAP_WEEK5_ANALYSIS.md P0-1)
-
-    # dependencies=[Depends(require_role(UserRole.DEVELOPER))],
+    dependencies=[Depends(require_role(UserRole.DEVELOPER))],
     summary="Track context load (Q4 double-click)",
     description="Track context load event (Q4: load_count, avg_load_time_ms)"
 )
 async def track_context_load(
     task_id: UUID,
     load_request: ContextLoadRequest,
-    # DEV_MODE: Auth disabled
-
-    # current_user: dict = Depends(get_current_user)
+    current_user: dict = Depends(get_current_user)
 ):
     """
     Track context load event (Q4: Double-click auto-load tracking).
@@ -218,19 +200,13 @@ async def track_context_load(
 @router.get(
     "/{task_id}/full",
     response_model=TaskContext,
-    # DEV_MODE: RBAC disabled for development
-
-    # TODO: Re-enable RBAC in Week 5 Day 2 (see UNCERTAINTY_MAP_WEEK5_ANALYSIS.md P0-1)
-
-    # dependencies=[Depends(require_role(UserRole.DEVELOPER))],
+    dependencies=[Depends(require_role(UserRole.DEVELOPER))],
     summary="Get full context with files list",
     description="Get complete context including all file paths (developer+ only)"
 )
 async def get_context_full(
     task_id: UUID,
-    # DEV_MODE: Auth disabled
-
-    # current_user: dict = Depends(get_current_user)
+    current_user: dict = Depends(get_current_user)
 ):
     """
     Get full context including files array.
@@ -258,3 +234,102 @@ async def get_context_full(
             message=f"Failed to get full context: {str(e)}",
             status_code=status.HTTP_500_INTERNAL_SERVER_ERROR
         )
+
+
+# ============================================================================
+# File Upload Endpoint (Week 6 Day 5: FormData support)
+# ============================================================================
+
+@router.post(
+    "/{task_id}/upload",
+    response_model=ContextUploadResponse,
+    status_code=status.HTTP_201_CREATED,
+    dependencies=[Depends(require_role(UserRole.DEVELOPER))],
+    summary="Upload context ZIP file (FormData)",
+    description="Upload context as ZIP file using multipart/form-data (<50MB limit)"
+)
+async def upload_context_file(
+    task_id: UUID,
+    file: UploadFile = File(..., description="ZIP file containing context (max 50MB)"),
+    current_user: dict = Depends(get_current_user)
+):
+    """
+    Upload context ZIP file using FormData (Week 6 Day 5).
+
+    **RBAC**: Requires `developer` role or higher.
+    **Format**: multipart/form-data with 'file' field
+    **Limit**: Max 50MB ZIP size.
+    **Validation**:
+    - File type must be application/zip or have .zip extension
+    - File size must not exceed 52,428,800 bytes (50MB)
+
+    Process:
+    1. Validate file type (ZIP only)
+    2. Validate file size (<50MB)
+    3. Read ZIP contents
+    4. Extract file list and sizes
+    5. Store ZIP and metadata
+    6. Return ZIP URL and metadata
+    """
+    # Validate file type
+    if not file.filename.endswith('.zip') and file.content_type != 'application/zip':
+        return error_response(
+            code="INVALID_FILE_TYPE",
+            message="Only ZIP files are allowed",
+            status_code=status.HTTP_400_BAD_REQUEST,
+            details={
+                "task_id": str(task_id),
+                "filename": file.filename,
+                "content_type": file.content_type
+            }
+        )
+
+    try:
+        # Read file contents
+        contents = await file.read()
+        file_size = len(contents)
+
+        # Validate file size (50MB = 52,428,800 bytes)
+        MAX_SIZE = 50 * 1024 * 1024
+        if file_size > MAX_SIZE:
+            return error_response(
+                code="CONTEXT_SIZE_LIMIT_EXCEEDED",
+                message=f"File size {file_size / 1024 / 1024:.2f}MB exceeds 50MB limit",
+                status_code=status.HTTP_413_REQUEST_ENTITY_TOO_LARGE,
+                details={
+                    "task_id": str(task_id),
+                    "file_size_bytes": file_size,
+                    "limit_bytes": MAX_SIZE
+                }
+            )
+
+        # Process ZIP file through service
+        upload_response = await kanban_context_service.upload_context_file(
+            task_id, file.filename, contents
+        )
+        return upload_response
+
+    except ContextSizeLimitExceeded as e:
+        return error_response(
+            code="CONTEXT_SIZE_LIMIT_EXCEEDED",
+            message=str(e),
+            status_code=status.HTTP_413_REQUEST_ENTITY_TOO_LARGE,
+            details={"task_id": str(task_id), "limit_bytes": 52428800}
+        )
+
+    except InvalidContextFiles as e:
+        return error_response(
+            code="INVALID_CONTEXT_FILES",
+            message=str(e),
+            status_code=status.HTTP_400_BAD_REQUEST,
+            details={"task_id": str(task_id)}
+        )
+
+    except Exception as e:
+        return error_response(
+            code="UPLOAD_CONTEXT_FILE_FAILED",
+            message=f"Failed to upload context file: {str(e)}",
+            status_code=status.HTTP_500_INTERNAL_SERVER_ERROR
+        )
+    finally:
+        await file.close()

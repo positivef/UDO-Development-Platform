@@ -1,5 +1,6 @@
 "use client"
 
+import { memo } from "react"
 import { motion } from "framer-motion"
 import { Clock, CheckCircle2, XCircle, AlertCircle, ArrowRight } from "lucide-react"
 import { cn } from "@/lib/utils"
@@ -20,7 +21,7 @@ interface ExecutionHistoryProps {
   }
 }
 
-export function ExecutionHistory({ executions, performanceMetrics }: ExecutionHistoryProps) {
+export const ExecutionHistory = memo(function ExecutionHistory({ executions, performanceMetrics }: ExecutionHistoryProps) {
   const getDecisionIcon = (decision?: string) => {
     switch (decision) {
       case "GO":
@@ -175,4 +176,4 @@ export function ExecutionHistory({ executions, performanceMetrics }: ExecutionHi
       )}
     </motion.div>
   )
-}
+})

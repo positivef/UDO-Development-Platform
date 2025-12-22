@@ -31,8 +31,26 @@ export interface ContextFile {
   mime_type?: string
 }
 
-export interface TaskContext extends ContextMetadata {
-  files: ContextFile[]
+/**
+ * Full task context with files list (from /api/kanban/context/{id}/full)
+ */
+export interface TaskContext {
+  context_id: string
+  task_id: string
+  files: string[]  // File paths from ZIP
+  file_count: number
+  git_branch?: string
+  last_commit_hash?: string
+  last_commit_message?: string
+  zip_url?: string
+  zip_size_bytes?: number
+  zip_checksum?: string
+  obsidian_notes?: string[]
+  created_at: string
+  updated_at: string
+  last_loaded_at?: string
+  load_count: number
+  avg_load_time_ms?: number
 }
 
 export interface ContextUploadRequest {

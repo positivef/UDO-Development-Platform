@@ -113,6 +113,7 @@ export function AISuggestionModal({
   const [expandedSuggestion, setExpandedSuggestion] = useState<string | null>(null)
   const [error, setError] = useState<string | null>(null)
   const [successMessage, setSuccessMessage] = useState<string | null>(null)
+  const [isLoadingRateLimit, setIsLoadingRateLimit] = useState(false)
 
   // Fetch rate limit status on open
   useEffect(() => {
@@ -122,11 +123,23 @@ export function AISuggestionModal({
   }, [open])
 
   const fetchRateLimitStatus = async () => {
+    setIsLoadingRateLimit(true)
     try {
       const status = await getRateLimitStatus()
       setRateLimit(status)
     } catch (err) {
       console.error('Failed to fetch rate limit:', err)
+      // Set default rate limit on error to show fallback UI
+      setRateLimit({
+        user_id: 'unknown',
+        is_limited: false,
+        suggestions_used_today: 0,
+        suggestions_remaining: 10,
+        limit_per_period: 10,
+        period_reset_at: new Date(Date.now() + 86400000).toISOString(),
+      })
+    } finally {
+      setIsLoadingRateLimit(false)
     }
   }
 
@@ -254,7 +267,14 @@ export function AISuggestionModal({
 
         <div className="flex-1 overflow-hidden flex flex-col gap-4 py-4">
           {/* Rate Limit Status */}
-          {rateLimit && (
+          {isLoadingRateLimit ? (
+            <div className="flex items-center justify-center p-3 rounded-lg text-sm bg-gray-50 dark:bg-gray-900/20 border border-gray-200 dark:border-gray-800">
+              <div className="flex items-center gap-2">
+                <Loader2 className="h-4 w-4 animate-spin text-gray-500" />
+                <span className="text-gray-600 dark:text-gray-400">Loading rate limit status...</span>
+              </div>
+            </div>
+          ) : rateLimit ? (
             <div className={cn(
               'flex items-center justify-between p-3 rounded-lg text-sm',
               rateLimit.is_limited
@@ -273,7 +293,7 @@ export function AISuggestionModal({
                 </span>
               )}
             </div>
-          )}
+          ) : null}
 
           {/* Error/Success Messages */}
           {error && (

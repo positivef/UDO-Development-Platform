@@ -1,5 +1,6 @@
 "use client"
 
+import { memo } from "react"
 import { motion } from "framer-motion"
 import { AlertTriangle, TrendingUp, Zap, Clock, CheckCircle2 } from "lucide-react"
 import { cn } from "@/lib/utils"
@@ -101,7 +102,7 @@ function getMissedSteps(dimension?: string): MissedStep[] {
   return steps[dimension || "quality"] || []
 }
 
-export function UncertaintyMap({
+export const UncertaintyMap = memo(function UncertaintyMap({
   state,
   confidence,
   prediction,
@@ -386,4 +387,4 @@ export function UncertaintyMap({
       </div>
     </motion.div>
   )
-}
+})

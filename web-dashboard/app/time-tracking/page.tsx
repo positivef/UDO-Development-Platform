@@ -102,7 +102,7 @@ export default function TimeTrackingPage() {
         </motion.div>
 
         {/* Hero Stats */}
-        {/* <motion.div
+        <motion.div
           initial={{ opacity: 0, y: 20 }}
           animate={{ opacity: 1, y: 0 }}
           transition={{ delay: 0.1 }}
@@ -116,10 +116,10 @@ export default function TimeTrackingPage() {
           ) : (
             <TimeTrackingStats metrics={metrics} roi={roi} />
           )}
-        </motion.div> */}
+        </motion.div>
 
         {/* Uncertainty Map Section */}
-        {/* <motion.div
+        <motion.div
           initial={{ opacity: 0, y: 20 }}
           animate={{ opacity: 1, y: 0 }}
           transition={{ delay: 0.15 }}
@@ -149,10 +149,10 @@ export default function TimeTrackingPage() {
               isLoading={uncertaintyLoading}
             />
           ) : null}
-        </motion.div> */}
+        </motion.div>
 
         {/* Charts Section */}
-        {/* <motion.div
+        <motion.div
           initial={{ opacity: 0, y: 20 }}
           animate={{ opacity: 1, y: 0 }}
           transition={{ delay: 0.25 }}
@@ -171,10 +171,10 @@ export default function TimeTrackingPage() {
               <TasksByPhaseChart tasksByPhase={metrics?.tasks_by_phase} />
             </>
           )}
-        </motion.div> */}
+        </motion.div>
 
         {/* AI Performance and Bottlenecks */}
-        {/* <motion.div
+        <motion.div
           initial={{ opacity: 0, y: 20 }}
           animate={{ opacity: 1, y: 0 }}
           transition={{ delay: 0.35 }}
@@ -191,7 +191,7 @@ export default function TimeTrackingPage() {
               <BottlenecksTable bottlenecks={bottlenecks as any} />
             </>
           )}
-        </motion.div> */}
+        </motion.div>
 
         {/* Weekly Summary */}
         <motion.div

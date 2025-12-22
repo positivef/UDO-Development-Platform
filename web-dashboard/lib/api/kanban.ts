@@ -270,8 +270,165 @@ export async function bulkUpdateStatus(
 }
 
 // ============================================================================
+// Dependency Management (Week 6 Day 2)
+// ============================================================================
+
+export interface DependencyNode {
+  id: string
+  task_id: string
+  label: string
+  type: string
+  title?: string
+  phase?: string
+  status: string
+  priority?: string
+  completeness: number
+  is_blocked: boolean
+}
+
+export interface DependencyEdge {
+  source: string
+  target: string
+  dependency_type: string
+  status: string
+}
+
+export interface DependencyGraph {
+  nodes: DependencyNode[]
+  edges: DependencyEdge[]
+  has_cycles?: boolean
+  cycles?: string[][]
+}
+
+/**
+ * Get dependency graph for D3.js visualization
+ * GET /api/kanban/dependencies/tasks/{id}/dependency-graph
+ */
+export async function fetchDependencyGraph(
+  taskId: string,
+  depth: number = 3
+): Promise<DependencyGraph> {
+  return apiFetch<DependencyGraph>(
+    `/dependencies/tasks/${taskId}/dependency-graph?depth=${depth}`
+  )
+}
+
+export interface Dependency {
+  dependency_id: string
+  task_id: string
+  depends_on_task_id: string
+  type: 'hard_block' | 'soft_dependency'
+  created_at: string
+}
+
+/**
+ * Get task dependencies (tasks this task depends on)
+ * GET /api/kanban/dependencies/tasks/{id}/dependencies
+ */
+export async function fetchTaskDependencies(
+  taskId: string
+): Promise<Dependency[]> {
+  return apiFetch<Dependency[]>(`/dependencies/tasks/${taskId}/dependencies`)
+}
+
+/**
+ * Get task dependents (tasks that depend on this task)
+ * GET /api/kanban/dependencies/tasks/{id}/dependents
+ */
+export async function fetchTaskDependents(
+  taskId: string
+): Promise<Dependency[]> {
+  return apiFetch<Dependency[]>(`/dependencies/tasks/${taskId}/dependents`)
+}
+
+export interface CreateDependencyRequest {
+  task_id: string
+  depends_on_task_id: string
+  type?: 'hard_block' | 'soft_dependency'
+}
+
+/**
+ * Create new dependency
+ * POST /api/kanban/dependencies
+ */
+export async function createDependency(
+  dependency: CreateDependencyRequest
+): Promise<Dependency> {
+  return apiFetch<Dependency>('/dependencies', {
+    method: 'POST',
+    body: JSON.stringify(dependency),
+  })
+}
+
+/**
+ * Delete dependency
+ * DELETE /api/kanban/dependencies/{id}
+ */
+export async function deleteDependency(
+  dependencyId: string
+): Promise<void> {
+  await apiFetch<void>(`/dependencies/${dependencyId}`, {
+    method: 'DELETE',
+  })
+}
+
+// ============================================================================
 // Export API client object for convenience
 // ============================================================================
+
+
+
+// ============================================================================
+// ROI Dashboard (Week 6 Day 5)
+// ============================================================================
+
+export interface ROIMetrics {
+  total_tasks: number
+  completed_tasks: number
+  completion_rate_percent: number
+  total_estimated_hours: number
+  total_actual_hours: number
+  efficiency_percent: number
+  average_task_duration_hours: number
+  roi_score: number
+  trends: {
+    weekly_completion: number[]
+    efficiency_trend: number[]
+  }
+}
+
+export interface TeamProductivity {
+  user_id: string
+  username: string
+  tasks_completed: number
+  total_hours: number
+  efficiency_percent: number
+  roi_score: number
+}
+
+/**
+ * Fetch ROI metrics for dashboard
+ * GET /api/kanban/roi/metrics
+ */
+export async function fetchROIMetrics(period: 'week' | 'month' = 'week'): Promise<ROIMetrics> {
+  return apiFetch<ROIMetrics>(`/roi/metrics?period=${period}`)
+}
+
+/**
+ * Fetch team productivity stats
+ * GET /api/kanban/roi/team-productivity
+ */
+export async function fetchTeamProductivity(): Promise<TeamProductivity[]> {
+  return apiFetch<TeamProductivity[]>('/roi/team-productivity')
+}
+
+/**
+ * Fetch top performing tasks
+ * GET /api/kanban/roi/top-tasks
+ */
+export async function fetchTopPerformingTasks(limit: number = 5): Promise<KanbanTask[]> {
+  return apiFetch<KanbanTask[]>(`/roi/top-tasks?limit=${limit}`)
+}
 
 export const kanbanAPI = {
   // CRUD
@@ -292,6 +449,18 @@ export const kanbanAPI = {
 
   // Batch
   bulkUpdateStatus,
+
+  // Dependencies (Week 6 Day 2)
+  fetchDependencyGraph,
+
+  // ROI Dashboard (Week 6 Day 5)
+  fetchROIMetrics,
+  fetchTeamProductivity,
+  fetchTopPerformingTasks,
+  fetchTaskDependencies,
+  fetchTaskDependents,
+  createDependency,
+  deleteDependency,
 }
 
 export default kanbanAPI

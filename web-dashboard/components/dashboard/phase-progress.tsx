@@ -1,5 +1,6 @@
 "use client"
 
+import { memo } from "react"
 import { motion } from "framer-motion"
 import { Layers, CheckCircle2, Circle, ArrowRight } from "lucide-react"
 import { cn } from "@/lib/utils"
@@ -18,7 +19,7 @@ interface PhaseProgressProps {
   onPhaseChange: (phase: string) => void
 }
 
-export function PhaseProgress({ currentPhase, onPhaseChange }: PhaseProgressProps) {
+export const PhaseProgress = memo(function PhaseProgress({ currentPhase, onPhaseChange }: PhaseProgressProps) {
   const phases: PhaseInfo[] = [
     {
       id: "ideation",
@@ -210,4 +211,4 @@ export function PhaseProgress({ currentPhase, onPhaseChange }: PhaseProgressProp
       )}
     </motion.div>
   )
-}
+})

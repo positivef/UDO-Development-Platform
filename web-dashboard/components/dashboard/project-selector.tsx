@@ -1,6 +1,6 @@
 "use client"
 
-import { useState, useEffect, useRef } from "react"
+import { useState, useEffect, useRef, memo } from "react"
 import { createPortal } from "react-dom"
 import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query"
 import { motion, AnimatePresence } from "framer-motion"
@@ -53,7 +53,7 @@ interface SwitchProjectResponse {
   message: string
 }
 
-export function ProjectSelector() {
+export const ProjectSelector = memo(function ProjectSelector() {
   const [isOpen, setIsOpen] = useState(false)
   const [selectedProjectId, setSelectedProjectId] = useState<string | null>(null)
   const [dropdownPosition, setDropdownPosition] = useState({ top: 0, right: 0 })
@@ -209,7 +209,7 @@ export function ProjectSelector() {
       return { name: "Select Project", phase: "" }
     }
 
-    const project = projectsData?.projects.find((p) => p.id === currentId)
+    const project = projectsData?.projects?.find((p) => p.id === currentId)
     if (project) {
       return { name: project.name, phase: project.current_phase }
     }
@@ -385,4 +385,4 @@ export function ProjectSelector() {
     )}
     </div>
   )
-}
+})

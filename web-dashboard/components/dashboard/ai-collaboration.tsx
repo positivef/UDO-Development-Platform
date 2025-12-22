@@ -1,5 +1,6 @@
 "use client"
 
+import { memo } from "react"
 import { motion } from "framer-motion"
 import { Brain, Cpu, Sparkles, CheckCircle2, XCircle, Loader2 } from "lucide-react"
 import { cn } from "@/lib/utils"
@@ -12,7 +13,7 @@ interface AICollaborationProps {
   }
 }
 
-export function AICollaboration({ services }: AICollaborationProps) {
+export const AICollaboration = memo(function AICollaboration({ services }: AICollaborationProps) {
   const aiServices = [
     {
       name: "Claude",
@@ -132,4 +133,4 @@ export function AICollaboration({ services }: AICollaborationProps) {
       </div>
     </motion.div>
   )
-}
+})

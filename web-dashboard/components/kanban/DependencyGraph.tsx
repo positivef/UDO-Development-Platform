@@ -21,7 +21,7 @@ import { useEffect, useRef, useState } from 'react'
 import * as d3 from 'd3'
 import type { KanbanTask } from '@/lib/types/kanban'
 import { Button } from '@/components/ui/button'
-import { AlertTriangle, Zap } from 'lucide-react'
+import { AlertTriangle, Zap, ZoomIn, ZoomOut, Maximize2 } from 'lucide-react'
 import { Alert, AlertDescription } from '@/components/ui/alert'
 
 interface DependencyGraphProps {
@@ -54,9 +54,15 @@ export function DependencyGraph({
   const svgRef = useRef<SVGSVGElement>(null)
   const [selectedNode, setSelectedNode] = useState<string | null>(null)
   const [showEmergencyOverride, setShowEmergencyOverride] = useState(false)
+  const [renderTime, setRenderTime] = useState<number>(0)
+  const [nodeCount, setNodeCount] = useState<number>(0)
+  const [edgeCount, setEdgeCount] = useState<number>(0)
+  const [zoomLevel, setZoomLevel] = useState<number>(1)
 
   useEffect(() => {
     if (!svgRef.current || tasks.length === 0) return
+
+    const startTime = performance.now()
 
     // Clear previous graph
     d3.select(svgRef.current).selectAll('*').remove()
@@ -69,6 +75,38 @@ export function DependencyGraph({
       .attr('height', height)
       .attr('viewBox', [0, 0, width, height])
 
+    // Add zoom behavior
+    const zoom = d3
+      .zoom<SVGSVGElement, unknown>()
+      .scaleExtent([0.1, 4])
+      .on('zoom', (event) => {
+        const g = svg.select('g.graph-container')
+        g.attr('transform', event.transform)
+        setZoomLevel(event.transform.k)
+      })
+
+    svg.call(zoom)
+
+    // Add arrow markers FIRST (must be in svg, not container)
+    svg
+      .append('defs')
+      .selectAll('marker')
+      .data(['dependency', 'blocked'])
+      .join('marker')
+      .attr('id', (d) => `arrow-${d}`)
+      .attr('viewBox', '0 -5 10 10')
+      .attr('refX', 25)
+      .attr('refY', 0)
+      .attr('markerWidth', 6)
+      .attr('markerHeight', 6)
+      .attr('orient', 'auto')
+      .append('path')
+      .attr('fill', (d) => (d === 'blocked' ? '#ef4444' : '#3b82f6'))
+      .attr('d', 'M0,-5L10,0L0,5')
+
+    // Create container group for graph elements (for zoom transform)
+    const graphContainer = svg.append('g').attr('class', 'graph-container')
+
     // Build graph data
     const nodes: GraphNode[] = tasks.map((task) => ({
       id: task.id,
@@ -79,6 +117,9 @@ export function DependencyGraph({
     }))
 
     const links: GraphLink[] = []
+
+    // Update node count
+    setNodeCount(nodes.length)
 
     // Add dependency links (task → dependency)
     tasks.forEach((task) => {
@@ -103,6 +144,9 @@ export function DependencyGraph({
       }
     })
 
+    // Update edge count
+    setEdgeCount(links.length)
+
     // Create force simulation
     const simulation = d3
       .forceSimulation<GraphNode>(nodes)
@@ -117,25 +161,8 @@ export function DependencyGraph({
       .force('center', d3.forceCenter(width / 2, height / 2))
       .force('collision', d3.forceCollide().radius(60))
 
-    // Add arrow markers for dependency direction
-    svg
-      .append('defs')
-      .selectAll('marker')
-      .data(['dependency', 'blocked'])
-      .join('marker')
-      .attr('id', (d) => `arrow-${d}`)
-      .attr('viewBox', '0 -5 10 10')
-      .attr('refX', 25)
-      .attr('refY', 0)
-      .attr('markerWidth', 6)
-      .attr('markerHeight', 6)
-      .attr('orient', 'auto')
-      .append('path')
-      .attr('fill', (d) => (d === 'blocked' ? '#ef4444' : '#3b82f6'))
-      .attr('d', 'M0,-5L10,0L0,5')
-
     // Draw links (edges)
-    const link = svg
+    const link = graphContainer
       .append('g')
       .attr('class', 'links')
       .selectAll('line')
@@ -147,7 +174,7 @@ export function DependencyGraph({
       .attr('marker-end', (d) => `url(#arrow-${d.type})`)
 
     // Draw nodes
-    const node = svg
+    const node = graphContainer
       .append('g')
       .attr('class', 'nodes')
       .selectAll('g')
@@ -245,6 +272,10 @@ export function DependencyGraph({
         .on('end', dragended)
     }
 
+    // Update render time
+    const endTime = performance.now()
+    setRenderTime(Math.round(endTime - startTime))
+
     // Cleanup
     return () => {
       simulation.stop()
@@ -288,38 +319,102 @@ export function DependencyGraph({
     }
   }
 
+  const handleZoomIn = () => {
+    if (!svgRef.current) return
+    const svg = d3.select(svgRef.current)
+    const zoom = d3.zoom<SVGSVGElement, unknown>()
+    svg.transition().call(zoom.scaleBy, 1.3)
+  }
+
+  const handleZoomOut = () => {
+    if (!svgRef.current) return
+    const svg = d3.select(svgRef.current)
+    const zoom = d3.zoom<SVGSVGElement, unknown>()
+    svg.transition().call(zoom.scaleBy, 0.7)
+  }
+
+  const handleResetZoom = () => {
+    if (!svgRef.current) return
+    const svg = d3.select(svgRef.current)
+    const zoom = d3.zoom<SVGSVGElement, unknown>()
+    svg.transition().call(zoom.transform, d3.zoomIdentity)
+  }
+
   return (
     <div className="space-y-4">
       {/* Graph Canvas */}
-      <div className="border rounded-lg bg-white dark:bg-gray-900 p-4">
+      <div className="border rounded-lg bg-white dark:bg-gray-900 p-4 relative">
         <svg ref={svgRef} className="w-full h-auto" />
+
+        {/* Zoom Controls */}
+        <div className="absolute top-4 right-4 flex gap-2">
+          <Button
+            variant="outline"
+            size="sm"
+            onClick={handleZoomIn}
+            title="Zoom In"
+            className="bg-white dark:bg-gray-800"
+          >
+            <ZoomIn className="h-4 w-4" />
+          </Button>
+          <Button
+            variant="outline"
+            size="sm"
+            onClick={handleZoomOut}
+            title="Zoom Out"
+            className="bg-white dark:bg-gray-800"
+          >
+            <ZoomOut className="h-4 w-4" />
+          </Button>
+          <Button
+            variant="outline"
+            size="sm"
+            onClick={handleResetZoom}
+            title="Reset Zoom"
+            className="bg-white dark:bg-gray-800"
+          >
+            <Maximize2 className="h-4 w-4" />
+          </Button>
+        </div>
+
+        {/* Graph Statistics */}
+        <div className="absolute bottom-4 left-4 text-xs text-muted-foreground">
+          {nodeCount} nodes, {edgeCount} edges · Rendered in {renderTime}ms
+        </div>
       </div>
 
       {/* Legend */}
-      <div className="flex gap-6 text-sm">
-        <div className="flex items-center gap-2">
-          <div className="w-4 h-4 rounded-full bg-slate-400" />
-          <span>Pending</span>
-        </div>
-        <div className="flex items-center gap-2">
-          <div className="w-4 h-4 rounded-full bg-yellow-400" />
-          <span>In Progress</span>
-        </div>
-        <div className="flex items-center gap-2">
-          <div className="w-4 h-4 rounded-full bg-red-500" />
-          <span>Blocked</span>
-        </div>
-        <div className="flex items-center gap-2">
-          <div className="w-4 h-4 rounded-full bg-green-500" />
-          <span>Completed</span>
-        </div>
-        <div className="flex items-center gap-2 ml-auto">
-          <div className="w-8 h-0.5 bg-blue-500" />
-          <span>Dependency</span>
-        </div>
-        <div className="flex items-center gap-2">
-          <div className="w-8 h-0.5 bg-red-500" />
-          <span>Blocked By</span>
+      <div className="space-y-2">
+        <h3 className="text-sm font-semibold">Legend</h3>
+        <div className="flex gap-6 text-sm">
+          <div className="flex items-center gap-2">
+            <div className="w-4 h-4 rounded-full bg-slate-400" />
+            <span>Pending</span>
+          </div>
+          <div className="flex items-center gap-2">
+            <div className="w-4 h-4 rounded-full bg-yellow-400" />
+            <span>In Progress</span>
+          </div>
+          <div className="flex items-center gap-2">
+            <div className="w-4 h-4 rounded-full bg-red-500" />
+            <span>Blocked</span>
+          </div>
+          <div className="flex items-center gap-2">
+            <div className="w-4 h-4 rounded-full bg-green-500" />
+            <span>Completed</span>
+          </div>
+          <div className="flex items-center gap-2 ml-auto">
+            <div className="w-8 h-0.5 bg-blue-500" />
+            <span>Dependency</span>
+          </div>
+          <div className="flex items-center gap-2">
+            <div className="w-8 h-0.5 bg-red-500" />
+            <span>Hard Block</span>
+          </div>
+          <div className="flex items-center gap-2">
+            <div className="w-8 h-0.5 bg-blue-500 opacity-50" />
+            <span>Soft Dependency</span>
+          </div>
         </div>
       </div>
 

@@ -16,11 +16,15 @@ import dynamic from 'next/dynamic'
 import { KanbanBoard } from '@/components/kanban/KanbanBoard'
 import { TaskCreateModal } from '@/components/kanban/TaskCreateModal'
 import { AISuggestionModal } from '@/components/kanban/AISuggestionModal'
+import { DependencyGraph } from '@/components/DependencyGraph'
 import { useFilterState } from '@/components/kanban/FilterPanel'
-import { useKanbanStore } from '@/lib/stores/kanban-store'
+import { useKanbanStore, getMockTasks } from '@/lib/stores/kanban-store'
 import { useKanbanTasks } from '@/hooks/useKanban'
+import { useKanbanWebSocket } from '@/hooks/useKanbanWebSocket'
+import type { ConnectionStatus } from '@/lib/websocket/kanban-client'
 import { Button } from '@/components/ui/button'
-import { Plus, Download, Upload, RefreshCw, AlertCircle, Wifi, WifiOff, Sparkles } from 'lucide-react'
+import { Badge } from '@/components/ui/badge'
+import { Plus, Download, Upload, RefreshCw, AlertCircle, Wifi, WifiOff, Sparkles, Radio, LayoutGrid, GitBranch } from 'lucide-react'
 import type { KanbanTask } from '@/lib/types/kanban'
 
 // Dynamic import to prevent SSR issues with lucide-react icons
@@ -29,74 +33,8 @@ const FilterPanel = dynamic(
   { ssr: false }
 )
 
-// Sample mock data for fallback when API is unavailable
-const mockTasks: KanbanTask[] = [
-  {
-    id: '1',
-    title: 'Implement authentication system',
-    description: 'Add JWT-based authentication with role-based access control',
-    status: 'in_progress' as const,
-    phase: 'implementation' as const,
-    priority: 'high' as const,
-    tags: ['auth', 'security', 'backend'],
-    created_at: '2025-12-07T10:00:00Z',
-    updated_at: '2025-12-07T14:30:00Z',
-    estimated_hours: 8,
-    actual_hours: 5,
-  },
-  {
-    id: '2',
-    title: 'Design API endpoints',
-    description: 'Create RESTful API design for Kanban integration',
-    status: 'completed' as const,
-    phase: 'design' as const,
-    priority: 'medium' as const,
-    tags: ['api', 'design', 'documentation'],
-    created_at: '2025-12-06T09:00:00Z',
-    updated_at: '2025-12-06T17:00:00Z',
-    estimated_hours: 4,
-    actual_hours: 3,
-  },
-  {
-    id: '3',
-    title: 'Set up CI/CD pipeline',
-    description: 'Configure automated testing and deployment with GitHub Actions',
-    status: 'pending' as const,
-    phase: 'testing' as const,
-    priority: 'medium' as const,
-    tags: ['devops', 'ci/cd', 'testing'],
-    created_at: '2025-12-07T08:00:00Z',
-    updated_at: '2025-12-07T08:00:00Z',
-    estimated_hours: 6,
-  },
-  {
-    id: '4',
-    title: 'Fix database connection pooling',
-    description: 'Resolve connection timeout issues in production',
-    status: 'blocked' as const,
-    phase: 'implementation' as const,
-    priority: 'critical' as const,
-    tags: ['database', 'bug', 'production'],
-    created_at: '2025-12-07T11:00:00Z',
-    updated_at: '2025-12-07T15:00:00Z',
-    estimated_hours: 4,
-    blocked_by: ['db-migration'],
-  },
-  {
-    id: '5',
-    title: 'Research AI task suggestion patterns',
-    description: 'Analyze Claude Sonnet 4.5 prompting strategies for task generation',
-    status: 'pending' as const,
-    phase: 'ideation' as const,
-    priority: 'low' as const,
-    tags: ['research', 'ai', 'prompting'],
-    created_at: '2025-12-07T12:00:00Z',
-    updated_at: '2025-12-07T12:00:00Z',
-    estimated_hours: 2,
-    ai_suggested: true,
-    ai_confidence: 0.85,
-  },
-]
+// Use complete mock data from kanban-store (includes Week 6 Day 4 features: due_date, comments, dependencies)
+const mockTasks = getMockTasks()
 
 export default function KanbanPage() {
   const { setTasks, tasks: storeTasks, isLoading: storeLoading, error: storeError, clearError } = useKanbanStore()
@@ -104,7 +42,35 @@ export default function KanbanPage() {
   const [isOnline, setIsOnline] = useState(true)
   const [isCreateModalOpen, setIsCreateModalOpen] = useState(false)
   const [isAISuggestionOpen, setIsAISuggestionOpen] = useState(false)
+  const [wsStatus, setWsStatus] = useState<ConnectionStatus>('disconnected')
+  const [activeClients, setActiveClients] = useState(1)
   const { filters, setFilters, hasActiveFilters } = useFilterState()
+
+  // Week 6 Day 2: View toggle (Board / Graph)
+  const [currentView, setCurrentView] = useState<'board' | 'graph'>('board')
+  const [selectedTaskForGraph, setSelectedTaskForGraph] = useState<KanbanTask | null>(null)
+
+  // WebSocket for real-time updates (Week 7+)
+  const {
+    broadcastTaskCreated,
+    broadcastTaskUpdated,
+    broadcastTaskMoved,
+    broadcastTaskDeleted,
+    broadcastTaskArchived,
+  } = useKanbanWebSocket({
+    projectId: 'default', // TODO: Get from project selector
+    enabled: true,
+    onStatusChange: (status) => {
+      setWsStatus(status)
+      console.log('[KanbanPage] WebSocket status:', status)
+    },
+    onMessage: (message) => {
+      // Track active clients
+      if (message.type === 'client_joined' || message.type === 'client_left') {
+        setActiveClients(message.active_clients)
+      }
+    },
+  })
 
   // Ensure tasks is always an array (fix undefined error)
   const tasks = storeTasks || []
@@ -235,6 +201,28 @@ export default function KanbanPage() {
 
         {/* Actions */}
         <div className="flex gap-2">
+          {/* Week 6 Day 2: View Toggle */}
+          <div className="flex items-center gap-1 p-1 bg-muted rounded-lg">
+            <Button
+              variant={currentView === 'board' ? 'default' : 'ghost'}
+              size="sm"
+              onClick={() => setCurrentView('board')}
+              className="h-8"
+            >
+              <LayoutGrid className="h-4 w-4 mr-2" />
+              Board
+            </Button>
+            <Button
+              variant={currentView === 'graph' ? 'default' : 'ghost'}
+              size="sm"
+              onClick={() => setCurrentView('graph')}
+              className="h-8"
+            >
+              <GitBranch className="h-4 w-4 mr-2" />
+              Graph
+            </Button>
+          </div>
+
           <Button
             variant="outline"
             size="sm"
@@ -268,6 +256,16 @@ export default function KanbanPage() {
           </Button>
         </div>
       </div>
+
+      {/* WebSocket Status Banner */}
+      {wsStatus === 'connected' && activeClients > 1 && (
+        <div className="mb-4 p-3 rounded-lg bg-blue-100 dark:bg-blue-900/20 border border-blue-200 dark:border-blue-800 flex items-center gap-2">
+          <Radio className="h-4 w-4 text-blue-600 animate-pulse" />
+          <span className="text-sm text-blue-700 dark:text-blue-300">
+            Real-time sync active • {activeClients} users online
+          </span>
+        </div>
+      )}
 
       {/* Connection Status Banner */}
       {(useMockData || !isOnline || apiError) && (
@@ -330,7 +328,7 @@ export default function KanbanPage() {
         </div>
       )}
 
-      {/* Kanban Board */}
+      {/* Main Content Area - Board or Graph View */}
       <div className="flex-1 overflow-hidden">
         {isLoading ? (
           <div className="flex items-center justify-center h-full">
@@ -339,8 +337,66 @@ export default function KanbanPage() {
               <p className="text-muted-foreground">Loading tasks...</p>
             </div>
           </div>
+        ) : currentView === 'board' ? (
+          <KanbanBoard
+            tasks={hasActiveFilters ? filteredTasks : tasks}
+            onBroadcastTaskMoved={broadcastTaskMoved}
+            onBroadcastTaskUpdated={broadcastTaskUpdated}
+            onBroadcastTaskDeleted={broadcastTaskDeleted}
+            onBroadcastTaskArchived={broadcastTaskArchived}
+          />
         ) : (
-          <KanbanBoard tasks={hasActiveFilters ? filteredTasks : tasks} />
+          /* Week 6 Day 2: Dependency Graph View */
+          <div className="h-full flex flex-col gap-4">
+            {/* Task Selector for Graph View */}
+            <div className="p-4 bg-muted/50 rounded-lg">
+              <label className="text-sm font-medium mb-2 block">
+                Select a task to view its dependency graph:
+              </label>
+              <div className="flex gap-2 flex-wrap">
+                {(hasActiveFilters ? filteredTasks : tasks).map((task) => (
+                  <Button
+                    key={task.id}
+                    variant={selectedTaskForGraph?.id === task.id ? 'default' : 'outline'}
+                    size="sm"
+                    onClick={() => setSelectedTaskForGraph(task)}
+                    className="flex items-center gap-2"
+                  >
+                    <span className="truncate max-w-[200px]">{task.title}</span>
+                    <Badge variant="secondary" className="text-xs">
+                      {task.phase}
+                    </Badge>
+                  </Button>
+                ))}
+              </div>
+            </div>
+
+            {/* Dependency Graph Display */}
+            {selectedTaskForGraph ? (
+              <div className="flex-1 overflow-auto">
+                <DependencyGraph
+                  taskId={selectedTaskForGraph.id}
+                  depth={3}
+                  onNodeClick={(nodeId) => {
+                    // Find task and update selection
+                    const task = tasks.find((t) => t.id === nodeId)
+                    if (task) {
+                      setSelectedTaskForGraph(task)
+                    }
+                  }}
+                  height={600}
+                  width={1200}
+                />
+              </div>
+            ) : (
+              <div className="flex-1 flex items-center justify-center text-muted-foreground">
+                <div className="text-center">
+                  <GitBranch className="h-12 w-12 mx-auto mb-2 opacity-50" />
+                  <p className="text-sm">Select a task above to view its dependency graph</p>
+                </div>
+              </div>
+            )}
+          </div>
         )}
       </div>
 
@@ -394,6 +450,7 @@ export default function KanbanPage() {
         onClose={() => setIsCreateModalOpen(false)}
         onSuccess={handleCreateSuccess}
         availableTasks={tasks}  // Q7: Pass tasks for dependency selection
+        onBroadcastTaskCreated={broadcastTaskCreated}  // Week 7: Real-time sync
       />
 
       {/* AI Suggestion Modal (Q2: AI Hybrid) */}

@@ -26,6 +26,7 @@ import { sortableKeyboardCoordinates } from '@dnd-kit/sortable'
 import { Column } from './Column'
 import { TaskCard } from './TaskCard'
 import { TaskDetailModal } from './TaskDetailModal'
+import { ContextBriefing } from './ContextBriefing'
 import { useKanbanStore, useColumns } from '@/lib/stores/kanban-store'
 import { kanbanAPI } from '@/lib/api/kanban'
 import type { KanbanTask, TaskStatus, KanbanColumn } from '@/lib/types/kanban'
@@ -33,6 +34,11 @@ import type { KanbanTask, TaskStatus, KanbanColumn } from '@/lib/types/kanban'
 interface KanbanBoardProps {
   /** Optional filtered tasks. If provided, columns will be computed from these tasks instead of store */
   tasks?: KanbanTask[]
+  /** WebSocket broadcast functions for real-time updates */
+  onBroadcastTaskMoved?: (taskId: string, oldStatus: TaskStatus, newStatus: TaskStatus) => void
+  onBroadcastTaskUpdated?: (taskId: string, updates: Partial<KanbanTask>) => void
+  onBroadcastTaskDeleted?: (taskId: string) => void
+  onBroadcastTaskArchived?: (taskId: string) => void
 }
 
 // Column definitions (same as store)
@@ -43,7 +49,13 @@ const columnDefinitions: { id: TaskStatus; title: string }[] = [
   { id: 'completed', title: 'Done' },
 ]
 
-export function KanbanBoard({ tasks: filteredTasks }: KanbanBoardProps = {}) {
+export function KanbanBoard({
+  tasks: filteredTasks,
+  onBroadcastTaskMoved,
+  onBroadcastTaskUpdated,
+  onBroadcastTaskDeleted,
+  onBroadcastTaskArchived,
+}: KanbanBoardProps = {}) {
   const storeColumns = useColumns()
   const { moveTask, selectedTask, setSelectedTask, updateTask: updateTaskInStore } = useKanbanStore()
 
@@ -62,6 +74,9 @@ export function KanbanBoard({ tasks: filteredTasks }: KanbanBoardProps = {}) {
   const [activeTask, setActiveTask] = useState<KanbanTask | null>(null)
   const [isUpdating, setIsUpdating] = useState(false)
   const [isModalOpen, setIsModalOpen] = useState(false)
+  // Q4: Context Briefing state for double-click auto-load
+  const [isContextBriefingOpen, setIsContextBriefingOpen] = useState(false)
+  const [contextBriefingTask, setContextBriefingTask] = useState<KanbanTask | null>(null)
 
   // Configure drag sensors (memoized to prevent re-creation)
   const pointerSensorConfig = useMemo(() => ({
@@ -120,6 +135,11 @@ export function KanbanBoard({ tasks: filteredTasks }: KanbanBoardProps = {}) {
       // Update store with server response (for timestamp, etc.)
       updateTaskInStore(taskId, updatedTask)
 
+      // Broadcast to other users via WebSocket (Stage 2)
+      if (onBroadcastTaskMoved) {
+        onBroadcastTaskMoved(taskId, previousStatus, newStatus)
+      }
+
       console.log(`✅ Task ${taskId} moved to ${newStatus}`)
     } catch (error) {
       console.error('Failed to update task status:', error)
@@ -136,7 +156,7 @@ export function KanbanBoard({ tasks: filteredTasks }: KanbanBoardProps = {}) {
     } finally {
       setIsUpdating(false)
     }
-  }, [allTasks, isUpdating, moveTask, updateTaskInStore])
+  }, [allTasks, isUpdating, moveTask, updateTaskInStore, onBroadcastTaskMoved])
 
   const handleTaskClick = useCallback((task: KanbanTask) => {
     setSelectedTask(task)
@@ -147,6 +167,17 @@ export function KanbanBoard({ tasks: filteredTasks }: KanbanBoardProps = {}) {
     setIsModalOpen(false)
     setSelectedTask(null)
   }, [setSelectedTask])
+
+  // Q4: Double-click handler for Context Briefing
+  const handleTaskDoubleClick = useCallback((task: KanbanTask) => {
+    setContextBriefingTask(task)
+    setIsContextBriefingOpen(true)
+  }, [])
+
+  const handleContextBriefingClose = useCallback(() => {
+    setIsContextBriefingOpen(false)
+    setContextBriefingTask(null)
+  }, [])
 
   return (
     <>
@@ -162,6 +193,7 @@ export function KanbanBoard({ tasks: filteredTasks }: KanbanBoardProps = {}) {
               key={column.id}
               column={column}
               onTaskClick={handleTaskClick}
+              onTaskDoubleClick={handleTaskDoubleClick}
             />
           ))}
         </div>
@@ -181,7 +213,20 @@ export function KanbanBoard({ tasks: filteredTasks }: KanbanBoardProps = {}) {
         task={selectedTask}
         open={isModalOpen}
         onClose={handleModalClose}
+        onBroadcastTaskUpdated={onBroadcastTaskUpdated}
+        onBroadcastTaskDeleted={onBroadcastTaskDeleted}
+        onBroadcastTaskArchived={onBroadcastTaskArchived}
       />
+
+      {/* Q4: Context Briefing Modal (double-click auto-load) */}
+      {contextBriefingTask && (
+        <ContextBriefing
+          taskId={contextBriefingTask.id}
+          taskTitle={contextBriefingTask.title}
+          isOpen={isContextBriefingOpen}
+          onClose={handleContextBriefingClose}
+        />
+      )}
     </>
   )
 }

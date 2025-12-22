@@ -1,6 +1,7 @@
 "use client"
 
-import React, { useState, useEffect } from 'react'
+import React, { useState, useEffect, memo, useRef } from 'react'
+import { useVirtualizer } from '@tanstack/react-virtual'
 import { Card, CardContent, CardDescription, CardHeader, CardTitle, CardFooter } from '@/components/ui/card'
 import { Button } from '@/components/ui/button'
 import { Badge } from '@/components/ui/badge'
@@ -13,6 +14,8 @@ import { Terminal, GitBranch, FileText, Clock, AlertCircle, CheckCircle, Play, R
 import { useToast } from '@/components/ui/use-toast'
 import { motion, AnimatePresence } from 'framer-motion'
 import { cn } from '@/lib/utils'
+
+const API_URL = process.env.NEXT_PUBLIC_API_URL || "http://localhost:8000"
 
 interface TodoItem {
   title: string
@@ -71,13 +74,84 @@ interface TaskContext {
   }
 }
 
-export function TaskList() {
+export const TaskList = memo(function TaskList() {
   const [tasks, setTasks] = useState<Task[]>([])
   const [selectedTask, setSelectedTask] = useState<Task | null>(null)
   const [taskContext, setTaskContext] = useState<TaskContext | null>(null)
   const [loading, setLoading] = useState(true)
   const [detailsOpen, setDetailsOpen] = useState(false)
   const { toast } = useToast()
+  const parentRef = useRef<HTMLDivElement>(null)
+  const measurementCache = useRef<Map<number, number>>(new Map())
+  const scrollPositionKey = 'taskList_scrollPosition'
+
+  // Restore scroll position on mount
+  useEffect(() => {
+    const savedPosition = sessionStorage.getItem(scrollPositionKey)
+    if (savedPosition && parentRef.current) {
+      const position = parseInt(savedPosition, 10)
+      // Restore after a short delay to ensure content is rendered
+      setTimeout(() => {
+        if (parentRef.current) {
+          parentRef.current.scrollTop = position
+        }
+      }, 100)
+    }
+  }, [])
+
+  // Save scroll position on scroll and unmount
+  useEffect(() => {
+    const scrollElement = parentRef.current
+    if (!scrollElement) return
+
+    const handleScroll = () => {
+      sessionStorage.setItem(scrollPositionKey, scrollElement.scrollTop.toString())
+    }
+
+    // Throttle scroll events (save every 200ms)
+    let scrollTimeout: NodeJS.Timeout
+    const throttledScroll = () => {
+      clearTimeout(scrollTimeout)
+      scrollTimeout = setTimeout(handleScroll, 200)
+    }
+
+    scrollElement.addEventListener('scroll', throttledScroll)
+
+    // Save on unmount
+    return () => {
+      scrollElement.removeEventListener('scroll', throttledScroll)
+      handleScroll() // Final save
+    }
+  }, [])
+
+  // Virtual scrolling setup with dynamic height measurement
+  const virtualizer = useVirtualizer({
+    count: tasks.length,
+    getScrollElement: () => parentRef.current,
+    estimateSize: (index) => {
+      // Use cached height if available, otherwise estimate based on task content
+      const cached = measurementCache.current.get(index)
+      if (cached) return cached
+
+      // Smart estimation based on task properties
+      const task = tasks[index]
+      if (!task) return 180
+
+      let estimatedHeight = 140 // Base height
+      estimatedHeight += Math.min((task.description?.length || 0) / 50, 40) // Description lines
+      estimatedHeight += (task.todo_groups?.length || 0) * 20 // Todo groups add height
+
+      return estimatedHeight
+    },
+    overscan: 5, // Render 5 extra items above/below viewport
+    measureElement: (element) => {
+      // Cache measured heights for accuracy
+      const index = parseInt(element.getAttribute('data-index') || '0')
+      const height = element.getBoundingClientRect().height
+      measurementCache.current.set(index, height)
+      return height
+    }
+  })
 
   useEffect(() => {
     fetchTasks()
@@ -86,7 +160,7 @@ export function TaskList() {
 
   const fetchTasks = async () => {
     try {
-      const res = await fetch('/api/tasks/')
+      const res = await fetch(`${API_URL}/api/tasks/`)
       if (res.ok) {
         const data = await res.json()
         setTasks(data)
@@ -105,8 +179,8 @@ export function TaskList() {
   const fetchTaskDetails = async (taskId: string) => {
     try {
       const [detailRes, contextRes] = await Promise.all([
-        fetch(`/api/tasks/${taskId}`),
-        fetch(`/api/tasks/${taskId}/context`)
+        fetch(`${API_URL}/api/tasks/${taskId}`),
+        fetch(`${API_URL}/api/tasks/${taskId}/context`)
       ])
 
       if (detailRes.ok && contextRes.ok) {
@@ -127,7 +201,7 @@ export function TaskList() {
 
   const continueInCLI = async (taskId: string) => {
     try {
-      const res = await fetch(`/api/tasks/${taskId}/context`)
+      const res = await fetch(`${API_URL}/api/tasks/${taskId}/context`)
       if (res.ok) {
         const context = await res.json()
         await navigator.clipboard.writeText(context.command)
@@ -290,18 +364,42 @@ export function TaskList() {
                   <p className="text-gray-600 text-sm mt-1">새로운 개발 작업을 시작하세요</p>
                 </motion.div>
               ) : (
-                <div className="space-y-3">
-                  {tasks.map((task, index) => {
-                    const statusConfig = getStatusConfig(task.status)
-                    return (
-                      <motion.div
-                        key={task.id}
-                        initial={{ opacity: 0, x: -20 }}
-                        animate={{ opacity: 1, x: 0 }}
-                        transition={{ delay: index * 0.1 }}
-                        whileHover={{ scale: 1.01, y: -2 }}
-                        className="group"
-                      >
+                <div
+                  ref={parentRef}
+                  className="overflow-auto"
+                  style={{ maxHeight: '600px' }}
+                >
+                  <div
+                    style={{
+                      height: `${virtualizer.getTotalSize()}px`,
+                      width: '100%',
+                      position: 'relative'
+                    }}
+                  >
+                    {virtualizer.getVirtualItems().map((virtualItem) => {
+                      const task = tasks[virtualItem.index]
+                      const statusConfig = getStatusConfig(task.status)
+                      return (
+                        <motion.div
+                          key={task.id}
+                          data-index={virtualItem.index}
+                          ref={virtualizer.measureElement}
+                          initial={{ opacity: 0, x: -20 }}
+                          animate={{ opacity: 1, x: 0 }}
+                          transition={{
+                            delay: Math.min(virtualItem.index, 10) * 0.05,
+                            duration: 0.3
+                          }}
+                          whileHover={{ scale: 1.01, y: -2 }}
+                          className="group"
+                          style={{
+                            position: 'absolute',
+                            top: 0,
+                            left: 0,
+                            width: '100%',
+                            transform: `translateY(${virtualItem.start}px)`
+                          }}
+                        >
                         <Card className={cn(
                           "relative overflow-hidden bg-gray-800/40 backdrop-blur border-gray-700/50",
                           "hover:border-gray-600 hover:shadow-lg hover:shadow-blue-500/10 transition-all duration-300"
@@ -370,7 +468,10 @@ export function TaskList() {
                                     <motion.div
                                       initial={{ width: 0 }}
                                       animate={{ width: `${task.completeness}%` }}
-                                      transition={{ duration: 1, delay: index * 0.1 }}
+                                      transition={{
+                                        duration: 0.8,
+                                        delay: Math.min(virtualItem.index, 8) * 0.05
+                                      }}
                                       className={cn("h-full bg-gradient-to-r", statusConfig.color)}
                                     />
                                     {/* Animated shimmer effect */}
@@ -383,7 +484,7 @@ export function TaskList() {
                                         duration: 2,
                                         repeat: Infinity,
                                         ease: "linear",
-                                        delay: index * 0.2
+                                        delay: virtualItem.index * 0.2
                                       }}
                                     />
                                   </div>
@@ -420,6 +521,7 @@ export function TaskList() {
                       </motion.div>
                     )
                   })}
+                  </div>
                 </div>
               )}
             </AnimatePresence>
@@ -470,7 +572,10 @@ export function TaskList() {
                         key={group.id}
                         initial={{ opacity: 0, y: 10 }}
                         animate={{ opacity: 1, y: 0 }}
-                        transition={{ delay: index * 0.1 }}
+                        transition={{
+                          delay: Math.min(index, 5) * 0.08,
+                          duration: 0.3
+                        }}
                       >
                         <Card className="bg-gray-800/30 border-gray-700/50">
                           <CardHeader className="pb-3">
@@ -654,4 +759,4 @@ export function TaskList() {
       </Dialog>
     </>
   )
-}
+})

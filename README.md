@@ -114,6 +114,62 @@ if plan['decision'] == 'GO':
     result = udo.execute_plan(plan)
 ```
 
+## 🚀 Development Server
+
+### Recommended Workflow (New - 2025-12-22)
+
+Use the improved startup script with automatic process management:
+
+```bash
+# Start backend server (automatically handles port conflicts)
+python scripts/start_dev.py
+
+# Or specify custom port
+python scripts/start_dev.py --port 8080
+
+# Fast start (skip process checks)
+python scripts/start_dev.py --no-check
+```
+
+**Features**:
+- ✅ Automatic duplicate process detection
+- ✅ Graceful shutdown of existing processes
+- ✅ Port conflict resolution
+- ✅ PID file tracking
+- ✅ Clean exit on Ctrl+C
+
+### Process Management
+
+**Check running processes**:
+```bash
+python scripts/cleanup_processes.py --check-only
+```
+
+**Clean up all UDO processes**:
+```bash
+python scripts/cleanup_processes.py
+```
+
+**Frontend development server**:
+```bash
+cd web-dashboard
+npm run dev
+```
+
+### Legacy Manual Startup
+
+If you prefer manual control:
+
+```bash
+# Backend (Windows)
+.venv\Scripts\python.exe -m uvicorn backend.main:app --reload --host 0.0.0.0 --port 8000
+
+# Backend (Linux/Mac)
+python -m uvicorn backend.main:app --reload --host 0.0.0.0 --port 8000
+```
+
+**Note**: Manual startup doesn't include automatic process management. See `docs/PORT_CONFLICT_ROOT_CAUSE_ANALYSIS.md` for details.
+
 ## 🧪 Testing
 
 To run the test suite, use the `run_tests.py` script in the root directory:

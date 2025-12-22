@@ -1,9 +1,12 @@
 # Single Source of Truth (SSOT) Registry
 
-**Last Updated**: 2025-12-13
-**Purpose**: Define authoritative documents for each topic area
+**Last Updated**: 2025-12-20
+**Status**: ⚠️ **SIMPLIFIED** (2025-12-20) - 과도한 복잡성으로 인해 핵심만 유지
+**Purpose**: 문서 충돌 시 우선순위 결정
 **Rule**: When documents conflict, higher tier wins
-**Structure Version**: 2.0 (Post-restructure)
+
+> **ROI Analysis (2025-12-20)**: 4-tier 시스템은 솔로 개발자에게 과도함.
+> 핵심 Tier 1-2만 유지하고, 나머지는 폴더 구조로 자연스럽게 처리.
 
 ---
 
@@ -249,7 +252,24 @@ Step 4: If contradicts code
 
 ---
 
-**Document Version**: 2.0
+**Document Version**: 2.1
 **Created**: 2025-12-13
-**Updated**: 2025-12-13 (Post-restructure)
+**Updated**: 2025-12-20 (Simplified - ROI analysis)
 **Author**: Claude Code (AI Assistant)
+
+---
+
+## Simplification Notes (2025-12-20)
+
+**이전 상태**: 4-tier 계층, 60+ 문서 매핑, 월별 유지보수 필요
+**현재 상태**: Tier 1-2 핵심만 유지, 나머지는 폴더 위치로 자연 결정
+
+**권장 사용법**:
+1. 문서 충돌 시 → Tier 1 (CLAUDE.md, CURRENT.md) 우선
+2. 역사적 기록 필요 시 → claudedocs/completion/ 참조
+3. 기능별 상세 정보 → docs/features/{name}/ 폴더 탐색
+
+**제거된 복잡성**:
+- ~~Tier 3-4 매핑~~: 폴더 구조로 자연스럽게 결정
+- ~~월별 레지스트리 감사~~: 불필요한 오버헤드
+- ~~129개 파일 매핑~~: 폴더 기반 탐색으로 대체

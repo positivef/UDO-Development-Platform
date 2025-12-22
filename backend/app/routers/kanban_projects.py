@@ -52,19 +52,13 @@ def error_response(code: str, message: str, status_code: int, details: dict = No
 @router.post(
     "/set-primary",
     response_model=TaskProject,
-    # DEV_MODE: RBAC disabled for development
-
-    # TODO: Re-enable RBAC in Week 5 Day 2 (see UNCERTAINTY_MAP_WEEK5_ANALYSIS.md P0-1)
-
-    # dependencies=[Depends(require_role(UserRole.DEVELOPER))],
+    dependencies=[Depends(require_role(UserRole.DEVELOPER))],
     summary="Set primary project for task",
     description="Set task's primary project (Q5: 1 Primary required)"
 )
 async def set_primary_project(
     request: SetPrimaryProjectRequest,
-    # DEV_MODE: Auth disabled
-
-    # current_user: dict = Depends(get_current_user)
+    current_user: dict = Depends(get_current_user)
 ):
     """
     Set primary project for a task (atomic operation).
@@ -104,19 +98,13 @@ async def set_primary_project(
 @router.post(
     "/add-related",
     response_model=TaskProject,
-    # DEV_MODE: RBAC disabled for development
-
-    # TODO: Re-enable RBAC in Week 5 Day 2 (see UNCERTAINTY_MAP_WEEK5_ANALYSIS.md P0-1)
-
-    # dependencies=[Depends(require_role(UserRole.DEVELOPER))],
+    dependencies=[Depends(require_role(UserRole.DEVELOPER))],
     summary="Add related project to task",
     description="Add related project (Q5: max 3 related projects)"
 )
 async def add_related_project(
     request: AddRelatedProjectRequest,
-    # DEV_MODE: Auth disabled
-
-    # current_user: dict = Depends(get_current_user)
+    current_user: dict = Depends(get_current_user)
 ):
     """
     Add related project to task.
@@ -157,19 +145,13 @@ async def add_related_project(
 @router.delete(
     "/remove-related",
     status_code=status.HTTP_204_NO_CONTENT,
-    # DEV_MODE: RBAC disabled for development
-
-    # TODO: Re-enable RBAC in Week 5 Day 2 (see UNCERTAINTY_MAP_WEEK5_ANALYSIS.md P0-1)
-
-    # dependencies=[Depends(require_role(UserRole.DEVELOPER))],
+    dependencies=[Depends(require_role(UserRole.DEVELOPER))],
     summary="Remove related project from task",
     description="Remove related project (cannot remove primary)"
 )
 async def remove_related_project(
     request: RemoveRelatedProjectRequest,
-    # DEV_MODE: Auth disabled
-
-    # current_user: dict = Depends(get_current_user)
+    current_user: dict = Depends(get_current_user)
 ):
     """
     Remove related project from task.
@@ -219,19 +201,13 @@ async def remove_related_project(
 @router.get(
     "/tasks/{task_id}/projects",
     response_model=TaskProjectSummary,
-    # DEV_MODE: RBAC disabled for development
-
-    # TODO: Re-enable RBAC in Week 5 Day 2 (see UNCERTAINTY_MAP_WEEK5_ANALYSIS.md P0-1)
-
-    # dependencies=[Depends(require_role(UserRole.VIEWER))],
+    dependencies=[Depends(require_role(UserRole.VIEWER))],
     summary="Get task's project relationships",
     description="Get primary and related projects for task (Q5 summary)"
 )
 async def get_task_projects(
     task_id: UUID,
-    # DEV_MODE: Auth disabled
-
-    # current_user: dict = Depends(get_current_user)
+    current_user: dict = Depends(get_current_user)
 ):
     """
     Get all project relationships for a task.
@@ -254,19 +230,13 @@ async def get_task_projects(
 
 @router.get(
     "/tasks/{task_id}/projects/validate",
-    # DEV_MODE: RBAC disabled for development
-
-    # TODO: Re-enable RBAC in Week 5 Day 2 (see UNCERTAINTY_MAP_WEEK5_ANALYSIS.md P0-1)
-
-    # dependencies=[Depends(require_role(UserRole.VIEWER))],
+    dependencies=[Depends(require_role(UserRole.VIEWER))],
     summary="Validate task's project constraints",
     description="Validate Q5 constraints (1 Primary + max 3 Related)"
 )
 async def validate_task_projects(
     task_id: UUID,
-    # DEV_MODE: Auth disabled
-
-    # current_user: dict = Depends(get_current_user)
+    current_user: dict = Depends(get_current_user)
 ):
     """
     Validate all multi-project constraints for a task.

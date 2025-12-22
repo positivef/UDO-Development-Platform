@@ -1,23 +1,28 @@
 #!/usr/bin/env python3
 """
-Session Automation System (v2.0 - With Recovery)
-=================================================
-Automates session lifecycle with crash recovery.
+Session Automation System (v3.0 - Enhanced Context)
+====================================================
+Automates session lifecycle with crash recovery and smart context restoration.
 
 Features:
 1. Auto-update CURRENT.md on session start/end
 2. Generate session handoff documents
 3. Sync with Obsidian knowledge base
 4. Track session metrics
-5. **NEW: Crash recovery for orphaned sessions**
-6. **NEW: Auto-detection of incomplete sessions**
+5. Crash recovery for orphaned sessions
+6. Auto-detection of incomplete sessions
+7. **NEW v3.0: Pending todos collection from worklogs**
+8. **NEW v3.0: Suggested next actions based on context**
+9. **NEW v3.0: Recent errors summary for quick reference**
 
 Usage:
     python scripts/session_automation.py start
+    python scripts/session_automation.py start --context    # NEW: With full context
     python scripts/session_automation.py checkpoint --notes "Work done"
     python scripts/session_automation.py end --summary "Work completed"
-    python scripts/session_automation.py recover  # NEW: Recover orphaned session
+    python scripts/session_automation.py recover
     python scripts/session_automation.py status
+    python scripts/session_automation.py context           # NEW: Show context only
 
 Exception Handling:
     - Computer crash: Recoverable via 'recover' command
@@ -45,6 +50,9 @@ DOCS_ROOT = PROJECT_ROOT / "docs"
 CURRENT_MD = DOCS_ROOT / "CURRENT.md"
 SESSIONS_DIR = DOCS_ROOT / "sessions"
 WORKLOGS_DIR = SESSIONS_DIR / "worklogs"
+CLAUDEDOCS_ROOT = PROJECT_ROOT / "claudedocs"
+CLAUDEDOCS_WORKLOG = CLAUDEDOCS_ROOT / "worklog"
+CLAUDEDOCS_COMPLETION = CLAUDEDOCS_ROOT / "completion"
 STATE_FILE = PROJECT_ROOT / ".udo" / "session_state.json"
 
 # Obsidian path (from environment or default)
@@ -84,6 +92,247 @@ class SessionManager:
             "tests_run": [],
             "recovery_info": None
         }
+
+    # ========== NEW v3.0: Context Collection Methods ==========
+
+    def collect_pending_todos(self) -> list:
+        """
+        Collect pending todos from recent worklogs and CURRENT.md.
+
+        Scans:
+        - claudedocs/worklog/*.md for unchecked items (- [ ])
+        - docs/CURRENT.md for active work items
+
+        Returns:
+            List of pending todo strings
+        """
+        pending = []
+
+        # 1. Scan claudedocs/worklog for recent files (last 3 days)
+        if CLAUDEDOCS_WORKLOG.exists():
+            worklog_files = sorted(
+                CLAUDEDOCS_WORKLOG.glob("*.md"),
+                key=lambda f: f.stat().st_mtime,
+                reverse=True
+            )[:5]  # Last 5 worklogs
+
+            for wf in worklog_files:
+                try:
+                    content = wf.read_text(encoding="utf-8")
+                    # Find unchecked items: - [ ] task
+                    unchecked = re.findall(r'- \[ \] (.+)', content)
+                    for item in unchecked:
+                        pending.append(f"[{wf.stem}] {item.strip()}")
+                except Exception:
+                    pass
+
+        # 2. Scan CURRENT.md for active work
+        if CURRENT_MD.exists():
+            try:
+                content = CURRENT_MD.read_text(encoding="utf-8")
+                # Find pending items in "Upcoming Milestones" or similar sections
+                unchecked = re.findall(r'- \[ \] (.+)', content)
+                for item in unchecked:
+                    if item.strip() not in [p.split('] ')[-1] for p in pending]:
+                        pending.append(f"[CURRENT] {item.strip()}")
+            except Exception:
+                pass
+
+        return pending[:10]  # Limit to top 10
+
+    def get_recent_errors(self, days: int = 3) -> list:
+        """
+        Get recent errors from Obsidian knowledge base.
+
+        Scans Debug-*.md files for recent error resolutions.
+
+        Returns:
+            List of recent error summaries
+        """
+        errors = []
+
+        # Check Obsidian vault for Debug files
+        if OBSIDIAN_VAULT.exists():
+            debug_dir = OBSIDIAN_VAULT / "3-Areas" / "UDO" / "Errors"
+            if debug_dir.exists():
+                for df in sorted(debug_dir.glob("Debug-*.md"), reverse=True)[:5]:
+                    try:
+                        content = df.read_text(encoding="utf-8")
+                        # Extract error type from filename
+                        error_type = df.stem.replace("Debug-", "").replace("-", " ")
+                        errors.append(f"[RESOLVED] {error_type}")
+                    except Exception:
+                        pass
+
+        return errors[:5]
+
+    def suggest_next_actions(self) -> list:
+        """
+        Suggest next actions based on current context.
+
+        Analyzes:
+        - Git status (uncommitted changes)
+        - Test status (if tests are failing)
+        - Recent worklogs (incomplete work)
+        - CURRENT.md (upcoming milestones)
+
+        Returns:
+            List of suggested action strings
+        """
+        suggestions = []
+
+        # 1. Check git status
+        git_status = self._get_git_status()
+        if git_status and git_status != "No changes":
+            modified_count = len([l for l in git_status.split('\n') if l.strip()])
+            if modified_count > 0:
+                suggestions.append(f"[GIT] {modified_count} uncommitted changes - consider committing")
+
+        # 2. Check for pending todos
+        pending = self.collect_pending_todos()
+        if pending:
+            suggestions.append(f"[TODO] {len(pending)} pending tasks from previous sessions")
+
+        # 3. Check CURRENT.md for active work
+        if CURRENT_MD.exists():
+            try:
+                content = CURRENT_MD.read_text(encoding="utf-8")
+                # Look for "Active Work" or "This Week's Focus" section
+                if "in_progress" in content.lower() or "active work" in content.lower():
+                    suggestions.append("[CONTINUE] Active work detected in CURRENT.md")
+            except Exception:
+                pass
+
+        # 4. Check for recent completion reports
+        if CLAUDEDOCS_COMPLETION.exists():
+            recent_completions = sorted(
+                CLAUDEDOCS_COMPLETION.glob("*.md"),
+                key=lambda f: f.stat().st_mtime,
+                reverse=True
+            )[:1]
+            if recent_completions:
+                last_completion = recent_completions[0].stem
+                suggestions.append(f"[LAST] Completed: {last_completion}")
+
+        # 5. Default suggestion if nothing else
+        if not suggestions:
+            suggestions.append("[START] No pending work - ready for new tasks")
+
+        return suggestions
+
+    def generate_session_context(self) -> Dict[str, Any]:
+        """
+        Generate comprehensive session context for quick restoration.
+
+        Returns:
+            Dictionary with all context information
+        """
+        return {
+            "last_session": self._get_last_session_summary(),
+            "pending_todos": self.collect_pending_todos(),
+            "recent_errors": self.get_recent_errors(),
+            "git_status": self._get_git_status(),
+            "suggested_next": self.suggest_next_actions(),
+            "generated_at": datetime.now().isoformat()
+        }
+
+    def _get_last_session_summary(self) -> Dict[str, Any]:
+        """Get summary of last session from handoff or state."""
+        summary = {
+            "exists": False,
+            "summary": "No previous session found",
+            "duration": None,
+            "checkpoints": 0
+        }
+
+        # Check for recent handoff files
+        if WORKLOGS_DIR.exists():
+            handoffs = sorted(
+                WORKLOGS_DIR.glob("*_handoff.md"),
+                key=lambda f: f.stat().st_mtime,
+                reverse=True
+            )[:1]
+
+            if handoffs:
+                try:
+                    content = handoffs[0].read_text(encoding="utf-8")
+                    # Extract summary section
+                    summary_match = re.search(r'## Summary\s+(.+?)(?=\n##|\Z)', content, re.DOTALL)
+                    if summary_match:
+                        summary["exists"] = True
+                        summary["summary"] = summary_match.group(1).strip()[:200]
+                        summary["file"] = handoffs[0].name
+                except Exception:
+                    pass
+
+        return summary
+
+    def display_context(self) -> str:
+        """
+        Display formatted session context.
+
+        Returns:
+            Formatted context string for display
+        """
+        ctx = self.generate_session_context()
+
+        lines = [
+            "=" * 60,
+            "  SESSION CONTEXT (Auto-Generated)",
+            "=" * 60,
+            ""
+        ]
+
+        # Last Session
+        last = ctx.get("last_session", {})
+        if last.get("exists"):
+            lines.extend([
+                "[LAST SESSION]",
+                f"  File: {last.get('file', 'Unknown')}",
+                f"  Summary: {last.get('summary', 'N/A')[:100]}...",
+                ""
+            ])
+
+        # Pending Todos
+        todos = ctx.get("pending_todos", [])
+        if todos:
+            lines.extend([
+                f"[PENDING TODOS] ({len(todos)} items)",
+            ])
+            for todo in todos[:5]:
+                lines.append(f"  - {todo}")
+            if len(todos) > 5:
+                lines.append(f"  ... and {len(todos) - 5} more")
+            lines.append("")
+
+        # Suggested Actions
+        suggestions = ctx.get("suggested_next", [])
+        if suggestions:
+            lines.extend([
+                "[SUGGESTED ACTIONS]",
+            ])
+            for s in suggestions:
+                lines.append(f"  > {s}")
+            lines.append("")
+
+        # Git Status
+        git = ctx.get("git_status", "")
+        if git and git != "No changes":
+            lines.extend([
+                "[GIT STATUS]",
+                f"  {git[:200]}",
+                ""
+            ])
+
+        lines.extend([
+            "=" * 60,
+            f"  Generated: {ctx.get('generated_at', 'Unknown')}",
+            "=" * 60,
+        ])
+
+        return "\n".join(lines)
+
+    # ========== END v3.0 Methods ==========
 
     def _save_state(self):
         """Save session state to file."""
@@ -565,27 +814,35 @@ def safe_print(text: str):
 
 def main():
     parser = argparse.ArgumentParser(
-        description="Session Automation System v2.0 (with Recovery)",
+        description="Session Automation System v3.0 (with Recovery + Context)",
         formatter_class=argparse.RawDescriptionHelpFormatter,
         epilog="""
 Examples:
   %(prog)s start                    Start new session
+  %(prog)s start --context          Start with full context display
   %(prog)s start --force            Force new session (discard orphaned)
   %(prog)s checkpoint -n "Done X"   Create checkpoint with notes
   %(prog)s end -s "Completed Y"     End session with summary
   %(prog)s recover                  Recover orphaned session
   %(prog)s status                   Show session status
+  %(prog)s context                  Show session context only (NEW v3.0)
 
 Recovery Scenarios:
   - Computer crash     -> Run 'recover' on restart
   - CMD window closed  -> Run 'recover' in new window
   - Claude terminated  -> Run 'recover' in next session
   - Context limit      -> Auto-detected on next 'start'
+
+Context Features (v3.0):
+  - Pending todos from worklogs and CURRENT.md
+  - Suggested next actions based on git status
+  - Recent errors from Obsidian knowledge base
+  - Last session summary for quick reference
         """
     )
     parser.add_argument(
         "action",
-        choices=["start", "checkpoint", "end", "status", "recover"],
+        choices=["start", "checkpoint", "end", "status", "recover", "context"],
         help="Session action"
     )
     parser.add_argument(
@@ -603,12 +860,22 @@ Recovery Scenarios:
         action="store_true",
         help="Force action (skip checks)"
     )
+    parser.add_argument(
+        "--context", "-c",
+        action="store_true",
+        help="Show context on start (v3.0)"
+    )
 
     args = parser.parse_args()
     manager = SessionManager()
 
     if args.action == "start":
-        safe_print(manager.start_session(force=args.force))
+        result = manager.start_session(force=args.force)
+        safe_print(result)
+        # Show context if requested or if this is a successful start
+        if args.context and "[OK]" in result:
+            safe_print("")
+            safe_print(manager.display_context())
     elif args.action == "checkpoint":
         safe_print(manager.checkpoint(args.notes))
     elif args.action == "end":
@@ -617,6 +884,8 @@ Recovery Scenarios:
         safe_print(manager.recover_session())
     elif args.action == "status":
         safe_print(manager.get_status())
+    elif args.action == "context":
+        safe_print(manager.display_context())
 
 
 if __name__ == "__main__":

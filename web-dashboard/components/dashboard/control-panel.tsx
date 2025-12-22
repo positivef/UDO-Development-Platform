@@ -1,6 +1,6 @@
 "use client"
 
-import { useState } from "react"
+import { useState, memo } from "react"
 import { motion } from "framer-motion"
 import { Play, Pause, RotateCcw, Settings, Send, Loader2 } from "lucide-react"
 import { toast } from "sonner"
@@ -11,7 +11,7 @@ interface ControlPanelProps {
   currentPhase: string
 }
 
-export function ControlPanel({ onExecute, currentPhase }: ControlPanelProps) {
+export const ControlPanel = memo(function ControlPanel({ onExecute, currentPhase }: ControlPanelProps) {
   const [task, setTask] = useState("")
   const [isExecuting, setIsExecuting] = useState(false)
   const [selectedMode, setSelectedMode] = useState<"auto" | "manual">("auto")
@@ -191,4 +191,4 @@ export function ControlPanel({ onExecute, currentPhase }: ControlPanelProps) {
       </div>
     </motion.div>
   )
-}
+})

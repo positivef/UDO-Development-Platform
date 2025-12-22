@@ -29,6 +29,9 @@ from backend.app.models.kanban_task import (
 )
 from backend.async_database import async_db
 
+# WebSocket support for real-time updates
+from backend.app.routers.kanban_websocket import kanban_manager
+
 router = APIRouter(prefix="/api/kanban/tasks", tags=["Kanban Tasks"])
 
 
@@ -41,7 +44,7 @@ def get_kanban_service():
     Dependency for KanbanTaskService with database pool.
     Falls back to MockKanbanTaskService when database is unavailable.
 
-    ⚠️ CRITICAL: Always provide mock fallback for services requiring database
+    [WARN] CRITICAL: Always provide mock fallback for services requiring database
     This allows E2E tests to run without PostgreSQL running
     See: docs/guides/ERROR_PREVENTION_GUIDE.md#service-fallback-pattern
 
@@ -102,9 +105,24 @@ async def create_task(
 
     **RBAC**: Requires `developer` role or higher.
     **Q2**: Supports AI-suggested tasks with confidence score.
+    **WebSocket**: Broadcasts task_created event to all connected clients.
     """
     try:
         task = await service.create_task(task_data)
+
+        # Broadcast task creation to WebSocket clients
+        # TODO(Q5): Use actual project_id when multi-project support is implemented
+        project_id = "default"
+        await kanban_manager.broadcast_to_project(
+            {
+                "type": "task_created",
+                "task": task.model_dump(),  # Convert Pydantic model to dict
+                "created_by": current_user.get("username", current_user.get("email")),
+                "timestamp": task.created_at.isoformat() if hasattr(task, 'created_at') else None
+            },
+            project_id
+        )
+
         return task
     except Exception as e:
         return error_response(
@@ -233,9 +251,26 @@ async def update_task(
 
     **RBAC**: Requires `developer` role or higher.
     **Note**: Auto-marks as completed if completeness reaches 100%.
+    **WebSocket**: Broadcasts task_updated event to all connected clients.
     """
     try:
         task = await service.update_task(task_id, task_update)
+
+        # Broadcast task update to WebSocket clients
+        # TODO(Q5): Use actual project_id when multi-project support is implemented
+        project_id = "default"
+        await kanban_manager.broadcast_to_project(
+            {
+                "type": "task_updated",
+                "task_id": str(task_id),
+                "updates": task_update.model_dump(exclude_unset=True),  # Only changed fields
+                "task": task.model_dump(),  # Full updated task
+                "updated_by": current_user.get("username", current_user.get("email")),
+                "timestamp": task.updated_at.isoformat() if hasattr(task, 'updated_at') else None
+            },
+            project_id
+        )
+
         return task
     except TaskNotFoundError:
         return error_response(
@@ -268,9 +303,25 @@ async def delete_task(
     Delete task (soft delete).
 
     **RBAC**: Requires `developer` role or higher.
+    **WebSocket**: Broadcasts task_deleted event to all connected clients.
     """
     try:
         await service.delete_task(task_id)
+
+        # Broadcast task deletion to WebSocket clients
+        # TODO(Q5): Use actual project_id when multi-project support is implemented
+        project_id = "default"
+        from datetime import datetime, UTC
+        await kanban_manager.broadcast_to_project(
+            {
+                "type": "task_deleted",
+                "task_id": str(task_id),
+                "deleted_by": current_user.get("username", current_user.get("email")),
+                "timestamp": datetime.now(UTC).isoformat()
+            },
+            project_id
+        )
+
         return None
     except TaskNotFoundError:
         return error_response(

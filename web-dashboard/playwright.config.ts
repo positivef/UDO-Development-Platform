@@ -39,7 +39,7 @@ export default defineConfig({
   webServer: {
     command: 'npm run dev',
     url: 'http://localhost:3000',
-    reuseExistingServer: !process.env.CI,
-    timeout: 120000,
+    reuseExistingServer: true, // Always reuse existing server to avoid timeout
+    timeout: 180000, // Increased to 3 minutes as backup
   },
 });

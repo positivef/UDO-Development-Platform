@@ -1,5 +1,6 @@
 "use client"
 
+import { memo } from "react"
 import { motion } from "framer-motion"
 import { TrendingUp, BarChart3 } from "lucide-react"
 import {
@@ -29,7 +30,7 @@ interface MetricsChartProps {
   } | null | undefined
 }
 
-export function MetricsChart({ metrics }: MetricsChartProps) {
+export const MetricsChart = memo(function MetricsChart({ metrics }: MetricsChartProps) {
   // Generate sample data for visualization
   const confidenceData = [
     { time: "00:00", confidence: 0.65, uncertainty: 0.35 },
@@ -129,4 +130,4 @@ export function MetricsChart({ metrics }: MetricsChartProps) {
       </div>
     </motion.div>
   )
-}
+})

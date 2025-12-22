@@ -56,6 +56,8 @@ interface TaskCreateModalProps {
   defaultStatus?: TaskStatus
   /** Available tasks for dependency selection */
   availableTasks?: KanbanTask[]
+  /** WebSocket broadcast function for real-time updates */
+  onBroadcastTaskCreated?: (task: KanbanTask) => void
 }
 
 interface FormData {
@@ -119,6 +121,7 @@ export function TaskCreateModal({
   defaultPhase,
   defaultStatus,
   availableTasks = [],
+  onBroadcastTaskCreated,
 }: TaskCreateModalProps) {
   const createTaskMutation = useCreateTask()
 
@@ -196,8 +199,13 @@ export function TaskCreateModal({
     }
 
     try {
-      await createTaskMutation.mutateAsync(taskData)
+      const createdTask = await createTaskMutation.mutateAsync(taskData)
       console.log('✅ Task created successfully')
+
+      // Broadcast to other users via WebSocket (Week 7)
+      if (onBroadcastTaskCreated) {
+        onBroadcastTaskCreated(createdTask)
+      }
 
       // Reset form and close
       setFormData({

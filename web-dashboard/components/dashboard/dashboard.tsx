@@ -1,6 +1,6 @@
 "use client"
 
-import { useState, useEffect, useMemo } from "react"
+import { useState, useEffect, useMemo, lazy, Suspense } from "react"
 import { useQuery } from "@tanstack/react-query"
 import { motion, AnimatePresence } from "framer-motion"
 import Link from "next/link"
@@ -13,30 +13,51 @@ import {
   TrendingUp,
   Zap,
   AlertCircle,
+  AlertTriangle,
   CheckCircle2,
   Clock,
   Loader2,
   BarChart3,
   Lightbulb,
   Palette,
-  HelpCircle
+  HelpCircle,
+  Home,
+  KanbanSquare,
+  Archive,
+  Gauge
 } from "lucide-react"
 import { useMutation, useQueryClient } from "@tanstack/react-query"
 import { SystemStatus } from "./system-status"
 import { PhaseProgress } from "./phase-progress"
-import { UncertaintyMap } from "./uncertainty-map"
-import { BayesianConfidence } from "./bayesian-confidence"
 import { AICollaboration } from "./ai-collaboration"
-import { ExecutionHistory } from "./execution-history"
-import { MetricsChart } from "./metrics-chart"
 import { ControlPanel } from "./control-panel"
+
+// Lazy load heavy chart components
+const UncertaintyMap = lazy(() => import("./uncertainty-map").then(m => ({ default: m.UncertaintyMap })))
+const BayesianConfidence = lazy(() => import("./bayesian-confidence").then(m => ({ default: m.BayesianConfidence })))
+const MetricsChart = lazy(() => import("./metrics-chart").then(m => ({ default: m.MetricsChart })))
+const ExecutionHistory = lazy(() => import("./execution-history").then(m => ({ default: m.ExecutionHistory })))
 import { TaskList } from "@/components/TaskList"
 import { ProjectSelector } from "./project-selector"
 import { QuickGuideModal } from "./quick-guide-modal"
+import { ErrorBoundary } from "@/components/ErrorBoundary"
 import { toast } from "sonner"
 import { cn } from "@/lib/utils"
 
 const API_URL = process.env.NEXT_PUBLIC_API_URL || "http://localhost:8000"
+
+// Skeleton loader component
+function ChartSkeleton() {
+  return (
+    <div className="bg-gray-800/50 backdrop-blur-lg rounded-xl p-6 border border-gray-700 animate-pulse">
+      <div className="h-6 bg-gray-700 rounded w-1/3 mb-4"></div>
+      <div className="space-y-3">
+        <div className="h-32 bg-gray-700 rounded"></div>
+        <div className="h-24 bg-gray-700 rounded"></div>
+      </div>
+    </div>
+  )
+}
 
 export function Dashboard() {
   const [selectedPhase, setSelectedPhase] = useState<string>("ideation")
@@ -309,38 +330,22 @@ export function Dashboard() {
               Intelligent Development Automation & Predictive Analytics
             </p>
           </div>
-          <div className="flex items-center gap-4">
-            <button
-              onClick={() => setShowQuickGuide(true)}
-              className="flex items-center gap-2 px-4 py-2 rounded-lg bg-gradient-to-r from-blue-500/20 to-purple-500/20 text-blue-400 hover:from-blue-500/30 hover:to-purple-500/30 transition-colors border border-blue-500/30"
-            >
-              <HelpCircle className="h-5 w-5" />
-              <span className="font-medium">Quick Guide</span>
-            </button>
-            <ProjectSelector />
-            <Link href="/gi-formula">
-              <button className="flex items-center gap-2 px-4 py-2 rounded-lg bg-blue-500/20 text-blue-400 hover:bg-blue-500/30 transition-colors">
-                <Lightbulb className="h-5 w-5" />
-                <span>GI Formula</span>
+          <div className="flex flex-col gap-4">
+            {/* Top Row: Quick Guide + Project Selector + Status */}
+            <div className="flex items-center justify-end gap-4">
+              <button
+                onClick={() => setShowQuickGuide(true)}
+                className="flex items-center gap-2 px-4 py-2 rounded-lg bg-gradient-to-r from-blue-500/20 to-purple-500/20 text-blue-400 hover:from-blue-500/30 hover:to-purple-500/30 transition-colors border border-blue-500/30"
+              >
+                <HelpCircle className="h-5 w-5" />
+                <span className="font-medium">Quick Guide</span>
               </button>
-            </Link>
-            <Link href="/ck-theory">
-              <button className="flex items-center gap-2 px-4 py-2 rounded-lg bg-purple-500/20 text-purple-400 hover:bg-purple-500/30 transition-colors">
-                <Palette className="h-5 w-5" />
-                <span>C-K Theory</span>
-              </button>
-            </Link>
-            <Link href="/quality">
-              <button className="flex items-center gap-2 px-4 py-2 rounded-lg bg-green-500/20 text-green-400 hover:bg-green-500/30 transition-colors">
-                <BarChart3 className="h-5 w-5" />
-                <span>Quality</span>
-              </button>
-            </Link>
-            <div className={cn(
-              "flex items-center gap-2 px-4 py-2 rounded-lg",
-              isConnected ? "bg-green-500/20 text-green-400" : "bg-red-500/20 text-red-400"
-            )}>
-              {isConnected ? (
+              <ProjectSelector />
+              <div className={cn(
+                "flex items-center gap-2 px-4 py-2 rounded-lg",
+                isConnected ? "bg-green-500/20 text-green-400" : "bg-red-500/20 text-red-400"
+              )}>
+                {isConnected ? (
                 <>
                   <CheckCircle2 className="h-5 w-5" />
                   <span>Connected</span>
@@ -351,6 +356,71 @@ export function Dashboard() {
                   <span>Disconnected</span>
                 </>
               )}
+            </div>
+            </div>
+
+            {/* Navigation Menu Grid */}
+            <div className="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-5 gap-3 mt-4">
+              <Link href="/">
+                <button className="flex items-center gap-2 px-4 py-3 rounded-lg bg-gray-700/30 text-gray-300 hover:bg-gray-700/50 transition-colors w-full justify-center">
+                  <Home className="h-5 w-5" />
+                  <span>Dashboard</span>
+                </button>
+              </Link>
+              <Link href="/kanban">
+                <button className="flex items-center gap-2 px-4 py-3 rounded-lg bg-blue-500/20 text-blue-400 hover:bg-blue-500/30 transition-colors w-full justify-center">
+                  <KanbanSquare className="h-5 w-5" />
+                  <span>Kanban</span>
+                </button>
+              </Link>
+              <Link href="/archive">
+                <button className="flex items-center gap-2 px-4 py-3 rounded-lg bg-gray-700/30 text-gray-300 hover:bg-gray-700/50 transition-colors w-full justify-center">
+                  <Archive className="h-5 w-5" />
+                  <span>Archive</span>
+                </button>
+              </Link>
+              <Link href="/roi-dashboard">
+                <button className="flex items-center gap-2 px-4 py-3 rounded-lg bg-green-500/20 text-green-400 hover:bg-green-500/30 transition-colors w-full justify-center">
+                  <TrendingUp className="h-5 w-5" />
+                  <span>ROI</span>
+                </button>
+              </Link>
+              <Link href="/uncertainty">
+                <button className="flex items-center gap-2 px-4 py-3 rounded-lg bg-orange-500/20 text-orange-400 hover:bg-orange-500/30 transition-colors w-full justify-center">
+                  <AlertTriangle className="h-5 w-5" />
+                  <span>Uncertainty</span>
+                </button>
+              </Link>
+              <Link href="/confidence">
+                <button className="flex items-center gap-2 px-4 py-3 rounded-lg bg-purple-500/20 text-purple-400 hover:bg-purple-500/30 transition-colors w-full justify-center">
+                  <Gauge className="h-5 w-5" />
+                  <span>Confidence</span>
+                </button>
+              </Link>
+              <Link href="/quality">
+                <button className="flex items-center gap-2 px-4 py-3 rounded-lg bg-green-500/20 text-green-400 hover:bg-green-500/30 transition-colors w-full justify-center">
+                  <BarChart3 className="h-5 w-5" />
+                  <span>Quality</span>
+                </button>
+              </Link>
+              <Link href="/time-tracking">
+                <button className="flex items-center gap-2 px-4 py-3 rounded-lg bg-cyan-500/20 text-cyan-400 hover:bg-cyan-500/30 transition-colors w-full justify-center">
+                  <Clock className="h-5 w-5" />
+                  <span>Time</span>
+                </button>
+              </Link>
+              <Link href="/gi-formula">
+                <button className="flex items-center gap-2 px-4 py-3 rounded-lg bg-yellow-500/20 text-yellow-400 hover:bg-yellow-500/30 transition-colors w-full justify-center">
+                  <Lightbulb className="h-5 w-5" />
+                  <span>GI Formula</span>
+                </button>
+              </Link>
+              <Link href="/ck-theory">
+                <button className="flex items-center gap-2 px-4 py-3 rounded-lg bg-pink-500/20 text-pink-400 hover:bg-pink-500/30 transition-colors w-full justify-center">
+                  <Palette className="h-5 w-5" />
+                  <span>C-K Theory</span>
+                </button>
+              </Link>
             </div>
           </div>
         </div>
@@ -369,48 +439,60 @@ export function Dashboard() {
 
         {/* Middle Column */}
         <div className="space-y-6">
-          <UncertaintyMap
-            state={mergedUncertaintyState}
-            confidence={mergedConfidence}
-            prediction={mergedPrediction}
-            mitigations={mergedMitigations}
-            isLoading={uncertaintyLoading}
-            isAcking={ackMutation.isPending}
-            onAcknowledge={async (mitigation) => {
-              await ackMutation.mutateAsync({
-                id: mitigation.id,
-                dimension: dominantDimension
-              })
-            }}
-            vector={uncertainty?.vector}
-          />
-          {bayesianData && (
-            <BayesianConfidence
-              decision={bayesianData.decision}
-              confidence_score={bayesianData.confidence_score}
-              state={bayesianData.state}
-              risk_level={bayesianData.metadata?.risk_level || "medium"}
-              monitoring_level={bayesianData.metadata?.monitoring_level || "standard"}
-              dominant_dimension={bayesianData.metadata?.dominant_dimension}
-              recommendations={
-                bayesianData.recommendations?.map((rec: string, idx: number) => ({
-                  action: rec,
-                  priority: idx === 0 ? "high" : idx === 1 ? "medium" : "low",
-                  reason: "Based on Bayesian inference and historical data"
-                })) || []
-              }
-              bayesian_details={{
-                prior: bayesianData.metadata?.prior_mean || 0.5,
-                posterior: bayesianData.metadata?.posterior_mean || bayesianData.confidence_score,
-                likelihood: bayesianData.metadata?.likelihood || 1.0,
-                credible_interval_lower: bayesianData.metadata?.credible_interval_lower || 0.5,
-                credible_interval_upper: bayesianData.metadata?.credible_interval_upper || 0.9,
-                confidence_width: bayesianData.metadata?.uncertainty_magnitude || 0.2
+          <ErrorBoundary>
+            <Suspense fallback={<ChartSkeleton />}>
+              <UncertaintyMap
+              state={mergedUncertaintyState}
+              confidence={mergedConfidence}
+              prediction={mergedPrediction}
+              mitigations={mergedMitigations}
+              isLoading={uncertaintyLoading}
+              isAcking={ackMutation.isPending}
+              onAcknowledge={async (mitigation) => {
+                await ackMutation.mutateAsync({
+                  id: mitigation.id,
+                  dimension: dominantDimension
+                })
               }}
-              isLoading={bayesianLoading}
+              vector={uncertainty?.vector}
             />
+            </Suspense>
+          </ErrorBoundary>
+          {bayesianData && (
+            <ErrorBoundary>
+              <Suspense fallback={<ChartSkeleton />}>
+              <BayesianConfidence
+                decision={bayesianData.decision}
+                confidence_score={bayesianData.confidence_score}
+                state={bayesianData.state}
+                risk_level={bayesianData.metadata?.risk_level || "medium"}
+                monitoring_level={bayesianData.metadata?.monitoring_level || "standard"}
+                dominant_dimension={bayesianData.metadata?.dominant_dimension}
+                recommendations={
+                  bayesianData.recommendations?.map((rec: string, idx: number) => ({
+                    action: rec,
+                    priority: idx === 0 ? "high" : idx === 1 ? "medium" : "low",
+                    reason: "Based on Bayesian inference and historical data"
+                  })) || []
+                }
+                bayesian_details={{
+                  prior: bayesianData.metadata?.prior_mean || 0.5,
+                  posterior: bayesianData.metadata?.posterior_mean || bayesianData.confidence_score,
+                  likelihood: bayesianData.metadata?.likelihood || 1.0,
+                  credible_interval_lower: bayesianData.metadata?.credible_interval_lower || 0.5,
+                  credible_interval_upper: bayesianData.metadata?.credible_interval_upper || 0.9,
+                  confidence_width: bayesianData.metadata?.uncertainty_magnitude || 0.2
+                }}
+                isLoading={bayesianLoading}
+              />
+            </Suspense>
+            </ErrorBoundary>
           )}
-          <MetricsChart metrics={metrics} />
+          <ErrorBoundary>
+            <Suspense fallback={<ChartSkeleton />}>
+            <MetricsChart metrics={metrics} />
+            </Suspense>
+          </ErrorBoundary>
         </div>
 
         {/* Right Column */}
@@ -421,10 +503,14 @@ export function Dashboard() {
       </div>
 
       {/* Bottom Section */}
-      <ExecutionHistory
-        executions={metrics?.recent_tasks || []}
-        performanceMetrics={metrics?.performance_metrics || {}}
-      />
+      <ErrorBoundary>
+        <Suspense fallback={<ChartSkeleton />}>
+          <ExecutionHistory
+            executions={metrics?.recent_tasks || []}
+            performanceMetrics={metrics?.performance_metrics || {}}
+          />
+        </Suspense>
+      </ErrorBoundary>
 
       {/* Task Management Section */}
       <motion.div
