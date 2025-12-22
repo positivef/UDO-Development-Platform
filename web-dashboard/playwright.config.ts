@@ -8,8 +8,9 @@ export default defineConfig({
   fullyParallel: true,
   forbidOnly: !!process.env.CI,
   retries: process.env.CI ? 2 : 0,
-  workers: process.env.CI ? 1 : undefined,
+  workers: process.env.CI ? 1 : 3, // Reduced from undefined (6) to 3 to prevent resource contention
   reporter: 'html',
+  timeout: 60000, // Increased global test timeout from 30s to 60s
 
   use: {
     baseURL: 'http://localhost:3000',

@@ -347,8 +347,8 @@ test.describe('Kanban Board - Q4 Context Briefing Double-Click', () => {
       await taskCard.dblclick();
       await page.waitForTimeout(500);
 
-      // Check for Context Briefing dialog
-      const dialogTitle = page.locator('text=Context Briefing');
+      // Check for Context Briefing dialog (use role selector to avoid strict mode violation)
+      const dialogTitle = page.getByRole('heading', { name: 'Context Briefing' });
       await expect(dialogTitle).toBeVisible({ timeout: 5000 });
 
       console.log('✅ Context Briefing dialog opened on double-click');
