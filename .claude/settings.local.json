@@ -126,7 +126,17 @@
       "Bash(npx next build:*)",
       "Bash(.venvScriptspython.exe -m pytest backend/tests/ -v --tb=short)",
       "Skill(vibeselector)",
-      "Bash(git clean:*)"
+      "Bash(git clean:*)",
+      "Bash(git merge:*)",
+      "Bash(timeout:*)",
+      "Bash(C:/Users/user/Documents/GitHub/UDO-Development-Platform/.venv/Scripts/python.exe -m pytest:*)",
+      "Bash(set DISABLE_AUTH_IN_DEV=true)",
+      "Bash(grep:*)",
+      "Bash(start playwright-report/index.html)",
+      "Bash(Select-Object -Last 50)",
+      "Skill(sc:workflow)",
+      "Skill(sc:implement)",
+      "Bash(npx playwright install firefox webkit)"
     ],
     "deny": [],
     "ask": []

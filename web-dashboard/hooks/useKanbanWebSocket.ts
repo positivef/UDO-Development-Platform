@@ -43,7 +43,9 @@ export function useKanbanWebSocket({
     try {
       const protocol = window.location.protocol === 'https:' ? 'wss:' : 'ws:';
       const defaultProjectId = projectId || 'default';
-      const wsUrl = `${protocol}//${window.location.hostname}:8081/ws/kanban/projects/${defaultProjectId}`;
+      // Use environment variable or default to 8000 (backend API port)
+      const wsPort = process.env.NEXT_PUBLIC_WS_PORT || '8000';
+      const wsUrl = `${protocol}//${window.location.hostname}:${wsPort}/ws/kanban/projects/${defaultProjectId}`;
 
       const ws = new WebSocket(wsUrl);
       wsRef.current = ws;
@@ -58,26 +60,57 @@ export function useKanbanWebSocket({
 
       ws.onmessage = (event) => {
         try {
-          const message: WebSocketMessage = JSON.parse(event.data);
+          const message = JSON.parse(event.data);
+
+          // Handle connection/heartbeat messages
+          if (message.type === 'connection_established' || message.type === 'pong') {
+            return;
+          }
+
+          // Backend message format:
+          // - task_created: { type, task, created_by, timestamp }
+          // - task_updated: { type, task_id, updates, updated_by, timestamp }
+          // - task_moved: { type, task_id, old_status, new_status, moved_by, timestamp }
+          // - task_deleted: { type, task_id, deleted_by, timestamp }
+          // - task_archived: { type, task_id, archived_by, timestamp }
 
           switch (message.type) {
             case 'task_created':
               if (onTaskCreated) {
-                onTaskCreated(message.data);
+                onTaskCreated(message.task);
               }
               toast({
                 title: 'New Task Created',
-                description: `${message.user || 'Someone'} created a task`,
+                description: `Task created by another user`,
               });
               break;
 
             case 'task_updated':
               if (onTaskUpdated) {
-                onTaskUpdated(message.data);
+                onTaskUpdated({
+                  task_id: message.task_id,
+                  updates: message.updates
+                });
               }
               toast({
                 title: 'Task Updated',
-                description: `${message.user || 'Someone'} updated a task`,
+                description: `Task updated by another user`,
+              });
+              break;
+
+            case 'task_moved':
+              if (onTaskUpdated) {
+                onTaskUpdated({
+                  task_id: message.task_id,
+                  updates: {
+                    status: message.new_status,
+                    old_status: message.old_status
+                  }
+                });
+              }
+              toast({
+                title: 'Task Moved',
+                description: `Task moved from ${message.old_status} to ${message.new_status}`,
               });
               break;
 
@@ -87,29 +120,31 @@ export function useKanbanWebSocket({
               }
               toast({
                 title: 'Task Deleted',
-                description: `${message.user || 'Someone'} deleted a task`,
+                description: `Task deleted by another user`,
                 variant: 'destructive',
               });
               break;
 
             case 'task_archived':
               if (onTaskArchived) {
-                onTaskArchived(message.data);
+                onTaskArchived({ task_id: message.task_id });
               }
               toast({
                 title: 'Task Archived',
-                description: `${message.user || 'Someone'} archived a task`,
+                description: `Task archived by another user`,
               });
               break;
 
-            case 'dependency_changed':
-              if (onDependencyChanged) {
-                onDependencyChanged(message.data);
-              }
+            case 'client_joined':
+              console.log(`[KanbanWS] Client joined:`, message.client_id);
               toast({
-                title: 'Dependencies Changed',
-                description: `${message.user || 'Someone'} modified task dependencies`,
+                title: 'User Joined',
+                description: `Active users: ${message.active_clients}`,
               });
+              break;
+
+            case 'client_left':
+              console.log(`[KanbanWS] Client left:`, message.client_id);
               break;
 
             default:
@@ -168,16 +203,17 @@ export function useKanbanWebSocket({
     if (wsRef.current && wsRef.current.readyState === WebSocket.OPEN) {
       wsRef.current.send(JSON.stringify({
         type: 'task_created',
-        data: taskData,
+        task: taskData,
       }));
     }
   }, []);
 
-  const broadcastTaskUpdated = useCallback((taskData: any) => {
+  const broadcastTaskUpdated = useCallback((taskId: string, updates: any) => {
     if (wsRef.current && wsRef.current.readyState === WebSocket.OPEN) {
       wsRef.current.send(JSON.stringify({
         type: 'task_updated',
-        data: taskData,
+        task_id: taskId,
+        updates: updates,
       }));
     }
   }, []);
@@ -191,11 +227,11 @@ export function useKanbanWebSocket({
     }
   }, []);
 
-  const broadcastTaskArchived = useCallback((taskData: any) => {
+  const broadcastTaskArchived = useCallback((taskId: string) => {
     if (wsRef.current && wsRef.current.readyState === WebSocket.OPEN) {
       wsRef.current.send(JSON.stringify({
         type: 'task_archived',
-        data: taskData,
+        task_id: taskId,
       }));
     }
   }, []);
@@ -205,7 +241,8 @@ export function useKanbanWebSocket({
       wsRef.current.send(JSON.stringify({
         type: 'task_moved',
         task_id: taskId,
-        data: { oldStatus, newStatus },
+        old_status: oldStatus,
+        new_status: newStatus,
       }));
     }
   }, []);

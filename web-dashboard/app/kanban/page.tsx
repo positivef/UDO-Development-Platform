@@ -70,6 +70,26 @@ export default function KanbanPage() {
         setActiveClients(message.active_clients)
       }
     },
+    onTaskCreated: (task) => {
+      console.log('[KanbanPage] Task created by another user:', task)
+      // Refetch to get the latest data
+      refetch()
+    },
+    onTaskUpdated: ({ task_id, updates }) => {
+      console.log('[KanbanPage] Task updated by another user:', task_id, updates)
+      // Refetch to get the latest data
+      refetch()
+    },
+    onTaskDeleted: (task_id) => {
+      console.log('[KanbanPage] Task deleted by another user:', task_id)
+      // Refetch to get the latest data
+      refetch()
+    },
+    onTaskArchived: ({ task_id }) => {
+      console.log('[KanbanPage] Task archived by another user:', task_id)
+      // Refetch to get the latest data
+      refetch()
+    },
   })
 
   // Ensure tasks is always an array (fix undefined error)
@@ -192,11 +212,46 @@ export default function KanbanPage() {
     <div className="flex flex-col h-full">
       {/* Header */}
       <div className="flex items-center justify-between mb-6">
-        <div>
-          <h1 className="text-3xl font-bold">Kanban Board</h1>
-          <p className="text-muted-foreground">
-            Manage tasks across UDO v2 development phases
-          </p>
+        <div className="flex items-center gap-4">
+          <div>
+            <h1 className="text-3xl font-bold">Kanban Board</h1>
+            <p className="text-muted-foreground">
+              Manage tasks across UDO v2 development phases
+            </p>
+          </div>
+
+          {/* WebSocket Connection Status */}
+          <div className="flex items-center gap-2 px-3 py-1 rounded-lg bg-muted">
+            {wsStatus === 'connected' && (
+              <>
+                <Radio className="h-4 w-4 text-green-500 animate-pulse" />
+                <span className="text-sm font-medium">Live</span>
+                {activeClients > 1 && (
+                  <Badge variant="outline" className="text-xs">
+                    {activeClients} users
+                  </Badge>
+                )}
+              </>
+            )}
+            {wsStatus === 'connecting' && (
+              <>
+                <Wifi className="h-4 w-4 text-yellow-500 animate-spin" />
+                <span className="text-sm text-muted-foreground">Connecting...</span>
+              </>
+            )}
+            {wsStatus === 'disconnected' && (
+              <>
+                <WifiOff className="h-4 w-4 text-muted-foreground" />
+                <span className="text-sm text-muted-foreground">Offline</span>
+              </>
+            )}
+            {wsStatus === 'error' && (
+              <>
+                <AlertCircle className="h-4 w-4 text-red-500" />
+                <span className="text-sm text-red-500">Error</span>
+              </>
+            )}
+          </div>
         </div>
 
         {/* Actions */}
