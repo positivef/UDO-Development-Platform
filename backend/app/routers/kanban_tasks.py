@@ -51,15 +51,18 @@ def get_kanban_service():
     Returns:
         KanbanTaskService or MockKanbanTaskService: Service instance
     """
-    import logging
+    import logging, sys
     logger = logging.getLogger(__name__)
-
+    # Identity logs for debugging
+    logger.debug(f"[IDENTITY] async_database module id: {id(sys.modules.get('backend.async_database'))}")
+    logger.debug(f"[IDENTITY] async_db object id: {id(async_db)}")
+    logger.debug(f"[IDENTITY] async_db._initialized: {async_db._initialized}")
     try:
         db_pool = async_db.get_pool()
+        logger.debug(f"[DEBUG] Database pool obtained: {db_pool}")
         return KanbanTaskService(db_pool=db_pool)
     except RuntimeError as e:
-        # Database not initialized - use mock service for E2E testing
-        logger.warning(f"[KANBAN] Database not available, using MockKanbanTaskService: {e}")
+        logger.exception("[KANBAN] Database not available, using MockKanbanTaskService")
         return MockKanbanTaskService()
 
 
@@ -157,7 +160,7 @@ async def list_tasks(
     sort_by: str = Query("created_at", description="Sort field"),
     sort_desc: bool = Query(True, description="Sort descending"),
 
-    service: KanbanTaskService = Depends(get_kanban_service),
+    service: KanbanTaskService = Depends(get_kanban_service, use_cache=False),
     current_user: dict = Depends(get_current_user)
 ):
     """
@@ -196,6 +199,22 @@ async def list_tasks(
             message=f"Failed to list tasks: {str(e)}",
             status_code=status.HTTP_500_INTERNAL_SERVER_ERROR
         )
+
+@router.get(
+    "/debug",
+    response_model=dict,
+    summary="Debug Kanban service",
+)
+async def debug_service(
+    service: KanbanTaskService = Depends(get_kanban_service, use_cache=False),
+    current_user: dict = Depends(get_current_user)
+):
+    return {
+        "service_type": type(service).__name__,
+        "is_mock": isinstance(service, MockKanbanTaskService),
+        "async_db_initialized": async_db._initialized,
+        "async_db_pool": str(async_db._pool) if async_db._initialized else None,
+    }
 
 
 @router.get(

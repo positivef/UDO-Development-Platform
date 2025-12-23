@@ -225,7 +225,7 @@ except ImportError as e:
 
 # Import async database and project context service
 try:
-    from async_database import async_db, initialize_async_database, close_async_database
+    from backend.async_database import async_db, initialize_async_database, close_async_database
     from app.services.project_context_service import init_project_context_service, enable_mock_service
     ASYNC_DB_AVAILABLE = True
 except ImportError as e:
