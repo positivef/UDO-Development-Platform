@@ -38,9 +38,35 @@ export function useKanbanWebSocket({
   const wsRef = useRef<WebSocket | null>(null);
   const reconnectTimeoutRef = useRef<NodeJS.Timeout | null>(null);
   const reconnectAttempts = useRef(0);
+  const isConnectingRef = useRef(false);
+
+  // Store callbacks in refs to prevent connect from being recreated
+  const onStatusChangeRef = useRef(onStatusChange);
+  const onTaskCreatedRef = useRef(onTaskCreated);
+  const onTaskUpdatedRef = useRef(onTaskUpdated);
+  const onTaskDeletedRef = useRef(onTaskDeleted);
+  const onTaskArchivedRef = useRef(onTaskArchived);
+  const onDependencyChangedRef = useRef(onDependencyChanged);
+
+  // Update refs when callbacks change
+  useEffect(() => {
+    onStatusChangeRef.current = onStatusChange;
+    onTaskCreatedRef.current = onTaskCreated;
+    onTaskUpdatedRef.current = onTaskUpdated;
+    onTaskDeletedRef.current = onTaskDeleted;
+    onTaskArchivedRef.current = onTaskArchived;
+    onDependencyChangedRef.current = onDependencyChanged;
+  }, [onStatusChange, onTaskCreated, onTaskUpdated, onTaskDeleted, onTaskArchived, onDependencyChanged]);
 
   const connect = useCallback(() => {
+    // Prevent duplicate connections
+    if (isConnectingRef.current || wsRef.current?.readyState === WebSocket.OPEN) {
+      console.log('[KanbanWS] Already connected or connecting, skipping...');
+      return;
+    }
+
     try {
+      isConnectingRef.current = true;
       const protocol = window.location.protocol === 'https:' ? 'wss:' : 'ws:';
       const defaultProjectId = projectId || 'default';
       // Use environment variable or default to 8000 (backend API port)
@@ -53,8 +79,9 @@ export function useKanbanWebSocket({
       ws.onopen = () => {
         console.log('[KanbanWS] Connected');
         reconnectAttempts.current = 0;
-        if (onStatusChange) {
-          onStatusChange('connected');
+        isConnectingRef.current = false;
+        if (onStatusChangeRef.current) {
+          onStatusChangeRef.current('connected');
         }
       };
 
@@ -76,8 +103,8 @@ export function useKanbanWebSocket({
 
           switch (message.type) {
             case 'task_created':
-              if (onTaskCreated) {
-                onTaskCreated(message.task);
+              if (onTaskCreatedRef.current) {
+                onTaskCreatedRef.current(message.task);
               }
               toast({
                 title: 'New Task Created',
@@ -86,8 +113,8 @@ export function useKanbanWebSocket({
               break;
 
             case 'task_updated':
-              if (onTaskUpdated) {
-                onTaskUpdated({
+              if (onTaskUpdatedRef.current) {
+                onTaskUpdatedRef.current({
                   task_id: message.task_id,
                   updates: message.updates
                 });
@@ -99,8 +126,8 @@ export function useKanbanWebSocket({
               break;
 
             case 'task_moved':
-              if (onTaskUpdated) {
-                onTaskUpdated({
+              if (onTaskUpdatedRef.current) {
+                onTaskUpdatedRef.current({
                   task_id: message.task_id,
                   updates: {
                     status: message.new_status,
@@ -115,8 +142,8 @@ export function useKanbanWebSocket({
               break;
 
             case 'task_deleted':
-              if (onTaskDeleted) {
-                onTaskDeleted(message.task_id);
+              if (onTaskDeletedRef.current) {
+                onTaskDeletedRef.current(message.task_id);
               }
               toast({
                 title: 'Task Deleted',
@@ -126,8 +153,8 @@ export function useKanbanWebSocket({
               break;
 
             case 'task_archived':
-              if (onTaskArchived) {
-                onTaskArchived({ task_id: message.task_id });
+              if (onTaskArchivedRef.current) {
+                onTaskArchivedRef.current({ task_id: message.task_id });
               }
               toast({
                 title: 'Task Archived',
@@ -157,15 +184,23 @@ export function useKanbanWebSocket({
 
       ws.onerror = (error) => {
         console.error('[KanbanWS] Error:', error);
-        if (onStatusChange) {
-          onStatusChange('error');
+        isConnectingRef.current = false;
+        if (onStatusChangeRef.current) {
+          onStatusChangeRef.current('error');
         }
       };
 
       ws.onclose = () => {
         console.log('[KanbanWS] Disconnected');
-        if (onStatusChange) {
-          onStatusChange('disconnected');
+        isConnectingRef.current = false;
+        if (onStatusChangeRef.current) {
+          onStatusChangeRef.current('disconnected');
+        }
+
+        // Only reconnect if enabled
+        if (!enabled) {
+          console.log('[KanbanWS] Reconnection disabled');
+          return;
         }
 
         // Exponential backoff reconnection
@@ -174,8 +209,8 @@ export function useKanbanWebSocket({
 
         if (reconnectAttempts.current <= 10) {
           console.log(`[KanbanWS] Reconnecting in ${delay}ms (attempt ${reconnectAttempts.current})`);
-          if (onStatusChange) {
-            onStatusChange('connecting');
+          if (onStatusChangeRef.current) {
+            onStatusChangeRef.current('connecting');
           }
           reconnectTimeoutRef.current = setTimeout(connect, delay);
         }
@@ -183,10 +218,16 @@ export function useKanbanWebSocket({
 
     } catch (error) {
       console.error('[KanbanWS] Failed to connect:', error);
+      isConnectingRef.current = false;
     }
-  }, [onStatusChange, onTaskCreated, onTaskUpdated, onTaskDeleted, onTaskArchived, onDependencyChanged, toast]);
+  }, [projectId, enabled, toast]);
 
   useEffect(() => {
+    if (!enabled) {
+      console.log('[KanbanWS] WebSocket disabled');
+      return;
+    }
+
     connect();
 
     return () => {
@@ -196,8 +237,9 @@ export function useKanbanWebSocket({
       if (wsRef.current) {
         wsRef.current.close();
       }
+      isConnectingRef.current = false;
     };
-  }, [connect]);
+  }, [projectId, enabled, connect]);
 
   const broadcastTaskCreated = useCallback((taskData: any) => {
     if (wsRef.current && wsRef.current.readyState === WebSocket.OPEN) {

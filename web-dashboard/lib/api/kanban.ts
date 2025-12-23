@@ -97,7 +97,63 @@ export async function fetchTasks(
   }
 
   const query = queryParams.toString()
-  return apiFetch<FetchTasksResponse>(query ? `/tasks?${query}` : '/tasks')
+
+  // Backend returns { data: [], pagination: {} }
+  // Transform to frontend format: { tasks: [], total: 0, skip: 0, limit: 0 }
+  interface BackendTask {
+    task_id: string
+    title: string
+    description: string
+    phase_name: string
+    status: string
+    priority: string
+    completeness: number
+    estimated_hours: number
+    actual_hours: number
+    created_at: string
+    updated_at: string
+    completed_at: string | null
+    archived_at: string | null
+    ai_suggested: boolean
+    ai_confidence: number | null
+    [key: string]: any
+  }
+
+  const backendResponse = await apiFetch<{
+    data: BackendTask[]
+    pagination: {
+      total: number
+      page: number
+      per_page: number
+      total_pages: number
+      has_next: boolean
+      has_prev: boolean
+    }
+  }>(query ? `/tasks?${query}` : '/tasks')
+
+  // Transform backend tasks to frontend format
+  const transformedTasks: KanbanTask[] = backendResponse.data.map(task => ({
+    id: task.task_id,
+    title: task.title,
+    description: task.description,
+    phase: task.phase_name as Phase,
+    status: task.status as TaskStatus,
+    priority: task.priority as Priority,
+    tags: [], // TODO: Get tags from backend
+    created_at: task.created_at,
+    updated_at: task.updated_at,
+    estimated_hours: task.estimated_hours,
+    actual_hours: task.actual_hours,
+    ai_suggested: task.ai_suggested,
+    ai_confidence: task.ai_confidence || undefined,
+  }))
+
+  return {
+    tasks: transformedTasks,
+    total: backendResponse.pagination.total,
+    skip: (backendResponse.pagination.page - 1) * backendResponse.pagination.per_page,
+    limit: backendResponse.pagination.per_page,
+  }
 }
 
 /**
@@ -192,7 +248,7 @@ export async function updateTaskStatus(
 ): Promise<KanbanTask> {
   return apiFetch<KanbanTask>(`/tasks/${id}/status`, {
     method: 'PUT',
-    body: JSON.stringify({ status }),
+    body: JSON.stringify({ new_status: status }),
   })
 }
 

@@ -2,33 +2,43 @@
 
 This file provides guidance to Claude Code (claude.ai/code) when working with code in this repository.
 
-## 🎯 Current Development Roadmap (2025-12-06)
+## 🎯 Current Development Roadmap (2025-12-23)
 
 > **하이브리드 접근**: 영역별 성숙도에 맞춘 목표 설정
 
 ### 📌 Claude Code 핵심 요약
 
 ```yaml
-현재 상태 (2025-12-17 기준):
+현재 상태 (2025-12-23 기준):
   Backend: 100% ✅ → 496/496 tests passing
   Frontend: 60% ✅ → Kanban UI + E2E tests passing
   CI/CD: 100% ✅ → GitHub Actions workflows deployed
   Feature Flags: 100% ✅ → Tier 1 rollback ready (<10s)
-  Database: 100% ✅ → Kanban schema (7 tables) migrated
+  Database: 100% ✅ → Kanban schema (7 tables) migrated + Service DI fixed
 
-완료 상황 (Week 6 Day 1):
-  ✅ Week 5 MVP: Uncertainty UI + Confidence Dashboard E2E testing
-  ✅ Week 6 Database: PostgreSQL + Kanban schema migration
-  ✅ Kanban Backend: 155/155 tests passing (100%)
-  ✅ Q1-Q8 결정사항 모두 DB 반영 완료
+완료 상황 (Week 7 완료, 2025-12-23):
+  ✅ Week 7: Error Prevention + Performance + P0 Fixes + E2E Recovery
+  ✅ Kanban Service DI 문제 해결 (Mock → Real DB)
+  ✅ Security Hardening: CRIT/HIGH/MED-01~05 해결
+  ✅ E2E Tests: 18/18 통과 (100%)
 
-다음 단계 (Week 6 Day 2-5):
-  1. Frontend: Dependency Graph UI (D3.js force-directed)
-  2. Frontend: Context Upload UI 완성 (현재 placeholder)
-  3. Frontend: AI Task Suggestion Modal
-  4. Frontend: Archive View + ROI Dashboard
-  5. Integration: E2E Tests for new features
+다음 단계 (Week 8):
+  1. E2E Tests CI/CD 통합 (.github/workflows/e2e-tests.yml)
+  2. Firefox/Webkit 브라우저 테스트
+  3. Production 배포 준비
 ```
+
+### 📚 세션 문서 (AI Generated - claudedocs/)
+
+> **⚠️ 중요**: AI 세션 간 컨텍스트는 아래 파일을 참조하세요.
+
+| 문서 | 설명 |
+|------|------|
+| **`claudedocs/HANDOFF.md`** | 세션 간 인계 문서 (단일 진입점) ⭐ |
+
+HANDOFF.md에서 최신 작업 로그, 완료 문서, 분석 문서 등을 확인할 수 있습니다.
+
+
 
 ### 📚 문서 계층 (Document Hierarchy)
 
