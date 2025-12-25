@@ -1,0 +1,420 @@
+# UDO Development Platform - 4-Tier Governance Rules System
+# Version: 2.0
+# Description: 1인 개발자 멀티프로젝트 관리를 위한 계층화된 규칙 시스템
+#
+# Tier 선택 가이드:
+# - Tier 1 (실험/학습): POC, 해커톤, 튜토리얼, 기술 스터디 (수명 1일~2주)
+# - Tier 2 (사이드): 개인 툴, 블로그, 포트폴리오 (수명 수개월~수년)
+# - Tier 3 (상용 MVP): SaaS MVP, 수익 창출 앱 (장기)
+# - Tier 4 (엔터프라이즈): 대규모 사용자, B2B (장기 + 팀 성장)
+
+version: "2.0"
+last_updated: "2024-12-24"
+
+# =============================================================================
+# TIER DEFINITIONS
+# =============================================================================
+
+tiers:
+  # ---------------------------------------------------------------------------
+  # Tier 0: 핵심 규칙 (모든 프로젝트 필수)
+  # ---------------------------------------------------------------------------
+  tier-0:
+    name: "핵심 규칙"
+    description: "모든 프로젝트에 반드시 적용되는 기본 규칙"
+    mandatory: true
+    rules:
+      - id: git-version-control
+        name: "Git 버전 관리"
+        description: "모든 코드는 Git으로 버전 관리"
+        validation:
+          check: ".git 디렉토리 존재"
+          severity: error
+
+      - id: readme-required
+        name: "README.md 필수"
+        description: "프로젝트 설명, 실행 방법 포함"
+        validation:
+          check: "README.md 파일 존재 및 최소 내용"
+          severity: error
+        template: |
+          # {project_name}
+          
+          ## 설명
+          {description}
+          
+          ## 실행 방법
+          ```bash
+          # 설치
+          {install_command}
+          
+          # 실행
+          {run_command}
+          ```
+          
+          ## 환경 변수
+          `.env.example` 참조
+
+      - id: gitignore-standard
+        name: ".gitignore 표준"
+        description: "민감 정보 및 불필요 파일 제외"
+        validation:
+          check: ".gitignore 파일 존재"
+          severity: error
+        required_patterns:
+          - ".env"
+          - ".env.local"
+          - ".env.*.local"
+          - "node_modules/"
+          - "__pycache__/"
+          - "*.pyc"
+          - ".venv/"
+          - "venv/"
+          - ".DS_Store"
+          - "*.log"
+          - "dist/"
+          - "build/"
+          - ".next/"
+
+      - id: env-secrets-protection
+        name: "민감 정보 보호"
+        description: ".env 파일로 민감 정보 분리"
+        validation:
+          check: ".env.example 존재, .env는 .gitignore에 포함"
+          severity: error
+
+      - id: license-if-opensource
+        name: "LICENSE 파일 (오픈소스 시)"
+        description: "오픈소스 프로젝트는 LICENSE 파일 필수"
+        validation:
+          check: "LICENSE 파일 존재 (공개 저장소인 경우)"
+          severity: warning
+          condition: "is_public_repo"
+
+  # ---------------------------------------------------------------------------
+  # Tier 1: 실험/학습
+  # ---------------------------------------------------------------------------
+  tier-1:
+    name: "실험/학습"
+    description: "POC, 해커톤, 튜토리얼, 기술 스터디용"
+    extends: tier-0
+    estimated_lifespan: "1일 ~ 2주"
+    purpose:
+      - "아이디어 빠른 검증"
+      - "새로운 기술 학습"
+      - "프로토타입 제작"
+    rules: []  # Tier 0 규칙만 적용, 추가 규칙 없음
+    
+    upgrade_trigger:
+      - "2주 이상 지속 사용"
+      - "외부 공개 계획"
+      - "지속적인 기능 추가"
+
+  # ---------------------------------------------------------------------------
+  # Tier 2: 사이드 프로젝트
+  # ---------------------------------------------------------------------------
+  tier-2:
+    name: "사이드 프로젝트"
+    description: "개인 툴, 블로그, 포트폴리오용"
+    extends: tier-0
+    estimated_lifespan: "수개월 ~ 수년"
+    purpose:
+      - "개인 생산성 도구"
+      - "포트폴리오 구축"
+      - "취미 프로젝트"
+    rules:
+      - id: config-schema-validation
+        name: "환경 변수 스키마 검증"
+        description: "zod/pydantic으로 환경 변수 타입 검증"
+        validation:
+          check: "config/schema.ts 또는 config/schema.py 존재"
+          severity: warning
+        implementation:
+          typescript: |
+            // config/schema.ts
+            import { z } from 'zod';
+            
+            export const envSchema = z.object({
+              NODE_ENV: z.enum(['development', 'production', 'test']),
+              API_URL: z.string().url().optional(),
+              // ... 추가 설정
+            });
+            
+            export const env = envSchema.parse(process.env);
+          python: |
+            # config/schema.py
+            from pydantic import BaseSettings
+            
+            class Settings(BaseSettings):
+                ENV: str = "development"
+                API_URL: str = "http://localhost:8000"
+                
+                class Config:
+                    env_file = ".env"
+
+      - id: linter-basic
+        name: "기본 린터"
+        description: "코드 스타일 일관성 유지"
+        validation:
+          check: "린터 설정 파일 존재"
+          severity: warning
+        config_files:
+          javascript: [".eslintrc.js", ".eslintrc.json", "eslint.config.js"]
+          python: ["pyproject.toml", "ruff.toml", ".ruff.toml"]
+
+      - id: testing-unit-30
+        name: "기본 유닛 테스트"
+        description: "핵심 로직 테스트, 커버리지 30% 이상"
+        validation:
+          check: "tests/ 디렉토리 존재, 커버리지 30%+"
+          severity: warning
+        coverage:
+          minimum: 30
+          target: 50
+
+      - id: ci-basic
+        name: "기본 CI"
+        description: "Lint + Test 자동 실행"
+        validation:
+          check: ".github/workflows/ci.yml 존재"
+          severity: warning
+        template: |
+          name: CI
+          on: [push, pull_request]
+          jobs:
+            lint-test:
+              runs-on: ubuntu-latest
+              steps:
+                - uses: actions/checkout@v4
+                - name: Lint
+                  run: npm run lint  # 또는 ruff check .
+                - name: Test
+                  run: npm test  # 또는 pytest
+
+    upgrade_trigger:
+      - "수익 창출 계획"
+      - "외부 사용자 증가"
+      - "팀 협업 시작"
+
+  # ---------------------------------------------------------------------------
+  # Tier 3: 상용 MVP / 프로덕션
+  # ---------------------------------------------------------------------------
+  tier-3:
+    name: "상용 MVP"
+    description: "SaaS MVP, 수익 창출 앱용"
+    extends: tier-2
+    estimated_lifespan: "장기"
+    purpose:
+      - "수익 창출"
+      - "실제 사용자 서비스"
+      - "비즈니스 검증"
+    rules:
+      - id: architecture-3layer
+        name: "3-Layer 아키텍처"
+        description: "domain, application, infrastructure 분리"
+        validation:
+          check: "src/domain/, src/application/, src/infrastructure/ 존재"
+          severity: error
+        structure:
+          - src/domain/           # 비즈니스 로직, 엔티티
+          - src/application/      # Use Cases, 서비스
+          - src/infrastructure/   # DB, API, 외부 서비스
+
+      - id: testing-coverage-50
+        name: "테스트 커버리지 50%+"
+        description: "Unit + Integration 테스트"
+        validation:
+          check: "테스트 커버리지 50% 이상"
+          severity: error
+        coverage:
+          minimum: 50
+          target: 70
+
+      - id: security-dependabot
+        name: "보안 스캐닝"
+        description: "의존성 취약점 자동 스캔"
+        validation:
+          check: "Dependabot 또는 Snyk 설정"
+          severity: error
+        config_file: ".github/dependabot.yml"
+        template: |
+          version: 2
+          updates:
+            - package-ecosystem: "npm"  # 또는 pip
+              directory: "/"
+              schedule:
+                interval: "weekly"
+
+      - id: logging-structured
+        name: "구조화된 로깅"
+        description: "JSON 형태 로깅 + Correlation ID"
+        validation:
+          check: "로깅 설정 파일 존재"
+          severity: warning
+
+      - id: error-tracking-sentry
+        name: "에러 트래킹"
+        description: "Sentry 또는 유사 서비스 연동"
+        validation:
+          check: "Sentry DSN 설정"
+          severity: warning
+
+      - id: ci-cd-full
+        name: "전체 CI/CD"
+        description: "Lint → Test → Build → Deploy"
+        validation:
+          check: "CI/CD 파이프라인 완성"
+          severity: error
+
+      - id: analytics-basic
+        name: "기본 분석"
+        description: "GA4, Mixpanel 등 사용자 분석"
+        validation:
+          check: "분석 도구 연동"
+          severity: warning
+
+      - id: feedback-collection
+        name: "사용자 피드백 수집"
+        description: "인앱 피드백, 설문 등"
+        validation:
+          check: "피드백 수집 메커니즘"
+          severity: warning
+
+    upgrade_trigger:
+      - "월 1K+ 사용자"
+      - "B2B 고객 확보"
+      - "팀 5명+ 성장"
+      - "규정 준수 필요"
+
+  # ---------------------------------------------------------------------------
+  # Tier 4: 엔터프라이즈 / 스케일업
+  # ---------------------------------------------------------------------------
+  tier-4:
+    name: "엔터프라이즈"
+    description: "대규모 사용자, B2B, 팀 성장용"
+    extends: tier-3
+    estimated_lifespan: "장기 + 팀 성장"
+    purpose:
+      - "대규모 사용자 처리"
+      - "B2B 서비스"
+      - "팀 확장"
+      - "규정 준수"
+    rules:
+      - id: testing-coverage-80
+        name: "테스트 커버리지 80%+"
+        description: "Unit + Integration + E2E"
+        validation:
+          check: "테스트 커버리지 80% 이상"
+          severity: error
+        coverage:
+          minimum: 80
+          target: 90
+
+      - id: testing-load-chaos
+        name: "Load/Chaos Testing"
+        description: "성능 테스트 및 장애 주입 테스트"
+        validation:
+          check: "k6, Locust, Gremlin 등 설정"
+          severity: warning
+
+      - id: security-threat-modeling
+        name: "위협 모델링"
+        description: "STRIDE 기반 위협 분석"
+        validation:
+          check: "docs/security/threat-model.md 존재"
+          severity: warning
+
+      - id: security-pentest-plan
+        name: "침투 테스트 계획"
+        description: "연 1회 이상 침투 테스트"
+        validation:
+          check: "침투 테스트 일정/결과 문서"
+          severity: warning
+
+      - id: observability-full
+        name: "완전한 관측성"
+        description: "Prometheus + Grafana + OpenTelemetry"
+        validation:
+          check: "모니터링 스택 구성"
+          severity: error
+
+      - id: deploy-canary
+        name: "Canary/Blue-Green 배포"
+        description: "점진적 배포 전략"
+        validation:
+          check: "배포 전략 문서 및 구성"
+          severity: warning
+
+      - id: runbook-required
+        name: "Runbook 필수"
+        description: "장애 대응 매뉴얼"
+        validation:
+          check: "docs/runbook/ 디렉토리 존재"
+          severity: error
+
+      - id: compliance-optional
+        name: "규정 준수 (선택)"
+        description: "GDPR, SOC2 등 필요 시"
+        validation:
+          check: "규정 준수 문서"
+          severity: warning
+          optional: true
+
+# =============================================================================
+# TIER SELECTION DECISION TREE
+# =============================================================================
+
+decision_tree:
+  start: "프로젝트 시작"
+  questions:
+    - id: q1
+      question: "1주 이내에 폐기 예정인가요?"
+      yes: tier-1
+      no: q2
+
+    - id: q2
+      question: "수익/사용자 확보 목표가 있나요?"
+      yes: q3
+      no: tier-2
+
+    - id: q3
+      question: "월 1K+ 사용자 또는 B2B 목표인가요?"
+      yes: tier-4
+      no: tier-3
+
+# =============================================================================
+# TIER MIGRATION
+# =============================================================================
+
+migrations:
+  tier-1-to-tier-2:
+    added_rules:
+      - config-schema-validation
+      - linter-basic
+      - testing-unit-30
+      - ci-basic
+    estimated_effort: "1-2시간"
+
+  tier-2-to-tier-3:
+    added_rules:
+      - architecture-3layer
+      - testing-coverage-50
+      - security-dependabot
+      - logging-structured
+      - error-tracking-sentry
+      - ci-cd-full
+      - analytics-basic
+      - feedback-collection
+    estimated_effort: "1-2일"
+
+  tier-3-to-tier-4:
+    added_rules:
+      - testing-coverage-80
+      - testing-load-chaos
+      - security-threat-modeling
+      - security-pentest-plan
+      - observability-full
+      - deploy-canary
+      - runbook-required
+      - compliance-optional
+    estimated_effort: "1-2주"
