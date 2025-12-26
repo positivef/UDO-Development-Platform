@@ -6,6 +6,7 @@
 - Project configuration
 """
 
+import logging
 import subprocess
 import sys
 from datetime import datetime
@@ -15,6 +16,13 @@ from typing import Any, Dict, List, Optional
 import yaml
 from fastapi import APIRouter, HTTPException, Query
 from pydantic import BaseModel, Field
+
+# Initialize logger
+logger = logging.getLogger(__name__)
+
+# Ensure both import paths share the same module object for patching in tests.
+sys.modules["app.routers.governance"] = sys.modules[__name__]
+sys.modules["backend.app.routers.governance"] = sys.modules[__name__]
 
 router = APIRouter(prefix="/api/governance", tags=["governance"])
 
@@ -124,7 +132,8 @@ async def list_available_rules():
     """List all available governance rules.
     Returns a list of rule categories that can be validated.
     """
-    return [
+    logger.info("[Governance] Listing available rules")
+    rules = [
         "obsidian_sync",
         "git_workflow",
         "documentation",
@@ -133,6 +142,8 @@ async def list_available_rules():
         "pre_commit",
         "ci_cd",
     ]
+    logger.debug(f"[Governance] Returning {len(rules)} rules")
+    return rules
 
 
 @router.post("/validate", response_model=RuleValidationResult)
@@ -305,7 +316,7 @@ async def get_project_governance_config(
     if not cfg:
         raise HTTPException(
             status_code=404,
-            detail=f"No .governance.yaml found at {target_path}",
+            detail=f".governance.yaml not found at {target_path}",
         )
     return ProjectGovernanceConfig(
         version=cfg.get("version", "1.0.0"),
@@ -512,21 +523,21 @@ async def get_tier_status(
     # Defaulting to checking .governance.yaml or a new .udo/project.yaml
     # For MVP, we'll simulate detection based on file existence
 
-    current_tier = "tier-1"
     compliance = 100
     missing = []
 
-    # Check for Tier 2 indicators
-    if (target_path / "config" / "schema.py").exists() or (
-        target_path / "config" / "schema.ts"
-    ).exists():
-        current_tier = "tier-2"
-
-    # Check for Tier 3 indicators
+    # Check tier indicators in reverse order (tier-3 → tier-2 → tier-1)
+    # Use elif to prevent overwriting
     if (target_path / "src" / "domain").exists() and (
         target_path / "src" / "infrastructure"
     ).exists():
         current_tier = "tier-3"
+    elif (target_path / "config" / "schema.py").exists() or (
+        target_path / "config" / "schema.ts"
+    ).exists():
+        current_tier = "tier-2"
+    else:
+        current_tier = "tier-1"
 
     descriptions = {
         "tier-1": "실험/학습 (Experiment/Learning)",
@@ -570,9 +581,14 @@ async def upgrade_project_tier(request: UpgradeTierRequest):
 
         schema_path = config_dir / "schema.py"
         if not schema_path.exists():
-            schema_path.write_text(
-                "# Tier 2 Config Schema\nfrom pydantic import BaseModel\n\nclass Config(BaseModel):\n    env: str = 'dev'\n    debug: bool = False\n"
+            schema_content = (
+                "# Tier 2 Config Schema\n"
+                "from pydantic import BaseModel\n\n"
+                "class Config(BaseModel):\n"
+                "    env: str = 'dev'\n"
+                "    debug: bool = False\n"
             )
+            schema_path.write_text(schema_content)
             changes.append("Created config/schema.py")
 
         # Ensure tests directory
