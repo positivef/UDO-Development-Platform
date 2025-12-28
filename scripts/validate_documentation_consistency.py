@@ -16,7 +16,6 @@ Exit code:
 - 0 : All checks passed
 - 1 : One or more checks failed (details printed to stdout)
 """
-import os
 import sys
 import yaml
 from pathlib import Path

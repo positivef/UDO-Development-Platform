@@ -1163,7 +1163,7 @@ class WeeklySummaryGenerator:
 
         # 푸터
         content += "\n---\n"
-        content += f"**자동 생성**: Obsidian Auto-Sync v3.0 Weekly  \n"
+        content += "**자동 생성**: Obsidian Auto-Sync v3.0 Weekly  \n"
         content += f"**생성 시각**: {datetime.now().strftime('%Y-%m-%d %H:%M')}  \n"
 
         return content
@@ -1697,7 +1697,7 @@ files_changed: {len(files)}
 
         content += f"**커밋 해시**: `{commit_info['hash'][:7]}`  \n"
         content += f"**작성 시각**: {commit_info['time']}  \n"
-        content += f"**자동 생성**: Obsidian Auto-Sync v2.0  \n"
+        content += "**자동 생성**: Obsidian Auto-Sync v2.0  \n"
 
         return content
 
