@@ -5,20 +5,22 @@ Validates all AI decisions and code changes against the UDO Constitution.
 Ensures consistent governance across Claude, Codex, and Gemini.
 """
 
+import json
+import logging
 import os
-import yaml
-from pathlib import Path
-from typing import Dict, List, Optional, Any, Tuple
 from datetime import datetime
 from enum import Enum
-import logging
-import json
+from pathlib import Path
+from typing import Any, Dict, List, Optional, Tuple
+
+import yaml
 
 logger = logging.getLogger(__name__)
 
 
 class Severity(str, Enum):
     """Violation severity levels"""
+
     CRITICAL = "CRITICAL"
     HIGH = "HIGH"
     MEDIUM = "MEDIUM"
@@ -27,6 +29,7 @@ class Severity(str, Enum):
 
 class Action(str, Enum):
     """Enforcement actions"""
+
     BLOCK_EXECUTION = "BLOCK_EXECUTION"
     BLOCK_RESPONSE = "BLOCK_RESPONSE"
     BLOCK_COMMIT = "BLOCK_COMMIT"
@@ -49,7 +52,7 @@ class ValidationResult:
         article: str,
         violations: List[str] = None,
         warnings: List[str] = None,
-        metadata: Dict[str, Any] = None
+        metadata: Dict[str, Any] = None,
     ):
         self.passed = passed
         self.article = article
@@ -66,7 +69,7 @@ class ValidationResult:
             "violations": self.violations,
             "warnings": self.warnings,
             "metadata": self.metadata,
-            "timestamp": self.timestamp
+            "timestamp": self.timestamp,
         }
 
     def __repr__(self):
@@ -114,7 +117,7 @@ class ConstitutionalGuard:
                 logger.error(f"Constitution file not found: {self.constitution_path}")
                 return {}
 
-            with open(self.constitution_path, 'r', encoding='utf-8') as f:
+            with open(self.constitution_path, "r", encoding="utf-8") as f:
                 return yaml.safe_load(f)
         except Exception as e:
             logger.error(f"Failed to load constitution: {e}")
@@ -127,7 +130,7 @@ class ConstitutionalGuard:
         description: str,
         severity: Severity,
         ai_agent: Optional[str] = None,
-        metadata: Optional[Dict[str, Any]] = None
+        metadata: Optional[Dict[str, Any]] = None,
     ):
         """Log a constitutional violation"""
         violation = {
@@ -138,7 +141,7 @@ class ConstitutionalGuard:
             "ai_agent": ai_agent or "unknown",
             "metadata": metadata or {},
             "timestamp": datetime.now().isoformat(),
-            "resolved": False
+            "resolved": False,
         }
         self.violation_log.append(violation)
         logger.warning(f"Constitutional violation: [{article}] {description}")
@@ -176,7 +179,7 @@ class ConstitutionalGuard:
             "complexity_increase",
             "workflow_change",
             "rollback_plan",
-            "test_method"
+            "test_method",
         ]
 
         for risk_key in required_risks:
@@ -210,7 +213,7 @@ class ConstitutionalGuard:
                 violation_type="design_review_incomplete",
                 description=f"Design review failed: {', '.join(violations)}",
                 severity=Severity.CRITICAL,
-                metadata={"violations": violations, "design": design}
+                metadata={"violations": violations, "design": design},
             )
 
         return ValidationResult(
@@ -218,7 +221,7 @@ class ConstitutionalGuard:
             article=article,
             violations=violations,
             warnings=warnings,
-            metadata={"design_id": design.get("id"), "risks_checked": len(design.get("risk_assessments", {}))}
+            metadata={"design_id": design.get("id"), "risks_checked": len(design.get("risk_assessments", {}))},
         )
 
     # [EMOJI]
@@ -307,7 +310,7 @@ class ConstitutionalGuard:
                 description=f"Uncertainty disclosure failed: {', '.join(violations)}",
                 severity=Severity.CRITICAL,
                 ai_agent=response.get("ai_agent"),
-                metadata={"violations": violations, "response_id": response.get("id")}
+                metadata={"violations": violations, "response_id": response.get("id")},
             )
 
         return ValidationResult(
@@ -317,8 +320,8 @@ class ConstitutionalGuard:
             warnings=warnings,
             metadata={
                 "confidence_level": confidence.get("level") if isinstance(confidence, dict) else None,
-                "confidence_score": confidence.get("score") if isinstance(confidence, dict) else None
-            }
+                "confidence_score": confidence.get("score") if isinstance(confidence, dict) else None,
+            },
         )
 
     # [EMOJI]
@@ -406,7 +409,7 @@ class ConstitutionalGuard:
                 violation_type="insufficient_evidence",
                 description=f"Evidence-based decision failed: {', '.join(violations)}",
                 severity=Severity.HIGH,
-                metadata={"violations": violations, "claim_id": claim.get("id")}
+                metadata={"violations": violations, "claim_id": claim.get("id")},
             )
 
         return ValidationResult(
@@ -414,19 +417,14 @@ class ConstitutionalGuard:
             article=article,
             violations=violations,
             warnings=warnings,
-            metadata={"claim_type": claim.get("type"), "has_evidence": has_benchmark or has_ab_test}
+            metadata={"claim_type": claim.get("type"), "has_evidence": has_benchmark or has_ab_test},
         )
 
     # [EMOJI]
     # P4: Phase-Aware Compliance
     # [EMOJI]
 
-    async def validate_phase_compliance(
-        self,
-        current_phase: str,
-        action: str,
-        context: Dict[str, Any]
-    ) -> ValidationResult:
+    async def validate_phase_compliance(self, current_phase: str, action: str, context: Dict[str, Any]) -> ValidationResult:
         """
         P4: Phase-Aware Compliance - Validate phase-specific rules
 
@@ -472,9 +470,7 @@ class ConstitutionalGuard:
         current_quality = context.get("quality_score", 0.0)
 
         if current_quality < quality_threshold:
-            warnings.append(
-                f"Quality score {current_quality:.2f} below phase threshold {quality_threshold:.2f}"
-            )
+            warnings.append(f"Quality score {current_quality:.2f} below phase threshold {quality_threshold:.2f}")
 
         # Check deliverables
         required_deliverables = phase_config.get("required_deliverables", [])
@@ -492,7 +488,7 @@ class ConstitutionalGuard:
                 violation_type="phase_compliance_violation",
                 description=f"Phase compliance failed for {current_phase}: {', '.join(violations)}",
                 severity=Severity.HIGH,
-                metadata={"phase": current_phase, "action": action, "violations": violations}
+                metadata={"phase": current_phase, "action": action, "violations": violations},
             )
 
         return ValidationResult(
@@ -500,14 +496,11 @@ class ConstitutionalGuard:
             article=article,
             violations=violations,
             warnings=warnings,
-            metadata={"phase": current_phase, "action": action, "quality_score": current_quality}
+            metadata={"phase": current_phase, "action": action, "quality_score": current_quality},
         )
 
     async def validate_phase_transition(
-        self,
-        current_phase: str,
-        next_phase: str,
-        context: Dict[str, Any]
+        self, current_phase: str, next_phase: str, context: Dict[str, Any]
     ) -> ValidationResult:
         """
         Validate phase transition according to P4 rules
@@ -545,9 +538,7 @@ class ConstitutionalGuard:
         current_quality = context.get("quality_score", 0.0)
 
         if current_quality < quality_threshold:
-            violations.append(
-                f"Quality score {current_quality:.2f} below required {quality_threshold:.2f}"
-            )
+            violations.append(f"Quality score {current_quality:.2f} below required {quality_threshold:.2f}")
 
         # Check approval requirement
         if transition_rules.get("approval_required") and not context.get("approved"):
@@ -566,11 +557,7 @@ class ConstitutionalGuard:
                 violation_type="phase_transition_blocked",
                 description=f"Phase transition {current_phase} -> {next_phase} blocked: {', '.join(violations)}",
                 severity=Severity.HIGH,
-                metadata={
-                    "current_phase": current_phase,
-                    "next_phase": next_phase,
-                    "violations": violations
-                }
+                metadata={"current_phase": current_phase, "next_phase": next_phase, "violations": violations},
             )
 
         return ValidationResult(
@@ -582,18 +569,15 @@ class ConstitutionalGuard:
                 "current_phase": current_phase,
                 "next_phase": next_phase,
                 "quality_score": current_quality,
-                "missing_deliverables": list(missing) if missing else []
-            }
+                "missing_deliverables": list(missing) if missing else [],
+            },
         )
 
     # [EMOJI]
     # P5: Multi-AI Consistency
     # [EMOJI]
 
-    async def validate_ai_consensus(
-        self,
-        decisions: List[Dict[str, Any]]
-    ) -> Tuple[ValidationResult, Dict[str, Any]]:
+    async def validate_ai_consensus(self, decisions: List[Dict[str, Any]]) -> Tuple[ValidationResult, Dict[str, Any]]:
         """
         P5: Multi-AI Consistency - Validate consensus among AI agents
 
@@ -611,11 +595,9 @@ class ConstitutionalGuard:
             return ValidationResult(False, article, ["Constitution not loaded"]), {}
 
         if len(decisions) < 2:
-            return ValidationResult(
-                True,
-                article,
-                metadata={"skipped": "Single AI decision, consensus not required"}
-            ), decisions[0] if decisions else {}
+            return ValidationResult(True, article, metadata={"skipped": "Single AI decision, consensus not required"}), (
+                decisions[0] if decisions else {}
+            )
 
         # Group decisions by recommendation
         recommendation_votes: Dict[str, List[Dict[str, Any]]] = {}
@@ -629,18 +611,11 @@ class ConstitutionalGuard:
         # Calculate weighted votes (by confidence score)
         weighted_scores = {}
         for recommendation, votes in recommendation_votes.items():
-            total_weight = sum(
-                vote.get("confidence", {}).get("score", 0.5)
-                for vote in votes
-            )
+            total_weight = sum(vote.get("confidence", {}).get("score", 0.5) for vote in votes)
             weighted_scores[recommendation] = (total_weight, votes)
 
         # Sort by weighted score
-        sorted_recommendations = sorted(
-            weighted_scores.items(),
-            key=lambda x: x[1][0],
-            reverse=True
-        )
+        sorted_recommendations = sorted(weighted_scores.items(), key=lambda x: x[1][0], reverse=True)
 
         # Check for 2/3 majority
         total_ais = len(decisions)
@@ -648,9 +623,7 @@ class ConstitutionalGuard:
         winner_count = len(winner_votes)
 
         if winner_count < (total_ais * 2 / 3):
-            warnings.append(
-                f"No 2/3 majority consensus: {winner_count}/{total_ais} AIs agree"
-            )
+            warnings.append(f"No 2/3 majority consensus: {winner_count}/{total_ais} AIs agree")
 
         # Build consensus decision
         consensus_decision = {
@@ -658,10 +631,10 @@ class ConstitutionalGuard:
             "confidence": {
                 "level": "MEDIUM",  # Consensus reduces to MEDIUM max
                 "score": winner_score / winner_count,
-                "rationale": f"Consensus from {winner_count}/{total_ais} AIs"
+                "rationale": f"Consensus from {winner_count}/{total_ais} AIs",
             },
             "supporting_ais": [vote.get("ai_agent") for vote in winner_votes],
-            "minority_opinions": []
+            "minority_opinions": [],
         }
 
         # Record minority opinions
@@ -669,33 +642,33 @@ class ConstitutionalGuard:
             minority = {
                 "recommendation": recommendation,
                 "supporting_ais": [vote.get("ai_agent") for vote in votes],
-                "rationale": votes[0].get("confidence", {}).get("rationale", "")
+                "rationale": votes[0].get("confidence", {}).get("rationale", ""),
             }
             consensus_decision["minority_opinions"].append(minority)
 
         passed = len(violations) == 0
 
-        return ValidationResult(
-            passed=passed,
-            article=article,
-            violations=violations,
-            warnings=warnings,
-            metadata={
-                "total_ais": total_ais,
-                "winner_count": winner_count,
-                "consensus_percentage": (winner_count / total_ais * 100)
-            }
-        ), consensus_decision
+        return (
+            ValidationResult(
+                passed=passed,
+                article=article,
+                violations=violations,
+                warnings=warnings,
+                metadata={
+                    "total_ais": total_ais,
+                    "winner_count": winner_count,
+                    "consensus_percentage": (winner_count / total_ais * 100),
+                },
+            ),
+            consensus_decision,
+        )
 
     # [EMOJI]
     # General Validation
     # [EMOJI]
 
     async def validate_all(
-        self,
-        operation: str,
-        data: Dict[str, Any],
-        context: Dict[str, Any] = None
+        self, operation: str, data: Dict[str, Any], context: Dict[str, Any] = None
     ) -> List[ValidationResult]:
         """
         Validate operation against all applicable constitutional articles
@@ -717,19 +690,11 @@ class ConstitutionalGuard:
             "ai_response": [self.validate_confidence],
             "optimization": [self.validate_evidence],
             "phase_action": [
-                lambda: self.validate_phase_compliance(
-                    context.get("phase", "implementation"),
-                    context.get("action", ""),
-                    data
-                )
+                lambda: self.validate_phase_compliance(context.get("phase", "implementation"), context.get("action", ""), data)
             ],
             "phase_transition": [
-                lambda: self.validate_phase_transition(
-                    context.get("current_phase", ""),
-                    context.get("next_phase", ""),
-                    data
-                )
-            ]
+                lambda: self.validate_phase_transition(context.get("current_phase", ""), context.get("next_phase", ""), data)
+            ],
         }
 
         # Run applicable validators
@@ -739,19 +704,14 @@ class ConstitutionalGuard:
                 results.append(result)
             except Exception as e:
                 logger.error(f"Validation error in {validator.__name__}: {e}")
-                results.append(ValidationResult(
-                    False,
-                    "validation_error",
-                    violations=[f"Internal validation error: {str(e)}"]
-                ))
+                results.append(
+                    ValidationResult(False, "validation_error", violations=[f"Internal validation error: {str(e)}"])
+                )
 
         return results
 
     def get_violations(
-        self,
-        article: Optional[str] = None,
-        severity: Optional[Severity] = None,
-        resolved: Optional[bool] = None
+        self, article: Optional[str] = None, severity: Optional[Severity] = None, resolved: Optional[bool] = None
     ) -> List[Dict[str, Any]]:
         """
         Get logged violations with optional filtering
@@ -788,18 +748,9 @@ class ConstitutionalGuard:
             return 1.0
 
         # Weight violations by severity
-        severity_weights = {
-            Severity.CRITICAL: 1.0,
-            Severity.HIGH: 0.7,
-            Severity.MEDIUM: 0.4,
-            Severity.LOW: 0.2
-        }
+        severity_weights = {Severity.CRITICAL: 1.0, Severity.HIGH: 0.7, Severity.MEDIUM: 0.4, Severity.LOW: 0.2}
 
-        total_weight = sum(
-            severity_weights.get(Severity(v["severity"]), 0.5)
-            for v in self.violation_log
-            if not v["resolved"]
-        )
+        total_weight = sum(severity_weights.get(Severity(v["severity"]), 0.5) for v in self.violation_log if not v["resolved"])
 
         # Assume 100 total checks for scoring
         total_checks = max(100, len(self.violation_log))
@@ -808,6 +759,6 @@ class ConstitutionalGuard:
 
     def export_violations(self, filepath: Path):
         """Export violations to JSON file"""
-        with open(filepath, 'w', encoding='utf-8') as f:
+        with open(filepath, "w", encoding="utf-8") as f:
             json.dump(self.violation_log, f, indent=2, ensure_ascii=False)
         logger.info(f"Exported {len(self.violation_log)} violations to {filepath}")

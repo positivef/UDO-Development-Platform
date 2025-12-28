@@ -5,15 +5,15 @@ Implements hybrid confidence-based decision making:
 - Tier 1 (Obsidian): Past solutions, <10ms, 70% hit rate
 - Tier 2 (Context7): Official docs with confidence scoring (HIGH/MEDIUM/LOW)
   - HIGH (≥95%): Auto-apply with circuit breaker check
-  - MEDIUM (70-95%): Return None -> User confirmation needed
-  - LOW (<70%): Return None -> User intervention
+  - MEDIUM (70-95%): Return None → User confirmation needed
+  - LOW (<70%): Return None → User intervention
 - Tier 3 (User): Human expert, 5% escalation only
 
 Design Goals:
 - 95% automation rate (up from 66.7%)
 - <1 second average resolution time
 - Confidence-based safety controls
-- Progressive enhancement (Week 1: 95% -> Week 4: 90%)
+- Progressive enhancement (Week 1: 95% → Week 4: 90%)
 - 4-level rollback support
 
 Usage:
@@ -34,9 +34,9 @@ Usage:
         # Check which tier resolved it
         stats = resolver.get_statistics()
         if stats["tier1"] > 0:
-            print("[OK] Auto-fixed from Obsidian")
+            print("✅ Auto-fixed from Obsidian")
         elif stats["tier2_auto"] > 0:
-            print("[OK] Auto-applied from official docs (HIGH confidence)")
+            print("✅ Auto-applied from official docs (HIGH confidence)")
     else:
         # Tier 2 MEDIUM/LOW or Tier 3 needed
         # AI must ask user for confirmation or solution
@@ -80,10 +80,10 @@ class UnifiedErrorResolver:
     - Tier 3: User (human expertise, last resort)
 
     Safety controls:
-    - Circuit breaker (3 failed auto-applies -> disable)
+    - Circuit breaker (3 failed auto-applies → disable)
     - Blacklist (never auto-apply: sudo, rm -rf, database, payment, auth)
     - Confidence thresholds (HIGH ≥95%, MEDIUM 70-95%, LOW <70%)
-    - Progressive enhancement (Week 1: 95% -> Week 4: 90%)
+    - Progressive enhancement (Week 1: 95% → Week 4: 90%)
     """
 
     def __init__(self, vault_path: Optional[str] = None, enable_context7: bool = True):
@@ -151,23 +151,23 @@ class UnifiedErrorResolver:
 
         Process:
             1. Tier 1 (Obsidian): Instant past solution lookup
-               -> If found with confidence >0.8: Return solution (AUTO)
+               → If found with confidence >0.8: Return solution (AUTO)
 
             2. Tier 2 (Context7): Official docs with confidence scoring
-               -> HIGH (≥95%): Return solution if circuit breaker allows (AUTO)
-               -> MEDIUM (70-95%): Return None -> User confirmation needed
-               -> LOW (<70%): Return None -> User intervention
+               → HIGH (≥95%): Return solution if circuit breaker allows (AUTO)
+               → MEDIUM (70-95%): Return None → User confirmation needed
+               → LOW (<70%): Return None → User intervention
 
             3. Tier 3 (User): Human expertise
-               -> Return None -> AI asks user
-               -> User provides solution -> Save to Obsidian for future
+               → Return None → AI asks user
+               → User provides solution → Save to Obsidian for future
         """
         start_time = time.time()
         context = context or {}
 
         self.statistics["total"] += 1
 
-        logger.info(f"[EMOJI] 3-Tier Resolution: {error_msg[:100]}")
+        logger.info(f"🔍 3-Tier Resolution: {error_msg[:100]}")
 
         # Tier 1: Obsidian past solutions
         tier1_result = self._tier1_obsidian_search(error_msg, context)
@@ -176,7 +176,7 @@ class UnifiedErrorResolver:
             self._update_automation_rate()
 
             elapsed_ms = (time.time() - start_time) * 1000
-            logger.info(f"[OK] TIER 1 HIT: Obsidian solution in {elapsed_ms:.1f}ms")
+            logger.info(f"✅ TIER 1 HIT: Obsidian solution in {elapsed_ms:.1f}ms")
 
             return tier1_result.solution
 
@@ -195,23 +195,23 @@ class UnifiedErrorResolver:
                         self._update_automation_rate()
 
                         elapsed_ms = (time.time() - start_time) * 1000
-                        logger.info(f"[OK] TIER 2 AUTO: Context7 HIGH confidence ({tier2_result.confidence:.0%}) in {elapsed_ms:.1f}ms")
+                        logger.info(f"✅ TIER 2 AUTO: Context7 HIGH confidence ({tier2_result.confidence:.0%}) in {elapsed_ms:.1f}ms")
 
                         return tier2_result.solution
                     else:
                         # Circuit breaker OPEN or blacklisted
-                        logger.warning(f"[WARN] TIER 2: Circuit breaker or blacklist blocked auto-apply")
+                        logger.warning(f"⚠️ TIER 2: Circuit breaker or blacklist blocked auto-apply")
                         return None
 
                 elif tier2_result.confidence >= self.confidence_thresholds["MEDIUM"]:
-                    # MEDIUM confidence: Return None -> User confirmation needed
-                    logger.info(f"⏸ TIER 2 MEDIUM: Confidence {tier2_result.confidence:.0%} -> User confirmation needed")
+                    # MEDIUM confidence: Return None → User confirmation needed
+                    logger.info(f"⏸️ TIER 2 MEDIUM: Confidence {tier2_result.confidence:.0%} → User confirmation needed")
                     logger.info(f"   Suggested solution: {tier2_result.solution[:100]}")
                     return None
 
                 else:
-                    # LOW confidence: Return None -> User intervention
-                    logger.info(f"⏸ TIER 2 LOW: Confidence {tier2_result.confidence:.0%} -> User intervention needed")
+                    # LOW confidence: Return None → User intervention
+                    logger.info(f"⏸️ TIER 2 LOW: Confidence {tier2_result.confidence:.0%} → User intervention needed")
                     return None
 
         # Tier 3: User intervention
@@ -219,7 +219,7 @@ class UnifiedErrorResolver:
         self._update_automation_rate()
 
         elapsed_ms = (time.time() - start_time) * 1000
-        logger.warning(f"[FAIL] TIER 3: No automated solution found after {elapsed_ms:.1f}ms")
+        logger.warning(f"❌ TIER 3: No automated solution found after {elapsed_ms:.1f}ms")
 
         return None
 
@@ -237,7 +237,7 @@ class UnifiedErrorResolver:
         - User provides solution for LOW confidence or no solution
 
         Future benefit:
-        - Next time same error occurs -> Tier 1 instant hit
+        - Next time same error occurs → Tier 1 instant hit
         - 95% confidence, <10ms resolution
         """
         try:
@@ -254,7 +254,7 @@ class UnifiedErrorResolver:
 
             # Determine target folder (today's date folder)
             today = datetime.now().strftime("%Y-%m-%d")
-            target_folder = Path(self.vault_path) / "[EMOJI]" / today
+            target_folder = Path(self.vault_path) / "개발일지" / today
             target_folder.mkdir(parents=True, exist_ok=True)
 
             target_file = target_folder / filename
@@ -270,38 +270,38 @@ confidence: 1.0
 tags: [debug, user-solution, {error_type.lower()}]
 ---
 
-# {error_type} [EMOJI]
+# {error_type} 해결
 
-## [FAIL] [EMOJI] [EMOJI]
+## ❌ 문제 상황
 
 ```
 {error_msg}
 ```
 
-## [OK] [EMOJI] [EMOJI] [EMOJI]
+## ✅ 최종 해결 방법
 
 {solution}
 
-## [EMOJI] [EMOJI]
+## 📋 컨텍스트
 
 - **Tool**: {context.get('tool', 'N/A')}
 - **File**: {context.get('file', 'N/A')}
 - **Command**: {context.get('command', 'N/A')}
 
-## [EMOJI] [EMOJI] [EMOJI]
+## 🎯 재발 방지
 
-[EMOJI] [EMOJI] [EMOJI] [EMOJI] [EMOJI]:
-1. Tier 1 (Obsidian)[EMOJI] [EMOJI] [EMOJI] (<10ms)
-2. [EMOJI] [EMOJI] (95% confidence)
-3. [EMOJI] [EMOJI]: 5[EMOJI] -> 30[EMOJI] (90% [EMOJI])
+다음번 동일 에러 발생 시:
+1. Tier 1 (Obsidian)에서 즉시 검색됨 (<10ms)
+2. 자동 적용 (95% confidence)
+3. 해결 시간: 5분 → 30초 (90% 단축)
 """
 
             # Write to file
             with open(target_file, 'w', encoding='utf-8') as f:
                 f.write(content)
 
-            logger.info(f"[EMOJI] User solution saved to Obsidian: {target_file.name}")
-            logger.info(f"   -> Future Tier 1 hit: <10ms resolution")
+            logger.info(f"💾 User solution saved to Obsidian: {target_file.name}")
+            logger.info(f"   → Future Tier 1 hit: <10ms resolution")
 
         except Exception as e:
             logger.error(f"Failed to save user solution: {e}")
@@ -456,10 +456,10 @@ tags: [debug, user-solution, {error_type.lower()}]
         Generate solution based on error pattern matching
 
         Supported patterns:
-        - ModuleNotFoundError -> pip install <module>
-        - ImportError -> pip install <package>
-        - PermissionError -> chmod +r/+w/+x
-        - FileNotFoundError -> mkdir -p / touch
+        - ModuleNotFoundError → pip install <module>
+        - ImportError → pip install <package>
+        - PermissionError → chmod +r/+w/+x
+        - FileNotFoundError → mkdir -p / touch
         """
         # ModuleNotFoundError / ImportError
         if error_type in ["ModuleNotFoundError", "ImportError"]:
@@ -525,10 +525,10 @@ tags: [debug, user-solution, {error_type.lower()}]
                 elapsed = time.time() - self.circuit_breaker["last_failure_time"]
                 if elapsed > 60:  # 1 minute cooldown
                     self.circuit_breaker["state"] = "HALF_OPEN"
-                    logger.info("🟡 Circuit breaker: OPEN -> HALF_OPEN (testing recovery)")
+                    logger.info("🟡 Circuit breaker: OPEN → HALF_OPEN (testing recovery)")
                     return True
                 else:
-                    logger.warning(f"[EMOJI] Circuit breaker: OPEN (cooldown: {60-elapsed:.0f}s remaining)")
+                    logger.warning(f"🔴 Circuit breaker: OPEN (cooldown: {60-elapsed:.0f}s remaining)")
                     return False
             return False
 
@@ -542,13 +542,13 @@ tags: [debug, user-solution, {error_type.lower()}]
 
             if self.circuit_breaker["consecutive_failures"] >= self.circuit_breaker["failure_threshold"]:
                 self.circuit_breaker["state"] = "OPEN"
-                logger.error("[EMOJI] Circuit breaker: CLOSED -> OPEN (3 consecutive failures)")
+                logger.error("🔴 Circuit breaker: CLOSED → OPEN (3 consecutive failures)")
         else:
             # Success: Reset
             self.circuit_breaker["consecutive_failures"] = 0
             if self.circuit_breaker["state"] == "HALF_OPEN":
                 self.circuit_breaker["state"] = "CLOSED"
-                logger.info("🟢 Circuit breaker: HALF_OPEN -> CLOSED (recovery successful)")
+                logger.info("🟢 Circuit breaker: HALF_OPEN → CLOSED (recovery successful)")
 
     def _check_safety(self, solution: str) -> bool:
         """
@@ -565,7 +565,7 @@ tags: [debug, user-solution, {error_type.lower()}]
         """
         for pattern in self.blacklist_patterns:
             if re.search(pattern, solution, re.IGNORECASE):
-                logger.warning(f"[WARN] Safety check failed: Blacklisted pattern '{pattern}'")
+                logger.warning(f"⚠️ Safety check failed: Blacklisted pattern '{pattern}'")
                 return False
 
         return True

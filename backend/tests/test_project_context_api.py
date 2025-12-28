@@ -9,33 +9,27 @@ Comprehensive tests for project context management APIs including:
 - Mock database strategy
 """
 
-import sys
 import json
+import sys
 import uuid
+from datetime import UTC, datetime
 from pathlib import Path
-from datetime import datetime, UTC
-from typing import Dict, Any, Optional
-from unittest.mock import Mock, AsyncMock, patch, MagicMock
+from typing import Any, Dict, Optional
+from unittest.mock import AsyncMock, MagicMock, Mock, patch
 
 # Add backend to path
 sys.path.insert(0, str(Path(__file__).parent.parent))
 
 import pytest
+# Import models
+from app.models.project_context import (AIPreferences, EditorState,
+                                        ExecutionRecord, MLModelsState,
+                                        ProjectContextCreate,
+                                        ProjectContextResponse,
+                                        ProjectContextUpdate,
+                                        ProjectSwitchRequest, UDOState)
 from fastapi import status
 from fastapi.testclient import TestClient
-
-# Import models
-from app.models.project_context import (
-    ProjectContextCreate,
-    ProjectContextUpdate,
-    ProjectContextResponse,
-    ProjectSwitchRequest,
-    UDOState,
-    MLModelsState,
-    ExecutionRecord,
-    AIPreferences,
-    EditorState
-)
 
 
 class MockProjectContextService:
@@ -52,7 +46,7 @@ class MockProjectContextService:
         ml_models: Optional[Dict] = None,
         recent_executions: Optional[list] = None,
         ai_preferences: Optional[Dict] = None,
-        editor_state: Optional[Dict] = None
+        editor_state: Optional[Dict] = None,
     ) -> Dict[str, Any]:
         """Mock save context"""
         context = {
@@ -60,11 +54,13 @@ class MockProjectContextService:
             "project_id": str(project_id),
             "udo_state": udo_state or {},
             "ml_models": ml_models or {},
-            "recent_executions": recent_executions[:10] if recent_executions else [],  # FIFO limit
+            "recent_executions": (
+                recent_executions[:10] if recent_executions else []
+            ),  # FIFO limit
             "ai_preferences": ai_preferences or {},
             "editor_state": editor_state or {},
             "saved_at": datetime.now(UTC).isoformat(),
-            "loaded_at": None
+            "loaded_at": None,
         }
         self.contexts[str(project_id)] = context
         return context
@@ -77,9 +73,7 @@ class MockProjectContextService:
         return context
 
     async def update_context(
-        self,
-        project_id: uuid.UUID,
-        context_update: Dict[str, Any]
+        self, project_id: uuid.UUID, context_update: Dict[str, Any]
     ) -> Optional[Dict[str, Any]]:
         """Mock update context (partial update)"""
         if str(project_id) not in self.contexts:
@@ -93,9 +87,7 @@ class MockProjectContextService:
         return current
 
     async def merge_context(
-        self,
-        project_id: uuid.UUID,
-        partial_context: Dict[str, Any]
+        self, project_id: uuid.UUID, partial_context: Dict[str, Any]
     ) -> Dict[str, Any]:
         """Mock merge context (partial update with return)"""
         if str(project_id) not in self.contexts:
@@ -103,7 +95,7 @@ class MockProjectContextService:
             self.contexts[str(project_id)] = {
                 "project_id": str(project_id),
                 "saved_at": datetime.now(UTC).isoformat(),
-                "loaded_at": None
+                "loaded_at": None,
             }
 
         current = self.contexts[str(project_id)]
@@ -121,16 +113,20 @@ class MockProjectContextService:
         return False
 
     async def switch_project(
-        self,
-        target_project_id: uuid.UUID,
-        auto_save_current: bool = True
+        self, target_project_id: uuid.UUID, auto_save_current: bool = True
     ) -> Dict[str, Any]:
         """Mock project switch - returns ProjectSwitchResponse format"""
         previous_project_id = self.current_project_id
 
         # Auto-save current context if exists
-        if auto_save_current and previous_project_id and str(previous_project_id) in self.contexts:
-            self.contexts[str(previous_project_id)]["saved_at"] = datetime.now(UTC).isoformat()
+        if (
+            auto_save_current
+            and previous_project_id
+            and str(previous_project_id) in self.contexts
+        ):
+            self.contexts[str(previous_project_id)]["saved_at"] = datetime.now(
+                UTC
+            ).isoformat()
 
         # Load new context
         self.current_project_id = target_project_id
@@ -138,18 +134,17 @@ class MockProjectContextService:
 
         # Return format matching ProjectSwitchResponse
         return {
-            "previous_project_id": str(previous_project_id) if previous_project_id else None,
+            "previous_project_id": (
+                str(previous_project_id) if previous_project_id else None
+            ),
             "new_project_id": str(target_project_id),
             "context_loaded": new_context is not None,
             "context": new_context,
-            "message": f"Switched to project {target_project_id}"
+            "message": f"Switched to project {target_project_id}",
         }
 
     async def list_projects(
-        self,
-        include_archived: bool = False,
-        limit: int = 100,
-        offset: int = 0
+        self, include_archived: bool = False, limit: int = 100, offset: int = 0
     ) -> Dict[str, Any]:
         """Mock list projects - returns ProjectsListResponse format"""
         # Mock project list matching ProjectListResponse format
@@ -161,7 +156,7 @@ class MockProjectContextService:
                 "current_phase": "testing",
                 "last_active_at": datetime.now(UTC).isoformat(),
                 "is_archived": False,
-                "has_context": "550e8400-e29b-41d4-a716-446655440000" in self.contexts
+                "has_context": "550e8400-e29b-41d4-a716-446655440000" in self.contexts,
             },
             {
                 "id": "550e8400-e29b-41d4-a716-446655440001",
@@ -170,8 +165,8 @@ class MockProjectContextService:
                 "current_phase": "mvp",
                 "last_active_at": datetime.now(UTC).isoformat(),
                 "is_archived": False,
-                "has_context": "550e8400-e29b-41d4-a716-446655440001" in self.contexts
-            }
+                "has_context": "550e8400-e29b-41d4-a716-446655440001" in self.contexts,
+            },
         ]
 
         if not include_archived:
@@ -179,9 +174,11 @@ class MockProjectContextService:
 
         # Return format matching ProjectsListResponse
         return {
-            "projects": projects[offset:offset+limit],
+            "projects": projects[offset : offset + limit],
             "total": len(projects),
-            "current_project_id": str(self.current_project_id) if self.current_project_id else None
+            "current_project_id": (
+                str(self.current_project_id) if self.current_project_id else None
+            ),
         }
 
     async def get_current_project(self) -> Optional[Dict[str, Any]]:
@@ -195,7 +192,7 @@ class MockProjectContextService:
                 "current_phase": "testing",
                 "last_active_at": datetime.now(UTC).isoformat(),
                 "is_archived": False,
-                "has_context": True
+                "has_context": True,
             }
 
         # Return current project info
@@ -215,8 +212,8 @@ def mock_service():
 @pytest.fixture
 def client(mock_service):
     """Fixture for test client with mock service using FastAPI dependency override"""
-    from main import app
     from app.routers.project_context import get_service
+    from main import app
 
     # Override the dependency to use our mock service
     app.dependency_overrides[get_service] = lambda: mock_service
@@ -241,12 +238,12 @@ class TestProjectContextAPI:
                 "confidence": 0.85,
                 "quantum_state": "Deterministic",
                 "phase": "testing",
-                "uncertainty_map": {"technical": 0.2, "market": 0.3}
+                "uncertainty_map": {"technical": 0.2, "market": 0.3},
             },
             "ml_models": {
                 "confidence_predictor": "/models/confidence_v1.pkl",
                 "task_classifier": "/models/classifier_v2.pkl",
-                "custom_models": {"decision_model": "/models/decision.pkl"}
+                "custom_models": {"decision_model": "/models/decision.pkl"},
             },
             "recent_executions": [
                 {
@@ -254,19 +251,19 @@ class TestProjectContextAPI:
                     "task": "pytest",
                     "decision": "GO",
                     "confidence": 0.9,
-                    "success": True
+                    "success": True,
                 }
             ],
             "ai_preferences": {
                 "preferred_model": "gpt-4",
                 "temperature": 0.7,
-                "max_tokens": 2000
+                "max_tokens": 2000,
             },
             "editor_state": {
                 "open_files": ["main.py", "test.py"],
                 "cursor_positions": {"main.py": {"line": 45, "column": 12}},
-                "breakpoints": ["main.py:100", "test.py:50"]
-            }
+                "breakpoints": ["main.py:100", "test.py:50"],
+            },
         }
 
         response = client.post("/api/project-context/save", json=context_data)
@@ -284,7 +281,7 @@ class TestProjectContextAPI:
         # First save a context
         context_data = {
             "project_id": project_id,
-            "udo_state": {"last_decision": "GO", "confidence": 0.85}
+            "udo_state": {"last_decision": "GO", "confidence": 0.85},
         }
         client.post("/api/project-context/save", json=context_data)
 
@@ -317,15 +314,15 @@ class TestProjectContextAPI:
         initial_context = {
             "project_id": project_id,
             "udo_state": {"last_decision": "GO", "confidence": 0.85},
-            "ai_preferences": {"preferred_model": "gpt-3.5", "temperature": 0.7}
+            "ai_preferences": {"preferred_model": "gpt-3.5", "temperature": 0.7},
         }
         client.post("/api/project-context/save", json=initial_context)
 
         # Update only UDO state
-        update_data = {
-            "udo_state": {"last_decision": "NO_GO", "confidence": 0.3}
-        }
-        response = client.patch(f"/api/project-context/update/{project_id}", json=update_data)
+        update_data = {"udo_state": {"last_decision": "NO_GO", "confidence": 0.3}}
+        response = client.patch(
+            f"/api/project-context/update/{project_id}", json=update_data
+        )
 
         assert response.status_code == status.HTTP_200_OK
         data = response.json()
@@ -354,20 +351,23 @@ class TestProjectContextAPI:
         project2_id = "550e8400-e29b-41d4-a716-446655440001"
 
         # Save contexts for both projects
-        client.post("/api/project-context/save", json={
-            "project_id": project1_id,
-            "udo_state": {"last_decision": "GO", "confidence": 0.9}
-        })
-        client.post("/api/project-context/save", json={
-            "project_id": project2_id,
-            "udo_state": {"last_decision": "NO_GO", "confidence": 0.2}
-        })
+        client.post(
+            "/api/project-context/save",
+            json={
+                "project_id": project1_id,
+                "udo_state": {"last_decision": "GO", "confidence": 0.9},
+            },
+        )
+        client.post(
+            "/api/project-context/save",
+            json={
+                "project_id": project2_id,
+                "udo_state": {"last_decision": "NO_GO", "confidence": 0.2},
+            },
+        )
 
         # Switch to project2 (API uses project_id, not from/to)
-        switch_request = {
-            "project_id": project2_id,
-            "auto_save_current": True
-        }
+        switch_request = {"project_id": project2_id, "auto_save_current": True}
         response = client.post("/api/project-context/switch", json=switch_request)
 
         assert response.status_code == status.HTTP_200_OK
@@ -379,10 +379,13 @@ class TestProjectContextAPI:
     def test_list_projects_with_context(self, client, mock_service):
         """Test listing projects with context availability"""
         # Save context for one project
-        client.post("/api/project-context/save", json={
-            "project_id": "550e8400-e29b-41d4-a716-446655440000",
-            "udo_state": {"last_decision": "GO"}
-        })
+        client.post(
+            "/api/project-context/save",
+            json={
+                "project_id": "550e8400-e29b-41d4-a716-446655440000",
+                "udo_state": {"last_decision": "GO"},
+            },
+        )
 
         response = client.get("/api/projects")
 
@@ -415,18 +418,17 @@ class TestProjectContextAPI:
         # Create 15 executions
         executions = []
         for i in range(15):
-            executions.append({
-                "timestamp": datetime.now(UTC).isoformat(),
-                "task": f"task-{i:03d}",
-                "decision": "GO",
-                "confidence": 0.85,
-                "success": True
-            })
+            executions.append(
+                {
+                    "timestamp": datetime.now(UTC).isoformat(),
+                    "task": f"task-{i:03d}",
+                    "decision": "GO",
+                    "confidence": 0.85,
+                    "success": True,
+                }
+            )
 
-        context_data = {
-            "project_id": project_id,
-            "recent_executions": executions
-        }
+        context_data = {"project_id": project_id, "recent_executions": executions}
 
         response = client.post("/api/project-context/save", json=context_data)
 
@@ -457,16 +459,17 @@ class TestProjectContextAPI:
 
 def run_all_tests():
     """Run all project context API tests"""
-    print("\n" + "="*60)
+    print("\n" + "=" * 60)
     print("[TEST] Project Context API Integration Tests")
-    print("="*60)
+    print("=" * 60)
 
     # Use pytest to run tests
     import subprocess
+
     result = subprocess.run(
         [sys.executable, "-m", "pytest", __file__, "-v", "--tb=short"],
         capture_output=True,
-        text=True
+        text=True,
     )
 
     print(result.stdout)

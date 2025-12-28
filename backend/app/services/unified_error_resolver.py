@@ -13,14 +13,14 @@ Date: 2025-12-07 (Week 0 Day 2)
 Version: 1.0.0
 """
 
-import logging
-import time
-import re
 import json
-from typing import Optional, Dict, Any, List
+import logging
+import re
+import time
+from dataclasses import asdict, dataclass, field
 from datetime import datetime
 from pathlib import Path
-from dataclasses import dataclass, asdict, field
+from typing import Any, Dict, List, Optional
 
 logger = logging.getLogger(__name__)
 
@@ -28,6 +28,7 @@ logger = logging.getLogger(__name__)
 @dataclass
 class ErrorContext:
     """Context information for error resolution"""
+
     tool: str  # Tool that failed (Bash, Read, Write, etc.)
     error_message: str  # Full error message
     file_path: Optional[str] = None
@@ -41,6 +42,7 @@ class ErrorContext:
 @dataclass
 class ResolutionResult:
     """Result of error resolution attempt"""
+
     tier: int  # 1, 2, or 3
     solution: Optional[str]  # Solution command/fix
     confidence: float  # 0.0-1.0
@@ -74,7 +76,7 @@ class UnifiedErrorResolver:
         self,
         obsidian_enabled: bool = True,
         context7_enabled: bool = True,
-        stats_file: Optional[Path] = None
+        stats_file: Optional[Path] = None,
     ):
         """
         Initialize resolver with configuration
@@ -95,23 +97,27 @@ class UnifiedErrorResolver:
             "tier2_auto_applied": 0,
             "tier2_user_confirmed": 0,
             "tier3_escalations": 0,
-            "resolution_history": []
+            "resolution_history": [],
         }
 
         # Stats file path
         if stats_file is None:
-            stats_file = Path(__file__).parent.parent.parent.parent / "data" / "error_resolution_stats.json"
+            stats_file = (
+                Path(__file__).parent.parent.parent.parent
+                / "data"
+                / "error_resolution_stats.json"
+            )
         self.stats_file = stats_file
 
         # Load existing stats if available
         self._load_stats()
 
-        logger.info(f"UnifiedErrorResolver initialized (Obsidian={obsidian_enabled}, Context7={context7_enabled})")
+        logger.info(
+            f"UnifiedErrorResolver initialized (Obsidian={obsidian_enabled}, Context7={context7_enabled})"
+        )
 
     def resolve_error(
-        self,
-        error_message: str,
-        context: Optional[Dict[str, Any]] = None
+        self, error_message: str, context: Optional[Dict[str, Any]] = None
     ) -> ResolutionResult:
         """
         Resolve error using 3-tier cascade
@@ -134,7 +140,7 @@ class UnifiedErrorResolver:
             tool=context.get("tool", "Unknown"),
             error_message=error_message,
             file_path=context.get("file"),
-            command=context.get("command")
+            command=context.get("command"),
         )
 
         logger.info(f"[TIER CASCADE] Resolving error: {error_message[:100]}...")
@@ -147,7 +153,9 @@ class UnifiedErrorResolver:
                 result.resolution_time_ms = resolution_time
                 self.stats["tier1_hits"] += 1
                 self._record_resolution(error_ctx, result)
-                logger.info(f"[TIER 1 HIT] Resolved from Obsidian in {resolution_time:.1f}ms")
+                logger.info(
+                    f"[TIER 1 HIT] Resolved from Obsidian in {resolution_time:.1f}ms"
+                )
                 return result
 
         # Tier 2: Context7 (official docs)
@@ -162,11 +170,15 @@ class UnifiedErrorResolver:
                 if result.confidence >= 0.95:
                     self.stats["tier2_auto_applied"] += 1
                     self._record_resolution(error_ctx, result)
-                    logger.info(f"[TIER 2 AUTO] Auto-applied from Context7 in {resolution_time:.1f}ms (confidence={result.confidence:.0%})")
+                    logger.info(
+                        f"[TIER 2 AUTO] Auto-applied from Context7 in {resolution_time:.1f}ms (confidence={result.confidence:.0%})"
+                    )
                     return result
                 else:
                     # MEDIUM confidence (70-95%) - return for user confirmation
-                    logger.info(f"[TIER 2 MEDIUM] Context7 suggests solution (confidence={result.confidence:.0%}) - user confirmation needed")
+                    logger.info(
+                        f"[TIER 2 MEDIUM] Context7 suggests solution (confidence={result.confidence:.0%}) - user confirmation needed"
+                    )
                     return result
 
         # Tier 3: User escalation
@@ -177,7 +189,7 @@ class UnifiedErrorResolver:
             solution=None,
             confidence=0.0,
             source="none",
-            resolution_time_ms=resolution_time
+            resolution_time_ms=resolution_time,
         )
         logger.info(f"[TIER 3] Escalating to user (no automated solution found)")
         return result
@@ -214,7 +226,7 @@ class UnifiedErrorResolver:
             solution=None,  # No solution yet (not integrated)
             confidence=0.0,
             source="obsidian",
-            resolution_time_ms=resolution_time
+            resolution_time_ms=resolution_time,
         )
 
     def _tier2_context7(self, error_ctx: ErrorContext) -> ResolutionResult:
@@ -246,7 +258,7 @@ class UnifiedErrorResolver:
             solution=solution,
             confidence=confidence,
             source="context7" if solution else "none",
-            resolution_time_ms=resolution_time
+            resolution_time_ms=resolution_time,
         )
 
     def _extract_error_keywords(self, error_message: str) -> List[str]:
@@ -264,12 +276,17 @@ class UnifiedErrorResolver:
             keywords.append(module_match.group(1))
 
         # File paths (support multiple extensions and non-quoted paths)
-        file_match = re.search(r"'([^']+\.(py|js|ts|sh|yaml|yml|json|md|txt|cfg|conf|env))'", error_message)
+        file_match = re.search(
+            r"'([^']+\.(py|js|ts|sh|yaml|yml|json|md|txt|cfg|conf|env))'", error_message
+        )
         if file_match:
             keywords.append(Path(file_match.group(1)).name)
         else:
             # Also try to match non-quoted file paths like ./deploy.sh or config.yaml
-            non_quoted_match = re.search(r"(?:^|[:\s])([./\w-]+\.(py|js|ts|sh|yaml|yml|json|md|txt|cfg|conf|env))(?:[:\s]|$)", error_message)
+            non_quoted_match = re.search(
+                r"(?:^|[:\s])([./\w-]+\.(py|js|ts|sh|yaml|yml|json|md|txt|cfg|conf|env))(?:[:\s]|$)",
+                error_message,
+            )
             if non_quoted_match:
                 keywords.append(Path(non_quoted_match.group(1)).name)
 
@@ -279,7 +296,15 @@ class UnifiedErrorResolver:
             keywords.append(code_match.group(1))
 
         # Common error keywords
-        common_keywords = ["permission", "denied", "not found", "connection", "timeout", "import", "syntax"]
+        common_keywords = [
+            "permission",
+            "denied",
+            "not found",
+            "connection",
+            "timeout",
+            "import",
+            "syntax",
+        ]
         for keyword in common_keywords:
             if keyword in error_message.lower():
                 keywords.append(keyword)
@@ -294,13 +319,17 @@ class UnifiedErrorResolver:
             return module_match.group(1)
 
         # ImportError patterns
-        import_match = re.search(r"cannot import name '(\w+)' from '(\w+)'", error_message)
+        import_match = re.search(
+            r"cannot import name '(\w+)' from '(\w+)'", error_message
+        )
         if import_match:
             return import_match.group(2)
 
         return None
 
-    def _pattern_based_solution(self, error_ctx: ErrorContext) -> tuple[Optional[str], float]:
+    def _pattern_based_solution(
+        self, error_ctx: ErrorContext
+    ) -> tuple[Optional[str], float]:
         """
         Pattern-based fallback solutions (HIGH confidence patterns only)
 
@@ -344,7 +373,7 @@ class UnifiedErrorResolver:
         self,
         error_message: str,
         user_solution: str,
-        context: Optional[Dict[str, Any]] = None
+        context: Optional[Dict[str, Any]] = None,
     ) -> None:
         """
         Save user-provided solution to Obsidian for future Tier 1 hits
@@ -361,7 +390,7 @@ class UnifiedErrorResolver:
             tool=context.get("tool", "Unknown"),
             error_message=error_message,
             file_path=context.get("file"),
-            command=context.get("command")
+            command=context.get("command"),
         )
 
         # TODO: Save to Obsidian
@@ -379,7 +408,7 @@ class UnifiedErrorResolver:
             solution=user_solution,
             confidence=1.0,  # User solution is 100% trusted
             source="user",
-            resolution_time_ms=0.0
+            resolution_time_ms=0.0,
         )
         self._record_resolution(error_ctx, result)
 
@@ -409,7 +438,7 @@ class UnifiedErrorResolver:
                 "tier2_confirmed": 0,
                 "tier3": 0,
                 "automation_rate": 0.0,
-                "knowledge_reuse_rate": 0.0
+                "knowledge_reuse_rate": 0.0,
             }
 
         tier1 = self.stats["tier1_hits"]
@@ -432,7 +461,7 @@ class UnifiedErrorResolver:
             "tier2_confirmed": tier2_confirmed,
             "tier3": tier3,
             "automation_rate": automation_rate,
-            "knowledge_reuse_rate": knowledge_reuse_rate
+            "knowledge_reuse_rate": knowledge_reuse_rate,
         }
 
     def get_knowledge_reuse_rate(self) -> float:
@@ -446,17 +475,21 @@ class UnifiedErrorResolver:
         stats = self.get_statistics()
         return stats["knowledge_reuse_rate"] * 100
 
-    def _record_resolution(self, error_ctx: ErrorContext, result: ResolutionResult) -> None:
+    def _record_resolution(
+        self, error_ctx: ErrorContext, result: ResolutionResult
+    ) -> None:
         """Record resolution in history"""
-        self.stats["resolution_history"].append({
-            "timestamp": error_ctx.timestamp,
-            "tool": error_ctx.tool,
-            "error": error_ctx.error_message[:200],  # Truncate
-            "tier": result.tier,
-            "source": result.source,
-            "confidence": result.confidence,
-            "resolution_time_ms": result.resolution_time_ms
-        })
+        self.stats["resolution_history"].append(
+            {
+                "timestamp": error_ctx.timestamp,
+                "tool": error_ctx.tool,
+                "error": error_ctx.error_message[:200],  # Truncate
+                "tier": result.tier,
+                "source": result.source,
+                "confidence": result.confidence,
+                "resolution_time_ms": result.resolution_time_ms,
+            }
+        )
 
         # Keep last 100 resolutions only
         if len(self.stats["resolution_history"]) > 100:
@@ -469,11 +502,13 @@ class UnifiedErrorResolver:
         """Load statistics from file"""
         if self.stats_file.exists():
             try:
-                with open(self.stats_file, 'r', encoding='utf-8') as f:
+                with open(self.stats_file, "r", encoding="utf-8") as f:
                     saved_stats = json.load(f)
                     # Merge with current stats (preserve structure)
                     self.stats.update(saved_stats)
-                logger.info(f"Loaded resolution stats: {self.stats['total_attempts']} attempts")
+                logger.info(
+                    f"Loaded resolution stats: {self.stats['total_attempts']} attempts"
+                )
             except Exception as e:
                 logger.warning(f"Failed to load stats: {e}")
 
@@ -481,7 +516,7 @@ class UnifiedErrorResolver:
         """Save statistics to file"""
         try:
             self.stats_file.parent.mkdir(parents=True, exist_ok=True)
-            with open(self.stats_file, 'w', encoding='utf-8') as f:
+            with open(self.stats_file, "w", encoding="utf-8") as f:
                 json.dump(self.stats, f, indent=2, ensure_ascii=False)
         except Exception as e:
             logger.warning(f"Failed to save stats: {e}")
@@ -495,7 +530,7 @@ class UnifiedErrorResolver:
             "tier2_auto_applied": 0,
             "tier2_user_confirmed": 0,
             "tier3_escalations": 0,
-            "resolution_history": []
+            "resolution_history": [],
         }
         self._save_stats()
         logger.info("Resolution statistics reset")

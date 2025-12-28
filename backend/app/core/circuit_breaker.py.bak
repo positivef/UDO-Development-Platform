@@ -106,4 +106,3 @@ class SimpleTTLCache:
 
     def set(self, key: str, value: Any, ttl_seconds: int):
         self._store[key] = (time.time() + ttl_seconds, value)
-

@@ -39,19 +39,19 @@ tiers:
           severity: error
         template: |
           # {project_name}
-          
+
           ## 설명
           {description}
-          
+
           ## 실행 방법
           ```bash
           # 설치
           {install_command}
-          
+
           # 실행
           {run_command}
           ```
-          
+
           ## 환경 변수
           `.env.example` 참조
 
@@ -104,7 +104,7 @@ tiers:
       - "새로운 기술 학습"
       - "프로토타입 제작"
     rules: []  # Tier 0 규칙만 적용, 추가 규칙 없음
-    
+
     upgrade_trigger:
       - "2주 이상 지속 사용"
       - "외부 공개 계획"
@@ -133,22 +133,22 @@ tiers:
           typescript: |
             // config/schema.ts
             import { z } from 'zod';
-            
+
             export const envSchema = z.object({
               NODE_ENV: z.enum(['development', 'production', 'test']),
               API_URL: z.string().url().optional(),
               // ... 추가 설정
             });
-            
+
             export const env = envSchema.parse(process.env);
           python: |
             # config/schema.py
             from pydantic import BaseSettings
-            
+
             class Settings(BaseSettings):
                 ENV: str = "development"
                 API_URL: str = "http://localhost:8000"
-                
+
                 class Config:
                     env_file = ".env"
 

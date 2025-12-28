@@ -23,8 +23,9 @@ from typing import Dict, List, Optional
 def get_storage_dir() -> Path:
     """Get UDO storage directory"""
     import os
-    env_dir = os.environ.get('UDO_STORAGE_DIR') or os.environ.get('UDO_HOME')
-    base_dir = Path(env_dir).expanduser() if env_dir else Path.home() / '.udo'
+
+    env_dir = os.environ.get("UDO_STORAGE_DIR") or os.environ.get("UDO_HOME")
+    base_dir = Path(env_dir).expanduser() if env_dir else Path.home() / ".udo"
     base_dir.mkdir(parents=True, exist_ok=True)
     return base_dir
 
@@ -89,21 +90,21 @@ def annotate_prediction(prediction_entry: Dict) -> Optional[Dict]:
 
     print("1. Did unexpected blockers occur? [y/n/s(kip)]")
     blockers_input = input("> ").lower()
-    if blockers_input == 's':
+    if blockers_input == "s":
         return None
-    blockers = blockers_input == 'y'
+    blockers = blockers_input == "y"
 
     print("2. Did estimates match actual time? [y/n]")
-    estimates_matched = input("> ").lower() == 'y'
+    estimates_matched = input("> ").lower() == "y"
 
     print("3. Did all tests pass first try? [y/n]")
-    tests_passed = input("> ").lower() == 'y'
+    tests_passed = input("> ").lower() == "y"
 
     print("4. Were there scope changes? [y/n]")
-    scope_changes = input("> ").lower() == 'y'
+    scope_changes = input("> ").lower() == "y"
 
     print("5. Did dependencies fail? [y/n]")
-    dependencies_failed = input("> ").lower() == 'y'
+    dependencies_failed = input("> ").lower() == "y"
 
     # Calculate actual uncertainty based on observations
     base = 0.30  # Normal baseline
@@ -121,7 +122,7 @@ def annotate_prediction(prediction_entry: Dict) -> Optional[Dict]:
     print("Confirm this value? [y/n] or enter custom value [0-1]:")
     confirm = input("> ")
 
-    if confirm.lower() != 'y':
+    if confirm.lower() != "y":
         try:
             actual_level = float(confirm)
             if not (0 <= actual_level <= 1):
@@ -158,16 +159,12 @@ def annotate_prediction(prediction_entry: Dict) -> Optional[Dict]:
             "estimates_matched": estimates_matched,
             "tests_passed": tests_passed,
             "scope_changes": scope_changes,
-            "dependencies_failed": dependencies_failed
-        }
+            "dependencies_failed": dependencies_failed,
+        },
     }
 
 
-def load_predictions_to_annotate(
-    date: Optional[datetime] = None,
-    last_24h: bool = False,
-    limit: int = 10
-) -> List[Dict]:
+def load_predictions_to_annotate(date: Optional[datetime] = None, last_24h: bool = False, limit: int = 10) -> List[Dict]:
     """
     Load predictions that need annotation
 
@@ -238,30 +235,11 @@ def load_predictions_to_annotate(
 
 
 def main():
-    parser = argparse.ArgumentParser(
-        description="Ground Truth Annotation Tool for UDO Predictions"
-    )
-    parser.add_argument(
-        "--date",
-        type=str,
-        help="Specific date to annotate (YYYY-MM-DD)"
-    )
-    parser.add_argument(
-        "--last-24h",
-        action="store_true",
-        help="Annotate predictions from last 24 hours"
-    )
-    parser.add_argument(
-        "--all",
-        action="store_true",
-        help="Annotate all unannotated predictions"
-    )
-    parser.add_argument(
-        "--limit",
-        type=int,
-        default=10,
-        help="Maximum predictions to annotate (default 10)"
-    )
+    parser = argparse.ArgumentParser(description="Ground Truth Annotation Tool for UDO Predictions")
+    parser.add_argument("--date", type=str, help="Specific date to annotate (YYYY-MM-DD)")
+    parser.add_argument("--last-24h", action="store_true", help="Annotate predictions from last 24 hours")
+    parser.add_argument("--all", action="store_true", help="Annotate all unannotated predictions")
+    parser.add_argument("--limit", type=int, default=10, help="Maximum predictions to annotate (default 10)")
 
     args = parser.parse_args()
 
@@ -281,11 +259,7 @@ def main():
     else:
         limit = args.limit
 
-    predictions = load_predictions_to_annotate(
-        date=target_date,
-        last_24h=args.last_24h,
-        limit=limit
-    )
+    predictions = load_predictions_to_annotate(date=target_date, last_24h=args.last_24h, limit=limit)
 
     if not predictions:
         print("[OK] No predictions to annotate!")

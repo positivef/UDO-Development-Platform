@@ -1,6 +1,8 @@
 """Test uncertainty-time tracking integration"""
-import requests
+
 import json
+
+import requests
 
 base_url = "http://127.0.0.1:8003"
 
@@ -28,17 +30,14 @@ payload = {
         "has_code": True,
         "validation_score": 0.7,
         "team_size": 3,
-        "timeline_weeks": 8
+        "timeline_weeks": 8,
     },
-    "metadata": {
-        "test": "uncertainty_integration"
-    }
+    "metadata": {"test": "uncertainty_integration"},
 }
 
 try:
     response = requests.post(
-        f"{base_url}/api/uncertainty/track-with-uncertainty",
-        json=payload
+        f"{base_url}/api/uncertainty/track-with-uncertainty", json=payload
     )
     print(f"Status: {response.status_code}")
 
@@ -51,4 +50,5 @@ try:
 except Exception as e:
     print(f"Exception: {e}")
     import traceback
+
     traceback.print_exc()

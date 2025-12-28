@@ -9,23 +9,20 @@ Date: 2025-12-16
 """
 
 import os
-import pytest
 from datetime import datetime
 from unittest.mock import patch
+
+import pytest
 from fastapi.testclient import TestClient
 
 # Set test admin key before imports
 os.environ["ADMIN_KEY"] = "test-admin-key"
 
-from backend.app.core.feature_flags import (
-    FeatureFlag,
-    FeatureFlagsManager,
-    feature_flags_manager,
-    is_feature_enabled,
-    require_feature,
-)
+from backend.app.core.feature_flags import (FeatureFlag, FeatureFlagsManager,
+                                            feature_flags_manager,
+                                            is_feature_enabled,
+                                            require_feature)
 from backend.main import app
-
 
 # Test client for API tests
 client = TestClient(app)
@@ -73,10 +70,7 @@ class TestFeatureFlagsManager:
         """Test setting a feature flag."""
         # Enable a disabled flag
         result = feature_flags_manager.set_flag(
-            "kanban_ai_suggest",
-            enabled=True,
-            changed_by="test",
-            reason="Testing"
+            "kanban_ai_suggest", enabled=True, changed_by="test", reason="Testing"
         )
 
         assert result is True
@@ -84,10 +78,7 @@ class TestFeatureFlagsManager:
 
         # Disable it again
         result = feature_flags_manager.set_flag(
-            "kanban_ai_suggest",
-            enabled=False,
-            changed_by="test",
-            reason="Reverting"
+            "kanban_ai_suggest", enabled=False, changed_by="test", reason="Reverting"
         )
 
         assert result is True
@@ -96,9 +87,7 @@ class TestFeatureFlagsManager:
     def test_set_unknown_flag_returns_false(self):
         """Test setting an unknown flag returns False."""
         result = feature_flags_manager.set_flag(
-            "nonexistent_flag",
-            enabled=True,
-            changed_by="test"
+            "nonexistent_flag", enabled=True, changed_by="test"
         )
         assert result is False
 
@@ -107,8 +96,7 @@ class TestFeatureFlagsManager:
         initial = is_feature_enabled("kanban_ai_suggest")
 
         new_value = feature_flags_manager.toggle_flag(
-            "kanban_ai_suggest",
-            changed_by="test"
+            "kanban_ai_suggest", changed_by="test"
         )
 
         assert new_value == (not initial)
@@ -118,7 +106,9 @@ class TestFeatureFlagsManager:
         """Test that change history is recorded."""
         # Make some changes
         feature_flags_manager.set_flag("kanban_ai_suggest", True, "user1", "Enable AI")
-        feature_flags_manager.set_flag("kanban_ai_suggest", False, "user2", "Disable AI")
+        feature_flags_manager.set_flag(
+            "kanban_ai_suggest", False, "user2", "Disable AI"
+        )
 
         history = feature_flags_manager.get_change_history(limit=5)
 
@@ -211,8 +201,7 @@ class TestAdminAPIEndpoints:
     def test_get_single_flag(self):
         """Test getting a single feature flag."""
         response = client.get(
-            "/api/admin/feature-flags/kanban_board",
-            headers=ADMIN_HEADERS
+            "/api/admin/feature-flags/kanban_board", headers=ADMIN_HEADERS
         )
 
         assert response.status_code == 200
@@ -223,8 +212,7 @@ class TestAdminAPIEndpoints:
     def test_get_unknown_flag_returns_404(self):
         """Test getting an unknown flag returns 404."""
         response = client.get(
-            "/api/admin/feature-flags/nonexistent",
-            headers=ADMIN_HEADERS
+            "/api/admin/feature-flags/nonexistent", headers=ADMIN_HEADERS
         )
 
         assert response.status_code == 404
@@ -235,7 +223,7 @@ class TestAdminAPIEndpoints:
         response = client.post(
             "/api/admin/feature-flags/kanban_ai_suggest",
             headers=ADMIN_HEADERS,
-            json={"enabled": True, "reason": "Testing API toggle"}
+            json={"enabled": True, "reason": "Testing API toggle"},
         )
 
         assert response.status_code == 200
@@ -251,7 +239,7 @@ class TestAdminAPIEndpoints:
         response = client.post(
             "/api/admin/feature-flags/nonexistent",
             headers=ADMIN_HEADERS,
-            json={"enabled": True}
+            json={"enabled": True},
         )
 
         assert response.status_code == 404
@@ -261,10 +249,7 @@ class TestAdminAPIEndpoints:
         # Change some flags first
         feature_flags_manager.set_flag("kanban_ai_suggest", True, "test")
 
-        response = client.post(
-            "/api/admin/feature-flags/reset",
-            headers=ADMIN_HEADERS
-        )
+        response = client.post("/api/admin/feature-flags/reset", headers=ADMIN_HEADERS)
 
         assert response.status_code == 200
         data = response.json()
@@ -275,8 +260,7 @@ class TestAdminAPIEndpoints:
     def test_emergency_disable_all(self):
         """Test emergency disable all via API."""
         response = client.post(
-            "/api/admin/feature-flags/disable-all",
-            headers=ADMIN_HEADERS
+            "/api/admin/feature-flags/disable-all", headers=ADMIN_HEADERS
         )
 
         assert response.status_code == 200
@@ -291,10 +275,7 @@ class TestAdminAPIEndpoints:
         # Make some changes
         feature_flags_manager.set_flag("kanban_ai_suggest", True, "user1")
 
-        response = client.get(
-            "/api/admin/feature-flags/history",
-            headers=ADMIN_HEADERS
-        )
+        response = client.get("/api/admin/feature-flags/history", headers=ADMIN_HEADERS)
 
         assert response.status_code == 200
         data = response.json()
@@ -323,12 +304,14 @@ class TestRequireFeatureDecorator:
 
     def test_decorator_allows_enabled_feature(self):
         """Test that decorator allows request when feature is enabled."""
+
         # kanban_board is enabled by default
         @require_feature("kanban_board")
         async def test_endpoint():
             return {"status": "ok"}
 
         import asyncio
+
         result = asyncio.get_event_loop().run_until_complete(test_endpoint())
         assert result == {"status": "ok"}
 
@@ -342,6 +325,7 @@ class TestRequireFeatureDecorator:
             return {"status": "ok"}
 
         import asyncio
+
         with pytest.raises(HTTPException) as exc_info:
             asyncio.get_event_loop().run_until_complete(test_endpoint())
 
@@ -361,8 +345,8 @@ class TestThreadSafety:
 
     def test_concurrent_flag_operations(self):
         """Test that concurrent flag operations are thread-safe."""
-        import threading
         import random
+        import threading
 
         errors = []
         iterations = 100
@@ -403,7 +387,9 @@ class TestThreadSafety:
         def writer():
             try:
                 for _ in range(iterations):
-                    feature_flags_manager.toggle_flag("kanban_ai_suggest", changed_by="writer")
+                    feature_flags_manager.toggle_flag(
+                        "kanban_ai_suggest", changed_by="writer"
+                    )
             except Exception as e:
                 errors.append(e)
 

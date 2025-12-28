@@ -35,9 +35,9 @@ class GIFormulaService:
     Service for generating insights using Genius Insight Formula
 
     Features:
-    - 5-stage insight generation (O -> C -> P -> S -> B)
+    - 5-stage insight generation (O → C → P → S → B)
     - Sequential MCP integration for structured reasoning
-    - 3-tier caching (Memory -> Redis -> SQLite)
+    - 3-tier caching (Memory → Redis → SQLite)
     - Obsidian auto-save
     - Performance target: <30 seconds
     - Graceful degradation on MCP failures
@@ -117,7 +117,7 @@ class GIFormulaService:
             # Generate insight ID
             insight_id = self._generate_insight_id(request.problem)
 
-            # Check cache (3-tier: Memory -> Redis -> SQLite)
+            # Check cache (3-tier: Memory → Redis → SQLite)
             cached_result = await self._get_cached_insight(insight_id)
             if cached_result:
                 logger.info(f"Cache hit for insight {insight_id}")
@@ -574,7 +574,7 @@ class GIFormulaService:
             # Format Obsidian note
             today = datetime.now().strftime("%Y-%m-%d")
             safe_filename = result.problem[:50].replace(" ", "-").replace("/", "-")
-            obsidian_path = f"[EMOJI]/{today}/GI-Insight-{safe_filename}.md"
+            obsidian_path = f"개발일지/{today}/GI-Insight-{safe_filename}.md"
 
             content = self._format_obsidian_note(result)
 
@@ -614,11 +614,11 @@ tags: [gi-formula, insight, {result.project}]
 
 # GI Insight: {result.problem}
 
-## [EMOJI] Problem Statement
+## 🎯 Problem Statement
 
 {result.problem}
 
-## [EMOJI] 5-Stage Analysis
+## 🔍 5-Stage Analysis
 
 ### 1. Observation
 {result.stages["observation"].content}
@@ -647,17 +647,17 @@ tags: [gi-formula, insight, {result.project}]
 
 **Duration**: {result.stages["bias_check"].duration_ms}ms
 
-## [EMOJI] Final Insight
+## 💡 Final Insight
 
 {result.final_insight}
 
-## [EMOJI] Metadata
+## 📊 Metadata
 
 - **Total Duration**: {result.total_duration_ms}ms ({result.total_duration_ms / 1000:.1f}s)
 - **Created**: {result.created_at.strftime("%Y-%m-%d %H:%M:%S")}
 - **Project**: {result.project}
 
-## [EMOJI] Related
+## 🔗 Related
 
 - [[GI Formula Framework]]
 - [[Insight Patterns]]

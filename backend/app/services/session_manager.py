@@ -3,22 +3,24 @@ Multi-Session Manager for UDO Platform
 Handles concurrent terminal sessions, conflict resolution, and distributed locking
 """
 
-import json
 import asyncio
 import hashlib
-from datetime import datetime, timedelta
-from typing import Dict, List, Optional, Any, Set
-from uuid import uuid4
-from enum import Enum
-import redis.asyncio as redis
-from dataclasses import dataclass, asdict
+import json
 import logging
+from dataclasses import asdict, dataclass
+from datetime import datetime, timedelta
+from enum import Enum
+from typing import Any, Dict, List, Optional, Set
+from uuid import uuid4
+
+import redis.asyncio as redis
 
 logger = logging.getLogger(__name__)
 
 
 class SessionStatus(Enum):
     """Session status types"""
+
     ACTIVE = "active"
     IDLE = "idle"
     LOCKED = "locked"
@@ -28,6 +30,7 @@ class SessionStatus(Enum):
 
 class LockType(Enum):
     """Lock types for different resources"""
+
     FILE = "file"
     PROJECT = "project"
     GIT_BRANCH = "git_branch"
@@ -37,6 +40,7 @@ class LockType(Enum):
 
 class ConflictType(Enum):
     """Types of conflicts that can occur"""
+
     FILE_EDIT = "file_edit"
     GIT_MERGE = "git_merge"
     CONTEXT_SWITCH = "context_switch"
@@ -47,6 +51,7 @@ class ConflictType(Enum):
 @dataclass
 class Session:
     """Session data structure"""
+
     id: str
     terminal_id: str
     project_id: Optional[str]
@@ -63,23 +68,24 @@ class Session:
     def to_dict(self) -> dict:
         """Convert to dictionary for serialization"""
         data = asdict(self)
-        data['status'] = self.status.value
-        data['started_at'] = self.started_at.isoformat()
-        data['last_active'] = self.last_active.isoformat()
+        data["status"] = self.status.value
+        data["started_at"] = self.started_at.isoformat()
+        data["last_active"] = self.last_active.isoformat()
         return data
 
     @classmethod
-    def from_dict(cls, data: dict) -> 'Session':
+    def from_dict(cls, data: dict) -> "Session":
         """Create from dictionary"""
-        data['status'] = SessionStatus(data['status'])
-        data['started_at'] = datetime.fromisoformat(data['started_at'])
-        data['last_active'] = datetime.fromisoformat(data['last_active'])
+        data["status"] = SessionStatus(data["status"])
+        data["started_at"] = datetime.fromisoformat(data["started_at"])
+        data["last_active"] = datetime.fromisoformat(data["last_active"])
         return cls(**data)
 
 
 @dataclass
 class ResourceLock:
     """Resource lock information"""
+
     resource_id: str
     lock_type: LockType
     session_id: str
@@ -95,6 +101,7 @@ class ResourceLock:
 @dataclass
 class Conflict:
     """Conflict information"""
+
     id: str
     type: ConflictType
     sessions: List[str]
@@ -128,9 +135,7 @@ class SessionManager:
 
         try:
             self.redis_client = await redis.from_url(
-                self.redis_url,
-                encoding="utf-8",
-                decode_responses=True
+                self.redis_url, encoding="utf-8", decode_responses=True
             )
 
             # Test connection
@@ -154,11 +159,13 @@ class SessionManager:
         terminal_id: str,
         user_id: str = "default",
         project_id: Optional[str] = None,
-        working_directory: Optional[str] = None
+        working_directory: Optional[str] = None,
     ) -> Session:
         """Create a new session for a terminal"""
 
-        session_id = f"{terminal_id}_{uuid4().hex[:8]}_{int(datetime.now().timestamp())}"
+        session_id = (
+            f"{terminal_id}_{uuid4().hex[:8]}_{int(datetime.now().timestamp())}"
+        )
 
         # Check if this should be primary session
         is_primary = await self._should_be_primary(project_id) if project_id else False
@@ -175,7 +182,7 @@ class SessionManager:
             locks=[],
             current_branch=None,
             working_directory=working_directory,
-            env_vars={}
+            env_vars={},
         )
 
         # Store locally
@@ -184,20 +191,21 @@ class SessionManager:
         # Store in Redis if available
         if self.redis_client:
             await self.redis_client.hset(
-                "sessions",
-                session_id,
-                json.dumps(session.to_dict())
+                "sessions", session_id, json.dumps(session.to_dict())
             )
 
             # Set expiry (24 hours)
             await self.redis_client.expire(f"session:{session_id}", 86400)
 
             # Broadcast session creation
-            await self._broadcast_event("session_created", {
-                "session_id": session_id,
-                "project_id": project_id,
-                "is_primary": is_primary
-            })
+            await self._broadcast_event(
+                "session_created",
+                {
+                    "session_id": session_id,
+                    "project_id": project_id,
+                    "is_primary": is_primary,
+                },
+            )
 
         logger.info(f"[EMOJI] Session created: {session_id} (Primary: {is_primary})")
         return session
@@ -209,7 +217,7 @@ class SessionManager:
         lock_type: LockType = LockType.FILE,
         timeout: int = 300,  # 5 minutes default
         wait: bool = False,
-        metadata: Optional[Dict] = None
+        metadata: Optional[Dict] = None,
     ) -> Optional[ResourceLock]:
         """
         Acquire a lock on a resource
@@ -238,13 +246,15 @@ class SessionManager:
 
             if not wait:
                 # Lock held by another session
-                logger.warning(f"[EMOJI] Lock conflict: {resource_id} held by {existing_lock.session_id}")
+                logger.warning(
+                    f"[EMOJI] Lock conflict: {resource_id} held by {existing_lock.session_id}"
+                )
 
                 # Record conflict
                 await self._record_conflict(
                     ConflictType.RESOURCE_LOCK,
                     [session_id, existing_lock.session_id],
-                    resource_id
+                    resource_id,
                 )
 
                 return None
@@ -259,7 +269,7 @@ class SessionManager:
             session_id=session_id,
             acquired_at=datetime.now(),
             expires_at=datetime.now() + timedelta(seconds=timeout),
-            metadata=metadata or {}
+            metadata=metadata or {},
         )
 
         # Store lock
@@ -267,14 +277,16 @@ class SessionManager:
             # Use Redis SET with NX (only if not exists) and EX (expiry)
             success = await self.redis_client.set(
                 lock_key,
-                json.dumps({
-                    "session_id": session_id,
-                    "acquired_at": lock.acquired_at.isoformat(),
-                    "expires_at": lock.expires_at.isoformat(),
-                    "metadata": lock.metadata
-                }),
+                json.dumps(
+                    {
+                        "session_id": session_id,
+                        "acquired_at": lock.acquired_at.isoformat(),
+                        "expires_at": lock.expires_at.isoformat(),
+                        "metadata": lock.metadata,
+                    }
+                ),
                 nx=True,
-                ex=timeout
+                ex=timeout,
             )
 
             if not success:
@@ -285,27 +297,29 @@ class SessionManager:
 
         # Update session locks
         if session_id in self.local_sessions:
-            self.local_sessions[session_id].locks.append({
-                "resource": resource_id,
-                "type": lock_type.value,
-                "acquired_at": lock.acquired_at.isoformat()
-            })
+            self.local_sessions[session_id].locks.append(
+                {
+                    "resource": resource_id,
+                    "type": lock_type.value,
+                    "acquired_at": lock.acquired_at.isoformat(),
+                }
+            )
 
         # Broadcast lock acquisition
-        await self._broadcast_event("lock_acquired", {
-            "session_id": session_id,
-            "resource": resource_id,
-            "lock_type": lock_type.value
-        })
+        await self._broadcast_event(
+            "lock_acquired",
+            {
+                "session_id": session_id,
+                "resource": resource_id,
+                "lock_type": lock_type.value,
+            },
+        )
 
         logger.info(f"[OK] Lock acquired: {resource_id} by {session_id}")
         return lock
 
     async def release_lock(
-        self,
-        session_id: str,
-        resource_id: str,
-        lock_type: LockType = LockType.FILE
+        self, session_id: str, resource_id: str, lock_type: LockType = LockType.FILE
     ) -> bool:
         """Release a lock held by a session"""
 
@@ -315,7 +329,9 @@ class SessionManager:
         existing_lock = await self._get_existing_lock(lock_key)
 
         if not existing_lock or existing_lock.session_id != session_id:
-            logger.warning(f"[WARN] Cannot release lock not owned by session: {session_id}")
+            logger.warning(
+                f"[WARN] Cannot release lock not owned by session: {session_id}"
+            )
             return False
 
         # Release in Redis
@@ -332,9 +348,7 @@ class SessionManager:
             return 0
             """
 
-            result = await self.redis_client.eval(
-                lua_script, 1, lock_key, session_id
-            )
+            result = await self.redis_client.eval(lua_script, 1, lock_key, session_id)
 
             if result == 0:
                 return False
@@ -346,26 +360,23 @@ class SessionManager:
         # Update session
         if session_id in self.local_sessions:
             session = self.local_sessions[session_id]
-            session.locks = [
-                l for l in session.locks
-                if l['resource'] != resource_id
-            ]
+            session.locks = [l for l in session.locks if l["resource"] != resource_id]
 
         # Broadcast lock release
-        await self._broadcast_event("lock_released", {
-            "session_id": session_id,
-            "resource": resource_id,
-            "lock_type": lock_type.value
-        })
+        await self._broadcast_event(
+            "lock_released",
+            {
+                "session_id": session_id,
+                "resource": resource_id,
+                "lock_type": lock_type.value,
+            },
+        )
 
         logger.info(f"[EMOJI] Lock released: {resource_id} by {session_id}")
         return True
 
     async def detect_conflicts(
-        self,
-        session_id: str,
-        action: str,
-        resource: str
+        self, session_id: str, action: str, resource: str
     ) -> List[Conflict]:
         """Detect potential conflicts before an action"""
 
@@ -384,8 +395,9 @@ class SessionManager:
 
             # Check for file edit conflicts
             if action == "edit_file" and resource in [
-                l['resource'] for l in other_session.locks
-                if l['type'] == LockType.FILE.value
+                l["resource"]
+                for l in other_session.locks
+                if l["type"] == LockType.FILE.value
             ]:
                 conflict = Conflict(
                     id=str(uuid4()),
@@ -395,12 +407,15 @@ class SessionManager:
                     detected_at=datetime.now(),
                     resolution_strategy="wait_or_merge",
                     resolved=False,
-                    resolution_metadata=None
+                    resolution_metadata=None,
                 )
                 conflicts.append(conflict)
 
             # Check for git branch conflicts
-            if action == "git_operation" and session.current_branch == other_session.current_branch:
+            if (
+                action == "git_operation"
+                and session.current_branch == other_session.current_branch
+            ):
                 conflict = Conflict(
                     id=str(uuid4()),
                     type=ConflictType.GIT_MERGE,
@@ -409,7 +424,7 @@ class SessionManager:
                     detected_at=datetime.now(),
                     resolution_strategy="coordinate",
                     resolved=False,
-                    resolution_metadata=None
+                    resolution_metadata=None,
                 )
                 conflicts.append(conflict)
 
@@ -418,20 +433,21 @@ class SessionManager:
 
         # Broadcast conflicts
         for conflict in conflicts:
-            await self._broadcast_event("conflict_detected", {
-                "conflict_id": conflict.id,
-                "type": conflict.type.value,
-                "sessions": conflict.sessions,
-                "resource": conflict.resource,
-                "strategy": conflict.resolution_strategy
-            })
+            await self._broadcast_event(
+                "conflict_detected",
+                {
+                    "conflict_id": conflict.id,
+                    "type": conflict.type.value,
+                    "sessions": conflict.sessions,
+                    "resource": conflict.resource,
+                    "strategy": conflict.resolution_strategy,
+                },
+            )
 
         return conflicts
 
     async def coordinate_sessions(
-        self,
-        project_id: str,
-        coordination_type: str = "auto"
+        self, project_id: str, coordination_type: str = "auto"
     ) -> Dict[str, Any]:
         """
         Coordinate multiple sessions working on the same project
@@ -455,7 +471,7 @@ class SessionManager:
             "primary_session": next((s.id for s in sessions if s.is_primary), None),
             "assignments": {},
             "restrictions": {},
-            "notifications": []
+            "notifications": [],
         }
 
         if coordination_type == "auto":
@@ -465,7 +481,7 @@ class SessionManager:
             locked_resources = {}
             for session in sessions:
                 for lock in session.locks:
-                    locked_resources[lock['resource']] = session.id
+                    locked_resources[lock["resource"]] = session.id
 
             # Assign non-conflicting areas
             for session in sessions:
@@ -474,14 +490,16 @@ class SessionManager:
                     coordination_plan["assignments"][session.id] = {
                         "role": "primary",
                         "allowed_areas": ["*"],
-                        "priority": 1
+                        "priority": 1,
                     }
                 else:
                     # Secondary sessions get specific areas
                     coordination_plan["assignments"][session.id] = {
                         "role": "secondary",
-                        "allowed_areas": self._get_safe_areas(locked_resources, session.id),
-                        "priority": 2
+                        "allowed_areas": self._get_safe_areas(
+                            locked_resources, session.id
+                        ),
+                        "priority": 2,
                     }
 
             # Add notifications
@@ -489,13 +507,15 @@ class SessionManager:
                 {
                     "type": "info",
                     "message": f"Auto-coordination active: {len(sessions)} sessions",
-                    "sessions": [s.id for s in sessions]
+                    "sessions": [s.id for s in sessions],
                 }
             ]
 
         elif coordination_type == "ai_assisted":
             # Use ML to predict optimal work distribution
-            coordination_plan["ai_recommendations"] = await self._get_ai_coordination(sessions)
+            coordination_plan["ai_recommendations"] = await self._get_ai_coordination(
+                sessions
+            )
 
         # Broadcast coordination plan
         await self._broadcast_event("coordination_updated", coordination_plan)
@@ -510,11 +530,11 @@ class SessionManager:
             return
 
         # Release all locks held by session
-        for lock_info in session.locks[:]:  # Copy list to avoid modification during iteration
+        for lock_info in session.locks[
+            :
+        ]:  # Copy list to avoid modification during iteration
             await self.release_lock(
-                session_id,
-                lock_info['resource'],
-                LockType(lock_info['type'])
+                session_id, lock_info["resource"], LockType(lock_info["type"])
             )
 
         # Update session status
@@ -532,10 +552,10 @@ class SessionManager:
         del self.local_sessions[session_id]
 
         # Broadcast termination
-        await self._broadcast_event("session_terminated", {
-            "session_id": session_id,
-            "was_primary": session.is_primary
-        })
+        await self._broadcast_event(
+            "session_terminated",
+            {"session_id": session_id, "was_primary": session.is_primary},
+        )
 
         logger.info(f"[EMOJI] Session terminated: {session_id}")
 
@@ -563,9 +583,10 @@ class SessionManager:
                     "id": s.id,
                     "status": s.status.value,
                     "is_primary": s.is_primary,
-                    "locks": len(s.locks)
+                    "locks": len(s.locks),
                 }
-                for s in project_sessions if s.id != session_id
+                for s in project_sessions
+                if s.id != session_id
             ]
 
         # Get conflicts
@@ -574,10 +595,15 @@ class SessionManager:
                 "id": c.id,
                 "type": c.type.value,
                 "resource": c.resource,
-                "with_session": [s for s in c.sessions if s != session_id][0] if len(c.sessions) > 1 else None,
-                "resolved": c.resolved
+                "with_session": (
+                    [s for s in c.sessions if s != session_id][0]
+                    if len(c.sessions) > 1
+                    else None
+                ),
+                "resolved": c.resolved,
             }
-            for c in self.conflicts if session_id in c.sessions
+            for c in self.conflicts
+            if session_id in c.sessions
         ]
 
         return {
@@ -587,8 +613,8 @@ class SessionManager:
             "conflicts": session_conflicts,
             "metrics": {
                 "uptime_minutes": (datetime.now() - session.started_at).seconds // 60,
-                "idle_minutes": (datetime.now() - session.last_active).seconds // 60
-            }
+                "idle_minutes": (datetime.now() - session.last_active).seconds // 60,
+            },
         }
 
     # Private helper methods
@@ -610,7 +636,10 @@ class SessionManager:
 
         # Check local sessions
         for session in self.local_sessions.values():
-            if session.project_id == project_id and session.status == SessionStatus.ACTIVE:
+            if (
+                session.project_id == project_id
+                and session.status == SessionStatus.ACTIVE
+            ):
                 sessions.append(session)
 
         # Check Redis if available
@@ -618,7 +647,10 @@ class SessionManager:
             all_sessions = await self.redis_client.hgetall("sessions")
             for session_data in all_sessions.values():
                 session = Session.from_dict(json.loads(session_data))
-                if session.project_id == project_id and session.status == SessionStatus.ACTIVE:
+                if (
+                    session.project_id == project_id
+                    and session.status == SessionStatus.ACTIVE
+                ):
                     sessions.append(session)
 
         return sessions
@@ -638,20 +670,16 @@ class SessionManager:
                 return ResourceLock(
                     resource_id=lock_key.split(":")[-1],
                     lock_type=LockType(lock_key.split(":")[1]),
-                    session_id=data['session_id'],
-                    acquired_at=datetime.fromisoformat(data['acquired_at']),
-                    expires_at=datetime.fromisoformat(data['expires_at']),
-                    metadata=data.get('metadata', {})
+                    session_id=data["session_id"],
+                    acquired_at=datetime.fromisoformat(data["acquired_at"]),
+                    expires_at=datetime.fromisoformat(data["expires_at"]),
+                    metadata=data.get("metadata", {}),
                 )
 
         return None
 
     async def _wait_for_lock(
-        self,
-        session_id: str,
-        lock_key: str,
-        timeout: int,
-        metadata: Optional[Dict]
+        self, session_id: str, lock_key: str, timeout: int, metadata: Optional[Dict]
     ) -> Optional[ResourceLock]:
         """Wait for a lock to become available"""
 
@@ -670,7 +698,7 @@ class SessionManager:
                     LockType(lock_key.split(":")[1]),
                     timeout,
                     wait=False,
-                    metadata=metadata
+                    metadata=metadata,
                 )
 
             # Wait before retry
@@ -679,10 +707,7 @@ class SessionManager:
         return None
 
     async def _record_conflict(
-        self,
-        conflict_type: ConflictType,
-        sessions: List[str],
-        resource: str
+        self, conflict_type: ConflictType, sessions: List[str], resource: str
     ):
         """Record a conflict"""
 
@@ -694,7 +719,7 @@ class SessionManager:
             detected_at=datetime.now(),
             resolution_strategy=None,
             resolved=False,
-            resolution_metadata=None
+            resolution_metadata=None,
         )
 
         self.conflicts.append(conflict)
@@ -703,14 +728,16 @@ class SessionManager:
         if self.redis_client:
             await self.redis_client.lpush(
                 "conflicts",
-                json.dumps({
-                    "id": conflict.id,
-                    "type": conflict.type.value,
-                    "sessions": conflict.sessions,
-                    "resource": conflict.resource,
-                    "detected_at": conflict.detected_at.isoformat(),
-                    "resolved": conflict.resolved
-                })
+                json.dumps(
+                    {
+                        "id": conflict.id,
+                        "type": conflict.type.value,
+                        "sessions": conflict.sessions,
+                        "resource": conflict.resource,
+                        "detected_at": conflict.detected_at.isoformat(),
+                        "resolved": conflict.resolved,
+                    }
+                ),
             )
 
             # Keep only last 100 conflicts
@@ -720,7 +747,9 @@ class SessionManager:
         """Promote a new primary session when current primary terminates"""
 
         sessions = await self._get_project_sessions(project_id)
-        eligible = [s for s in sessions if s.id != exclude and s.status == SessionStatus.ACTIVE]
+        eligible = [
+            s for s in sessions if s.id != exclude and s.status == SessionStatus.ACTIVE
+        ]
 
         if eligible:
             # Promote the oldest active session
@@ -730,20 +759,20 @@ class SessionManager:
             # Update in Redis
             if self.redis_client:
                 await self.redis_client.hset(
-                    "sessions",
-                    new_primary.id,
-                    json.dumps(new_primary.to_dict())
+                    "sessions", new_primary.id, json.dumps(new_primary.to_dict())
                 )
 
             # Broadcast promotion
-            await self._broadcast_event("primary_promoted", {
-                "session_id": new_primary.id,
-                "project_id": project_id
-            })
+            await self._broadcast_event(
+                "primary_promoted",
+                {"session_id": new_primary.id, "project_id": project_id},
+            )
 
             logger.info(f"[EMOJI] New primary session: {new_primary.id}")
 
-    def _get_safe_areas(self, locked_resources: Dict[str, str], session_id: str) -> List[str]:
+    def _get_safe_areas(
+        self, locked_resources: Dict[str, str], session_id: str
+    ) -> List[str]:
         """Get safe work areas for a session to avoid conflicts"""
 
         # This would be more sophisticated in production
@@ -755,7 +784,7 @@ class SessionManager:
             "docs/*",
             "README.md",
             "package.json",
-            "requirements.txt"
+            "requirements.txt",
         ]
 
         for area in common_areas:
@@ -772,11 +801,13 @@ class SessionManager:
         return {
             "recommended_distribution": {
                 sessions[0].id: ["backend/*", "api/*"] if len(sessions) > 0 else [],
-                sessions[1].id: ["frontend/*", "components/*"] if len(sessions) > 1 else [],
-                sessions[2].id: ["tests/*", "docs/*"] if len(sessions) > 2 else []
+                sessions[1].id: (
+                    ["frontend/*", "components/*"] if len(sessions) > 1 else []
+                ),
+                sessions[2].id: ["tests/*", "docs/*"] if len(sessions) > 2 else [],
             },
             "conflict_probability": 0.25,
-            "efficiency_score": 0.85
+            "efficiency_score": 0.85,
         }
 
     async def _broadcast_event(self, event_type: str, data: Dict[str, Any]):
@@ -788,13 +819,10 @@ class SessionManager:
         message = {
             "type": event_type,
             "timestamp": datetime.now().isoformat(),
-            "data": data
+            "data": data,
         }
 
-        await self.redis_client.publish(
-            "udo:events",
-            json.dumps(message)
-        )
+        await self.redis_client.publish("udo:events", json.dumps(message))
 
     async def _event_listener(self):
         """Listen for events from other sessions"""
@@ -808,13 +836,13 @@ class SessionManager:
             while True:
                 message = await self.pubsub.get_message(ignore_subscribe_messages=True)
 
-                if message and message['type'] == 'message':
-                    event = json.loads(message['data'])
+                if message and message["type"] == "message":
+                    event = json.loads(message["data"])
 
                     # Call registered event handlers
-                    if event['type'] in self._event_handlers:
-                        for handler in self._event_handlers[event['type']]:
-                            asyncio.create_task(handler(event['data']))
+                    if event["type"] in self._event_handlers:
+                        for handler in self._event_handlers[event["type"]]:
+                            asyncio.create_task(handler(event["data"]))
 
                 await asyncio.sleep(0.01)
 

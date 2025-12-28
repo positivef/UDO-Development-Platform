@@ -534,4 +534,3 @@ class TaskPlanValidator:
 1. Phase 1: CLI 계획 확인 (필수)
 2. Phase 2: 웹 TODO 체크리스트 (권장)
 3. Phase 3: 스마트 검증 (고급)
-

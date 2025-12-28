@@ -1,0 +1,447 @@
+"""
+UDO v2 + Bayesian Learning [EMOJI] [EMOJI]
+===================================
+
+UDO v2 Orchestrator[EMOJI] Adaptive Bayesian Learning[EMOJI] [EMOJI]
+[EMOJI] [EMOJI] [EMOJI] [EMOJI] [EMOJI] [EMOJI] [EMOJI].
+
+[EMOJI] [EMOJI]:
+1. Phase[EMOJI] Bayesian Confidence [EMOJI]
+2. [EMOJI] Threshold [EMOJI] [EMOJI]
+3. [EMOJI] [EMOJI] [EMOJI]
+4. [EMOJI] [EMOJI] [EMOJI]
+"""
+
+import logging
+from datetime import datetime
+from pathlib import Path
+from typing import Any, Dict, Optional, Tuple
+
+from adaptive_bayesian_uncertainty import AdaptiveBayesianUncertainty
+from uncertainty_map_v3 import UncertaintyVector
+
+logger = logging.getLogger(__name__)
+
+
+class UDOBayesianIntegration:
+    """
+    UDO v2 Orchestrator[EMOJI] Bayesian Learning System [EMOJI]
+
+    [EMOJI] [EMOJI] UDO v2[EMOJI] [EMOJI] [EMOJI] [EMOJI] Bayesian confidence[EMOJI]
+    [EMOJI], [EMOJI] [EMOJI] [EMOJI] [EMOJI].
+    """
+
+    def __init__(self, project_name: str, storage_dir: Optional[Path] = None):
+        """
+        Initialize Bayesian integration
+
+        Args:
+            project_name: [EMOJI] [EMOJI]
+            storage_dir: [EMOJI] [EMOJI] [EMOJI] [EMOJI]
+        """
+        self.project_name = project_name
+        self.bayesian = AdaptiveBayesianUncertainty(
+            project_name=project_name,
+            storage_dir=storage_dir or Path.home() / ".udo" / "bayesian",
+        )
+
+        # Phase[EMOJI] [EMOJI] threshold (UDO v2[EMOJI] [EMOJI])
+        self.BASE_THRESHOLDS = {
+            "ideation": 0.60,
+            "design": 0.65,
+            "mvp": 0.65,
+            "implementation": 0.70,
+            "testing": 0.70,
+        }
+
+        # [EMOJI] [EMOJI]
+        self.integration_metrics = {
+            "decisions_influenced": 0,
+            "threshold_adjustments": 0,
+            "bias_corrections": 0,
+            "learning_events": 0,
+        }
+
+        logger.info(f"🧠 UDO-Bayesian Integration initialized for {project_name}")
+
+    def get_adaptive_threshold(
+        self, phase: str, base_confidence: float
+    ) -> Tuple[float, Dict[str, Any]]:
+        """
+        Phase[EMOJI] [EMOJI] threshold [EMOJI]
+
+        Bayesian [EMOJI] [EMOJI] [EMOJI] [EMOJI] threshold[EMOJI] [EMOJI].
+
+        Args:
+            phase: [EMOJI] [EMOJI] (ideation, design, mvp, implementation, testing)
+            base_confidence: UDO v2[EMOJI] [EMOJI] [EMOJI] confidence
+
+        Returns:
+            (adjusted_threshold, metadata) tuple
+            - adjusted_threshold: Bayesian [EMOJI] [EMOJI] threshold
+            - metadata: [EMOJI] [EMOJI] [EMOJI] [EMOJI]
+        """
+        base_threshold = self.BASE_THRESHOLDS.get(phase, 0.65)
+
+        # Bayesian [EMOJI] Phase[EMOJI] [EMOJI] [EMOJI]
+        phase_performance = self.bayesian.get_performance_report()
+
+        # [EMOJI] [EMOJI] [EMOJI] [EMOJI]
+        bias_profile = phase_performance.get("bias_profile", {})
+        bias_type = bias_profile.get("type", "unbiased")
+
+        # [EMOJI] [EMOJI] threshold [EMOJI]
+        bias_adjustment = 0.0
+        if bias_type == "optimistic":
+            # [EMOJI] [EMOJI] -> threshold [EMOJI]
+            bias_adjustment = +0.05
+        elif bias_type == "highly_optimistic":
+            bias_adjustment = +0.10
+        elif bias_type == "pessimistic":
+            # [EMOJI] [EMOJI] -> threshold [EMOJI]
+            bias_adjustment = -0.05
+        elif bias_type == "highly_pessimistic":
+            bias_adjustment = -0.10
+
+        # [EMOJI] confidence[EMOJI] [EMOJI]
+        # base_confidence[EMOJI] [EMOJI] [EMOJI] [EMOJI] [EMOJI] threshold [EMOJI]
+        confidence_factor = (base_confidence - 0.5) * 0.1  # -0.05 ~ +0.05 [EMOJI]
+
+        # [EMOJI] [EMOJI] threshold
+        adjusted_threshold = base_threshold + bias_adjustment + confidence_factor
+
+        # [EMOJI] [EMOJI] [EMOJI] [EMOJI] (0.4 ~ 0.9)
+        adjusted_threshold = max(0.4, min(0.9, adjusted_threshold))
+
+        # [EMOJI] [EMOJI] [EMOJI]
+        if abs(adjusted_threshold - base_threshold) > 0.01:
+            self.integration_metrics["threshold_adjustments"] += 1
+
+        if abs(bias_adjustment) > 0.01:
+            self.integration_metrics["bias_corrections"] += 1
+
+        metadata = {
+            "base_threshold": base_threshold,
+            "adjusted_threshold": adjusted_threshold,
+            "bias_type": bias_type,
+            "bias_adjustment": bias_adjustment,
+            "confidence_factor": confidence_factor,
+            "reason": self._explain_adjustment(
+                bias_type, bias_adjustment, confidence_factor
+            ),
+        }
+
+        logger.info(
+            f"[EMOJI] Phase '{phase}' threshold: {base_threshold:.2f} -> {adjusted_threshold:.2f} "
+            f"(bias: {bias_type}, adj: {bias_adjustment:+.2f})"
+        )
+
+        return adjusted_threshold, metadata
+
+    def enhance_go_decision(
+        self, phase: str, base_confidence: float, uncertainties: Dict[str, float]
+    ) -> Dict[str, Any]:
+        """
+        UDO v2[EMOJI] GO/NO_GO [EMOJI] Bayesian [EMOJI] [EMOJI]
+
+        Args:
+            phase: [EMOJI] [EMOJI]
+            base_confidence: UDO v2[EMOJI] [EMOJI] [EMOJI] confidence
+            uncertainties: [EMOJI] [EMOJI]
+
+        Returns:
+            [EMOJI] [EMOJI] [EMOJI]
+        """
+        # [EMOJI] threshold [EMOJI]
+        adjusted_threshold, threshold_meta = self.get_adaptive_threshold(
+            phase, base_confidence
+        )
+
+        # UncertaintyVector [EMOJI]
+        uncertainty_vector = UncertaintyVector(
+            technical=uncertainties.get("technical", 0.5),
+            market=uncertainties.get("market", 0.5),
+            resource=uncertainties.get("resource", 0.5),
+            timeline=uncertainties.get("timeline", 0.5),
+            quality=uncertainties.get("quality", 0.5),
+        )
+
+        # Bayesian [EMOJI] [EMOJI]
+        bayesian_prediction = self.bayesian.predict_uncertainty(
+            current_vector=uncertainty_vector,
+            phase=phase,
+            horizon_hours=168,  # 1[EMOJI] [EMOJI]
+        )
+
+        # [EMOJI] [EMOJI] confidence [EMOJI]
+        # UDO v2 confidence + Bayesian confidence[EMOJI] [EMOJI] [EMOJI]
+        bayesian_confidence = bayesian_prediction.get("confidence", 0.5)
+
+        # 70% UDO, 30% Bayesian
+        final_confidence = 0.7 * base_confidence + 0.3 * bayesian_confidence
+
+        # [EMOJI]
+        if final_confidence >= adjusted_threshold:
+            decision = "GO"
+            confidence_gap = final_confidence - adjusted_threshold
+        elif final_confidence >= adjusted_threshold * 0.8:
+            decision = "GO_WITH_CHECKPOINTS"
+            confidence_gap = final_confidence - (adjusted_threshold * 0.8)
+        else:
+            decision = "NO_GO"
+            confidence_gap = final_confidence - adjusted_threshold
+
+        self.integration_metrics["decisions_influenced"] += 1
+
+        result = {
+            "decision": decision,
+            "final_confidence": final_confidence,
+            "confidence_gap": confidence_gap,
+            "components": {
+                "udo_confidence": base_confidence,
+                "bayesian_confidence": bayesian_confidence,
+                "weights": {"udo": 0.7, "bayesian": 0.3},
+            },
+            "threshold": {
+                "original": self.BASE_THRESHOLDS.get(phase, 0.65),
+                "adjusted": adjusted_threshold,
+                "metadata": threshold_meta,
+            },
+            "bayesian_insights": {
+                "predicted_uncertainty": bayesian_prediction.get(
+                    "predicted_magnitude", 0.5
+                ),
+                "trend": bayesian_prediction.get("overall_trend", "stable"),
+                "quantum_state": bayesian_prediction.get("predicted_state", "quantum"),
+                "recommendations": bayesian_prediction.get("recommendations", [])[
+                    :3
+                ],  # Top 3
+            },
+            "explanation": self._explain_decision(
+                decision, final_confidence, adjusted_threshold, threshold_meta
+            ),
+        }
+
+        logger.info(
+            f"[EMOJI] Decision for '{phase}': {decision} (confidence: {final_confidence:.2%})"
+        )
+
+        return result
+
+    def learn_from_project_outcome(
+        self,
+        phase: str,
+        predicted_confidence: float,
+        predicted_uncertainties: Dict[str, float],
+        actual_success: bool,
+        actual_uncertainties: Optional[Dict[str, float]] = None,
+    ):
+        """
+        [EMOJI] [EMOJI] [EMOJI]
+
+        Args:
+            phase: [EMOJI] [EMOJI]
+            predicted_confidence: [EMOJI] confidence
+            predicted_uncertainties: [EMOJI] [EMOJI]
+            actual_success: [EMOJI] [EMOJI] [EMOJI]
+            actual_uncertainties: [EMOJI] [EMOJI] [EMOJI] ([EMOJI])
+        """
+        # [EMOJI] [EMOJI] UncertaintyVector[EMOJI] [EMOJI]
+        if actual_uncertainties:
+            actual_vector = UncertaintyVector(
+                technical=actual_uncertainties.get("technical", 0.5),
+                market=actual_uncertainties.get("market", 0.5),
+                resource=actual_uncertainties.get("resource", 0.5),
+                timeline=actual_uncertainties.get("timeline", 0.5),
+                quality=actual_uncertainties.get("quality", 0.5),
+            )
+        else:
+            # [EMOJI]/[EMOJI] [EMOJI] [EMOJI]
+            base_value = 0.3 if actual_success else 0.7
+            actual_vector = UncertaintyVector(
+                technical=base_value,
+                market=base_value,
+                resource=base_value,
+                timeline=base_value,
+                quality=base_value,
+            )
+
+        # Bayesian [EMOJI] [EMOJI] [EMOJI] [EMOJI]
+        predicted_vector = UncertaintyVector(
+            technical=predicted_uncertainties.get("technical", 0.5),
+            market=predicted_uncertainties.get("market", 0.5),
+            resource=predicted_uncertainties.get("resource", 0.5),
+            timeline=predicted_uncertainties.get("timeline", 0.5),
+            quality=predicted_uncertainties.get("quality", 0.5),
+        )
+
+        prediction = self.bayesian.predict_uncertainty(
+            current_vector=predicted_vector, phase=phase, horizon_hours=0
+        )
+
+        # Bayesian [EMOJI] [EMOJI]
+        self.bayesian.update_with_observation(
+            phase=phase,
+            predicted=prediction,
+            observed_vector=actual_vector,
+            outcome_success=actual_success,
+        )
+
+        self.integration_metrics["learning_events"] += 1
+
+        # [EMOJI] [EMOJI]
+        self.bayesian.save_state()
+
+        logger.info(
+            f"[EMOJI] Learned from {phase} outcome: success={actual_success}, "
+            f"predicted_confidence={predicted_confidence:.2%}"
+        )
+
+    def get_integration_report(self) -> Dict[str, Any]:
+        """
+        [EMOJI] [EMOJI] [EMOJI] [EMOJI]
+
+        Returns:
+            [EMOJI] [EMOJI] [EMOJI] Bayesian [EMOJI] [EMOJI]
+        """
+        bayesian_report = self.bayesian.get_performance_report()
+
+        return {
+            "integration_metrics": self.integration_metrics,
+            "bayesian_performance": bayesian_report,
+            "summary": {
+                "total_decisions": self.integration_metrics["decisions_influenced"],
+                "threshold_adjustments": self.integration_metrics[
+                    "threshold_adjustments"
+                ],
+                "bias_corrections": self.integration_metrics["bias_corrections"],
+                "learning_events": self.integration_metrics["learning_events"],
+                "average_confidence": bayesian_report.get("average_confidence", 0),
+                "bias_profile": bayesian_report.get("bias_profile", {}),
+            },
+        }
+
+    def _explain_adjustment(
+        self, bias_type: str, bias_adj: float, conf_factor: float
+    ) -> str:
+        """Threshold [EMOJI] [EMOJI] [EMOJI]"""
+        reasons = []
+
+        if bias_type != "unbiased":
+            if "optimistic" in bias_type:
+                reasons.append(
+                    f"[EMOJI] [EMOJI] [EMOJI] [EMOJI] [EMOJI] -> threshold [EMOJI] ({bias_adj:+.2f})"
+                )
+            else:
+                reasons.append(
+                    f"[EMOJI] [EMOJI] [EMOJI] [EMOJI] [EMOJI] -> threshold [EMOJI] ({bias_adj:+.2f})"
+                )
+
+        if abs(conf_factor) > 0.01:
+            if conf_factor > 0:
+                reasons.append(
+                    f"[EMOJI] [EMOJI] confidence -> threshold [EMOJI] ({conf_factor:+.2f})"
+                )
+            else:
+                reasons.append(
+                    f"[EMOJI] [EMOJI] confidence -> threshold [EMOJI] ({conf_factor:+.2f})"
+                )
+
+        if not reasons:
+            return "[EMOJI] [EMOJI] ([EMOJI] threshold [EMOJI])"
+
+        return " | ".join(reasons)
+
+    def _explain_decision(
+        self, decision: str, confidence: float, threshold: float, threshold_meta: Dict
+    ) -> str:
+        """[EMOJI] [EMOJI] [EMOJI]"""
+        gap = confidence - threshold
+
+        explanations = {
+            "GO": f"[OK] GO: Confidence ({confidence:.2%}) > Threshold ({threshold:.2%}), Gap: {gap:+.2%}",
+            "GO_WITH_CHECKPOINTS": f"[WARN] GO_WITH_CHECKPOINTS: Confidence ({confidence:.2%}) ≥ 80% Threshold, Gap: {gap:+.2%}",
+            "NO_GO": f"[FAIL] NO_GO: Confidence ({confidence:.2%}) < Threshold ({threshold:.2%}), Gap: {gap:-.2%}",
+        }
+
+        base_explanation = explanations.get(decision, "Unknown decision")
+
+        # Threshold [EMOJI] [EMOJI] [EMOJI]
+        if threshold_meta.get("bias_type") != "unbiased":
+            base_explanation += f" | Bias: {threshold_meta['bias_type']}"
+
+        return base_explanation
+
+
+def demo_integration():
+    """[EMOJI] [EMOJI] [EMOJI]"""
+    print("\n" + "=" * 60)
+    print("UDO V2 + BAYESIAN LEARNING INTEGRATION DEMO")
+    print("=" * 60)
+
+    # [EMOJI] [EMOJI] [EMOJI]
+    integration = UDOBayesianIntegration(project_name="Demo-Project")
+
+    # [EMOJI]: Implementation Phase [EMOJI]
+    print("\n[EMOJI] Scenario: Implementation Phase Decision")
+
+    # UDO v2[EMOJI] [EMOJI] [EMOJI] [EMOJI]
+    base_confidence = 0.72
+    uncertainties = {
+        "technical": 0.4,
+        "market": 0.3,
+        "resource": 0.5,
+        "timeline": 0.6,
+        "quality": 0.4,
+    }
+
+    # [EMOJI] [EMOJI]
+    decision = integration.enhance_go_decision(
+        phase="implementation",
+        base_confidence=base_confidence,
+        uncertainties=uncertainties,
+    )
+
+    print(f"\n[EMOJI] Decision: {decision['decision']}")
+    print(f"   Final Confidence: {decision['final_confidence']:.2%}")
+    print(f"   Threshold: {decision['threshold']['adjusted']:.2%}")
+    print(f"   Explanation: {decision['explanation']}")
+
+    # Bayesian [EMOJI]
+    insights = decision["bayesian_insights"]
+    print(f"\n🧠 Bayesian Insights:")
+    print(f"   Predicted Uncertainty: {insights['predicted_uncertainty']:.2%}")
+    print(f"   Trend: {insights['trend']}")
+    print(f"   Quantum State: {insights['quantum_state']}")
+
+    # [EMOJI] [EMOJI] [EMOJI]
+    print("\n[EMOJI] Learning from Outcome...")
+    integration.learn_from_project_outcome(
+        phase="implementation",
+        predicted_confidence=base_confidence,
+        predicted_uncertainties=uncertainties,
+        actual_success=True,
+        actual_uncertainties={
+            "technical": 0.3,
+            "market": 0.25,
+            "resource": 0.4,
+            "timeline": 0.5,
+            "quality": 0.35,
+        },
+    )
+
+    # [EMOJI] [EMOJI]
+    print("\n[EMOJI] Integration Report:")
+    report = integration.get_integration_report()
+    print(f"   Decisions Influenced: {report['summary']['total_decisions']}")
+    print(f"   Threshold Adjustments: {report['summary']['threshold_adjustments']}")
+    print(f"   Bias Corrections: {report['summary']['bias_corrections']}")
+    print(f"   Learning Events: {report['summary']['learning_events']}")
+
+    print("\n" + "=" * 60)
+    print("[OK] INTEGRATION DEMO COMPLETE")
+    print("=" * 60)
+
+
+if __name__ == "__main__":
+    demo_integration()

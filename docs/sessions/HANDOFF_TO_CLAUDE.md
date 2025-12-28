@@ -21,7 +21,7 @@ class Uncertainty:
     def __init__(self):
         self.engine = UncertaintyMapV3("default_project")
         ...
-    
+
     def predict(self, hours_ahead: int):
         # Wraps self.engine.predict_evolution(...)
         ...

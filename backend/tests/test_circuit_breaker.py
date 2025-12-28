@@ -8,9 +8,11 @@ Verifies all state transitions:
 - HALF_OPEN -> OPEN (on failure)
 """
 
-import pytest
 import asyncio
 import time
+
+import pytest
+
 from backend.app.core.circuit_breaker import CircuitBreaker
 
 
@@ -34,7 +36,9 @@ class TestCircuitBreakerStateMachine:
 
         # Execute 3 times (threshold)
         for i in range(3):
-            assert cb.state == "CLOSED", f"Should stay CLOSED until threshold (attempt {i+1})"
+            assert (
+                cb.state == "CLOSED"
+            ), f"Should stay CLOSED until threshold (attempt {i+1})"
             with pytest.raises(ValueError):
                 await failing_func()
 
@@ -253,9 +257,7 @@ class TestCircuitBreakerEdgeCases:
     async def test_custom_exception_type(self):
         """Circuit breaker should only catch expected_exception"""
         cb = CircuitBreaker(
-            failure_threshold=2,
-            recovery_timeout=1,
-            expected_exception=ValueError
+            failure_threshold=2, recovery_timeout=1, expected_exception=ValueError
         )
 
         @cb

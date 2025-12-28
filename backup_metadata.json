@@ -1,0 +1,67 @@
+{
+  "timestamp": "20251223_182426",
+  "datetime": "2025-12-23T18:24:26.594475",
+  "repo_root": "C:\\Users\\user\\Documents\\GitHub\\UDO-Development-Platform",
+  "files": [
+    {
+      "path": "claudedocs/analysis/2025-12-23-GIT-CLEAN-INCIDENT-ANALYSIS.md",
+      "size": 8419,
+      "modified": 1766481718.420856
+    },
+    {
+      "path": "claudedocs/analysis/2025-12-23-WEEK8-PLAN.md",
+      "size": 7315,
+      "modified": 1766475680.1947489
+    },
+    {
+      "path": "docker-compose.prod.yml",
+      "size": 9543,
+      "modified": 1766475241.180051
+    },
+    {
+      "path": "docs/GIT_SAFETY_GUIDE.md",
+      "size": 7007,
+      "modified": 1766481647.605444
+    },
+    {
+      "path": "docs/PRODUCTION_DEPLOYMENT_GUIDE.md",
+      "size": 9916,
+      "modified": 1766475304.1042337
+    },
+    {
+      "path": "docs/ROLLBACK_PROCEDURES.md",
+      "size": 9678,
+      "modified": 1766475362.7736793
+    },
+    {
+      "path": "docs/SECURITY_AUDIT_CHECKLIST.md",
+      "size": 13437,
+      "modified": 1766475441.6796086
+    },
+    {
+      "path": "docs/WEEK8_COMPLETION_REPORT.md",
+      "size": 20181,
+      "modified": 1766475813.205504
+    },
+    {
+      "path": "docs/WEEK8_DAY4_FEEDBACK_TEMPLATE.md",
+      "size": 7682,
+      "modified": 1766475057.0022259
+    },
+    {
+      "path": "docs/WEEK8_DAY4_TESTING_CHECKLIST.md",
+      "size": 5309,
+      "modified": 1766475015.356425
+    },
+    {
+      "path": "docs/WEEK8_DAY4_USER_TESTING_GUIDE.md",
+      "size": 10083,
+      "modified": 1766474973.8563738
+    },
+    {
+      "path": "scripts/auto_backup_untracked.py",
+      "size": 8670,
+      "modified": 1766481857.7490544
+    }
+  ]
+}

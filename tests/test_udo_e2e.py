@@ -62,9 +62,7 @@ class TestUDOv2EndToEnd:
         orchestrator = UnifiedDevelopmentOrchestratorV2(context)
 
         # Execute complete development cycle
-        result = orchestrator.start_development_cycle(
-            "Design a new AI-powered feature for automated code review"
-        )
+        result = orchestrator.start_development_cycle("Design a new AI-powered feature for automated code review")
 
         # Verify execution plan structure
         assert "system" in result
@@ -88,9 +86,7 @@ class TestUDOv2EndToEnd:
         orchestrator = UnifiedDevelopmentOrchestratorV2(context)
 
         # Design phase request
-        result = orchestrator.start_development_cycle(
-            "Create system architecture for microservices backend"
-        )
+        result = orchestrator.start_development_cycle("Create system architecture for microservices backend")
 
         assert "system" in result
         assert "decision" in result
@@ -108,9 +104,7 @@ class TestUDOv2EndToEnd:
 
         orchestrator = UnifiedDevelopmentOrchestratorV2(context)
 
-        result = orchestrator.start_development_cycle(
-            "Build minimal viable product with core authentication and API"
-        )
+        result = orchestrator.start_development_cycle("Build minimal viable product with core authentication and API")
 
         assert "system" in result
         assert "decision" in result
@@ -129,9 +123,7 @@ class TestUDOv2EndToEnd:
 
         orchestrator = UnifiedDevelopmentOrchestratorV2(context)
 
-        result = orchestrator.start_development_cycle(
-            "Implement user authentication with JWT and refresh tokens"
-        )
+        result = orchestrator.start_development_cycle("Implement user authentication with JWT and refresh tokens")
 
         assert "system" in result
         assert "decision" in result
@@ -157,9 +149,7 @@ class TestUDOv2EndToEnd:
 
         orchestrator = UnifiedDevelopmentOrchestratorV2(context)
 
-        result = orchestrator.start_development_cycle(
-            "Write comprehensive E2E tests with 80% coverage"
-        )
+        result = orchestrator.start_development_cycle("Write comprehensive E2E tests with 80% coverage")
 
         assert "system" in result
         assert "decision" in result
@@ -177,23 +167,21 @@ class TestUDOv2EndToEnd:
         umap = UncertaintyMapV3("E2E_Test_Project")
 
         # Step 1: Analyze context and get uncertainty vector
-        vector, state = umap.analyze_context({
-            "phase": "mvp",
-            "files": context.files,
-            "team_size": context.team_size,
-            "timeline_weeks": context.timeline_weeks,
-            "market_validation": 0.4,  # Low market validation
-        })
+        vector, state = umap.analyze_context(
+            {
+                "phase": "mvp",
+                "files": context.files,
+                "team_size": context.team_size,
+                "timeline_weeks": context.timeline_weeks,
+                "market_validation": 0.4,  # Low market validation
+            }
+        )
 
         assert isinstance(vector, UncertaintyVector)
         assert isinstance(state, UncertaintyState)
 
         # Step 2: Add observation for learning
-        umap.add_observation(
-            phase="mvp",
-            vector=vector,
-            outcome=True  # Successful outcome
-        )
+        umap.add_observation(phase="mvp", vector=vector, outcome=True)  # Successful outcome
 
         # Step 3: Classify uncertainty state
         magnitude = vector.magnitude()
@@ -204,18 +192,14 @@ class TestUDOv2EndToEnd:
             UncertaintyState.PROBABILISTIC,
             UncertaintyState.QUANTUM,
             UncertaintyState.CHAOTIC,
-            UncertaintyState.VOID
+            UncertaintyState.VOID,
         ]
 
         # Step 4: Predict evolution
-        prediction = umap.predict_evolution(
-            vector=vector,
-            phase="mvp",
-            hours=24
-        )
+        prediction = umap.predict_evolution(vector=vector, phase="mvp", hours=24)
 
         assert prediction is not None
-        assert hasattr(prediction, 'trend')
+        assert hasattr(prediction, "trend")
 
         print(f"[OK] Uncertainty prediction E2E test passed")
         print(f"   State: {classified_state}")
@@ -238,17 +222,12 @@ class TestUDOv2EndToEnd:
         system_score = 0.6
         uncertainty_score = 0.5
 
-        ideation_confidence = ideation_udo.calculate_weighted_confidence(
-            system_score, uncertainty_score, "ideation"
-        )
+        ideation_confidence = ideation_udo.calculate_weighted_confidence(system_score, uncertainty_score, "ideation")
 
-        design_confidence = design_udo.calculate_weighted_confidence(
-            system_score, uncertainty_score, "design"
-        )
+        design_confidence = design_udo.calculate_weighted_confidence(system_score, uncertainty_score, "design")
 
         # Different phases should produce different confidence scores
-        assert ideation_confidence != design_confidence, \
-            "Phase-specific weights should produce different confidence scores"
+        assert ideation_confidence != design_confidence, "Phase-specific weights should produce different confidence scores"
 
         print(f"[OK] Config-based phase weights test passed")
         print(f"   Ideation confidence: {ideation_confidence:.2%}")
@@ -269,11 +248,7 @@ class TestUDOv2EndToEnd:
                 f"Execute {phase} phase tasks for AI-powered project management system"
             )
 
-            results.append({
-                "phase": phase,
-                "decision": result["decision"],
-                "confidence": result.get("confidence", 0.0)
-            })
+            results.append({"phase": phase, "decision": result["decision"], "confidence": result.get("confidence", 0.0)})
 
             assert "system" in result
             assert "decision" in result

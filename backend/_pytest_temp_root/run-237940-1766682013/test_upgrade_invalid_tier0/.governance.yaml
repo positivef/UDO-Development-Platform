@@ -1,0 +1,14 @@
+ci_cd:
+  run_on_pr: true
+languages:
+  javascript: ES2022
+  python: '3.13'
+project:
+  name: test-project
+  size: standard
+  type: web-app
+rules:
+  strict_mode: true
+uncertainty:
+  enabled: true
+version: 1.0.0

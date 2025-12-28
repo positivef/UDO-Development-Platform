@@ -32,7 +32,7 @@ import traceback
 logger = logging.getLogger(__name__)
 
 # Type variable for generic function wrapping
-F = TypeVar('F', bound=Callable[..., Any])
+F = TypeVar("F", bound=Callable[..., Any])
 
 
 class Auto3TierWrapper:
@@ -50,10 +50,10 @@ class Auto3TierWrapper:
         self.statistics = {
             "total_calls": 0,
             "total_errors": 0,
-            "tier1_hits": 0,      # Obsidian
-            "tier2_hits": 0,      # Context7
-            "tier2_auto": 0,      # Context7 auto-applied (HIGH confidence)
-            "tier2_confirmed": 0, # Context7 user-confirmed (MEDIUM confidence)
+            "tier1_hits": 0,  # Obsidian
+            "tier2_hits": 0,  # Context7
+            "tier2_auto": 0,  # Context7 auto-applied (HIGH confidence)
+            "tier2_confirmed": 0,  # Context7 user-confirmed (MEDIUM confidence)
             "tier3_escalations": 0,  # User intervention
             "auto_recoveries": 0,
             "failed_recoveries": 0,
@@ -65,7 +65,7 @@ class Auto3TierWrapper:
             "consecutive_failures": 0,
             "threshold": 3,
             "state": "CLOSED",  # CLOSED, OPEN, HALF_OPEN
-            "last_failure_time": None
+            "last_failure_time": None,
         }
 
         # Lazy import to avoid circular dependencies
@@ -77,6 +77,7 @@ class Auto3TierWrapper:
         if self._resolver is None:
             try:
                 from scripts.unified_error_resolver import UnifiedErrorResolver
+
                 self._resolver = UnifiedErrorResolver()
                 logger.info("[OK] UnifiedErrorResolver initialized")
             except ImportError as e:
@@ -137,23 +138,13 @@ class Auto3TierWrapper:
 
         if isinstance(result, dict):
             # Try multiple error fields
-            error_msg = (
-                result.get("error") or
-                result.get("stderr") or
-                result.get("message") or
-                str(result)
-            )
+            error_msg = result.get("error") or result.get("stderr") or result.get("message") or str(result)
             return str(error_msg)
 
         return str(result)
 
     def _apply_and_retry(
-        self,
-        solution: str,
-        original_func: Callable,
-        args: tuple,
-        kwargs: dict,
-        context: Dict[str, Any]
+        self, solution: str, original_func: Callable, args: tuple, kwargs: dict, context: Dict[str, Any]
     ) -> Any:
         """
         Apply solution and retry original function
@@ -168,13 +159,7 @@ class Auto3TierWrapper:
         # Execute solution as bash command
         try:
             # Run solution command
-            result = subprocess.run(
-                solution,
-                shell=True,
-                capture_output=True,
-                text=True,
-                timeout=30  # 30 second timeout
-            )
+            result = subprocess.run(solution, shell=True, capture_output=True, text=True, timeout=30)  # 30 second timeout
 
             if result.returncode == 0:
                 logger.info(f"[OK] Solution applied successfully: {result.stdout[:100] if result.stdout else '(no output)'}")
@@ -222,7 +207,9 @@ class Auto3TierWrapper:
 
             if self.circuit_breaker["consecutive_failures"] >= self.circuit_breaker["threshold"]:
                 self.circuit_breaker["state"] = "OPEN"
-                logger.error(f"[EMOJI] Circuit breaker OPEN: {self.circuit_breaker['consecutive_failures']} consecutive failures")
+                logger.error(
+                    f"[EMOJI] Circuit breaker OPEN: {self.circuit_breaker['consecutive_failures']} consecutive failures"
+                )
         else:
             self.circuit_breaker["consecutive_failures"] = 0
             if self.circuit_breaker["state"] == "HALF_OPEN":
@@ -238,6 +225,7 @@ class Auto3TierWrapper:
             def my_tool(*args, **kwargs):
                 return result
         """
+
         @functools.wraps(func)
         def wrapper(*args, **kwargs):
             self.statistics["total_calls"] += 1
@@ -269,7 +257,7 @@ class Auto3TierWrapper:
                         "tool": func.__name__,
                         "args": str(args)[:200],
                         "kwargs": str(kwargs)[:200],
-                        "timestamp": datetime.now().isoformat()
+                        "timestamp": datetime.now().isoformat(),
                     }
 
                     solution = self.resolver.resolve_error(error_msg, context=context)
@@ -351,7 +339,7 @@ class Auto3TierWrapper:
             "automation_rate": automation_rate,
             "time_saved_minutes": self.statistics["total_time_saved"],
             "circuit_breaker_state": self.circuit_breaker["state"],
-            "circuit_breaker_failures": self.circuit_breaker["consecutive_failures"]
+            "circuit_breaker_failures": self.circuit_breaker["consecutive_failures"],
         }
 
     def reset_statistics(self):

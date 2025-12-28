@@ -1,6 +1,7 @@
 "use client"
 
-import { useState } from 'react'
+
+import { useState, useEffect } from 'react'
 import { useQuery } from '@tanstack/react-query'
 import { archiveAPI } from '@/lib/api/kanban-archive'
 import type { ArchiveFilter } from '@/lib/api/kanban-archive'
@@ -14,6 +15,11 @@ export default function ArchivePage() {
     page: 1,
     page_size: 20,
   })
+  const [mounted, setMounted] = useState(false)
+
+  useEffect(() => {
+    setMounted(true)
+  }, [])
 
   const { data, isLoading } = useQuery({
     queryKey: ['archive', filters],
@@ -21,6 +27,10 @@ export default function ArchivePage() {
   })
 
   const stats = data?.roi_statistics
+
+  if (!mounted) {
+    return <div className="min-h-screen p-8 flex items-center justify-center">Loading...</div>
+  }
 
   return (
     <div className="min-h-screen p-8">
@@ -89,7 +99,7 @@ export default function ArchivePage() {
         <div className="bg-card rounded-lg border">
           {isLoading ? (
             <div className="p-8 text-center text-muted-foreground">Loading...</div>
-          ) : !data || data.items.length === 0 ? (
+          ) : !data || !data.items || data.items.length === 0 ? (
             <div className="p-8 text-center text-muted-foreground">No archived tasks</div>
           ) : (
             <div className="overflow-x-auto">

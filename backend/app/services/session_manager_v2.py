@@ -5,25 +5,19 @@ Enhanced version using the centralized RedisClient for better
 distributed locking and event management.
 """
 
-import json
 import asyncio
 import hashlib
-from datetime import datetime, timedelta
-from typing import Dict, List, Optional, Any, Set, Tuple
-from uuid import uuid4
-from enum import Enum
-from dataclasses import dataclass, asdict
+import json
 import logging
+from dataclasses import asdict, dataclass
+from datetime import datetime, timedelta
+from enum import Enum
+from typing import Any, Dict, List, Optional, Set, Tuple
+from uuid import uuid4
 
-from app.services.redis_client import get_redis_client, RedisKeys, RedisClient
-from app.services.session_manager import (
-    SessionStatus,
-    LockType,
-    ConflictType,
-    Session,
-    ResourceLock,
-    Conflict
-)
+from app.services.redis_client import RedisClient, RedisKeys, get_redis_client
+from app.services.session_manager import (Conflict, ConflictType, LockType,
+                                          ResourceLock, Session, SessionStatus)
 
 logger = logging.getLogger(__name__)
 
@@ -73,11 +67,13 @@ class SessionManagerV2:
         user_id: str = "default",
         project_id: Optional[str] = None,
         working_directory: Optional[str] = None,
-        env_vars: Optional[Dict[str, str]] = None
+        env_vars: Optional[Dict[str, str]] = None,
     ) -> Session:
         """Create a new session with improved tracking"""
 
-        session_id = f"{terminal_id}_{uuid4().hex[:8]}_{int(datetime.now().timestamp())}"
+        session_id = (
+            f"{terminal_id}_{uuid4().hex[:8]}_{int(datetime.now().timestamp())}"
+        )
 
         # Check if should be primary
         is_primary = await self._should_be_primary(project_id) if project_id else False
@@ -94,7 +90,7 @@ class SessionManagerV2:
             locks=[],
             current_branch=None,
             working_directory=working_directory,
-            env_vars=env_vars or {}
+            env_vars=env_vars or {},
         )
 
         # Store locally
@@ -103,10 +99,8 @@ class SessionManagerV2:
         # Store in Redis
         if self.redis_client:
             await self.redis_client.register_session(
-                session_id,
-                session.to_dict(),
-                ttl=86400  # 24 hours
-            )
+                session_id, session.to_dict(), ttl=86400
+            )  # 24 hours
 
             # Add to project sessions if applicable
             if project_id:
@@ -121,8 +115,8 @@ class SessionManagerV2:
                     "session_id": session_id,
                     "project_id": project_id,
                     "is_primary": is_primary,
-                    "terminal_id": terminal_id
-                }
+                    "terminal_id": terminal_id,
+                },
             )
 
         logger.info(f"[EMOJI] Session created: {session_id} (Primary: {is_primary})")
@@ -135,7 +129,7 @@ class SessionManagerV2:
         lock_type: LockType = LockType.FILE,
         timeout: int = 300,
         wait: bool = False,
-        metadata: Optional[Dict] = None
+        metadata: Optional[Dict] = None,
     ) -> Optional[ResourceLock]:
         """Acquire lock using centralized Redis client"""
 
@@ -145,7 +139,9 @@ class SessionManagerV2:
         elif lock_type == LockType.GIT_BRANCH:
             lock_key = RedisKeys.GIT_LOCK.format(resource_id)
         else:
-            lock_key = RedisKeys.RESOURCE_LOCK.format(f"{lock_type.value}:{resource_id}")
+            lock_key = RedisKeys.RESOURCE_LOCK.format(
+                f"{lock_type.value}:{resource_id}"
+            )
 
         # Try to acquire lock
         if self.redis_client:
@@ -154,7 +150,7 @@ class SessionManagerV2:
                 value=session_id,
                 ttl=timeout,
                 blocking=wait,
-                blocking_timeout=30 if wait else 0
+                blocking_timeout=30 if wait else 0,
             )
 
             if not success:
@@ -164,12 +160,12 @@ class SessionManagerV2:
                 if holder and holder != session_id:
                     # Conflict detected
                     await self._record_conflict(
-                        ConflictType.RESOURCE_LOCK,
-                        [session_id, holder],
-                        resource_id
+                        ConflictType.RESOURCE_LOCK, [session_id, holder], resource_id
                     )
 
-                    logger.warning(f"[EMOJI] Lock conflict: {resource_id} held by {holder}")
+                    logger.warning(
+                        f"[EMOJI] Lock conflict: {resource_id} held by {holder}"
+                    )
 
                 return None
 
@@ -180,7 +176,7 @@ class SessionManagerV2:
                 session_id=session_id,
                 acquired_at=datetime.now(),
                 expires_at=datetime.now() + timedelta(seconds=timeout),
-                metadata=metadata or {}
+                metadata=metadata or {},
             )
 
             # Track lock in session
@@ -189,15 +185,20 @@ class SessionManagerV2:
 
             # Broadcast lock acquisition
             await self.redis_client.publish(
-                RedisKeys.CHANNEL_PROJECT.format(self.local_sessions[session_id].project_id)
-                if session_id in self.local_sessions and self.local_sessions[session_id].project_id
-                else RedisKeys.CHANNEL_BROADCAST,
+                (
+                    RedisKeys.CHANNEL_PROJECT.format(
+                        self.local_sessions[session_id].project_id
+                    )
+                    if session_id in self.local_sessions
+                    and self.local_sessions[session_id].project_id
+                    else RedisKeys.CHANNEL_BROADCAST
+                ),
                 {
                     "type": "lock_acquired",
                     "session_id": session_id,
                     "resource": resource_id,
-                    "lock_type": lock_type.value
-                }
+                    "lock_type": lock_type.value,
+                },
             )
 
             logger.info(f"[OK] Lock acquired: {resource_id} by {session_id}")
@@ -212,16 +213,13 @@ class SessionManagerV2:
                 session_id=session_id,
                 acquired_at=datetime.now(),
                 expires_at=datetime.now() + timedelta(seconds=timeout),
-                metadata=metadata or {}
+                metadata=metadata or {},
             )
 
             return lock
 
     async def release_lock(
-        self,
-        session_id: str,
-        resource_id: str,
-        lock_type: LockType = LockType.FILE
+        self, session_id: str, resource_id: str, lock_type: LockType = LockType.FILE
     ) -> bool:
         """Release lock using centralized Redis client"""
 
@@ -231,7 +229,9 @@ class SessionManagerV2:
         elif lock_type == LockType.GIT_BRANCH:
             lock_key = RedisKeys.GIT_LOCK.format(resource_id)
         else:
-            lock_key = RedisKeys.RESOURCE_LOCK.format(f"{lock_type.value}:{resource_id}")
+            lock_key = RedisKeys.RESOURCE_LOCK.format(
+                f"{lock_type.value}:{resource_id}"
+            )
 
         if self.redis_client:
             success = await self.redis_client.release_lock(lock_key, session_id)
@@ -243,15 +243,20 @@ class SessionManagerV2:
 
                 # Broadcast lock release
                 await self.redis_client.publish(
-                    RedisKeys.CHANNEL_PROJECT.format(self.local_sessions[session_id].project_id)
-                    if session_id in self.local_sessions and self.local_sessions[session_id].project_id
-                    else RedisKeys.CHANNEL_BROADCAST,
+                    (
+                        RedisKeys.CHANNEL_PROJECT.format(
+                            self.local_sessions[session_id].project_id
+                        )
+                        if session_id in self.local_sessions
+                        and self.local_sessions[session_id].project_id
+                        else RedisKeys.CHANNEL_BROADCAST
+                    ),
                     {
                         "type": "lock_released",
                         "session_id": session_id,
                         "resource": resource_id,
-                        "lock_type": lock_type.value
-                    }
+                        "lock_type": lock_type.value,
+                    },
                 )
 
                 logger.info(f"[EMOJI] Lock released: {resource_id} by {session_id}")
@@ -261,10 +266,7 @@ class SessionManagerV2:
         return True  # In-memory mode always succeeds
 
     async def detect_conflict(
-        self,
-        session_id: str,
-        operation: str,
-        resource: str
+        self, session_id: str, operation: str, resource: str
     ) -> Optional[Conflict]:
         """Detect potential conflicts for an operation"""
 
@@ -287,13 +289,11 @@ class SessionManagerV2:
                         detected_at=datetime.now(),
                         resolution_strategy="wait_or_merge",
                         resolved=False,
-                        resolution_metadata=None
+                        resolution_metadata=None,
                     )
 
                     await self._record_conflict(
-                        ConflictType.FILE_EDIT,
-                        [session_id, holder],
-                        resource
+                        ConflictType.FILE_EDIT, [session_id, holder], resource
                     )
 
                     return conflict
@@ -314,13 +314,11 @@ class SessionManagerV2:
                         detected_at=datetime.now(),
                         resolution_strategy="coordinate_push",
                         resolved=False,
-                        resolution_metadata=None
+                        resolution_metadata=None,
                     )
 
                     await self._record_conflict(
-                        ConflictType.GIT_MERGE,
-                        [session_id, holder],
-                        resource
+                        ConflictType.GIT_MERGE, [session_id, holder], resource
                     )
 
                     return conflict
@@ -328,10 +326,7 @@ class SessionManagerV2:
         return None
 
     async def resolve_conflict(
-        self,
-        conflict_id: str,
-        resolution: str,
-        metadata: Optional[Dict] = None
+        self, conflict_id: str, resolution: str, metadata: Optional[Dict] = None
     ) -> bool:
         """Resolve a conflict"""
 
@@ -339,15 +334,15 @@ class SessionManagerV2:
             # Get conflict from Redis
             conflicts = await self.redis_client.get_project_conflicts(
                 self.local_sessions[list(self.local_sessions.keys())[0]].project_id
-                if self.local_sessions else "default"
+                if self.local_sessions
+                else "default"
             )
 
             for conflict_data in conflicts:
                 if conflict_data.get("id") == conflict_id:
                     # Mark as resolved
                     await self.redis_client.resolve_conflict(
-                        conflict_data.get("project_id", "default"),
-                        conflict_id
+                        conflict_data.get("project_id", "default"), conflict_id
                     )
 
                     logger.info(f"[OK] Conflict resolved: {conflict_id}")
@@ -356,8 +351,7 @@ class SessionManagerV2:
         return False
 
     async def get_active_sessions(
-        self,
-        project_id: Optional[str] = None
+        self, project_id: Optional[str] = None
     ) -> List[Session]:
         """Get all active sessions, optionally filtered by project"""
 
@@ -403,7 +397,9 @@ class SessionManagerV2:
 
             # Remove from project sessions
             if session.project_id:
-                project_sessions_key = RedisKeys.PROJECT_SESSIONS.format(session.project_id)
+                project_sessions_key = RedisKeys.PROJECT_SESSIONS.format(
+                    session.project_id
+                )
                 await self.redis_client._client.srem(project_sessions_key, session_id)
 
             # Broadcast termination
@@ -412,8 +408,8 @@ class SessionManagerV2:
                 {
                     "type": "session_terminated",
                     "session_id": session_id,
-                    "project_id": session.project_id
-                }
+                    "project_id": session.project_id,
+                },
             )
 
         # Remove locally
@@ -451,11 +447,7 @@ class SessionManagerV2:
         return None
 
     async def coordinate_operation(
-        self,
-        session_id: str,
-        operation: str,
-        resource: str,
-        timeout: int = 60
+        self, session_id: str, operation: str, resource: str, timeout: int = 60
     ) -> Tuple[bool, Optional[str]]:
         """
         Coordinate an operation across sessions
@@ -474,11 +466,7 @@ class SessionManagerV2:
         lock_type = LockType.FILE if operation == "file_edit" else LockType.GIT_BRANCH
 
         lock = await self.acquire_lock(
-            session_id,
-            resource,
-            lock_type,
-            timeout=timeout,
-            wait=False
+            session_id, resource, lock_type, timeout=timeout, wait=False
         )
 
         if not lock:
@@ -496,16 +484,15 @@ class SessionManagerV2:
 
         # Check existing sessions for project
         project_sessions_key = RedisKeys.PROJECT_SESSIONS.format(project_id)
-        existing_sessions = await self.redis_client._client.smembers(project_sessions_key)
+        existing_sessions = await self.redis_client._client.smembers(
+            project_sessions_key
+        )
 
         # First session for project becomes primary
         return len(existing_sessions) == 0
 
     async def _record_conflict(
-        self,
-        conflict_type: ConflictType,
-        sessions: List[str],
-        resource: str
+        self, conflict_type: ConflictType, sessions: List[str], resource: str
     ):
         """Record a conflict in Redis"""
 
@@ -518,7 +505,7 @@ class SessionManagerV2:
             "sessions": sessions,
             "resource": resource,
             "detected_at": datetime.now().isoformat(),
-            "resolved": False
+            "resolved": False,
         }
 
         # Get project_id from first session
@@ -554,7 +541,7 @@ class SessionManagerV2:
         channels = [
             RedisKeys.CHANNEL_SESSION,
             RedisKeys.CHANNEL_CONFLICTS,
-            RedisKeys.CHANNEL_BROADCAST
+            RedisKeys.CHANNEL_BROADCAST,
         ]
 
         pubsub = await self.redis_client.subscribe(channels)

@@ -109,7 +109,7 @@ async def generate_design(
                 "recommendation": "Choose Alternative A because..."
             },
             "total_duration_ms": 42000,
-            "obsidian_path": "[EMOJI]/2025-11-20/CK-Design-Auth-System.md"
+            "obsidian_path": "개발일지/2025-11-20/CK-Design-Auth-System.md"
         }
         ```
     """

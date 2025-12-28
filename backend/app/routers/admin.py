@@ -16,14 +16,11 @@ import logging
 import os
 from typing import Optional
 
-from fastapi import APIRouter, HTTPException, Header
+from fastapi import APIRouter, Header, HTTPException
 from pydantic import BaseModel, Field
 
-from backend.app.core.feature_flags import (
-    FeatureFlag,
-    feature_flags_manager,
-    is_feature_enabled,
-)
+from app.core.feature_flags import (FeatureFlag, feature_flags_manager,
+                                            is_feature_enabled)
 
 logger = logging.getLogger(__name__)
 
@@ -72,10 +69,7 @@ def verify_admin_key(admin_key: str = Header(..., alias="X-Admin-Key")) -> str:
     """
     if admin_key != ADMIN_KEY:
         logger.warning("Unauthorized admin access attempt")
-        raise HTTPException(
-            status_code=403,
-            detail="Unauthorized: Invalid admin key"
-        )
+        raise HTTPException(status_code=403, detail="Unauthorized: Invalid admin key")
     return admin_key
 
 
@@ -98,7 +92,7 @@ async def admin_health():
         "status": "healthy",
         "service": "admin",
         "feature_flags_active": True,
-        "total_flags": len(feature_flags_manager.get_all_flags())
+        "total_flags": len(feature_flags_manager.get_all_flags()),
     }
 
 
@@ -114,17 +108,13 @@ async def get_all_feature_flags(
     verify_admin_key(admin_key)
 
     flags = feature_flags_manager.get_all_flags()
-    return AllFlagsResponse(
-        flags=flags,
-        total=len(flags)
-    )
+    return AllFlagsResponse(flags=flags, total=len(flags))
 
 
 # SPECIFIC routes BEFORE parameterized routes
 @router.get("/feature-flags/history", response_model=ChangeHistoryResponse)
 async def get_change_history(
-    limit: int = 20,
-    admin_key: str = Header(..., alias="X-Admin-Key")
+    limit: int = 20, admin_key: str = Header(..., alias="X-Admin-Key")
 ) -> ChangeHistoryResponse:
     """
     Get feature flag change history.
@@ -138,10 +128,7 @@ async def get_change_history(
         limit = 100
 
     history = feature_flags_manager.get_change_history(limit=limit)
-    return ChangeHistoryResponse(
-        history=history,
-        total=len(history)
-    )
+    return ChangeHistoryResponse(history=history, total=len(history))
 
 
 @router.post("/feature-flags/reset", response_model=AllFlagsResponse)
@@ -160,10 +147,7 @@ async def reset_all_flags(
     logger.warning("Admin reset all feature flags to defaults")
 
     flags = feature_flags_manager.get_all_flags()
-    return AllFlagsResponse(
-        flags=flags,
-        total=len(flags)
-    )
+    return AllFlagsResponse(flags=flags, total=len(flags))
 
 
 @router.post("/feature-flags/disable-all", response_model=AllFlagsResponse)
@@ -183,17 +167,13 @@ async def emergency_disable_all(
     logger.critical("EMERGENCY: Admin disabled ALL feature flags")
 
     flags = feature_flags_manager.get_all_flags()
-    return AllFlagsResponse(
-        flags=flags,
-        total=len(flags)
-    )
+    return AllFlagsResponse(flags=flags, total=len(flags))
 
 
 # PARAMETERIZED routes AFTER specific routes
 @router.get("/feature-flags/{flag}", response_model=FeatureFlagResponse)
 async def get_feature_flag(
-    flag: str,
-    admin_key: str = Header(..., alias="X-Admin-Key")
+    flag: str, admin_key: str = Header(..., alias="X-Admin-Key")
 ) -> FeatureFlagResponse:
     """
     Get a specific feature flag status.
@@ -207,16 +187,13 @@ async def get_feature_flag(
     try:
         FeatureFlag(flag)
     except ValueError:
-        raise HTTPException(
-            status_code=404,
-            detail=f"Unknown feature flag: {flag}"
-        )
+        raise HTTPException(status_code=404, detail=f"Unknown feature flag: {flag}")
 
     enabled = is_feature_enabled(flag)
     return FeatureFlagResponse(
         flag=flag,
         enabled=enabled,
-        message=f"Feature '{flag}' is {'enabled' if enabled else 'disabled'}"
+        message=f"Feature '{flag}' is {'enabled' if enabled else 'disabled'}",
     )
 
 
@@ -224,7 +201,7 @@ async def get_feature_flag(
 async def toggle_feature_flag(
     flag: str,
     request: FeatureFlagToggleRequest,
-    admin_key: str = Header(..., alias="X-Admin-Key")
+    admin_key: str = Header(..., alias="X-Admin-Key"),
 ) -> FeatureFlagResponse:
     """
     Toggle a feature flag at runtime.
@@ -247,32 +224,24 @@ async def toggle_feature_flag(
     try:
         FeatureFlag(flag)
     except ValueError:
-        raise HTTPException(
-            status_code=404,
-            detail=f"Unknown feature flag: {flag}"
-        )
+        raise HTTPException(status_code=404, detail=f"Unknown feature flag: {flag}")
 
     success = feature_flags_manager.set_flag(
-        flag=flag,
-        enabled=request.enabled,
-        changed_by="admin",
-        reason=request.reason
+        flag=flag, enabled=request.enabled, changed_by="admin", reason=request.reason
     )
 
     if not success:
         raise HTTPException(
-            status_code=500,
-            detail=f"Failed to update feature flag: {flag}"
+            status_code=500, detail=f"Failed to update feature flag: {flag}"
         )
 
     action = "enabled" if request.enabled else "disabled"
     logger.warning(
-        "Admin %s feature flag '%s' (reason: %s)",
-        action, flag, request.reason
+        "Admin %s feature flag '%s' (reason: %s)", action, flag, request.reason
     )
 
     return FeatureFlagResponse(
         flag=flag,
         enabled=request.enabled,
-        message=f"Feature '{flag}' has been {action}"
+        message=f"Feature '{flag}' has been {action}",
     )

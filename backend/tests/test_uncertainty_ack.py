@@ -1,7 +1,9 @@
 """Tests for mitigation ACK endpoint and status cache invalidation."""
+
 import os
 import sys
 from pathlib import Path
+
 import pytest
 from fastapi.testclient import TestClient
 
@@ -13,7 +15,6 @@ sys.path.insert(0, str(REPO_ROOT))
 
 from src.uncertainty_map_v3 import UncertaintyMapV3  # noqa: E402
 
-
 # Create test uncertainty map instance
 test_uncertainty_map = UncertaintyMapV3(project_name="test-project")
 
@@ -21,8 +22,8 @@ test_uncertainty_map = UncertaintyMapV3(project_name="test-project")
 @pytest.fixture
 def client():
     """Create test client with dependency override"""
-    from main import app
     from app.routers.uncertainty import get_uncertainty_map
+    from main import app
 
     def _override_uncertainty():
         return test_uncertainty_map
@@ -49,7 +50,7 @@ def test_status_and_ack_mitigation_reduces_magnitude(client):
 
     ack_resp = client.post(
         f"/api/uncertainty/ack/{target_id}",
-        json={"mitigation_id": target_id, "dimension": dominant}
+        json={"mitigation_id": target_id, "dimension": dominant},
     )
 
     assert ack_resp.status_code == 200, ack_resp.text

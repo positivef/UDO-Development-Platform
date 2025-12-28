@@ -2,26 +2,21 @@
 Version History API Router
 Provides endpoints for Git version history and commit tracking
 """
-from typing import Optional
-from datetime import datetime
-from fastapi import APIRouter, HTTPException, Query
-from pathlib import Path
-import logging
 
-from ..models.version_history import (
-    VersionHistory,
-    VersionCommit,
-    VersionComparison,
-    VersionHistoryQuery
-)
+import logging
+from datetime import datetime
+from pathlib import Path
+from typing import Optional
+
+from fastapi import APIRouter, HTTPException, Query
+
+from ..models.version_history import (VersionCommit, VersionComparison,
+                                      VersionHistory, VersionHistoryQuery)
 from ..services.git_service import GitService
 
 logger = logging.getLogger(__name__)
 
-router = APIRouter(
-    prefix="/api/version-history",
-    tags=["version-history"]
-)
+router = APIRouter(prefix="/api/version-history", tags=["version-history"])
 
 # Default project path (can be configured)
 DEFAULT_PROJECT_PATH = Path(__file__).parent.parent.parent.parent
@@ -30,40 +25,25 @@ DEFAULT_PROJECT_PATH = Path(__file__).parent.parent.parent.parent
 @router.get("/", response_model=VersionHistory)
 async def get_version_history(
     project_path: Optional[str] = Query(
-        default=None,
-        description="Path to Git repository (default: current project)"
+        default=None, description="Path to Git repository (default: current project)"
     ),
     branch: Optional[str] = Query(
-        default=None,
-        description="Branch name (default: current branch)"
+        default=None, description="Branch name (default: current branch)"
     ),
     limit: int = Query(
-        default=50,
-        ge=1,
-        le=500,
-        description="Maximum number of commits to return"
+        default=50, ge=1, le=500, description="Maximum number of commits to return"
     ),
-    skip: int = Query(
-        default=0,
-        ge=0,
-        description="Number of commits to skip"
-    ),
-    author: Optional[str] = Query(
-        default=None,
-        description="Filter by author email"
-    ),
+    skip: int = Query(default=0, ge=0, description="Number of commits to skip"),
+    author: Optional[str] = Query(default=None, description="Filter by author email"),
     since: Optional[datetime] = Query(
-        default=None,
-        description="Commits after this date (ISO 8601)"
+        default=None, description="Commits after this date (ISO 8601)"
     ),
     until: Optional[datetime] = Query(
-        default=None,
-        description="Commits before this date (ISO 8601)"
+        default=None, description="Commits before this date (ISO 8601)"
     ),
     search: Optional[str] = Query(
-        default=None,
-        description="Search in commit messages"
-    )
+        default=None, description="Search in commit messages"
+    ),
 ):
     """
     Get version history for a project
@@ -93,11 +73,7 @@ async def get_version_history(
         git_service = GitService(repo_path)
 
         # Get version history
-        history = git_service.get_version_history(
-            branch=branch,
-            limit=limit,
-            skip=skip
-        )
+        history = git_service.get_version_history(branch=branch, limit=limit, skip=skip)
 
         # Apply additional filters if needed
         if author or since or until or search:
@@ -108,7 +84,7 @@ async def get_version_history(
                 author=author,
                 since=since,
                 until=until,
-                search=search
+                search=search,
             )
             history.commits = filtered_commits
 
@@ -118,16 +94,17 @@ async def get_version_history(
         raise HTTPException(status_code=400, detail=str(e))
     except Exception as e:
         logger.error(f"Error getting version history: {e}")
-        raise HTTPException(status_code=500, detail=f"Failed to get version history: {str(e)}")
+        raise HTTPException(
+            status_code=500, detail=f"Failed to get version history: {str(e)}"
+        )
 
 
 @router.get("/commits/{commit_hash}", response_model=VersionCommit)
 async def get_commit_details(
     commit_hash: str,
     project_path: Optional[str] = Query(
-        default=None,
-        description="Path to Git repository"
-    )
+        default=None, description="Path to Git repository"
+    ),
 ):
     """
     Get details for a specific commit
@@ -166,9 +143,8 @@ async def compare_commits(
     from_commit: str = Query(..., description="Source commit hash"),
     to_commit: str = Query(..., description="Target commit hash"),
     project_path: Optional[str] = Query(
-        default=None,
-        description="Path to Git repository"
-    )
+        default=None, description="Path to Git repository"
+    ),
 ):
     """
     Compare two commits
@@ -201,8 +177,7 @@ async def compare_commits(
 @router.get("/stats")
 async def get_repository_stats(
     project_path: Optional[str] = Query(
-        default=None,
-        description="Path to Git repository"
+        default=None, description="Path to Git repository"
     )
 ):
     """
@@ -253,7 +228,7 @@ async def get_repository_stats(
             "last_commit_date": last_commit_date,
             "total_lines_added": total_lines_added,
             "total_lines_deleted": total_lines_deleted,
-            "net_lines": total_lines_added - total_lines_deleted
+            "net_lines": total_lines_added - total_lines_deleted,
         }
 
     except Exception as e:
@@ -264,8 +239,7 @@ async def get_repository_stats(
 @router.get("/branches")
 async def list_branches(
     project_path: Optional[str] = Query(
-        default=None,
-        description="Path to Git repository"
+        default=None, description="Path to Git repository"
     )
 ):
     """
@@ -280,9 +254,9 @@ async def list_branches(
         repo_path = project_path if project_path else str(DEFAULT_PROJECT_PATH)
         git_service = GitService(repo_path)
 
-        stdout, _, returncode = git_service._run_git_command([
-            "branch", "--format=%(refname:short)"
-        ])
+        stdout, _, returncode = git_service._run_git_command(
+            ["branch", "--format=%(refname:short)"]
+        )
 
         if returncode != 0:
             raise HTTPException(status_code=500, detail="Failed to list branches")
@@ -293,7 +267,7 @@ async def list_branches(
         return {
             "branches": branches,
             "current_branch": current_branch,
-            "total": len(branches)
+            "total": len(branches),
         }
 
     except HTTPException:

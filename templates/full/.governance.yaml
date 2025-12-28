@@ -1,0 +1,87 @@
+# Full Template - .governance.yaml
+# 기업/대규모 프로젝트용 전체 설정
+
+version: "1.0.0"
+
+project:
+  name: "my-project"
+  type: "platform"
+  size: "enterprise"
+
+rules:
+  strict_mode: true
+  skip_rules: []
+  custom_rules: []
+
+languages:
+  python:
+    enabled: true
+    version: "3.13"
+    formatter: "black"
+    linter: "flake8"
+    type_checker: "mypy"
+    max_line_length: 127
+    max_complexity: 10
+  typescript:
+    enabled: true
+    version: "5.x"
+    formatter: "prettier"
+    linter: "eslint"
+    strict_mode: true
+
+git:
+  branch_protection:
+    main: true
+    develop: true
+  commit_format: "conventional"
+  require_signed_commits: true
+
+testing:
+  backend:
+    framework: "pytest"
+    coverage_target: 90
+    required: true
+  frontend:
+    framework: "playwright"
+    required: true
+  security:
+    enabled: true
+    scan_dependencies: true
+
+documentation:
+  require_readme: true
+  require_claude_md: true
+  require_agents_md: true
+  auto_sync_obsidian: true
+  require_api_docs: true
+
+uncertainty:
+  enabled: true
+  monitor_frequency: "daily"
+  alert_threshold: 40
+  require_mitigation: true
+
+ci_cd:
+  provider: "github-actions"
+  run_on_pr: true
+  run_on_push: true
+  nightly_tests: true
+  deploy_to_staging: true
+  require_approval: true
+
+security:
+  audit_checklist: true
+  dependency_scan: true
+  secret_scan: true
+  container_scan: true
+
+compliance:
+  require_review: true
+  audit_log: true
+  retention_days: 365
+
+auto_update:
+  enabled: true
+  frequency: "weekly"
+  version_policy: "patch"
+  require_approval: true

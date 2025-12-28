@@ -14,21 +14,24 @@ Benchmarking:
 - GitHub Copilot: Acceptance rate metrics
 """
 
-from fastapi import APIRouter, HTTPException, Depends
-from pydantic import BaseModel, Field
-from typing import Optional, List
 from datetime import datetime, timezone
+from typing import List, Optional
 from uuid import UUID, uuid4
+
+from fastapi import APIRouter, Depends, HTTPException
+from pydantic import BaseModel, Field
 from sqlalchemy.orm import Session
 
-from backend.app.db.database import get_db
-from backend.app.services.knowledge_feedback_service import KnowledgeFeedbackService
+from app.db.database import get_db
+from app.services.knowledge_feedback_service import \
+    KnowledgeFeedbackService
 
 router = APIRouter(prefix="/api/knowledge", tags=["knowledge-feedback"])
 
 # ============================================================================
 # Pydantic Models
 # ============================================================================
+
 
 class FeedbackCreate(BaseModel):
     """
@@ -39,18 +42,28 @@ class FeedbackCreate(BaseModel):
     - Linear: reason (optional text)
     - Copilot: implicit_accept (tab/esc)
     """
+
     document_id: str = Field(..., description="Obsidian document ID or filename")
     search_query: str = Field(..., description="User's original search query")
     is_helpful: bool = Field(..., description="Explicit feedback: helpful or not")
-    reason: Optional[str] = Field(None, description="Optional reason for negative feedback")
-    session_id: Optional[str] = Field(None, description="Session identifier for tracking")
-    implicit_accept: Optional[bool] = Field(None, description="Implicit signal (copy/dismiss)")
+    reason: Optional[str] = Field(
+        None, description="Optional reason for negative feedback"
+    )
+    session_id: Optional[str] = Field(
+        None, description="Session identifier for tracking"
+    )
+    implicit_accept: Optional[bool] = Field(
+        None, description="Implicit signal (copy/dismiss)"
+    )
+
 
 class FeedbackResponse(BaseModel):
     """Feedback submission response"""
+
     feedback_id: str
     message: str
     timestamp: datetime
+
 
 class DocumentScore(BaseModel):
     """
@@ -62,6 +75,7 @@ class DocumentScore(BaseModel):
     - Explicit negative: -1.0
     - Implicit negative: -0.3
     """
+
     document_id: str
     usefulness_score: float = Field(..., description="Score: -5.0 to +5.0")
     total_searches: int
@@ -69,6 +83,7 @@ class DocumentScore(BaseModel):
     unhelpful_count: int
     acceptance_rate: float = Field(..., description="Percentage: 0-100")
     last_updated: datetime
+
 
 class KnowledgeMetrics(BaseModel):
     """
@@ -79,31 +94,38 @@ class KnowledgeMetrics(BaseModel):
     - Copilot: Acceptance target 26-40%
     - Notion: False positive <10%
     """
+
     search_accuracy: float = Field(..., description="Percentage of helpful searches")
     acceptance_rate: float = Field(..., description="Percentage of accepted solutions")
-    false_positive_rate: float = Field(..., description="Percentage of unhelpful searches")
+    false_positive_rate: float = Field(
+        ..., description="Percentage of unhelpful searches"
+    )
     total_searches: int
     total_feedback_count: int
     avg_resolution_time_minutes: Optional[float] = None
-    top_documents: List[DocumentScore] = Field(default_factory=list, description="Top 10 useful documents")
-    low_quality_documents: List[str] = Field(default_factory=list, description="Documents needing improvement")
+    top_documents: List[DocumentScore] = Field(
+        default_factory=list, description="Top 10 useful documents"
+    )
+    low_quality_documents: List[str] = Field(
+        default_factory=list, description="Documents needing improvement"
+    )
     period_start: datetime
     period_end: datetime
+
 
 # ============================================================================
 # API Endpoints (Week 7-8: PostgreSQL Integration)
 # ============================================================================
+
 
 @router.get("/health")
 async def health_check():
     """Simple health check endpoint to verify router is working"""
     return {"status": "ok", "router": "knowledge-feedback"}
 
+
 @router.post("/feedback", response_model=FeedbackResponse, status_code=201)
-async def submit_feedback(
-    feedback: FeedbackCreate,
-    db: Session = Depends(get_db)
-):
+async def submit_feedback(feedback: FeedbackCreate, db: Session = Depends(get_db)):
     """
     Submit knowledge reuse feedback
 
@@ -126,7 +148,7 @@ async def submit_feedback(
         is_helpful=feedback.is_helpful,
         reason=feedback.reason,
         session_id=feedback.session_id,
-        implicit_accept=feedback.implicit_accept
+        implicit_accept=feedback.implicit_accept,
     )
 
     return FeedbackResponse(
@@ -135,11 +157,9 @@ async def submit_feedback(
         timestamp=feedback_entry.created_at,
     )
 
+
 @router.get("/metrics", response_model=KnowledgeMetrics)
-async def get_knowledge_metrics(
-    days: int = 7,
-    db: Session = Depends(get_db)
-):
+async def get_knowledge_metrics(days: int = 7, db: Session = Depends(get_db)):
     """
     Get knowledge reuse accuracy metrics
 
@@ -158,11 +178,9 @@ async def get_knowledge_metrics(
 
     return KnowledgeMetrics(**metrics)
 
+
 @router.get("/documents/{document_id}/score", response_model=DocumentScore)
-async def get_document_score(
-    document_id: str,
-    db: Session = Depends(get_db)
-):
+async def get_document_score(document_id: str, db: Session = Depends(get_db)):
     """
     Get document usefulness score
 
@@ -180,8 +198,7 @@ async def get_document_score(
 
     if not doc_score:
         raise HTTPException(
-            status_code=404,
-            detail=f"No feedback data for document: {document_id}"
+            status_code=404, detail=f"No feedback data for document: {document_id}"
         )
 
     return DocumentScore(
@@ -191,17 +208,17 @@ async def get_document_score(
         helpful_count=doc_score.helpful_count,
         unhelpful_count=doc_score.unhelpful_count,
         acceptance_rate=doc_score.acceptance_rate,
-        last_updated=doc_score.last_updated
+        last_updated=doc_score.last_updated,
     )
+
 
 # ============================================================================
 # Admin Endpoints (for quality management)
 # ============================================================================
 
+
 @router.get("/improvement-suggestions", response_model=List[dict])
-async def get_improvement_suggestions(
-    db: Session = Depends(get_db)
-):
+async def get_improvement_suggestions(db: Session = Depends(get_db)):
     """
     Auto-generated improvement suggestions
 
@@ -217,11 +234,9 @@ async def get_improvement_suggestions(
     service = KnowledgeFeedbackService(db)
     return service.get_improvement_suggestions()
 
+
 @router.delete("/feedback/{feedback_id}", status_code=204)
-async def delete_feedback(
-    feedback_id: str,
-    db: Session = Depends(get_db)
-):
+async def delete_feedback(feedback_id: str, db: Session = Depends(get_db)):
     """Delete feedback (admin only - for spam/test data removal)"""
     service = KnowledgeFeedbackService(db)
     deleted = service.delete_feedback(feedback_id)
@@ -230,6 +245,7 @@ async def delete_feedback(
         raise HTTPException(status_code=404, detail="Feedback not found")
 
     return None
+
 
 # ============================================================================
 # Export

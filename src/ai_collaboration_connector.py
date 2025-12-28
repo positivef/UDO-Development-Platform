@@ -1,8 +1,8 @@
 #!/usr/bin/env python3
 # -*- coding: utf-8 -*-
 """
-AI Collaboration Connector - [EMOJI] AI [EMOJI] [EMOJI]
-Codex MCP, Claude, Gemini [EMOJI]
+AI Collaboration Connector - 실제 AI 서비스 연동
+Codex MCP, Claude, Gemini 통합
 """
 
 import sys
@@ -16,20 +16,20 @@ from enum import Enum
 import subprocess
 import logging
 
-# Windows Unicode [EMOJI] [EMOJI] [EMOJI]
+# Windows Unicode 인코딩 문제 해결
 if sys.platform == 'win32':
     os.environ['PYTHONIOENCODING'] = 'utf-8'
     if hasattr(sys.stdout, 'reconfigure'):
         sys.stdout.reconfigure(encoding='utf-8')
         sys.stderr.reconfigure(encoding='utf-8')
 
-# [EMOJI] [EMOJI]
+# 로깅 설정
 logging.basicConfig(level=logging.INFO, format='%(asctime)s - %(levelname)s - %(message)s')
 logger = logging.getLogger(__name__)
 
 
 class AIService(Enum):
-    """AI [EMOJI] [EMOJI]"""
+    """AI 서비스 타입"""
     CLAUDE = "claude"
     CODEX = "codex"
     GEMINI = "gemini"
@@ -38,7 +38,7 @@ class AIService(Enum):
 
 @dataclass
 class AIRequest:
-    """AI [EMOJI] [EMOJI] [EMOJI]"""
+    """AI 요청 데이터 클래스"""
     service: AIService
     prompt: str
     context: Dict[str, Any]
@@ -49,7 +49,7 @@ class AIRequest:
 
 @dataclass
 class AIResponse:
-    """AI [EMOJI] [EMOJI] [EMOJI]"""
+    """AI 응답 데이터 클래스"""
     service: AIService
     content: str
     metadata: Dict[str, Any]
@@ -59,16 +59,16 @@ class AIResponse:
 
 
 class CodexMCPConnector:
-    """Codex MCP [EMOJI] [EMOJI] [EMOJI]"""
+    """Codex MCP 서버 연결 관리자"""
 
     def __init__(self):
         self.connected = False
         self.last_response = None
 
     def ping(self) -> bool:
-        """[EMOJI] [EMOJI] [EMOJI]"""
+        """연결 상태 확인"""
         try:
-            # MCP[EMOJI] [EMOJI] ping [EMOJI]
+            # MCP를 통한 ping 테스트
             result = self._execute_mcp_command("ping", {"message": "health_check"})
             self.connected = result is not None
             return self.connected
@@ -78,12 +78,12 @@ class CodexMCPConnector:
             return False
 
     def execute(self, prompt: str, context: Dict = None) -> Dict:
-        """Codex [EMOJI]"""
+        """Codex 실행"""
         try:
             if not self.connected and not self.ping():
                 raise ConnectionError("Codex MCP not available")
 
-            # MCP[EMOJI] [EMOJI] Codex [EMOJI]
+            # MCP를 통한 Codex 실행
             params = {
                 "prompt": prompt,
                 "context": context or {},
@@ -105,13 +105,13 @@ class CodexMCPConnector:
             }
 
     def _execute_mcp_command(self, command: str, params: Dict) -> Optional[Dict]:
-        """MCP [EMOJI] [EMOJI] ([EMOJI])"""
-        # [EMOJI] [EMOJI] MCP API [EMOJI]
-        # [EMOJI] [EMOJI]
+        """MCP 명령 실행 (시뮬레이션)"""
+        # 실제 구현시 MCP API 호출
+        # 현재는 시뮬레이션
         if command == "ping":
             return {"status": "ok", "timestamp": datetime.now().isoformat()}
         elif command == "codex":
-            # Codex [EMOJI] [EMOJI]
+            # Codex 실행 시뮬레이션
             return {
                 "output": f"# Codex Analysis\n{params.get('prompt', '')}",
                 "metadata": {
@@ -123,7 +123,7 @@ class CodexMCPConnector:
 
 
 class GeminiAPIConnector:
-    """Gemini API [EMOJI] [EMOJI]"""
+    """Gemini API 연결 관리자"""
 
     def __init__(self, api_key: Optional[str] = None):
         self.api_key = api_key or os.getenv("GEMINI_API_KEY")
@@ -131,23 +131,23 @@ class GeminiAPIConnector:
         self.connected = False
 
     def validate_connection(self) -> bool:
-        """[EMOJI] [EMOJI] [EMOJI]"""
+        """연결 유효성 검증"""
         if not self.api_key:
             logger.warning("Gemini API key not found")
             return False
 
-        # [EMOJI] [EMOJI] API [EMOJI] [EMOJI]
-        self.connected = True  # [EMOJI]
+        # 실제 구현시 API 연결 테스트
+        self.connected = True  # 시뮬레이션
         return self.connected
 
     def generate(self, prompt: str, context: Dict = None) -> Dict:
-        """Gemini [EMOJI] [EMOJI]"""
+        """Gemini 텍스트 생성"""
         try:
             if not self.connected and not self.validate_connection():
                 raise ConnectionError("Gemini API not available")
 
-            # [EMOJI] [EMOJI] Gemini API [EMOJI]
-            # [EMOJI] [EMOJI]
+            # 실제 구현시 Gemini API 호출
+            # 현재는 시뮬레이션
             return {
                 "success": True,
                 "content": f"[Gemini Response]\n{prompt[:100]}...",
@@ -166,7 +166,7 @@ class GeminiAPIConnector:
 
 
 class AICollaborationConnector:
-    """[EMOJI] AI [EMOJI] [EMOJI] [EMOJI]"""
+    """통합 AI 협업 연결 관리자"""
 
     def __init__(self):
         self.codex = CodexMCPConnector()
@@ -174,35 +174,35 @@ class AICollaborationConnector:
         self.services_status = {}
         self.execution_history = []
 
-        # [EMOJI] [EMOJI]
+        # 서비스 초기화
         self._initialize_services()
 
     def _initialize_services(self):
-        """[EMOJI] [EMOJI] [EMOJI] [EMOJI] [EMOJI]"""
+        """서비스 초기화 및 상태 확인"""
         logger.info("Initializing AI services...")
 
-        # Codex MCP [EMOJI]
+        # Codex MCP 확인
         self.services_status[AIService.CODEX] = self.codex.ping()
-        logger.info(f"Codex MCP: {'[OK] Connected' if self.services_status[AIService.CODEX] else '[FAIL] Not available'}")
+        logger.info(f"Codex MCP: {'✅ Connected' if self.services_status[AIService.CODEX] else '❌ Not available'}")
 
-        # Gemini API [EMOJI]
+        # Gemini API 확인
         self.services_status[AIService.GEMINI] = self.gemini.validate_connection()
-        logger.info(f"Gemini API: {'[OK] Connected' if self.services_status[AIService.GEMINI] else '[FAIL] Not available'}")
+        logger.info(f"Gemini API: {'✅ Connected' if self.services_status[AIService.GEMINI] else '❌ Not available'}")
 
-        # Claude[EMOJI] [EMOJI] [EMOJI] [EMOJI] [EMOJI] [EMOJI]
+        # Claude는 현재 컨텍스트에서 항상 사용 가능
         self.services_status[AIService.CLAUDE] = True
-        logger.info(f"Claude: [OK] Available (current context)")
+        logger.info(f"Claude: ✅ Available (current context)")
 
-        # Local [EMOJI] [EMOJI] [EMOJI]
+        # Local 실행은 항상 가능
         self.services_status[AIService.LOCAL] = True
-        logger.info(f"Local: [OK] Available")
+        logger.info(f"Local: ✅ Available")
 
     def execute_request(self, request: AIRequest) -> AIResponse:
-        """AI [EMOJI] [EMOJI]"""
+        """AI 요청 실행"""
         start_time = datetime.now()
 
         try:
-            # [EMOJI] [EMOJI]
+            # 서비스별 실행
             if request.service == AIService.CODEX:
                 result = self._execute_codex(request)
             elif request.service == AIService.GEMINI:
@@ -212,10 +212,10 @@ class AICollaborationConnector:
             else:
                 result = self._execute_local(request)
 
-            # [EMOJI] [EMOJI] [EMOJI]
+            # 실행 시간 계산
             execution_time = (datetime.now() - start_time).total_seconds()
 
-            # [EMOJI] [EMOJI]
+            # 응답 생성
             response = AIResponse(
                 service=request.service,
                 content=result.get("content", ""),
@@ -225,7 +225,7 @@ class AICollaborationConnector:
                 error=result.get("error")
             )
 
-            # [EMOJI] [EMOJI]
+            # 히스토리 저장
             self._save_to_history(request, response)
 
             return response
@@ -242,22 +242,22 @@ class AICollaborationConnector:
             )
 
     def _execute_codex(self, request: AIRequest) -> Dict:
-        """Codex [EMOJI]"""
+        """Codex 실행"""
         if not self.services_status.get(AIService.CODEX):
             return {"success": False, "error": "Codex not available"}
 
         return self.codex.execute(request.prompt, request.context)
 
     def _execute_gemini(self, request: AIRequest) -> Dict:
-        """Gemini [EMOJI]"""
+        """Gemini 실행"""
         if not self.services_status.get(AIService.GEMINI):
             return {"success": False, "error": "Gemini not available"}
 
         return self.gemini.generate(request.prompt, request.context)
 
     def _execute_claude(self, request: AIRequest) -> Dict:
-        """Claude [EMOJI] ([EMOJI] [EMOJI])"""
-        # Claude[EMOJI] [EMOJI] [EMOJI] [EMOJI] [EMOJI]
+        """Claude 실행 (현재 컨텍스트)"""
+        # Claude는 현재 실행 중인 컨텍스트
         return {
             "success": True,
             "content": f"[Claude would process]: {request.prompt[:100]}...",
@@ -265,8 +265,8 @@ class AICollaborationConnector:
         }
 
     def _execute_local(self, request: AIRequest) -> Dict:
-        """[EMOJI] [EMOJI] ([EMOJI])"""
-        # [EMOJI] [EMOJI] [EMOJI]
+        """로컬 실행 (폴백)"""
+        # 간단한 로컬 처리
         return {
             "success": True,
             "content": f"[Local processing]: {request.prompt[:50]}...",
@@ -274,39 +274,39 @@ class AICollaborationConnector:
         }
 
     def _save_to_history(self, request: AIRequest, response: AIResponse):
-        """[EMOJI] [EMOJI] [EMOJI]"""
+        """실행 히스토리 저장"""
         self.execution_history.append({
             "timestamp": datetime.now().isoformat(),
             "request": asdict(request),
             "response": asdict(response)
         })
 
-        # [EMOJI] 100[EMOJI] [EMOJI]
+        # 최대 100개 유지
         if len(self.execution_history) > 100:
             self.execution_history = self.execution_history[-100:]
 
     def orchestrate_collaboration(self, task: str, phase: str) -> Dict:
-        """[EMOJI] AI [EMOJI] [EMOJI]"""
+        """멀티 AI 협업 오케스트레이션"""
         logger.info(f"Orchestrating collaboration for phase: {phase}")
         results = {}
 
-        # Phase[EMOJI] AI [EMOJI] [EMOJI]
+        # Phase별 AI 조합 결정
         if phase == "ideation":
-            # Ideation: Claude ([EMOJI]) + Gemini ([EMOJI])
+            # Ideation: Claude (창의성) + Gemini (분석)
             services = [AIService.CLAUDE, AIService.GEMINI]
         elif phase == "design":
-            # Design: Codex ([EMOJI]) + Claude ([EMOJI])
+            # Design: Codex (아키텍처) + Claude (검토)
             services = [AIService.CODEX, AIService.CLAUDE]
         elif phase in ["mvp", "implementation"]:
-            # Implementation: Codex ([EMOJI]) + Claude ([EMOJI])
+            # Implementation: Codex (코딩) + Claude (최적화)
             services = [AIService.CODEX, AIService.CLAUDE]
         elif phase == "testing":
-            # Testing: [EMOJI] AI [EMOJI]
+            # Testing: 모든 AI 협업
             services = [AIService.CODEX, AIService.GEMINI, AIService.CLAUDE]
         else:
             services = [AIService.LOCAL]
 
-        # [EMOJI] [EMOJI] [EMOJI]
+        # 각 서비스 실행
         for service in services:
             if self.services_status.get(service, False):
                 request = AIRequest(
@@ -321,7 +321,7 @@ class AICollaborationConnector:
                     "time": response.execution_time
                 }
 
-        # [EMOJI] [EMOJI] [EMOJI]
+        # 종합 결과 생성
         return {
             "phase": phase,
             "task": task,
@@ -331,12 +331,12 @@ class AICollaborationConnector:
         }
 
     def get_status_report(self) -> Dict:
-        """[EMOJI] [EMOJI] [EMOJI]"""
+        """서비스 상태 보고서"""
         return {
             "services": {
                 service.value: {
                     "available": status,
-                    "status": "[OK] Connected" if status else "[FAIL] Not available"
+                    "status": "✅ Connected" if status else "❌ Not available"
                 }
                 for service, status in self.services_status.items()
             },
@@ -346,21 +346,21 @@ class AICollaborationConnector:
 
 
 def demo():
-    """[EMOJI] [EMOJI]"""
+    """데모 실행"""
     logger.info("%s", "=" * 60)
     logger.info("AI Collaboration Connector Demo")
     logger.info("%s", "=" * 60)
 
-    # [EMOJI] [EMOJI]
+    # 커넥터 초기화
     connector = AICollaborationConnector()
 
-    # [EMOJI] [EMOJI]
+    # 상태 보고
     logger.info("Service status:")
     status = connector.get_status_report()
     for service, info in status["services"].items():
         logger.info("%s: %s", service, info['status'])
 
-    # Phase[EMOJI] [EMOJI] [EMOJI]
+    # Phase별 협업 테스트
     phases = ["ideation", "design", "implementation", "testing"]
 
     for phase in phases:
@@ -372,7 +372,7 @@ def demo():
 
         logger.info("Services used: %s", ', '.join(result['services_used']))
         for service, res in result['results'].items():
-            status = "[OK]" if res['success'] else "[FAIL]"
+            status = "✅" if res['success'] else "❌"
             logger.info("%s: %s (%.2fs)", service, status, res['time'])
 
     logger.info("%s", "=" * 60)

@@ -7,21 +7,20 @@ Implements Q2: AI Hybrid (suggest + approve) with Constitutional compliance.
 
 from typing import Optional
 from uuid import UUID
+
 from fastapi import APIRouter, Depends, HTTPException, Query, status
 from fastapi.responses import JSONResponse
 
-from backend.app.core.security import require_role, UserRole, get_current_user
-from backend.app.services.kanban_ai_service import kanban_ai_service
-from backend.app.models.kanban_ai import (
-    TaskSuggestionRequest,
-    TaskSuggestionResponse,
-    TaskSuggestionApproval,
-    TaskSuggestionApprovalResponse,
-    RateLimitStatus,
-    RateLimitExceededError,
-    InvalidSuggestionError,
-    ConstitutionalViolationError,
-)
+from app.core.security import UserRole, get_current_user, require_role
+from app.models.kanban_ai import (ConstitutionalViolationError,
+                                          InvalidSuggestionError,
+                                          RateLimitExceededError,
+                                          RateLimitStatus,
+                                          TaskSuggestionApproval,
+                                          TaskSuggestionApprovalResponse,
+                                          TaskSuggestionRequest,
+                                          TaskSuggestionResponse)
+from app.services.kanban_ai_service import kanban_ai_service
 
 router = APIRouter(prefix="/api/kanban/ai", tags=["Kanban AI"])
 
@@ -30,9 +29,11 @@ router = APIRouter(prefix="/api/kanban/ai", tags=["Kanban AI"])
 # Error Response Helper
 # ============================================================================
 
+
 def error_response(code: str, message: str, status_code: int, details: dict = None):
     """Standard error response format"""
-    from datetime import datetime, UTC
+    from datetime import UTC, datetime
+
     return JSONResponse(
         status_code=status_code,
         content={
@@ -40,9 +41,9 @@ def error_response(code: str, message: str, status_code: int, details: dict = No
                 "code": code,
                 "message": message,
                 "details": details or {},
-                "timestamp": datetime.now(UTC).isoformat() + "Z"
+                "timestamp": datetime.now(UTC).isoformat() + "Z",
             }
-        }
+        },
     )
 
 
@@ -50,17 +51,17 @@ def error_response(code: str, message: str, status_code: int, details: dict = No
 # 1. AI Task Suggestion Generation (Q2: AI Hybrid)
 # ============================================================================
 
+
 @router.post(
     "/suggest",
     response_model=TaskSuggestionResponse,
     status_code=status.HTTP_200_OK,
     dependencies=[Depends(require_role(UserRole.DEVELOPER))],
     summary="Generate AI task suggestions",
-    description="Generate intelligent task suggestions using Claude Sonnet 4.5 (Q2: AI Hybrid)"
+    description="Generate intelligent task suggestions using Claude Sonnet 4.5 (Q2: AI Hybrid)",
 )
 async def suggest_tasks(
-    request: TaskSuggestionRequest,
-    current_user: dict = Depends(get_current_user)
+    request: TaskSuggestionRequest, current_user: dict = Depends(get_current_user)
 ):
     """
     Generate AI-powered task suggestions using Claude Sonnet 4.5.
@@ -98,20 +99,20 @@ async def suggest_tasks(
             details={
                 "suggestions_used": e.status.suggestions_used_today,
                 "limit": e.status.limit_per_period,
-                "reset_at": e.status.period_reset_at.isoformat() + "Z"
-            }
+                "reset_at": e.status.period_reset_at.isoformat() + "Z",
+            },
         )
     except ValueError as e:
         return error_response(
             code="INVALID_REQUEST",
             message=str(e),
-            status_code=status.HTTP_400_BAD_REQUEST
+            status_code=status.HTTP_400_BAD_REQUEST,
         )
     except Exception as e:
         return error_response(
             code="SUGGESTION_GENERATION_FAILED",
             message=f"Failed to generate task suggestions: {str(e)}",
-            status_code=status.HTTP_500_INTERNAL_SERVER_ERROR
+            status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
         )
 
 
@@ -119,18 +120,19 @@ async def suggest_tasks(
 # 2. AI Suggestion Approval (Q2: AI Hybrid Final Step)
 # ============================================================================
 
+
 @router.post(
     "/approve/{suggestion_id}",
     response_model=TaskSuggestionApprovalResponse,
     status_code=status.HTTP_201_CREATED,
     dependencies=[Depends(require_role(UserRole.DEVELOPER))],
     summary="Approve AI suggestion and create task",
-    description="Approve AI-generated suggestion and create actual task (Q2: AI Hybrid)"
+    description="Approve AI-generated suggestion and create actual task (Q2: AI Hybrid)",
 )
 async def approve_suggestion(
     suggestion_id: UUID,
     approval: TaskSuggestionApproval,
-    current_user: dict = Depends(get_current_user)
+    current_user: dict = Depends(get_current_user),
 ):
     """
     Approve AI-generated task suggestion and create actual task.
@@ -157,7 +159,7 @@ async def approve_suggestion(
             return error_response(
                 code="SUGGESTION_ID_MISMATCH",
                 message="Suggestion ID in URL does not match request body",
-                status_code=status.HTTP_400_BAD_REQUEST
+                status_code=status.HTTP_400_BAD_REQUEST,
             )
 
         # Set approved_by from current user
@@ -166,9 +168,7 @@ async def approve_suggestion(
         # Approve and create task
         user_id = current_user.get("username", current_user.get("email"))
         response = await kanban_ai_service.approve_suggestion(
-            suggestion_id,
-            approval,
-            user_id
+            suggestion_id, approval, user_id
         )
 
         return response
@@ -178,20 +178,20 @@ async def approve_suggestion(
             code="SUGGESTION_NOT_FOUND",
             message=str(e),
             status_code=status.HTTP_404_NOT_FOUND,
-            details={"suggestion_id": str(suggestion_id)}
+            details={"suggestion_id": str(suggestion_id)},
         )
     except ConstitutionalViolationError as e:
         return error_response(
             code="CONSTITUTIONAL_VIOLATION",
             message=f"Suggestion violates Constitutional principles: {str(e)}",
             status_code=status.HTTP_409_CONFLICT,
-            details={"violations": e.violations}
+            details={"violations": e.violations},
         )
     except Exception as e:
         return error_response(
             code="APPROVAL_FAILED",
             message=f"Failed to approve suggestion and create task: {str(e)}",
-            status_code=status.HTTP_500_INTERNAL_SERVER_ERROR
+            status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
         )
 
 
@@ -199,16 +199,15 @@ async def approve_suggestion(
 # 3. Rate Limit Status (Optional Helper Endpoint)
 # ============================================================================
 
+
 @router.get(
     "/rate-limit",
     response_model=RateLimitStatus,
     dependencies=[Depends(require_role(UserRole.DEVELOPER))],
     summary="Check AI suggestion rate limit status",
-    description="Check current rate limit status for AI suggestions (10/hour)"
+    description="Check current rate limit status for AI suggestions (10/hour)",
 )
-async def get_rate_limit_status(
-    current_user: dict = Depends(get_current_user)
-):
+async def get_rate_limit_status(current_user: dict = Depends(get_current_user)):
     """
     Check current rate limit status for AI suggestions.
 
@@ -232,5 +231,5 @@ async def get_rate_limit_status(
         return error_response(
             code="RATE_LIMIT_CHECK_FAILED",
             message=f"Failed to check rate limit status: {str(e)}",
-            status_code=status.HTTP_500_INTERNAL_SERVER_ERROR  # Requires 'status' not shadowed
+            status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,  # Requires 'status' not shadowed
         )

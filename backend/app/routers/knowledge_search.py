@@ -13,26 +13,27 @@ Integration:
 - FeedbackButtons: User feedback collection
 """
 
-from fastapi import APIRouter, HTTPException, Query, Depends
-from pydantic import BaseModel, Field
-from typing import Optional, List, Dict, Any
-from datetime import datetime, timezone
-from sqlalchemy.orm import Session
 import os
+from datetime import datetime, timezone
+from typing import Any, Dict, List, Optional
+
+# Import search service
+from app.services.knowledge_search_service import (KnowledgeSearchService,
+                                                   SearchResult)
+from fastapi import APIRouter, Depends, HTTPException, Query
+from pydantic import BaseModel, Field
+from sqlalchemy.orm import Session
+
+# Import database and service
+from app.db.database import get_db
+from app.services.knowledge_feedback_service import \
+    KnowledgeFeedbackService
 
 # Import MCP tools (will be available in backend runtime)
 # Note: These are injected by the MCP server at runtime
 # For type hints, we'll define them as we use them
 
-# Import search service
-from app.services.knowledge_search_service import (
-    KnowledgeSearchService,
-    SearchResult,
-)
 
-# Import database and service
-from backend.app.db.database import get_db
-from backend.app.services.knowledge_feedback_service import KnowledgeFeedbackService
 
 router = APIRouter(prefix="/api/knowledge", tags=["knowledge-search"])
 
@@ -40,8 +41,10 @@ router = APIRouter(prefix="/api/knowledge", tags=["knowledge-search"])
 # Pydantic Models
 # ============================================================================
 
+
 class SearchRequest(BaseModel):
     """Search request parameters"""
+
     query: str = Field(..., description="Search query string", min_length=3)
     error_type: Optional[str] = Field(None, description="Specific error type to filter")
     max_results: int = Field(10, description="Maximum number of results", ge=1, le=50)
@@ -50,6 +53,7 @@ class SearchRequest(BaseModel):
 
 class SearchResultResponse(BaseModel):
     """Search result with scoring breakdown"""
+
     document_id: str
     document_path: str
     relevance_score: float
@@ -64,6 +68,7 @@ class SearchResultResponse(BaseModel):
 
 class SearchResponse(BaseModel):
     """Search response with results and metadata"""
+
     query: str
     total_results: int
     results: List[SearchResultResponse]
@@ -75,6 +80,7 @@ class SearchResponse(BaseModel):
 
 class SearchStats(BaseModel):
     """Search performance statistics"""
+
     total_searches: int
     avg_search_time_ms: float
     tier1_hit_rate: float = Field(description="% of searches with Tier 1 results")
@@ -86,6 +92,7 @@ class SearchStats(BaseModel):
 # ============================================================================
 # Helper Functions
 # ============================================================================
+
 
 def get_obsidian_vault_path() -> str:
     """
@@ -113,7 +120,7 @@ def get_obsidian_vault_path() -> str:
         if not vault_path:
             raise HTTPException(
                 status_code=500,
-                detail="Obsidian vault path not configured. Set OBSIDIAN_VAULT_PATH env var."
+                detail="Obsidian vault path not configured. Set OBSIDIAN_VAULT_PATH env var.",
             )
 
     return vault_path
@@ -122,6 +129,7 @@ def get_obsidian_vault_path() -> str:
 # ============================================================================
 # API Endpoints
 # ============================================================================
+
 
 @router.get("/search", response_model=SearchResponse)
 async def search_knowledge(
@@ -150,6 +158,7 @@ async def search_knowledge(
     - Linear: Confidence score + Accuracy tracking
     """
     import time
+
     start_time = time.time()
 
     try:
@@ -192,14 +201,11 @@ async def search_knowledge(
             tier2_hits=tier_breakdown["tier2"],
             tier3_hits=tier_breakdown["tier3"],
             total_results=len(results),
-            session_id=None  # TODO: Extract from request if available
+            session_id=None,  # TODO: Extract from request if available
         )
 
         # Convert to response format
-        result_responses = [
-            SearchResultResponse(**r.to_dict())
-            for r in results
-        ]
+        result_responses = [SearchResultResponse(**r.to_dict()) for r in results]
 
         return SearchResponse(
             query=query,
@@ -210,10 +216,7 @@ async def search_knowledge(
         )
 
     except Exception as e:
-        raise HTTPException(
-            status_code=500,
-            detail=f"Search failed: {str(e)}"
-        )
+        raise HTTPException(status_code=500, detail=f"Search failed: {str(e)}")
 
 
 @router.get("/search/stats", response_model=SearchStats)

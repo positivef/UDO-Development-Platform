@@ -58,7 +58,7 @@ FEATURE_SUBFOLDERS = {
 }
 
 # Link pattern for markdown
-LINK_PATTERN = re.compile(r'\[([^\]]+)\]\(([^)]+)\)')
+LINK_PATTERN = re.compile(r"\[([^\]]+)\]\(([^)]+)\)")
 
 
 class DocumentationValidator:
@@ -104,10 +104,7 @@ class DocumentationValidator:
         for item in self.docs_root.iterdir():
             if item.is_file():
                 if item.name not in ALLOWED_ROOT_FILES:
-                    self.errors.append(
-                        f"Unexpected file in docs/ root: {item.name} "
-                        f"(should be in a subfolder)"
-                    )
+                    self.errors.append(f"Unexpected file in docs/ root: {item.name} " f"(should be in a subfolder)")
                 else:
                     print(f"  OK: {item.name}")
 
@@ -168,17 +165,13 @@ class DocumentationValidator:
                 checked_count += 1
 
                 if not target.exists():
-                    broken_links.append({
-                        "file": str(md_file.relative_to(self.docs_root)),
-                        "link": link_path,
-                        "text": link_text
-                    })
+                    broken_links.append(
+                        {"file": str(md_file.relative_to(self.docs_root)), "link": link_path, "text": link_text}
+                    )
 
         if broken_links:
             for bl in broken_links[:10]:  # Show first 10
-                self.warnings.append(
-                    f"Broken link in {bl['file']}: [{bl['text']}]({bl['link']})"
-                )
+                self.warnings.append(f"Broken link in {bl['file']}: [{bl['text']}]({bl['link']})")
             if len(broken_links) > 10:
                 self.warnings.append(f"  ... and {len(broken_links) - 10} more")
 
@@ -201,9 +194,7 @@ class DocumentationValidator:
             rel_path = md_file.relative_to(self.docs_root)
             if str(rel_path).startswith("templates/"):
                 if name != name.lower().replace("_", "-"):
-                    self.warnings.append(
-                        f"Template should use lowercase: {md_file.name}"
-                    )
+                    self.warnings.append(f"Template should use lowercase: {md_file.name}")
 
         if issues:
             for issue in issues:

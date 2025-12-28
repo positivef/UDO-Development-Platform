@@ -16,7 +16,7 @@ import {
 } from "@/components/ui/dialog"
 import { Button } from "@/components/ui/button"
 
-const API_URL = process.env.NEXT_PUBLIC_API_URL || "http://127.0.0.1:8001"
+const API_URL = process.env.NEXT_PUBLIC_API_URL || "http://localhost:8000"
 
 interface TierInfo {
   current_tier: string
@@ -120,7 +120,7 @@ export function ProjectTierStatus() {
             <span className="font-medium">{getTierName(tierInfo.current_tier)}</span>
             <span className="text-xs opacity-70">{tierInfo.compliance_score}% Compliant</span>
           </div>
-          
+
           <div className="text-xs text-gray-400">
             {tierInfo.tier_description.split("(")[0]}
           </div>
@@ -143,7 +143,7 @@ export function ProjectTierStatus() {
               This will add new governance rules and templates.
             </DialogDescription>
           </DialogHeader>
-          
+
           <div className="py-4 space-y-2 text-sm text-gray-300">
             <p>New requirements will actived:</p>
             <ul className="list-disc list-inside space-y-1 ml-2 text-gray-400">
@@ -177,7 +177,7 @@ export function ProjectTierStatus() {
             <Button variant="outline" onClick={() => setShowUpgradeDialog(false)} className="border-gray-600 hover:bg-gray-800">
               Cancel
             </Button>
-            <Button 
+            <Button
               onClick={() => tierInfo.next_tier && upgradeMutation.mutate(tierInfo.next_tier)}
               disabled={upgradeMutation.isPending}
               className="bg-blue-600 hover:bg-blue-700"

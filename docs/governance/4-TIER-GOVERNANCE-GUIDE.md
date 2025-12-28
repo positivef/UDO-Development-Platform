@@ -1,7 +1,7 @@
 # 4-Tier Governance 규칙 시스템 가이드
 
-> **Version**: 2.0  
-> **Last Updated**: 2024-12-24  
+> **Version**: 2.0
+> **Last Updated**: 2024-12-24
 > **Author**: UDO Development Platform
 
 ## 📋 개요
@@ -149,7 +149,7 @@ created_at: "2024-12-24"
 overrides:
   testing:
     coverage_minimum: 60%    # 기본 50% → 60%로 상향
-  
+
   ci:
     auto_deploy: false       # 수동 배포 선호
 ```

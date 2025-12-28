@@ -1,0 +1,81 @@
+name: Uncertainty Monitor
+
+on:
+  schedule:
+    - cron: '0 0 * * *'  # 매일 자정 (UTC)
+  workflow_dispatch:  # 수동 실행 가능
+
+jobs:
+  monitor-uncertainty:
+    runs-on: ubuntu-latest
+    
+    steps:
+    - name: Checkout code
+      uses: actions/checkout@v4
+
+    - name: Set up Python 3.13
+      uses: actions/setup-python@v5
+      with:
+        python-version: '3.13'
+        cache: 'pip'
+
+    - name: Install dependencies
+      run: |
+        python -m pip install --upgrade pip
+        pip install -r requirements.txt
+        pip install filelock numpy
+
+    - name: Run Uncertainty Analysis
+      id: uncertainty
+      run: |
+        python -c "
+        import sys
+        sys.path.insert(0, 'src')
+        from uncertainty_map_v3 import UncertaintyMapV3, UncertaintyVector
+        
+        umap = UncertaintyMapV3('UDO-Platform')
+        ctx = {
+            'phase': 'implementation',
+            'files': ['backend/', 'web-dashboard/', 'docs/'],
+            'team_size': 3,
+            'timeline_weeks': 12,
+            'market_validation': 0.7
+        }
+        vector, state = umap.analyze_context(ctx)
+        magnitude = vector.magnitude()
+        
+        print('=== UNCERTAINTY MAP DAILY CHECK ===')
+        print(umap.visualize_map(vector, state))
+        print(f'\n::set-output name=magnitude::{magnitude:.3f}')
+        print(f'::set-output name=state::{state.value}')
+        
+        # 50% 초과 시 경고
+        if magnitude > 0.5:
+            print('::warning::Uncertainty exceeds 50% threshold!')
+            print('::set-output name=alert::true')
+        else:
+            print('::set-output name=alert::false')
+        "
+      continue-on-error: true
+
+    - name: Check Alert Status
+      if: steps.uncertainty.outputs.alert == 'true'
+      run: |
+        echo "⚠️ 불확실성이 50%를 초과했습니다!"
+        echo "현재 상태: ${{ steps.uncertainty.outputs.state }}"
+        echo "Magnitude: ${{ steps.uncertainty.outputs.magnitude }}"
+
+    - name: Create Summary
+      if: always()
+      run: |
+        echo "## 📊 Uncertainty Monitor Report" >> $GITHUB_STEP_SUMMARY
+        echo "" >> $GITHUB_STEP_SUMMARY
+        echo "**Date**: $(date)" >> $GITHUB_STEP_SUMMARY
+        echo "**State**: ${{ steps.uncertainty.outputs.state }}" >> $GITHUB_STEP_SUMMARY
+        echo "**Magnitude**: ${{ steps.uncertainty.outputs.magnitude }}" >> $GITHUB_STEP_SUMMARY
+        echo "" >> $GITHUB_STEP_SUMMARY
+        if [ "${{ steps.uncertainty.outputs.alert }}" == "true" ]; then
+          echo "⚠️ **Alert**: Uncertainty exceeds threshold!" >> $GITHUB_STEP_SUMMARY
+        else
+          echo "✅ Uncertainty within acceptable range" >> $GITHUB_STEP_SUMMARY
+        fi

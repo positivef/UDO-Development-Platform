@@ -1,7 +1,7 @@
 """
 Module Management API Router
 
-Standard [EMOJI] [EMOJI] [EMOJI] [EMOJI] API
+Standard 레벨 모듈 점유 관리 API
 """
 
 from fastapi import APIRouter, HTTPException, Depends, Query
@@ -27,29 +27,29 @@ router = APIRouter(
 # ========================
 
 class ClaimModuleRequest(BaseModel):
-    """[EMOJI] [EMOJI] [EMOJI]"""
-    module_id: str = Field(..., description="[EMOJI] ID ([EMOJI]: auth/login)")
-    session_id: str = Field(..., description="[EMOJI] ID")
-    developer_name: str = Field(..., description="[EMOJI] [EMOJI]")
-    estimated_hours: Optional[float] = Field(None, description="[EMOJI] [EMOJI] [EMOJI]")
+    """모듈 점유 요청"""
+    module_id: str = Field(..., description="모듈 ID (예: auth/login)")
+    session_id: str = Field(..., description="세션 ID")
+    developer_name: str = Field(..., description="개발자 이름")
+    estimated_hours: Optional[float] = Field(None, description="예상 작업 시간")
 
 
 class UpdateModuleStatusRequest(BaseModel):
-    """[EMOJI] [EMOJI] [EMOJI] [EMOJI]"""
-    session_id: str = Field(..., description="[EMOJI] ID")
-    new_status: str = Field(..., description="[EMOJI] [EMOJI]")
-    progress: Optional[int] = Field(None, ge=0, le=100, description="[EMOJI]")
-    commit_hash: Optional[str] = Field(None, description="[EMOJI] [EMOJI]")
+    """모듈 상태 업데이트 요청"""
+    session_id: str = Field(..., description="세션 ID")
+    new_status: str = Field(..., description="새로운 상태")
+    progress: Optional[int] = Field(None, ge=0, le=100, description="진행률")
+    commit_hash: Optional[str] = Field(None, description="커밋 해시")
 
 
 class ReleaseModuleRequest(BaseModel):
-    """[EMOJI] [EMOJI] [EMOJI]"""
-    session_id: str = Field(..., description="[EMOJI] ID")
-    reason: Optional[str] = Field(None, description="[EMOJI] [EMOJI]")
+    """모듈 해제 요청"""
+    session_id: str = Field(..., description="세션 ID")
+    reason: Optional[str] = Field(None, description="해제 사유")
 
 
 class ModuleAvailabilityResponse(BaseModel):
-    """[EMOJI] [EMOJI] [EMOJI]"""
+    """모듈 가용성 응답"""
     available: bool
     reason: Optional[str] = None
     owner: Optional[str] = None
@@ -61,7 +61,7 @@ class ModuleAvailabilityResponse(BaseModel):
 
 
 class ModuleOwnershipResponse(BaseModel):
-    """[EMOJI] [EMOJI] [EMOJI] [EMOJI]"""
+    """모듈 점유 정보 응답"""
     module_id: str
     owner_session: str
     developer_name: str
@@ -77,7 +77,7 @@ class ModuleOwnershipResponse(BaseModel):
 
 
 class ModuleStatusBoardResponse(BaseModel):
-    """[EMOJI] [EMOJI] [EMOJI]"""
+    """모듈 현황판 응답"""
     active: List[Dict[str, Any]]
     available: List[Dict[str, Any]]
     blocked: List[Dict[str, Any]]
@@ -91,9 +91,9 @@ class ModuleStatusBoardResponse(BaseModel):
 @router.get("/status-board", response_model=ModuleStatusBoardResponse)
 async def get_module_status_board():
     """
-    [EMOJI] [EMOJI] [EMOJI]
+    모듈 현황판 조회
 
-    [EMOJI] [EMOJI] [EMOJI] [EMOJI] [EMOJI] [EMOJI] [EMOJI] [EMOJI] [EMOJI] [EMOJI] [EMOJI].
+    전체 모듈의 현재 상태를 한눈에 볼 수 있는 대시보드 데이터를 반환합니다.
     """
     try:
         manager = await get_module_manager()
@@ -106,14 +106,14 @@ async def get_module_status_board():
 @router.get("/{module_id:path}/availability", response_model=ModuleAvailabilityResponse)
 async def check_module_availability(
     module_id: str,
-    session_id: str = Query(..., description="[EMOJI] ID"),
-    developer_name: str = Query(..., description="[EMOJI] [EMOJI]")
+    session_id: str = Query(..., description="세션 ID"),
+    developer_name: str = Query(..., description="개발자 이름")
 ):
     """
-    [EMOJI] [EMOJI] [EMOJI] [EMOJI] [EMOJI]
+    모듈 개발 가능 여부 확인
 
-    [EMOJI] [EMOJI] [EMOJI] [EMOJI] [EMOJI] [EMOJI].
-    [EMOJI] [EMOJI] [EMOJI] [EMOJI] [EMOJI] [EMOJI] [EMOJI] [EMOJI] false[EMOJI] [EMOJI].
+    지정된 모듈을 개발할 수 있는지 확인합니다.
+    다른 개발자가 점유 중이거나 의존성이 해결되지 않은 경우 false를 반환합니다.
     """
     try:
         manager = await get_module_manager()
@@ -143,15 +143,15 @@ async def claim_module(
     request: ClaimModuleRequest
 ):
     """
-    [EMOJI] [EMOJI]
+    모듈 점유
 
-    [EMOJI] [EMOJI] [EMOJI] [EMOJI] [EMOJI] [EMOJI].
-    Standard [EMOJI] [EMOJI] [EMOJI] [EMOJI] [EMOJI] [EMOJI] [EMOJI] [EMOJI] [EMOJI].
+    모듈 개발을 시작하기 위해 점유를 요청합니다.
+    Standard 레벨에서는 한 번에 한 명만 모듈을 점유할 수 있습니다.
     """
     try:
         manager = await get_module_manager()
 
-        # [EMOJI] ID [EMOJI]
+        # 모듈 ID 검증
         if request.module_id != module_id:
             raise ValueError("Module ID mismatch")
 
@@ -191,15 +191,15 @@ async def update_module_status(
     request: UpdateModuleStatusRequest
 ):
     """
-    [EMOJI] [EMOJI] [EMOJI]
+    모듈 상태 업데이트
 
-    [EMOJI] [EMOJI] [EMOJI] [EMOJI].
-    (planning -> coding -> testing -> review -> completed)
+    모듈의 개발 상태를 업데이트합니다.
+    (planning → coding → testing → review → completed)
     """
     try:
         manager = await get_module_manager()
 
-        # [EMOJI] [EMOJI] Enum[EMOJI] [EMOJI]
+        # 상태 문자열을 Enum으로 변환
         new_status = ModuleStatus(request.new_status)
 
         success = await manager.update_module_status(
@@ -227,9 +227,9 @@ async def release_module(
     request: ReleaseModuleRequest
 ):
     """
-    [EMOJI] [EMOJI] [EMOJI]
+    모듈 점유 해제
 
-    [EMOJI] [EMOJI] [EMOJI] [EMOJI] [EMOJI] [EMOJI] [EMOJI] [EMOJI] [EMOJI].
+    모듈 점유를 해제하여 다른 개발자가 작업할 수 있도록 합니다.
     """
     try:
         manager = await get_module_manager()
@@ -254,9 +254,9 @@ async def release_module(
 @router.get("/{module_id:path}/ownership", response_model=Optional[ModuleOwnershipResponse])
 async def get_module_ownership(module_id: str):
     """
-    [EMOJI] [EMOJI] [EMOJI] [EMOJI]
+    모듈 점유 정보 조회
 
-    [EMOJI] [EMOJI] [EMOJI] [EMOJI] [EMOJI] [EMOJI].
+    특정 모듈의 현재 점유 정보를 조회합니다.
     """
     try:
         manager = await get_module_manager()
@@ -288,9 +288,9 @@ async def get_module_ownership(module_id: str):
 @router.get("/active", response_model=List[ModuleOwnershipResponse])
 async def get_active_modules():
     """
-    [EMOJI] [EMOJI] [EMOJI]
+    활성 모듈 목록
 
-    [EMOJI] [EMOJI] [EMOJI] [EMOJI] [EMOJI] [EMOJI] [EMOJI].
+    현재 개발 중인 모든 모듈 목록을 반환합니다.
     """
     try:
         manager = await get_module_manager()
@@ -320,13 +320,13 @@ async def get_active_modules():
 
 @router.post("/check-rules")
 async def check_standard_rules(
-    action: str = Query(..., description="[EMOJI] [EMOJI]"),
+    action: str = Query(..., description="체크할 액션"),
     context: Dict[str, Any] = {}
 ):
     """
-    Standard [EMOJI] [EMOJI] [EMOJI]
+    Standard 레벨 규칙 체크
 
-    [EMOJI] [EMOJI] Standard [EMOJI] [EMOJI] [EMOJI] [EMOJI].
+    특정 액션이 Standard 레벨 규칙을 준수하는지 확인합니다.
     """
     try:
         manager = await get_module_manager()

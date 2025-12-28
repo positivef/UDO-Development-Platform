@@ -19,10 +19,7 @@ src_dir = Path(__file__).parent.parent / "src"
 sys.path.insert(0, str(backend_dir))
 sys.path.insert(0, str(src_dir))
 
-from app.services.phase_transition_listener import (
-    PhaseTransitionListener,
-    create_listener_callback
-)
+from app.services.phase_transition_listener import PhaseTransitionListener, create_listener_callback
 from phase_state_manager import Phase, PhaseTransitionEvent
 
 
@@ -61,11 +58,7 @@ def mock_broadcast():
 @pytest.fixture
 def listener(mock_pool, mock_time_tracking, mock_broadcast):
     """Create PhaseTransitionListener instance"""
-    return PhaseTransitionListener(
-        pool=mock_pool,
-        time_tracking_service=mock_time_tracking,
-        broadcast_func=mock_broadcast
-    )
+    return PhaseTransitionListener(pool=mock_pool, time_tracking_service=mock_time_tracking, broadcast_func=mock_broadcast)
 
 
 class TestPhaseTransitionListener:
@@ -89,7 +82,7 @@ class TestPhaseTransitionListener:
             to_phase=Phase.IDEATION,
             transition_time=transition_time,
             duration_seconds=None,
-            metadata={"reason": "project start"}
+            metadata={"reason": "project start"},
         )
 
         # Should NOT call stop_task (no previous session)
@@ -124,7 +117,7 @@ class TestPhaseTransitionListener:
             to_phase=Phase.DESIGN,
             transition_time=transition_time,
             duration_seconds=3600,
-            metadata={"reason": "requirements complete"}
+            metadata={"reason": "requirements complete"},
         )
 
         # Should call stop_task for previous session (OLD session ID)
@@ -157,7 +150,7 @@ class TestPhaseTransitionListener:
             to_phase=Phase.MVP,
             transition_time=transition_time,
             duration_seconds=7200,
-            metadata={"confidence": 0.85}
+            metadata={"confidence": 0.85},
         )
 
         # Verify database query was executed
@@ -172,10 +165,7 @@ class TestPhaseTransitionListener:
         transition_time = datetime.utcnow()
 
         await listener.on_phase_transition(
-            from_phase=Phase.MVP,
-            to_phase=Phase.IMPLEMENTATION,
-            transition_time=transition_time,
-            duration_seconds=5400
+            from_phase=Phase.MVP, to_phase=Phase.IMPLEMENTATION, transition_time=transition_time, duration_seconds=5400
         )
 
         # Should broadcast phase change
@@ -192,17 +182,11 @@ class TestPhaseTransitionListener:
     @pytest.mark.asyncio
     async def test_broadcast_without_function(self, mock_pool, mock_time_tracking):
         """Test listener works without broadcast function"""
-        listener = PhaseTransitionListener(
-            pool=mock_pool,
-            time_tracking_service=mock_time_tracking,
-            broadcast_func=None
-        )
+        listener = PhaseTransitionListener(pool=mock_pool, time_tracking_service=mock_time_tracking, broadcast_func=None)
 
         # Should not raise exception
         transition_id = await listener.on_phase_transition(
-            from_phase=None,
-            to_phase=Phase.IDEATION,
-            transition_time=datetime.utcnow()
+            from_phase=None, to_phase=Phase.IDEATION, transition_time=datetime.utcnow()
         )
 
         assert isinstance(transition_id, UUID)
@@ -214,11 +198,7 @@ class TestPhaseTransitionListener:
         mock_time_tracking.start_task.side_effect = Exception("Database error")
 
         with pytest.raises(Exception) as exc_info:
-            await listener.on_phase_transition(
-                from_phase=None,
-                to_phase=Phase.IDEATION,
-                transition_time=datetime.utcnow()
-            )
+            await listener.on_phase_transition(from_phase=None, to_phase=Phase.IDEATION, transition_time=datetime.utcnow())
 
         assert "Database error" in str(exc_info.value)
 
@@ -275,15 +255,11 @@ class TestPhaseTransitionListener:
     async def test_mock_mode_without_database(self, mock_time_tracking, mock_broadcast):
         """Test listener works in mock mode (no database)"""
         listener = PhaseTransitionListener(
-            pool=None,  # No database pool
-            time_tracking_service=mock_time_tracking,
-            broadcast_func=mock_broadcast
+            pool=None, time_tracking_service=mock_time_tracking, broadcast_func=mock_broadcast  # No database pool
         )
 
         transition_id = await listener.on_phase_transition(
-            from_phase=None,
-            to_phase=Phase.IDEATION,
-            transition_time=datetime.utcnow()
+            from_phase=None, to_phase=Phase.IDEATION, transition_time=datetime.utcnow()
         )
 
         # Should return UUID even without database
@@ -300,10 +276,7 @@ class TestListenerCallback:
     @pytest.mark.asyncio
     async def test_callback_creation(self, mock_pool, mock_time_tracking):
         """Test callback function creation"""
-        listener = PhaseTransitionListener(
-            pool=mock_pool,
-            time_tracking_service=mock_time_tracking
-        )
+        listener = PhaseTransitionListener(pool=mock_pool, time_tracking_service=mock_time_tracking)
 
         callback = create_listener_callback(listener)
 
@@ -312,11 +285,7 @@ class TestListenerCallback:
 
         # Test calling the callback
         event = PhaseTransitionEvent(
-            from_phase=None,
-            to_phase=Phase.IDEATION,
-            transition_time=datetime.utcnow(),
-            duration_seconds=None,
-            metadata={}
+            from_phase=None, to_phase=Phase.IDEATION, transition_time=datetime.utcnow(), duration_seconds=None, metadata={}
         )
 
         await callback(event)
@@ -337,10 +306,7 @@ class TestIntegrationWithPhaseStateManager:
         manager = PhaseStateManager()
 
         # Create listener
-        listener = PhaseTransitionListener(
-            pool=mock_pool,
-            time_tracking_service=mock_time_tracking
-        )
+        listener = PhaseTransitionListener(pool=mock_pool, time_tracking_service=mock_time_tracking)
 
         # Track events received (sync callback for testing)
         events_received = []
@@ -371,7 +337,7 @@ class TestIntegrationWithPhaseStateManager:
             to_phase=event.to_phase,
             transition_time=event.transition_time,
             duration_seconds=event.duration_seconds,
-            metadata=event.metadata
+            metadata=event.metadata,
         )
 
         # Verify listener processed the event

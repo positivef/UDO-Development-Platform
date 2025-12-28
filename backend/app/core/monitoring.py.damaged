@@ -1,0 +1,332 @@
+"""
+Performance Monitoring System
+
+Prometheus [EMOJI] [EMOJI] [EMOJI] [EMOJI] [EMOJI] [EMOJI].
+"""
+
+import asyncio
+import logging
+import time
+from contextlib import contextmanager
+from datetime import UTC, datetime
+from functools import wraps
+from typing import Any, Callable, Dict, Optional
+
+import psutil
+from prometheus_client import (CONTENT_TYPE_LATEST, REGISTRY, Counter, Gauge,
+                               Histogram, generate_latest)
+
+logger = logging.getLogger(__name__)
+
+# =====================
+# Prometheus Metrics
+# =====================
+
+# Request metrics
+request_count = Counter("http_requests_total", "Total HTTP requests", ["method", "endpoint", "status"])
+
+request_duration = Histogram("http_request_duration_seconds", "HTTP request latency", ["method", "endpoint"])
+
+# System metrics
+cpu_usage_gauge = Gauge("system_cpu_usage_percent", "CPU usage percentage")
+memory_usage_gauge = Gauge("system_memory_usage_percent", "Memory usage percentage")
+disk_usage_gauge = Gauge("system_disk_usage_percent", "Disk usage percentage")
+
+# Application metrics
+active_connections = Gauge("app_active_connections", "Number of active connections")
+task_queue_size = Gauge("app_task_queue_size", "Size of task queue")
+error_rate = Counter("app_errors_total", "Total application errors", ["error_type"])
+
+# UDO specific metrics
+udo_execution_count = Counter("udo_executions_total", "Total UDO executions", ["phase", "decision"])
+
+udo_confidence_histogram = Histogram("udo_confidence_score", "UDO confidence scores distribution", ["phase"])
+
+uncertainty_level_gauge = Gauge("udo_uncertainty_level", "Current uncertainty level", ["phase"])
+
+# Database metrics
+db_connection_pool_size = Gauge("db_connection_pool_size", "Database connection pool size")
+db_query_duration = Histogram("db_query_duration_seconds", "Database query duration", ["operation"])
+
+# Cache metrics
+cache_hits = Counter("cache_hits_total", "Total cache hits")
+cache_misses = Counter("cache_misses_total", "Total cache misses")
+cache_size = Gauge("cache_size_bytes", "Current cache size in bytes")
+
+
+class PerformanceMonitor:
+    """[EMOJI] [EMOJI] [EMOJI]"""
+
+    def __init__(self):
+        """PerformanceMonitor [EMOJI]"""
+        self.start_time = time.time()
+        self.request_times = []
+        self.error_counts = {}
+        self.is_collecting = False
+
+        # [EMOJI] [EMOJI] [EMOJI] [EMOJI]
+        self._start_system_monitoring()
+
+    def _start_system_monitoring(self):
+        """[EMOJI] [EMOJI] [EMOJI] [EMOJI]"""
+        self.is_collecting = True
+        logger.info("System monitoring started")
+
+    def collect_system_metrics(self):
+        """[EMOJI] [EMOJI] [EMOJI]"""
+        try:
+            # CPU usage
+            cpu_percent = psutil.cpu_percent(interval=1)
+            cpu_usage_gauge.set(cpu_percent)
+
+            # Memory usage
+            memory = psutil.virtual_memory()
+            memory_usage_gauge.set(memory.percent)
+
+            # Disk usage
+            disk = psutil.disk_usage("/")
+            disk_usage_gauge.set(disk.percent)
+
+            return {"cpu_percent": cpu_percent, "memory_percent": memory.percent, "disk_percent": disk.percent}
+        except Exception as e:
+            logger.error(f"Failed to collect system metrics: {e}")
+            return {}
+
+    @contextmanager
+    def measure_request(self, method: str, endpoint: str):
+        """
+        HTTP [EMOJI] [EMOJI] [EMOJI] [EMOJI]
+
+        Args:
+            method: HTTP [EMOJI]
+            endpoint: [EMOJI] [EMOJI]
+        """
+        start_time = time.time()
+        status_code = 200  # Default
+
+        try:
+            yield
+        except Exception as e:
+            status_code = 500
+            error_rate.labels(error_type=type(e).__name__).inc()
+            raise
+        finally:
+            duration = time.time() - start_time
+            request_count.labels(method=method, endpoint=endpoint, status=str(status_code)).inc()
+            request_duration.labels(method=method, endpoint=endpoint).observe(duration)
+
+            # Store for internal analytics
+            self.request_times.append(duration)
+            if len(self.request_times) > 1000:
+                self.request_times = self.request_times[-1000:]
+
+    def track_udo_execution(self, phase: str, decision: str, confidence: float, uncertainty: float):
+        """
+        UDO [EMOJI] [EMOJI] [EMOJI]
+
+        Args:
+            phase: [EMOJI] [EMOJI]
+            decision: [EMOJI] (GO/NO_GO/GO_WITH_CHECKPOINTS)
+            confidence: [EMOJI] [EMOJI]
+            uncertainty: [EMOJI] [EMOJI]
+        """
+        udo_execution_count.labels(phase=phase, decision=decision).inc()
+        udo_confidence_histogram.labels(phase=phase).observe(confidence)
+        uncertainty_level_gauge.labels(phase=phase).set(uncertainty)
+
+    def track_database_query(self, operation: str, duration: float):
+        """
+        [EMOJI] [EMOJI] [EMOJI] [EMOJI]
+
+        Args:
+            operation: [EMOJI] [EMOJI] (select/insert/update/delete)
+            duration: [EMOJI] [EMOJI] [EMOJI]
+        """
+        db_query_duration.labels(operation=operation).observe(duration)
+
+    def track_cache_access(self, hit: bool):
+        """
+        [EMOJI] [EMOJI] [EMOJI] [EMOJI]
+
+        Args:
+            hit: [EMOJI] [EMOJI] [EMOJI]
+        """
+        if hit:
+            cache_hits.inc()
+        else:
+            cache_misses.inc()
+
+    def update_connection_count(self, count: int):
+        """[EMOJI] [EMOJI] [EMOJI] [EMOJI]"""
+        active_connections.set(count)
+
+    def update_task_queue_size(self, size: int):
+        """[EMOJI] [EMOJI] [EMOJI] [EMOJI]"""
+        task_queue_size.set(size)
+
+    def get_metrics_summary(self) -> Dict[str, Any]:
+        """
+        [EMOJI] [EMOJI] [EMOJI] [EMOJI]
+
+        Returns:
+            [EMOJI] [EMOJI] [EMOJI]
+        """
+        uptime = time.time() - self.start_time
+
+        # Calculate average request time
+        avg_request_time = 0
+        if self.request_times:
+            avg_request_time = sum(self.request_times) / len(self.request_times)
+
+        # Get system metrics
+        system_metrics = self.collect_system_metrics()
+
+        # Calculate cache hit rate
+        total_cache_access = cache_hits._value.get() + cache_misses._value.get()
+        cache_hit_rate = 0
+        if total_cache_access > 0:
+            cache_hit_rate = cache_hits._value.get() / total_cache_access * 100
+
+        return {
+            "uptime_seconds": uptime,
+            "average_request_time": avg_request_time,
+            "total_requests": len(self.request_times),
+            "system_metrics": system_metrics,
+            "cache_hit_rate": cache_hit_rate,
+            "active_connections": active_connections._value.get(),
+            "task_queue_size": task_queue_size._value.get(),
+            "timestamp": datetime.now(UTC).isoformat(),
+        }
+
+    def get_prometheus_metrics(self) -> bytes:
+        """
+        Prometheus [EMOJI] [EMOJI] [EMOJI]
+
+        Returns:
+            [EMOJI] [EMOJI] (bytes)
+        """
+        # Collect current system metrics
+        self.collect_system_metrics()
+
+        # Generate Prometheus format
+        return generate_latest(REGISTRY)
+
+
+def monitor_performance(func: Callable) -> Callable:
+    """
+    [EMOJI] [EMOJI] [EMOJI] [EMOJI]
+
+    Args:
+        func: [EMOJI] [EMOJI]
+
+    Returns:
+        [EMOJI] [EMOJI]
+    """
+
+    @wraps(func)
+    async def async_wrapper(*args, **kwargs):
+        start_time = time.time()
+        try:
+            result = await func(*args, **kwargs)
+            return result
+        finally:
+            duration = time.time() - start_time
+            logger.debug(f"{func.__name__} took {duration:.4f} seconds")
+
+    @wraps(func)
+    def sync_wrapper(*args, **kwargs):
+        start_time = time.time()
+        try:
+            result = func(*args, **kwargs)
+            return result
+        finally:
+            duration = time.time() - start_time
+            logger.debug(f"{func.__name__} took {duration:.4f} seconds")
+
+    if asyncio.iscoroutinefunction(func):
+        return async_wrapper
+    else:
+        return sync_wrapper
+
+
+class RequestTracker:
+    """[EMOJI] [EMOJI] [EMOJI] ([EMOJI])"""
+
+    def __init__(self, monitor: PerformanceMonitor):
+        """
+        RequestTracker [EMOJI]
+
+        Args:
+            monitor: PerformanceMonitor [EMOJI]
+        """
+        self.monitor = monitor
+
+    async def __call__(self, request, call_next):
+        """
+        [EMOJI] [EMOJI]
+
+        Args:
+            request: FastAPI [EMOJI] [EMOJI]
+            call_next: [EMOJI] [EMOJI]/[EMOJI]
+
+        Returns:
+            [EMOJI] [EMOJI]
+        """
+        method = request.method
+        path = request.url.path
+
+        start_time = time.time()
+        status_code = 200
+
+        try:
+            response = await call_next(request)
+            status_code = response.status_code
+            return response
+        except Exception as e:
+            status_code = 500
+            error_rate.labels(error_type=type(e).__name__).inc()
+            raise
+        finally:
+            duration = time.time() - start_time
+
+            # Track metrics
+            request_count.labels(method=method, endpoint=path, status=str(status_code)).inc()
+
+            request_duration.labels(method=method, endpoint=path).observe(duration)
+
+            # Log slow requests
+            if duration > 1.0:
+                logger.warning(f"Slow request: {method} {path} took {duration:.2f}s")
+
+
+# Create singleton instance
+performance_monitor = PerformanceMonitor()
+
+
+def setup_monitoring(app):
+    """
+    FastAPI [EMOJI] [EMOJI] [EMOJI]
+
+    Args:
+        app: FastAPI [EMOJI] [EMOJI]
+    """
+    from fastapi import FastAPI
+    from fastapi.responses import Response
+    from starlette.middleware.base import BaseHTTPMiddleware
+
+    # Add request tracking middleware
+    tracker = RequestTracker(performance_monitor)
+    app.add_middleware(BaseHTTPMiddleware, dispatch=tracker)
+
+    # Add metrics endpoint
+    @app.get("/metrics", include_in_schema=False)
+    async def get_metrics():
+        """Prometheus [EMOJI] [EMOJI]"""
+        metrics = performance_monitor.get_prometheus_metrics()
+        return Response(content=metrics, media_type=CONTENT_TYPE_LATEST)
+
+    logger.info("Performance monitoring configured")
+
+
+# Export key components
+__all__ = ["performance_monitor", "monitor_performance", "setup_monitoring", "PerformanceMonitor", "RequestTracker"]

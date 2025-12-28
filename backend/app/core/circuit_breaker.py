@@ -4,9 +4,9 @@ Simple circuit breaker and TTL cache utilities for uncertainty endpoints.
 Designed to be lightweight and dependency-free to avoid coupling with external cache/queue.
 """
 
-import time
 import functools
-from typing import Callable, Optional, Any
+import time
+from typing import Any, Callable, Optional
 
 
 class CircuitBreaker:
@@ -37,7 +37,10 @@ class CircuitBreaker:
         async def wrapper(*args, **kwargs):
             # Fast-fail if open
             if self._state == "OPEN":
-                if self._opened_at and (time.time() - self._opened_at) > self.recovery_timeout:
+                if (
+                    self._opened_at
+                    and (time.time() - self._opened_at) > self.recovery_timeout
+                ):
                     # Move to HALF_OPEN and try once
                     self._state = "HALF_OPEN"
                 else:
@@ -106,4 +109,3 @@ class SimpleTTLCache:
 
     def set(self, key: str, value: Any, ttl_seconds: int):
         self._store[key] = (time.time() + ttl_seconds, value)
-

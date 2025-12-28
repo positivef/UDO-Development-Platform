@@ -14,26 +14,27 @@ Version: 1.0.0
 """
 
 import json
+import logging
 import os
 import subprocess
-import time
-from pathlib import Path
-from typing import Dict, List, Optional, Tuple, Any
-from dataclasses import dataclass, asdict
-from enum import Enum
-from datetime import datetime
 import tempfile
-import yaml
-import logging
-from filelock import FileLock
+import time
+from dataclasses import asdict, dataclass
+from datetime import datetime
+from enum import Enum
+from pathlib import Path
+from typing import Any, Dict, List, Optional, Tuple
 
+import yaml
+
+from filelock import FileLock
 
 logger = logging.getLogger(__name__)
 
 
 def _get_storage_dir() -> Path:
-    env_dir = os.environ.get('UDO_STORAGE_DIR') or os.environ.get('UDO_HOME')
-    base_dir = Path(env_dir).expanduser() if env_dir else Path.home() / '.udo'
+    env_dir = os.environ.get("UDO_STORAGE_DIR") or os.environ.get("UDO_HOME")
+    base_dir = Path(env_dir).expanduser() if env_dir else Path.home() / ".udo"
     base_dir.mkdir(parents=True, exist_ok=True)
     return base_dir
 
@@ -44,6 +45,7 @@ GEMINI_USAGE_FILE = DEFAULT_STORAGE_DIR / "gemini_usage.json"
 
 class AIRole(Enum):
     """Specialized roles for each AI"""
+
     # Claude roles
     CLAUDE_IMPLEMENT = "claude-implement"
     CLAUDE_ARCHITECT = "claude-architect"
@@ -62,15 +64,17 @@ class AIRole(Enum):
 
 class ExecutionMode(Enum):
     """Collaboration execution modes"""
+
     SEQUENTIAL = "sequential"  # One after another
-    PARALLEL = "parallel"      # All at once
-    ITERATIVE = "iterative"    # Loop until convergence
-    ADAPTIVE = "adaptive"      # Dynamic based on results
+    PARALLEL = "parallel"  # All at once
+    ITERATIVE = "iterative"  # Loop until convergence
+    ADAPTIVE = "adaptive"  # Dynamic based on results
 
 
 @dataclass
 class AIContext:
     """Shared context between AI tools"""
+
     task_id: str
     phase: str
     previous_outputs: Dict[str, Any]
@@ -88,7 +92,7 @@ class AIContext:
         return yaml.dump(asdict(self), default_flow_style=False)
 
     @classmethod
-    def from_yaml(cls, yaml_str: str) -> 'AIContext':
+    def from_yaml(cls, yaml_str: str) -> "AIContext":
         """Create from YAML string"""
         data = yaml.safe_load(yaml_str)
         return cls(**data)
@@ -97,6 +101,7 @@ class AIContext:
 @dataclass
 class AIResponse:
     """Response from an AI tool"""
+
     ai_name: str
     role: AIRole
     output: str
@@ -119,10 +124,7 @@ class CodexInterface:
         try:
             # Try CLI first
             result = subprocess.run(
-                ["codex", "--version"],
-                capture_output=True,
-                text=True,
-                timeout=2
+                ["codex", "--version"], capture_output=True, text=True, timeout=2
             )
             return result.returncode == 0
         except:
@@ -140,7 +142,7 @@ class CodexInterface:
                 issues_found=[],
                 suggestions=[],
                 execution_time=0.0,
-                metadata={"error": "Codex not configured"}
+                metadata={"error": "Codex not configured"},
             )
 
         start_time = time.time()
@@ -166,7 +168,7 @@ class CodexInterface:
                 issues_found=issues,
                 suggestions=suggestions,
                 execution_time=time.time() - start_time,
-                metadata={"method": "cli" if self._has_cli() else "api"}
+                metadata={"method": "cli" if self._has_cli() else "api"},
             )
 
         except Exception as e:
@@ -178,7 +180,7 @@ class CodexInterface:
                 issues_found=[],
                 suggestions=[],
                 execution_time=time.time() - start_time,
-                metadata={"error": str(e)}
+                metadata={"error": str(e)},
             )
 
     def _has_cli(self) -> bool:
@@ -199,7 +201,9 @@ Success Criteria: {', '.join(context.success_criteria)}
 """
 
         if role == AIRole.CODEX_VERIFY:
-            return base_prompt + """
+            return (
+                base_prompt
+                + """
 Role: Code Verification Specialist
 Focus:
 1. Verify correctness of implementation
@@ -212,9 +216,12 @@ Output Format:
 - Test Cases Needed: [list]
 - Verification Status: PASS/FAIL/PARTIAL
 """
+            )
 
         elif role == AIRole.CODEX_REVIEW:
-            return base_prompt + """
+            return (
+                base_prompt
+                + """
 Role: Senior Code Reviewer
 Focus:
 1. Code quality and best practices
@@ -228,9 +235,12 @@ Output Format:
 - Security Findings: [list]
 - Performance Notes: [list]
 """
+            )
 
         elif role == AIRole.CODEX_DEBUG:
-            return base_prompt + """
+            return (
+                base_prompt
+                + """
 Role: Debugging Expert
 Focus:
 1. Root cause analysis
@@ -243,12 +253,13 @@ Output Format:
 - Fix Steps: [numbered list]
 - Prevention: [recommendations]
 """
+            )
 
         return base_prompt
 
     def _execute_cli(self, prompt: str) -> str:
         """Execute via Codex CLI"""
-        with tempfile.NamedTemporaryFile(mode='w', suffix='.txt', delete=False) as f:
+        with tempfile.NamedTemporaryFile(mode="w", suffix=".txt", delete=False) as f:
             f.write(prompt)
             temp_file = f.name
 
@@ -257,7 +268,7 @@ Output Format:
                 ["codex", "exec", "--prompt", temp_file],
                 capture_output=True,
                 text=True,
-                timeout=30
+                timeout=30,
             )
             return result.stdout
         finally:
@@ -274,18 +285,18 @@ Output Format:
         issues = []
         suggestions = []
 
-        lines = output.split('\n')
+        lines = output.split("\n")
         current_section = None
 
         for line in lines:
-            if 'Issues Found:' in line or 'Critical Issues:' in line:
-                current_section = 'issues'
-            elif 'Suggestions:' in line:
-                current_section = 'suggestions'
-            elif line.strip().startswith('- ') or line.strip().startswith('* '):
-                if current_section == 'issues':
+            if "Issues Found:" in line or "Critical Issues:" in line:
+                current_section = "issues"
+            elif "Suggestions:" in line:
+                current_section = "suggestions"
+            elif line.strip().startswith("- ") or line.strip().startswith("* "):
+                if current_section == "issues":
                     issues.append(line.strip()[2:])
-                elif current_section == 'suggestions':
+                elif current_section == "suggestions":
                     suggestions.append(line.strip()[2:])
 
         return issues, suggestions
@@ -303,10 +314,7 @@ class GeminiInterface:
         """Check if Gemini CLI is available"""
         try:
             result = subprocess.run(
-                ["gemini", "--version"],
-                capture_output=True,
-                text=True,
-                timeout=2
+                ["gemini", "--version"], capture_output=True, text=True, timeout=2
             )
             return result.returncode == 0
         except:
@@ -316,13 +324,13 @@ class GeminiInterface:
         """Load today's usage count"""
         usage_file = GEMINI_USAGE_FILE
         if usage_file.exists():
-            lock = FileLock(str(usage_file) + '.lock')
+            lock = FileLock(str(usage_file) + ".lock")
             with lock:
                 try:
-                    with open(usage_file, 'r', encoding='utf-8') as f:
+                    with open(usage_file, "r", encoding="utf-8") as f:
                         data = json.load(f)
-                        if data.get('date') == datetime.now().strftime('%Y-%m-%d'):
-                            return data.get('count', 0)
+                        if data.get("date") == datetime.now().strftime("%Y-%m-%d"):
+                            return data.get("count", 0)
                 except Exception:
                     return 0
         return 0
@@ -330,13 +338,16 @@ class GeminiInterface:
     def _save_usage_count(self):
         """Save usage count"""
         usage_file = GEMINI_USAGE_FILE
-        lock = FileLock(str(usage_file) + '.lock')
+        lock = FileLock(str(usage_file) + ".lock")
         with lock:
-            with open(usage_file, 'w', encoding='utf-8') as f:
-                json.dump({
-                    'date': datetime.now().strftime('%Y-%m-%d'),
-                    'count': self.usage_count
-                }, f)
+            with open(usage_file, "w", encoding="utf-8") as f:
+                json.dump(
+                    {
+                        "date": datetime.now().strftime("%Y-%m-%d"),
+                        "count": self.usage_count,
+                    },
+                    f,
+                )
 
     def execute(self, task: str, role: AIRole, context: AIContext) -> AIResponse:
         """Execute Gemini with specific role"""
@@ -349,7 +360,7 @@ class GeminiInterface:
                 issues_found=[],
                 suggestions=[],
                 execution_time=0.0,
-                metadata={"error": "Gemini not configured"}
+                metadata={"error": "Gemini not configured"},
             )
 
         if self.usage_count >= self.daily_limit:
@@ -361,7 +372,7 @@ class GeminiInterface:
                 issues_found=[],
                 suggestions=[],
                 execution_time=0.0,
-                metadata={"error": "Daily limit exceeded"}
+                metadata={"error": "Daily limit exceeded"},
             )
 
         start_time = time.time()
@@ -370,10 +381,7 @@ class GeminiInterface:
         try:
             # Execute Gemini CLI
             result = subprocess.run(
-                ["gemini", prompt],
-                capture_output=True,
-                text=True,
-                timeout=30
+                ["gemini", prompt], capture_output=True, text=True, timeout=30
             )
 
             self.usage_count += 1
@@ -390,7 +398,7 @@ class GeminiInterface:
                 issues_found=[],
                 suggestions=self._extract_creative_suggestions(output),
                 execution_time=time.time() - start_time,
-                metadata={"creativity_score": creativity_score}
+                metadata={"creativity_score": creativity_score},
             )
 
         except Exception as e:
@@ -402,7 +410,7 @@ class GeminiInterface:
                 issues_found=[],
                 suggestions=[],
                 execution_time=time.time() - start_time,
-                metadata={"error": str(e)}
+                metadata={"error": str(e)},
             )
 
     def _create_role_prompt(self, task: str, role: AIRole, context: AIContext) -> str:
@@ -410,49 +418,66 @@ class GeminiInterface:
         base = f"Task: {task}\n"
 
         if role == AIRole.GEMINI_CREATE:
-            return base + """
+            return (
+                base
+                + """
 Generate 5 creative solutions with different approaches.
 Think outside conventional patterns.
 Consider unusual combinations and novel techniques.
 """
+            )
 
         elif role == AIRole.GEMINI_EXPLORE:
-            return base + """
+            return (
+                base
+                + """
 Explore all possible angles and perspectives.
 Question assumptions and constraints.
 Identify hidden opportunities and risks.
 """
+            )
 
         elif role == AIRole.GEMINI_OPTIMIZE:
-            return base + """
+            return (
+                base
+                + """
 Find optimization opportunities:
 - Performance improvements
 - Resource efficiency
 - User experience enhancements
 - Cost reductions
 """
+            )
 
         return base
 
     def _assess_creativity(self, output: str) -> float:
         """Assess creativity level of Gemini's output"""
         creative_indicators = [
-            "innovative", "novel", "unique", "creative",
-            "unconventional", "breakthrough", "paradigm"
+            "innovative",
+            "novel",
+            "unique",
+            "creative",
+            "unconventional",
+            "breakthrough",
+            "paradigm",
         ]
 
-        score = sum(1 for indicator in creative_indicators
-                   if indicator in output.lower())
+        score = sum(
+            1 for indicator in creative_indicators if indicator in output.lower()
+        )
         return min(score / len(creative_indicators), 1.0)
 
     def _extract_creative_suggestions(self, output: str) -> List[str]:
         """Extract creative suggestions from Gemini output"""
         suggestions = []
-        lines = output.split('\n')
+        lines = output.split("\n")
 
         for i, line in enumerate(lines):
-            if any(keyword in line.lower() for keyword in
-                   ["could", "consider", "what if", "imagine", "perhaps"]):
+            if any(
+                keyword in line.lower()
+                for keyword in ["could", "consider", "what if", "imagine", "perhaps"]
+            ):
                 suggestions.append(line.strip())
 
         return suggestions[:5]  # Top 5 suggestions
@@ -473,40 +498,39 @@ class ThreeAICollaborationBridge:
                 "sequence": [
                     (AIRole.GEMINI_EXPLORE, "gemini"),
                     (AIRole.CLAUDE_ARCHITECT, "claude"),
-                    (AIRole.CODEX_VERIFY, "codex")
+                    (AIRole.CODEX_VERIFY, "codex"),
                 ],
-                "mode": ExecutionMode.SEQUENTIAL
+                "mode": ExecutionMode.SEQUENTIAL,
             },
             "implementation": {
                 "sequence": [
                     (AIRole.CLAUDE_IMPLEMENT, "claude"),
                     (AIRole.CODEX_REVIEW, "codex"),
-                    (AIRole.CLAUDE_IMPLEMENT, "claude")  # Fix issues
+                    (AIRole.CLAUDE_IMPLEMENT, "claude"),  # Fix issues
                 ],
-                "mode": ExecutionMode.ITERATIVE
+                "mode": ExecutionMode.ITERATIVE,
             },
             "optimization": {
                 "sequence": [
                     (AIRole.CODEX_REVIEW, "codex"),
                     (AIRole.GEMINI_OPTIMIZE, "gemini"),
-                    (AIRole.CLAUDE_IMPLEMENT, "claude")
+                    (AIRole.CLAUDE_IMPLEMENT, "claude"),
                 ],
-                "mode": ExecutionMode.SEQUENTIAL
+                "mode": ExecutionMode.SEQUENTIAL,
             },
             "debugging": {
                 "sequence": [
                     (AIRole.CODEX_DEBUG, "codex"),
                     (AIRole.CLAUDE_IMPLEMENT, "claude"),
-                    (AIRole.CODEX_VERIFY, "codex")
+                    (AIRole.CODEX_VERIFY, "codex"),
                 ],
-                "mode": ExecutionMode.ITERATIVE
-            }
+                "mode": ExecutionMode.ITERATIVE,
+            },
         }
 
-    def collaborate(self,
-                   task: str,
-                   pattern: str = "implementation",
-                   max_iterations: int = 3) -> Dict[str, Any]:
+    def collaborate(
+        self, task: str, pattern: str = "implementation", max_iterations: int = 3
+    ) -> Dict[str, Any]:
         """Execute 3-AI collaboration"""
         if not isinstance(task, str) or not task.strip():
             raise ValueError("task must be a non-empty string")
@@ -522,7 +546,7 @@ class ThreeAICollaborationBridge:
             previous_outputs={},
             constraints=self._extract_constraints(task),
             success_criteria=self._extract_criteria(task),
-            metadata={"pattern": pattern, "iterations": 0}
+            metadata={"pattern": pattern, "iterations": 0},
         )
 
         # Save initial context
@@ -543,10 +567,9 @@ class ThreeAICollaborationBridge:
         else:
             return self._execute_adaptive(task, sequence, context)
 
-    def _execute_sequential(self,
-                          task: str,
-                          sequence: List[Tuple[AIRole, str]],
-                          context: AIContext) -> Dict[str, Any]:
+    def _execute_sequential(
+        self, task: str, sequence: List[Tuple[AIRole, str]], context: AIContext
+    ) -> Dict[str, Any]:
         """Execute AIs in sequence"""
         results = []
 
@@ -570,24 +593,31 @@ class ThreeAICollaborationBridge:
                 "role": role.value,
                 "output": response.output,
                 "issues": response.issues_found,
-                "suggestions": response.suggestions
+                "suggestions": response.suggestions,
             }
 
             # Save updated context
             self._save_context(context)
 
             # Check for critical issues
-            if response.issues_found and "critical" in str(response.issues_found).lower():
-                logger.warning("Critical issues found by %s, stopping sequence", ai_name)
+            if (
+                response.issues_found
+                and "critical" in str(response.issues_found).lower()
+            ):
+                logger.warning(
+                    "Critical issues found by %s, stopping sequence", ai_name
+                )
                 break
 
         return self._compile_results(results, context)
 
-    def _execute_iterative(self,
-                         task: str,
-                         sequence: List[Tuple[AIRole, str]],
-                         context: AIContext,
-                         max_iterations: int) -> Dict[str, Any]:
+    def _execute_iterative(
+        self,
+        task: str,
+        sequence: List[Tuple[AIRole, str]],
+        context: AIContext,
+        max_iterations: int,
+    ) -> Dict[str, Any]:
         """Execute AIs iteratively until convergence"""
         results = []
         iteration = 0
@@ -616,7 +646,7 @@ class ThreeAICollaborationBridge:
                 # Update context
                 context.previous_outputs[f"{ai_name}_iter{iteration}"] = {
                     "output": response.output,
-                    "issues": response.issues_found
+                    "issues": response.issues_found,
                 }
 
             results.extend(iteration_results)
@@ -629,10 +659,9 @@ class ThreeAICollaborationBridge:
 
         return self._compile_results(results, context)
 
-    def _execute_parallel(self,
-                        task: str,
-                        sequence: List[Tuple[AIRole, str]],
-                        context: AIContext) -> Dict[str, Any]:
+    def _execute_parallel(
+        self, task: str, sequence: List[Tuple[AIRole, str]], context: AIContext
+    ) -> Dict[str, Any]:
         """Execute AIs in parallel (simulated)"""
         # In production, use threading or async
         logger.info("Executing AIs in parallel")
@@ -652,10 +681,9 @@ class ThreeAICollaborationBridge:
 
         return self._compile_results(results, context)
 
-    def _execute_adaptive(self,
-                        task: str,
-                        sequence: List[Tuple[AIRole, str]],
-                        context: AIContext) -> Dict[str, Any]:
+    def _execute_adaptive(
+        self, task: str, sequence: List[Tuple[AIRole, str]], context: AIContext
+    ) -> Dict[str, Any]:
         """Adaptively choose execution based on results"""
         results = []
 
@@ -675,7 +703,7 @@ class ThreeAICollaborationBridge:
         if response.confidence < 0.7:
             logger.warning(
                 "Low confidence (%.0f%%), engaging additional AI",
-                response.confidence * 100
+                response.confidence * 100,
             )
             # Engage the most appropriate AI based on issues
             if response.issues_found:
@@ -684,12 +712,16 @@ class ThreeAICollaborationBridge:
                 results.append(debug_response)
             else:
                 # Use Gemini for creative solutions
-                creative_response = self.gemini.execute(task, AIRole.GEMINI_CREATE, context)
+                creative_response = self.gemini.execute(
+                    task, AIRole.GEMINI_CREATE, context
+                )
                 results.append(creative_response)
 
         return self._compile_results(results, context)
 
-    def _execute_claude(self, task: str, role: AIRole, context: AIContext) -> AIResponse:
+    def _execute_claude(
+        self, task: str, role: AIRole, context: AIContext
+    ) -> AIResponse:
         """Execute Claude (current context)"""
         # This is executed in the current Claude context
         # In production, this would interface with Claude API
@@ -714,7 +746,7 @@ Output: [Implementation would go here]
             issues_found=[],
             suggestions=["Consider adding error handling", "Add unit tests"],
             execution_time=1.5,
-            metadata={"context": "current"}
+            metadata={"context": "current"},
         )
 
     def _extract_constraints(self, task: str) -> List[str]:
@@ -755,12 +787,14 @@ Output: [Implementation would go here]
     def _save_context(self, context: AIContext):
         """Save context to disk for persistence"""
         context_file = self.context_store / f"{context.task_id}.yaml"
-        lock = FileLock(str(context_file) + '.lock')
+        lock = FileLock(str(context_file) + ".lock")
         with lock:
-            with open(context_file, 'w', encoding='utf-8') as f:
+            with open(context_file, "w", encoding="utf-8") as f:
                 f.write(context.to_yaml())
 
-    def _compile_results(self, responses: List[AIResponse], context: AIContext) -> Dict[str, Any]:
+    def _compile_results(
+        self, responses: List[AIResponse], context: AIContext
+    ) -> Dict[str, Any]:
         """Compile results from all AIs"""
 
         # Aggregate issues and suggestions
@@ -795,7 +829,7 @@ Output: [Implementation would go here]
             "aggregated_suggestions": list(set(all_suggestions)),
             "context": asdict(context),
             "collaboration_pattern": context.phase,
-            "iterations": context.metadata.get("iterations", 1)
+            "iterations": context.metadata.get("iterations", 1),
         }
 
 
@@ -819,7 +853,7 @@ def main():
         ("Create a user authentication system with JWT", "implementation"),
         ("Design a scalable microservices architecture", "ideation"),
         ("Fix performance issues in the payment module", "debugging"),
-        ("Optimize database queries for better response time", "optimization")
+        ("Optimize database queries for better response time", "optimization"),
     ]
 
     for task, pattern in test_tasks:
@@ -833,20 +867,20 @@ def main():
 
         # Display results
         logger.info("Results:")
-        logger.info("Status: %s", result['status'])
-        logger.info("Confidence: %.0f%%", result['overall_confidence'] * 100)
-        logger.info("Time: %.1fs", result['total_execution_time'])
-        logger.info("Issues Found: %d", len(result['aggregated_issues']))
-        logger.info("Suggestions: %d", len(result['aggregated_suggestions']))
+        logger.info("Status: %s", result["status"])
+        logger.info("Confidence: %.0f%%", result["overall_confidence"] * 100)
+        logger.info("Time: %.1fs", result["total_execution_time"])
+        logger.info("Issues Found: %d", len(result["aggregated_issues"]))
+        logger.info("Suggestions: %d", len(result["aggregated_suggestions"]))
 
-        if result['aggregated_issues']:
+        if result["aggregated_issues"]:
             logger.warning("Issues to address:")
-            for issue in result['aggregated_issues'][:3]:
+            for issue in result["aggregated_issues"][:3]:
                 logger.warning("- %s", issue)
 
-        if result['aggregated_suggestions']:
+        if result["aggregated_suggestions"]:
             logger.info("Suggestions:")
-            for suggestion in result['aggregated_suggestions'][:3]:
+            for suggestion in result["aggregated_suggestions"][:3]:
                 logger.info("- %s", suggestion)
 
         logger.info("Collaboration complete!")

@@ -34,4 +34,3 @@ Flag schema, data, or docs updates explicitly so reviewers can verify downstream
 Never commit real credentials or proprietary datasets; the JSON files in `data/` are placeholders only.
 Store secrets in a local `.env` that remains untracked, and scrub logs before sharing them with other agents.
 Review generated plans and artifacts before committing, especially when they include sanitized client context.
-

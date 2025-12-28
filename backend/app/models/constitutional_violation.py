@@ -4,11 +4,11 @@ Constitutional Violation Model
 Tracks violations of the UDO Constitution for audit and compliance
 """
 
-from sqlalchemy import Column, Integer, String, Boolean, DateTime, Text, JSON
-from sqlalchemy.sql import func
 from datetime import datetime
-from typing import Optional, Dict, Any
+from typing import Any, Dict, Optional
 
+from sqlalchemy import JSON, Boolean, Column, DateTime, Integer, String, Text
+from sqlalchemy.sql import func
 
 # Use the same Base as other models
 try:
@@ -16,6 +16,7 @@ try:
 except ImportError:
     # Fallback for standalone use
     from sqlalchemy.ext.declarative import declarative_base
+
     Base = declarative_base()
 
 
@@ -25,6 +26,7 @@ class ConstitutionalViolation(Base):
 
     Tracks all violations of UDO Constitution (P1-P17)
     """
+
     __tablename__ = "constitutional_violations"
 
     # Primary key
@@ -112,7 +114,7 @@ class ConstitutionalViolation(Base):
             "updated_at": self.updated_at.isoformat() if self.updated_at else None,
             "project_id": self.project_id,
             "session_id": self.session_id,
-            "phase": self.phase
+            "phase": self.phase,
         }
 
     @classmethod
@@ -133,7 +135,7 @@ class ConstitutionalViolation(Base):
             severity=log_entry.get("severity"),
             ai_agent=log_entry.get("ai_agent"),
             violation_metadata=log_entry.get("metadata"),
-            resolved=log_entry.get("resolved", False)
+            resolved=log_entry.get("resolved", False),
         )
 
     def resolve(self, notes: str, resolved_by: str):
@@ -156,6 +158,7 @@ class ConstitutionalComplianceMetrics(Base):
 
     Tracks overall compliance metrics over time
     """
+
     __tablename__ = "constitutional_compliance_metrics"
 
     # Primary key
@@ -185,7 +188,9 @@ class ConstitutionalComplianceMetrics(Base):
     """Percentage of automated compliance checks"""
 
     # Timestamps
-    measured_at = Column(DateTime, server_default=func.now(), nullable=False, index=True)
+    measured_at = Column(
+        DateTime, server_default=func.now(), nullable=False, index=True
+    )
     """When metrics were measured"""
 
     period_start = Column(DateTime, nullable=True)
@@ -195,7 +200,11 @@ class ConstitutionalComplianceMetrics(Base):
     """End of measurement period"""
 
     def __repr__(self):
-        score = self.compliance_score.get("overall", 0) if isinstance(self.compliance_score, dict) else 0
+        score = (
+            self.compliance_score.get("overall", 0)
+            if isinstance(self.compliance_score, dict)
+            else 0
+        )
         return f"<ComplianceMetrics {score:.2%} @ {self.measured_at}>"
 
     def to_dict(self) -> Dict[str, Any]:
@@ -210,6 +219,8 @@ class ConstitutionalComplianceMetrics(Base):
             "improvement_rate": self.improvement_rate,
             "automation_rate": self.automation_rate,
             "measured_at": self.measured_at.isoformat() if self.measured_at else None,
-            "period_start": self.period_start.isoformat() if self.period_start else None,
-            "period_end": self.period_end.isoformat() if self.period_end else None
+            "period_start": (
+                self.period_start.isoformat() if self.period_start else None
+            ),
+            "period_end": self.period_end.isoformat() if self.period_end else None,
         }

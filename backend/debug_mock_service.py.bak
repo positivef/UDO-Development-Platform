@@ -1,8 +1,8 @@
 #!/usr/bin/env python3
 """Debug mock service initialization"""
 
-import sys
 import os
+import sys
 
 # Add backend directory to path
 sys.path.insert(0, os.path.dirname(__file__))
@@ -14,7 +14,8 @@ print("=" * 60)
 # Test 1: Import enable_mock_service
 print("\n1. Importing enable_mock_service...")
 try:
-    from app.services.project_context_service import enable_mock_service, get_project_context_service
+    from app.services.project_context_service import (
+        enable_mock_service, get_project_context_service)
     print("   SUCCESS: Functions imported")
 except ImportError as e:
     print(f"   FAILED: Import error - {e}")

@@ -8,13 +8,13 @@ to ensure API contract compliance.
 Critical Issue #2: Prevent regression of response structure bugs
 """
 
-import pytest
-from datetime import datetime
-from uuid import UUID, uuid4
-from typing import Dict, Any
-
 import sys
+from datetime import datetime
 from pathlib import Path
+from typing import Any, Dict
+from uuid import UUID, uuid4
+
+import pytest
 
 # Add backend to path
 backend_dir = Path(__file__).parent.parent
@@ -44,7 +44,9 @@ class TestMockProjectServiceResponseStructure:
         # Type validation
         assert isinstance(result["projects"], list)
         assert isinstance(result["total"], int)
-        assert result["current_project_id"] is None or isinstance(result["current_project_id"], str)
+        assert result["current_project_id"] is None or isinstance(
+            result["current_project_id"], str
+        )
 
         # Projects structure
         if result["projects"]:
@@ -88,7 +90,7 @@ class TestMockProjectServiceResponseStructure:
             ml_models={"model": "test"},
             recent_executions=[{"id": "exec1"}],
             ai_preferences={"model": "claude"},
-            editor_state={"cursor": 0}
+            editor_state={"cursor": 0},
         )
 
         # Required fields (matching ProjectContextResponse model)
@@ -218,7 +220,7 @@ class TestMockProjectServiceResponseStructure:
 
         partial_context = {
             "udo_state": {"phase": "design"},
-            "ml_models": {"accuracy": 0.9}
+            "ml_models": {"accuracy": 0.9},
         }
 
         result = await service.merge_context(project_id, partial_context)
@@ -343,7 +345,7 @@ class TestMockProjectServiceContextStructure:
         saved = await service.save_context(
             project_id=project_id,
             udo_state={"test": "value"},
-            ml_models={"model": "test"}
+            ml_models={"model": "test"},
         )
 
         # Load context

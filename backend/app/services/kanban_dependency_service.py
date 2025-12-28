@@ -12,27 +12,24 @@ Key features:
 - Audit logging for all overrides
 """
 
-from typing import List, Dict, Set, Optional, Tuple
-from uuid import UUID, uuid4
-from datetime import datetime, UTC
-from collections import defaultdict, deque
 import logging
 import time
+from collections import defaultdict, deque
+from datetime import UTC, datetime
+from typing import Dict, List, Optional, Set, Tuple
+from uuid import UUID, uuid4
 
-from backend.app.models.kanban_dependencies import (
-    Dependency,
-    DependencyCreate,
-    DependencyType,
-    DependencyStatus,
-    EmergencyOverride,
-    DependencyAudit,
-    CircularDependencyError,
-    TopologicalSortResult,
-    DependencyGraph,
-    DependencyGraphNode,
-    DependencyGraphEdge,
-    DAGStatistics,
-)
+from app.models.kanban_dependencies import (CircularDependencyError,
+                                                    DAGStatistics, Dependency,
+                                                    DependencyAudit,
+                                                    DependencyCreate,
+                                                    DependencyGraph,
+                                                    DependencyGraphEdge,
+                                                    DependencyGraphNode,
+                                                    DependencyStatus,
+                                                    DependencyType,
+                                                    EmergencyOverride,
+                                                    TopologicalSortResult)
 
 # Import task service for fetching task metadata (Week 3 Day 1-2)
 # NOTE: Cannot import at module level due to circular dependency
@@ -73,9 +70,7 @@ class KanbanDependencyService:
     # ========================================================================
 
     async def create_dependency(
-        self,
-        dependency_data: DependencyCreate,
-        available_task_ids: Set[UUID]
+        self, dependency_data: DependencyCreate, available_task_ids: Set[UUID]
     ) -> Dependency:
         """
         Create new dependency with DAG cycle validation.
@@ -186,7 +181,8 @@ class KanbanDependencyService:
         else:
             # Mock implementation
             return [
-                dep for dep in self._mock_dependencies.values()
+                dep
+                for dep in self._mock_dependencies.values()
                 if dep.task_id == task_id and dep.status == DependencyStatus.PENDING
             ]
 
@@ -206,8 +202,10 @@ class KanbanDependencyService:
         else:
             # Mock implementation
             return [
-                dep for dep in self._mock_dependencies.values()
-                if dep.depends_on_task_id == task_id and dep.status == DependencyStatus.PENDING
+                dep
+                for dep in self._mock_dependencies.values()
+                if dep.depends_on_task_id == task_id
+                and dep.status == DependencyStatus.PENDING
             ]
 
     # ========================================================================
@@ -215,8 +213,7 @@ class KanbanDependencyService:
     # ========================================================================
 
     async def emergency_override(
-        self,
-        override_request: EmergencyOverride
+        self, override_request: EmergencyOverride
     ) -> Dependency:
         """
         Emergency override for dependency (Q7: Hard Block with emergency override).
@@ -263,9 +260,7 @@ class KanbanDependencyService:
         return dependency
 
     async def get_audit_log(
-        self,
-        limit: int = 50,
-        offset: int = 0
+        self, limit: int = 50, offset: int = 0
     ) -> List[DependencyAudit]:
         """
         Get dependency audit log (emergency overrides).
@@ -283,20 +278,16 @@ class KanbanDependencyService:
         else:
             # Mock implementation
             sorted_log = sorted(
-                self._mock_audit_log,
-                key=lambda x: x.overridden_at,
-                reverse=True
+                self._mock_audit_log, key=lambda x: x.overridden_at, reverse=True
             )
-            return sorted_log[offset:offset + limit]
+            return sorted_log[offset : offset + limit]
 
     # ========================================================================
     # DAG Operations (Cycle Detection & Topological Sort)
     # ========================================================================
 
     def _would_create_cycle(
-        self,
-        new_dependency: Dependency,
-        available_task_ids: Set[UUID]
+        self, new_dependency: Dependency, available_task_ids: Set[UUID]
     ) -> bool:
         """
         Check if adding this dependency would create a cycle using DFS.
@@ -338,9 +329,7 @@ class KanbanDependencyService:
         return has_cycle_dfs(new_dependency.task_id)
 
     def _find_cycle(
-        self,
-        new_dependency: Dependency,
-        available_task_ids: Set[UUID]
+        self, new_dependency: Dependency, available_task_ids: Set[UUID]
     ) -> List[UUID]:
         """
         Find the cycle path for error reporting.
@@ -355,10 +344,7 @@ class KanbanDependencyService:
         # Simplified cycle detection - return the new dependency path
         return [new_dependency.depends_on_task_id, new_dependency.task_id]
 
-    async def topological_sort(
-        self,
-        task_ids: Set[UUID]
-    ) -> TopologicalSortResult:
+    async def topological_sort(self, task_ids: Set[UUID]) -> TopologicalSortResult:
         """
         Perform topological sort using Kahn's Algorithm.
 
@@ -409,9 +395,7 @@ class KanbanDependencyService:
         )
 
     async def get_dependency_graph(
-        self,
-        task_id: UUID,
-        depth: int = 3
+        self, task_id: UUID, depth: int = 3
     ) -> DependencyGraph:
         """
         Get dependency graph for D3.js force-directed visualization.
@@ -427,7 +411,8 @@ class KanbanDependencyService:
         """
         # Import inside method to avoid circular dependency
         # Use singleton instance for both mock (tests) and production
-        from backend.app.services.kanban_task_service import kanban_task_service
+        from app.services.kanban_task_service import \
+            kanban_task_service
 
         # Get task service instance (uses mock for tests, real DB for production)
         task_service = kanban_task_service
@@ -451,23 +436,27 @@ class KanbanDependencyService:
             dependencies = await self.get_task_dependencies(current_task)
             task_dependencies_map[current_task] = dependencies
             for dep in dependencies:
-                edges.append(DependencyGraphEdge(
-                    source=str(dep.depends_on_task_id),
-                    target=str(dep.task_id),
-                    dependency_type=dep.dependency_type,
-                    status=dep.status
-                ))
+                edges.append(
+                    DependencyGraphEdge(
+                        source=str(dep.depends_on_task_id),
+                        target=str(dep.task_id),
+                        dependency_type=dep.dependency_type,
+                        status=dep.status,
+                    )
+                )
                 queue.append((dep.depends_on_task_id, current_depth + 1))
 
             # Get dependents (downstream)
             dependents = await self.get_task_dependents(current_task)
             for dep in dependents:
-                edges.append(DependencyGraphEdge(
-                    source=str(dep.depends_on_task_id),
-                    target=str(dep.task_id),
-                    dependency_type=dep.dependency_type,
-                    status=dep.status
-                ))
+                edges.append(
+                    DependencyGraphEdge(
+                        source=str(dep.depends_on_task_id),
+                        target=str(dep.task_id),
+                        dependency_type=dep.dependency_type,
+                        status=dep.status,
+                    )
+                )
                 queue.append((dep.task_id, current_depth + 1))
 
         # Fetch all task metadata in batch for efficiency
@@ -478,41 +467,37 @@ class KanbanDependencyService:
 
                 # Calculate is_blocked status based on pending dependencies
                 deps = task_dependencies_map.get(tid, [])
-                is_blocked = any(
-                    dep.status == DependencyStatus.PENDING
-                    for dep in deps
-                )
+                is_blocked = any(dep.status == DependencyStatus.PENDING for dep in deps)
 
                 # Create enhanced node with task metadata
-                nodes.append(DependencyGraphNode(
-                    id=str(tid),
-                    task_id=tid,
-                    label=task.title[:50],  # Truncate for visualization
-                    title=task.title,
-                    type="task",
-                    phase=task.phase_name,
-                    status=task.status,
-                    priority=task.priority,
-                    completeness=task.completeness,
-                    is_blocked=is_blocked
-                ))
+                nodes.append(
+                    DependencyGraphNode(
+                        id=str(tid),
+                        task_id=tid,
+                        label=task.title[:50],  # Truncate for visualization
+                        title=task.title,
+                        type="task",
+                        phase=task.phase_name,
+                        status=task.status,
+                        priority=task.priority,
+                        completeness=task.completeness,
+                        is_blocked=is_blocked,
+                    )
+                )
             except Exception as e:
                 # Fallback: Create basic node if task not found
                 logger.warning(f"Could not fetch task {tid}: {e}")
-                nodes.append(DependencyGraphNode(
-                    id=str(tid),
-                    task_id=tid,
-                    label=f"Task {str(tid)[:8]}",
-                    type="task",
-                    status="pending"
-                ))
+                nodes.append(
+                    DependencyGraphNode(
+                        id=str(tid),
+                        task_id=tid,
+                        label=f"Task {str(tid)[:8]}",
+                        type="task",
+                        status="pending",
+                    )
+                )
 
-        return DependencyGraph(
-            nodes=nodes,
-            edges=edges,
-            has_cycles=False,
-            cycles=[]
-        )
+        return DependencyGraph(nodes=nodes, edges=edges, has_cycles=False, cycles=[])
 
     async def get_statistics(self, task_ids: Set[UUID]) -> DAGStatistics:
         """
@@ -539,10 +524,13 @@ class KanbanDependencyService:
             max_depth = max(max_depth, depth)
 
         # Average dependencies per task
-        dep_count = len([
-            d for d in self._mock_dependencies.values()
-            if d.task_id in task_ids and d.depends_on_task_id in task_ids
-        ])
+        dep_count = len(
+            [
+                d
+                for d in self._mock_dependencies.values()
+                if d.task_id in task_ids and d.depends_on_task_id in task_ids
+            ]
+        )
         avg_deps = dep_count / len(task_ids) if task_ids else 0
 
         # Performance target: <50ms for 1,000 tasks
@@ -555,7 +543,7 @@ class KanbanDependencyService:
             avg_dependencies_per_task=avg_deps,
             topological_sort_time_ms=topo_time,
             cycle_detection_time_ms=cycle_time,
-            meets_performance_target=meets_target
+            meets_performance_target=meets_target,
         )
 
     # ========================================================================

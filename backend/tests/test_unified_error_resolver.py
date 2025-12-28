@@ -11,15 +11,14 @@ Author: VibeCoding Team
 Date: 2025-12-07 (Week 0 Day 2)
 """
 
-import pytest
 import tempfile
 from pathlib import Path
 
-from backend.app.services.unified_error_resolver import (
-    UnifiedErrorResolver,
-    ErrorContext,
-    ResolutionResult
-)
+import pytest
+
+from backend.app.services.unified_error_resolver import (ErrorContext,
+                                                         ResolutionResult,
+                                                         UnifiedErrorResolver)
 
 
 class TestKnowledgeReuseTracking:
@@ -79,7 +78,7 @@ class TestPatternBasedSolutions:
 
             result = resolver.resolve_error(
                 error_message="ModuleNotFoundError: No module named 'pandas'",
-                context={"tool": "Python", "script": "analyzer.py"}
+                context={"tool": "Python", "script": "analyzer.py"},
             )
 
             # Should return Tier 2 solution (Obsidian not integrated yet)
@@ -96,7 +95,7 @@ class TestPatternBasedSolutions:
 
             result = resolver.resolve_error(
                 error_message="PermissionError: [Errno 13] Permission denied: 'scripts/deploy.sh'",
-                context={"tool": "Write", "file": "scripts/deploy.sh"}
+                context={"tool": "Write", "file": "scripts/deploy.sh"},
             )
 
             assert result.tier == 2
@@ -111,7 +110,7 @@ class TestPatternBasedSolutions:
 
             result = resolver.resolve_error(
                 error_message="Permission denied when executing 'tests/smoke_test.sh'",
-                context={"tool": "Bash", "command": "bash tests/smoke_test.sh"}
+                context={"tool": "Bash", "command": "bash tests/smoke_test.sh"},
             )
 
             assert result.tier == 2
@@ -126,7 +125,7 @@ class TestPatternBasedSolutions:
 
             result = resolver.resolve_error(
                 error_message="FileNotFoundError: [Errno 2] No such file or directory: 'config.yaml'",
-                context={"tool": "Read"}
+                context={"tool": "Read"},
             )
 
             # MEDIUM confidence patterns return None (user confirmation needed)
@@ -141,7 +140,7 @@ class TestPatternBasedSolutions:
 
             result = resolver.resolve_error(
                 error_message="CustomBusinessLogicError: Payment method not supported",
-                context={"tool": "Python"}
+                context={"tool": "Python"},
             )
 
             assert result.tier == 3
@@ -160,7 +159,7 @@ class TestConfidenceScoring:
 
             result = resolver.resolve_error(
                 error_message="ModuleNotFoundError: No module named 'requests'",
-                context={"tool": "Python"}
+                context={"tool": "Python"},
             )
 
             # HIGH confidence -> auto-applied
@@ -177,7 +176,7 @@ class TestConfidenceScoring:
             # File not found is MEDIUM confidence (70%)
             result = resolver.resolve_error(
                 error_message="No such file or directory: 'missing.txt'",
-                context={"tool": "Read"}
+                context={"tool": "Read"},
             )
 
             # MEDIUM confidence -> not auto-applied, escalates
@@ -193,7 +192,7 @@ class TestConfidenceScoring:
 
             result = resolver.resolve_error(
                 error_message="UnknownError: Something went wrong",
-                context={"tool": "Unknown"}
+                context={"tool": "Unknown"},
             )
 
             assert result.tier == 3
@@ -233,7 +232,7 @@ class TestStatisticsPersistence:
             for i in range(105):
                 resolver.resolve_error(
                     error_message=f"ModuleNotFoundError: No module named 'lib{i}'",
-                    context={"tool": "Python"}
+                    context={"tool": "Python"},
                 )
 
             # Should keep only last 100
@@ -253,7 +252,7 @@ class TestUserSolutionSaving:
             resolver.save_user_solution(
                 error_message="CustomError: API key missing",
                 user_solution="export API_KEY=your_key_here",
-                context={"tool": "Bash", "command": "run_api.sh"}
+                context={"tool": "Bash", "command": "run_api.sh"},
             )
 
             # Should be recorded in history
@@ -273,7 +272,9 @@ class TestErrorKeywordExtraction:
             stats_file = Path(tmpdir) / "test_stats.json"
             resolver = UnifiedErrorResolver(stats_file=stats_file)
 
-            keywords = resolver._extract_error_keywords("ModuleNotFoundError: No module named 'pandas'")
+            keywords = resolver._extract_error_keywords(
+                "ModuleNotFoundError: No module named 'pandas'"
+            )
             assert "ModuleNotFoundError" in keywords
 
     def test_extract_module_name(self):
@@ -320,7 +321,7 @@ class TestRealWorldScenarios:
                     import pandas as pd
                 ModuleNotFoundError: No module named 'pandas'
                 """,
-                context={"tool": "Python", "file": "analysis.py"}
+                context={"tool": "Python", "file": "analysis.py"},
             )
 
             assert result.solution == "pip install pandas"
@@ -335,10 +336,12 @@ class TestRealWorldScenarios:
 
             result = resolver.resolve_error(
                 error_message="bash: ./deploy.sh: Permission denied",
-                context={"tool": "Bash", "command": "./deploy.sh"}
+                context={"tool": "Bash", "command": "./deploy.sh"},
             )
 
-            assert result.solution is not None, "Solution should not be None for permission denied"
+            assert (
+                result.solution is not None
+            ), "Solution should not be None for permission denied"
             assert "chmod +x" in result.solution
             assert result.confidence >= 0.95
 
@@ -358,7 +361,9 @@ class TestRealWorldScenarios:
 
             # 2 permission errors
             for _ in range(2):
-                resolver.resolve_error("Permission denied: 'script.sh'", context={"tool": "Bash"})
+                resolver.resolve_error(
+                    "Permission denied: 'script.sh'", context={"tool": "Bash"}
+                )
 
             stats = resolver.get_statistics()
             assert stats["total"] == 10

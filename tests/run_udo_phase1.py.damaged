@@ -1,0 +1,128 @@
+#!/usr/bin/env python3
+# -*- coding: utf-8 -*-
+"""
+UDO Phase 1 Ideation [EMOJI] [EMOJI]
+2025-Revenue-App[EMOJI] [EMOJI] [EMOJI] [EMOJI]
+"""
+
+import sys
+import os
+from pathlib import Path
+
+# Windows Unicode [EMOJI] [EMOJI] [EMOJI] [EMOJI]
+if sys.platform == "win32":
+    # [EMOJI] [EMOJI] ([EMOJI] [EMOJI] [EMOJI])
+    os.environ["PYTHONIOENCODING"] = "utf-8"
+    # stdout/stderr[EMOJI] UTF-8 [EMOJI] [EMOJI] ([EMOJI])
+    if hasattr(sys.stdout, "reconfigure"):
+        sys.stdout.reconfigure(encoding="utf-8")
+        sys.stderr.reconfigure(encoding="utf-8")
+
+# [EMOJI] [EMOJI]
+ROOT_DIR = Path(__file__).resolve().parent.parent  # repository root
+SRC_DIR = ROOT_DIR / "src"
+sys.path.append(str(Path(__file__).parent))
+sys.path.append(str(SRC_DIR))
+sys.path.append(str(ROOT_DIR.parent / "obsidian-vibe-coding-docs" / "scripts"))
+
+from unified_development_orchestrator_v2 import (
+    UnifiedDevelopmentOrchestratorV2 as UnifiedDevelopmentOrchestrator,
+    ProjectContext,
+)
+
+
+def main():
+    print("=" * 80)
+    print("[EMOJI] UDO Phase 1: Ideation [EMOJI]")
+    print("=" * 80)
+    print()
+
+    # [EMOJI] [EMOJI] [EMOJI] (Obsidian README [EMOJI])
+    project = ProjectContext(
+        project_name="2025-Revenue-App",
+        goal="2025[EMOJI] Q1 [EMOJI] [EMOJI] [EMOJI]",
+        team_size=5,
+        timeline_weeks=12,
+        budget=50000,
+        tech_stack=["Next.js 15", "Flutter", "Supabase"],
+        constraints=["3[EMOJI] [EMOJI] [EMOJI]", "[EMOJI] [EMOJI] [EMOJI]"],
+        success_metrics=["DAU 1000+", "MRR $1,000+"],
+        current_phase="ideation",
+        files=[],
+        metadata={
+            "ai_tools": ["Claude Code", "v0.dev", "Cursor", "Codex"],
+            "target_launch": "2025-02-01",
+            "quality_standard": "v0/Lovable [EMOJI] UI + [EMOJI] [EMOJI]",
+        },
+    )
+
+    # UDO [EMOJI]
+    print("\n[EMOJI] UDO [EMOJI] [EMOJI]...")
+    udo = UnifiedDevelopmentOrchestrator(project)
+
+    # Phase 1 [EMOJI]
+    user_request = """
+2025[EMOJI] [EMOJI] [EMOJI] [EMOJI] [EMOJI] SaaS/[EMOJI] [EMOJI] [EMOJI]
+
+[EMOJI]:
+- [EMOJI]: [EMOJI] [EMOJI] ([EMOJI] [EMOJI] [EMOJI] [EMOJI])
+- [EMOJI] [EMOJI]: [EMOJI]/[EMOJI]/[EMOJI] [EMOJI] [EMOJI] [EMOJI] [EMOJI]
+- [EMOJI] [EMOJI]: Next.js 15, Flutter, Supabase[EMOJI] [EMOJI] [EMOJI]
+- [EMOJI] [EMOJI]: 3[EMOJI] [EMOJI] MVP [EMOJI] [EMOJI]
+- [EMOJI]: [EMOJI] [EMOJI] [EMOJI] [EMOJI]
+
+[EMOJI]:
+1. 10[EMOJI] [EMOJI] ([EMOJI] [EMOJI]/[EMOJI]/[EMOJI]/[EMOJI])
+2. [EMOJI]/[EMOJI] [EMOJI]
+3. Top 3 [EMOJI] [EMOJI] [EMOJI]
+"""
+
+    # [EMOJI] [EMOJI] [EMOJI] ([EMOJI] & [EMOJI])
+    print("\n[EMOJI] [EMOJI] [EMOJI] [EMOJI]...")
+    plan = udo.start_development_cycle(user_request)
+
+    print("\n" + "=" * 80)
+    print("[EMOJI] [EMOJI] [EMOJI]")
+    print("=" * 80)
+    print(f"[EMOJI]: {plan['decision']}")
+    print(f"[EMOJI]: {plan['system'].get('system', plan['system'].get('primary', 'N/A'))}")
+    print(f"AI [EMOJI]: {plan['ai_collaboration'].get('pattern', 'N/A')}")
+    print(f"[EMOJI] [EMOJI]: {plan['approach']}")
+    print()
+
+    # Go [EMOJI] [EMOJI] [EMOJI]
+    if plan["decision"] in ["GO", "GO_WITH_CHECKPOINTS"]:
+        print("[OK] Go [EMOJI] - [EMOJI] [EMOJI]")
+        print()
+
+        # [EMOJI]
+        result = udo.execute_plan(plan)
+
+        print("\n" + "=" * 80)
+        print("[EMOJI] [EMOJI] [EMOJI]")
+        print("=" * 80)
+        print(f"[EMOJI]: {result['status']}")
+        if "ai_result" in result:
+            print(f"AI [EMOJI] [EMOJI]: {result['ai_result'].get('status', 'N/A')}")
+        print()
+
+        # [EMOJI] [EMOJI]
+        udo.record_outcome(plan, result)
+
+        # [EMOJI] [EMOJI]
+        udo.save_state(Path(__file__).parent / "udo_state_phase1.json")
+
+        print("[OK] Phase 1 Ideation [EMOJI]!")
+
+    elif plan["decision"] == "PROTOTYPE_FIRST":
+        print("[WARN] [EMOJI] [EMOJI] [EMOJI] - POC[EMOJI] [EMOJI]")
+
+    else:  # NO_GO
+        print("[FAIL] No-Go [EMOJI] - [EMOJI] [EMOJI] [EMOJI]")
+        print("\n[EMOJI] [EMOJI]:")
+        for step in plan["next_steps"]:
+            print(f"  {step}")
+
+
+if __name__ == "__main__":
+    main()

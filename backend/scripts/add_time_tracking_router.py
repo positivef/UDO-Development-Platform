@@ -9,6 +9,7 @@ to the main.py file.
 import sys
 from pathlib import Path
 
+
 def add_time_tracking_router():
     """Add time tracking router to main.py"""
     main_py = Path(__file__).parent.parent / "main.py"
@@ -17,7 +18,7 @@ def add_time_tracking_router():
         print(f"Error: {main_py} not found")
         return False
 
-    with open(main_py, 'r', encoding='utf-8') as f:
+    with open(main_py, "r", encoding="utf-8") as f:
         content = f.read()
 
     # Check if already added
@@ -64,7 +65,7 @@ if TIME_TRACKING_ROUTER_AVAILABLE:
     content = content.replace(old_registration, new_registration)
 
     # Write back
-    with open(main_py, 'w', encoding='utf-8') as f:
+    with open(main_py, "w", encoding="utf-8") as f:
         f.write(content)
 
     print("[OK] Time tracking router successfully added to main.py")

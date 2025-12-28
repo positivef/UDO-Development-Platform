@@ -1,4 +1,5 @@
 """Minimal filelock-compatible module for offline environments."""
+
 from __future__ import annotations
 
 import os
@@ -14,7 +15,9 @@ class Timeout(Exception):
 
 
 class FileLock:
-    def __init__(self, lock_file: str | os.PathLike, timeout: float = 10.0, delay: float = 0.1):
+    def __init__(
+        self, lock_file: str | os.PathLike, timeout: float = 10.0, delay: float = 0.1
+    ):
         self.lock_file = str(lock_file)
         self.timeout = timeout
         self.delay = delay
@@ -27,7 +30,9 @@ class FileLock:
 
         while True:
             try:
-                self._handle = os.open(self.lock_file, os.O_CREAT | os.O_EXCL | os.O_WRONLY)
+                self._handle = os.open(
+                    self.lock_file, os.O_CREAT | os.O_EXCL | os.O_WRONLY
+                )
                 return True
             except FileExistsError:
                 if not blocking:

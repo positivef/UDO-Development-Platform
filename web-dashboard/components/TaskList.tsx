@@ -349,7 +349,8 @@ export const TaskList = memo(function TaskList() {
           </CardHeader>
 
           <CardContent>
-            <AnimatePresence mode="popLayout">
+            <>
+
               {tasks.length === 0 ? (
                 <motion.div
                   initial={{ opacity: 0 }}
@@ -524,7 +525,8 @@ export const TaskList = memo(function TaskList() {
                   </div>
                 </div>
               )}
-            </AnimatePresence>
+            </>
+
           </CardContent>
         </Card>
       </motion.div>

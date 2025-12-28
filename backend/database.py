@@ -2,13 +2,15 @@
 Database Connection and Configuration
 PostgreSQL connection management with connection pooling
 """
+
+import logging
 import os
-from typing import Optional, Dict, Any
+from contextlib import contextmanager
+from typing import Any, Dict, Optional
+
 import psycopg2
 from psycopg2 import pool
 from psycopg2.extras import RealDictCursor
-from contextlib import contextmanager
-import logging
 
 logger = logging.getLogger(__name__)
 
@@ -18,24 +20,24 @@ class DatabaseConfig:
 
     def __init__(self):
         """Load configuration from environment variables"""
-        self.host = os.getenv('DB_HOST', 'localhost')
-        self.port = int(os.getenv('DB_PORT', '5432'))
-        self.database = os.getenv('DB_NAME', 'udo_dev')
-        self.user = os.getenv('DB_USER', 'postgres')
-        self.password = os.getenv('DB_PASSWORD', 'postgres')
+        self.host = os.getenv("DB_HOST", "localhost")
+        self.port = int(os.getenv("DB_PORT", "5432"))
+        self.database = os.getenv("DB_NAME", "udo_dev")
+        self.user = os.getenv("DB_USER", "postgres")
+        self.password = os.getenv("DB_PASSWORD", "postgres")
 
         # Connection pool settings
-        self.min_connections = int(os.getenv('DB_POOL_MIN', '2'))
-        self.max_connections = int(os.getenv('DB_POOL_MAX', '10'))
+        self.min_connections = int(os.getenv("DB_POOL_MIN", "2"))
+        self.max_connections = int(os.getenv("DB_POOL_MAX", "10"))
 
     def get_connection_params(self) -> Dict[str, Any]:
         """Get connection parameters as dict"""
         return {
-            'host': self.host,
-            'port': self.port,
-            'database': self.database,
-            'user': self.user,
-            'password': self.password
+            "host": self.host,
+            "port": self.port,
+            "database": self.database,
+            "user": self.user,
+            "password": self.password,
         }
 
     def __repr__(self):
@@ -66,7 +68,7 @@ class Database:
             self._pool = pool.SimpleConnectionPool(
                 self.config.min_connections,
                 self.config.max_connections,
-                **self.config.get_connection_params()
+                **self.config.get_connection_params(),
             )
             self._initialized = True
             logger.info(f"[OK] Database pool initialized: {self.config.database}")
@@ -156,9 +158,9 @@ class Database:
         with self.get_cursor() as cursor:
             cursor.execute(query, params)
 
-            if fetch == 'one':
+            if fetch == "one":
                 return cursor.fetchone()
-            elif fetch == 'all':
+            elif fetch == "all":
                 return cursor.fetchall()
             return None
 
@@ -217,11 +219,13 @@ if __name__ == "__main__":
 
             # Test query
             with db.get_cursor(commit=False) as cursor:
-                cursor.execute("""
+                cursor.execute(
+                    """
                     SELECT COUNT(*) as count
                     FROM information_schema.tables
                     WHERE table_schema = 'public'
-                """)
+                """
+                )
                 result = cursor.fetchone()
                 print(f"Tables in database: {result['count']}")
         else:

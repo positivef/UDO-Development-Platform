@@ -9,6 +9,7 @@ import asyncio
 import sys
 from pathlib import Path
 from uuid import UUID
+
 from dotenv import load_dotenv
 
 # Fix Windows console encoding for emoji support
@@ -28,8 +29,9 @@ else:
 # Add backend to path
 sys.path.insert(0, str(Path(__file__).parent))
 
-from async_database import initialize_async_database, async_db, close_async_database
 from app.services.project_context_service import ProjectContextService
+from async_database import (async_db, close_async_database,
+                            initialize_async_database)
 
 
 async def test_database_connection():

@@ -3,18 +3,18 @@
 Database Migration Runner
 Executes SQL migration files in order
 """
-import sys
+import logging
 import os
+import sys
+from datetime import datetime
 from pathlib import Path
+
 import psycopg2
 from psycopg2 import sql
-from datetime import datetime
-import logging
 
 # Configure logging
 logging.basicConfig(
-    level=logging.INFO,
-    format='%(asctime)s - %(levelname)s - %(message)s'
+    level=logging.INFO, format="%(asctime)s - %(levelname)s - %(message)s"
 )
 logger = logging.getLogger(__name__)
 
@@ -61,7 +61,8 @@ class MigrationRunner:
         """Create migrations tracking table if not exists"""
         try:
             cursor = self.conn.cursor()
-            cursor.execute("""
+            cursor.execute(
+                """
                 CREATE TABLE IF NOT EXISTS schema_migrations (
                     id SERIAL PRIMARY KEY,
                     version VARCHAR(255) NOT NULL UNIQUE,
@@ -71,7 +72,8 @@ class MigrationRunner:
                     success BOOLEAN DEFAULT TRUE,
                     error_message TEXT
                 )
-            """)
+            """
+            )
             self.conn.commit()
             logger.info("Migrations tracking table ready")
             return True
@@ -84,11 +86,13 @@ class MigrationRunner:
         """Get list of already executed migrations"""
         try:
             cursor = self.conn.cursor()
-            cursor.execute("""
+            cursor.execute(
+                """
                 SELECT version FROM schema_migrations
                 WHERE success = TRUE
                 ORDER BY executed_at
-            """)
+            """
+            )
             executed = {row[0] for row in cursor.fetchall()}
             logger.info(f"Found {len(executed)} executed migrations")
             return executed
@@ -127,7 +131,7 @@ class MigrationRunner:
 
         try:
             # Read SQL file
-            with open(filepath, 'r', encoding='utf-8') as f:
+            with open(filepath, "r", encoding="utf-8") as f:
                 sql_content = f.read()
 
             # Execute SQL
@@ -139,10 +143,13 @@ class MigrationRunner:
             execution_time_ms = int((end_time - start_time).total_seconds() * 1000)
 
             # Record migration
-            cursor.execute("""
+            cursor.execute(
+                """
                 INSERT INTO schema_migrations (version, filename, execution_time_ms, success)
                 VALUES (%s, %s, %s, %s)
-            """, (version, filepath.name, execution_time_ms, True))
+            """,
+                (version, filepath.name, execution_time_ms, True),
+            )
 
             # Commit transaction
             self.conn.commit()
@@ -157,10 +164,13 @@ class MigrationRunner:
             # Record failed migration
             try:
                 cursor = self.conn.cursor()
-                cursor.execute("""
+                cursor.execute(
+                    """
                     INSERT INTO schema_migrations (version, filename, success, error_message)
                     VALUES (%s, %s, %s, %s)
-                """, (version, filepath.name, False, str(e)))
+                """,
+                    (version, filepath.name, False, str(e)),
+                )
                 self.conn.commit()
             except:
                 pass
@@ -252,7 +262,7 @@ class MigrationRunner:
 
         try:
             # Read rollback SQL
-            with open(rollback_file, 'r', encoding='utf-8') as f:
+            with open(rollback_file, "r", encoding="utf-8") as f:
                 sql_content = f.read()
 
             # Execute rollback
@@ -260,10 +270,13 @@ class MigrationRunner:
             cursor.execute(sql_content)
 
             # Delete migration record
-            cursor.execute("""
+            cursor.execute(
+                """
                 DELETE FROM schema_migrations
                 WHERE version = %s
-            """, (version,))
+            """,
+                (version,),
+            )
 
             self.conn.commit()
 
@@ -282,24 +295,30 @@ def main():
     """Main entry point"""
     import argparse
 
-    parser = argparse.ArgumentParser(description='Database Migration Runner')
-    parser.add_argument('--dry-run', action='store_true', help='Show pending migrations without executing')
-    parser.add_argument('--rollback', type=str, help='Rollback specific migration (version)')
-    parser.add_argument('--host', default='localhost', help='Database host')
-    parser.add_argument('--port', type=int, default=5432, help='Database port')
-    parser.add_argument('--database', default='udo_dev', help='Database name')
-    parser.add_argument('--user', default='postgres', help='Database user')
-    parser.add_argument('--password', default='', help='Database password')
+    parser = argparse.ArgumentParser(description="Database Migration Runner")
+    parser.add_argument(
+        "--dry-run",
+        action="store_true",
+        help="Show pending migrations without executing",
+    )
+    parser.add_argument(
+        "--rollback", type=str, help="Rollback specific migration (version)"
+    )
+    parser.add_argument("--host", default="localhost", help="Database host")
+    parser.add_argument("--port", type=int, default=5432, help="Database port")
+    parser.add_argument("--database", default="udo_dev", help="Database name")
+    parser.add_argument("--user", default="postgres", help="Database user")
+    parser.add_argument("--password", default="", help="Database password")
 
     args = parser.parse_args()
 
     # Database configuration
     db_config = {
-        'host': args.host,
-        'port': args.port,
-        'database': args.database,
-        'user': args.user,
-        'password': args.password or os.getenv('DB_PASSWORD', 'postgres')
+        "host": args.host,
+        "port": args.port,
+        "database": args.database,
+        "user": args.user,
+        "password": args.password or os.getenv("DB_PASSWORD", "postgres"),
     }
 
     # Create runner

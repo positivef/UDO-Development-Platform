@@ -5,15 +5,16 @@ Week 2 Day 5: Context operations (ZIP upload/download, metadata)
 Implements Q4 (Double-click auto-load, single-click popup)
 """
 
+from datetime import datetime
 from typing import List, Optional
 from uuid import UUID, uuid4
-from datetime import datetime
-from pydantic import BaseModel, Field, field_validator
 
+from pydantic import BaseModel, Field, field_validator
 
 # ============================================================================
 # Context Models
 # ============================================================================
+
 
 class TaskContext(BaseModel):
     """
@@ -21,6 +22,7 @@ class TaskContext(BaseModel):
 
     Q4: Double-click auto-load (load_count, avg_load_time_ms tracking)
     """
+
     context_id: UUID = Field(default_factory=uuid4)
     task_id: UUID
 
@@ -63,7 +65,7 @@ class TaskContext(BaseModel):
                 "zip_url": "https://storage.example.com/contexts/550e8400.zip",
                 "zip_size_bytes": 1024000,
                 "load_count": 5,
-                "avg_load_time_ms": 150
+                "avg_load_time_ms": 150,
             }
         }
 
@@ -74,6 +76,7 @@ class ContextMetadata(BaseModel):
 
     Used for GET /api/kanban/tasks/{id}/context endpoint.
     """
+
     context_id: UUID
     task_id: UUID
     file_count: int
@@ -97,13 +100,14 @@ class ContextUploadRequest(BaseModel):
 
     POST /api/kanban/tasks/{id}/context
     """
+
     files: List[str] = Field(..., min_length=1, description="Array of file paths to include")
     git_branch: Optional[str] = None
     git_commit_hash: Optional[str] = Field(None, max_length=40)
     git_commit_message: Optional[str] = None
     obsidian_notes: List[str] = Field(default_factory=list)
 
-    @field_validator('files')
+    @field_validator("files")
     @classmethod
     def validate_files(cls, v):
         if len(v) == 0:
@@ -117,7 +121,7 @@ class ContextUploadRequest(BaseModel):
                 "git_branch": "feature/auth",
                 "git_commit_hash": "abc123def456",
                 "git_commit_message": "feat: Add authentication",
-                "obsidian_notes": ["Projects/UDO/Auth Design.md"]
+                "obsidian_notes": ["Projects/UDO/Auth Design.md"],
             }
         }
 
@@ -128,20 +132,18 @@ class ContextLoadRequest(BaseModel):
 
     POST /api/kanban/tasks/{id}/context/load
     """
+
     load_time_ms: int = Field(..., ge=0, description="Time taken to load context (ms)")
 
     class Config:
-        json_schema_extra = {
-            "example": {
-                "load_time_ms": 150
-            }
-        }
+        json_schema_extra = {"example": {"load_time_ms": 150}}
 
 
 class ContextLoadResponse(BaseModel):
     """
     Context load tracking response.
     """
+
     success: bool
     load_count: int
     avg_load_time_ms: int
@@ -149,12 +151,7 @@ class ContextLoadResponse(BaseModel):
 
     class Config:
         json_schema_extra = {
-            "example": {
-                "success": True,
-                "load_count": 6,
-                "avg_load_time_ms": 145,
-                "last_loaded_at": "2025-12-04T10:30:00Z"
-            }
+            "example": {"success": True, "load_count": 6, "avg_load_time_ms": 145, "last_loaded_at": "2025-12-04T10:30:00Z"}
         }
 
 
@@ -162,6 +159,7 @@ class ContextUploadResponse(BaseModel):
     """
     Context upload response with ZIP URL.
     """
+
     context_id: UUID
     task_id: UUID
     zip_url: str
@@ -179,7 +177,7 @@ class ContextUploadResponse(BaseModel):
                 "zip_size_bytes": 1024000,
                 "zip_checksum": "abc123def456...",
                 "file_count": 3,
-                "created_at": "2025-12-04T10:30:00Z"
+                "created_at": "2025-12-04T10:30:00Z",
             }
         }
 
@@ -188,16 +186,20 @@ class ContextUploadResponse(BaseModel):
 # Error Models
 # ============================================================================
 
+
 class ContextNotFoundError(Exception):
     """Raised when context not found for task"""
+
     pass
 
 
 class ContextSizeLimitExceeded(Exception):
     """Raised when ZIP size exceeds 50MB limit"""
+
     pass
 
 
 class InvalidContextFiles(Exception):
     """Raised when file list is invalid or empty"""
+
     pass

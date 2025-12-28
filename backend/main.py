@@ -5,22 +5,23 @@ UDO Dashboard Backend API
 FastAPI server for real-time system monitoring and control
 """
 
-import sys
-import os
-import json
-from pathlib import Path
-from datetime import datetime
-from typing import Dict, List, Optional, Any
-from fastapi import FastAPI, HTTPException, WebSocket, WebSocketDisconnect, Request, Response
-from fastapi.middleware.cors import CORSMiddleware
-from starlette.middleware.base import BaseHTTPMiddleware
-from pydantic import BaseModel
-import secrets
 import asyncio
+import json
 import logging
+import os
+import secrets
+import sys
+from datetime import datetime
+from pathlib import Path
+from typing import Any, Dict, List, Optional
 
 # Load environment variables from .env file
 from dotenv import load_dotenv
+from fastapi import (FastAPI, HTTPException, Request, Response, WebSocket,
+                     WebSocketDisconnect)
+from fastapi.middleware.cors import CORSMiddleware
+from pydantic import BaseModel
+from starlette.middleware.base import BaseHTTPMiddleware
 
 # Load .env from project root (parent of backend directory)
 project_root = Path(__file__).parent.parent
@@ -32,13 +33,22 @@ sys.path.insert(0, str(Path(__file__).parent.parent / "src"))
 # Add backend directory to path for app module imports
 sys.path.insert(0, str(Path(__file__).parent))
 
-# Configure logging
-logging.basicConfig(level=logging.INFO)
+# Configure logging with structured format
+log_format = "%(asctime)s - %(name)s - %(levelname)s - %(message)s"
+logging.basicConfig(
+    level=logging.INFO,
+    format=log_format,
+    handlers=[
+        logging.StreamHandler(),
+        logging.FileHandler("backend.log", mode="a", encoding="utf-8")
+    ]
+)
 logger = logging.getLogger(__name__)
 
 # Import UDO components
 try:
     from integrated_udo_system import IntegratedUDOSystem
+
     UDO_AVAILABLE = True
 except ImportError:
     UDO_AVAILABLE = False
@@ -52,22 +62,24 @@ logger.info("[EMOJI] Mock service will be enabled ONLY if database connection fa
 
 # Import routers
 try:
-    from app.routers import (
-        version_history_router,
-        quality_metrics_router,
-        constitutional_router,
-        time_tracking_router,
-        gi_formula_router,
-        ck_theory_router,
-        uncertainty_router
-    )
+    from app.routers import (ck_theory_router, constitutional_router,
+                             gi_formula_router, governance_router,
+                             quality_metrics_router, time_tracking_router,
+                             uncertainty_router, version_history_router)
+
     ROUTERS_AVAILABLE = True
     CONSTITUTIONAL_ROUTER_AVAILABLE = True
     TIME_TRACKING_ROUTER_AVAILABLE = True
     GI_FORMULA_ROUTER_AVAILABLE = True
     CK_THEORY_ROUTER_AVAILABLE = True
     UNCERTAINTY_ROUTER_AVAILABLE = True
-    print(f"[DEBUG] uncertainty_router imported successfully, UNCERTAINTY_ROUTER_AVAILABLE = {UNCERTAINTY_ROUTER_AVAILABLE}")
+    GOVERNANCE_ROUTER_AVAILABLE = True
+    print(
+        f"[DEBUG] uncertainty_router imported successfully, UNCERTAINTY_ROUTER_AVAILABLE = {UNCERTAINTY_ROUTER_AVAILABLE}"
+    )
+    print(
+        f"[DEBUG] governance_router imported successfully, GOVERNANCE_ROUTER_AVAILABLE = {GOVERNANCE_ROUTER_AVAILABLE}"
+    )
 except ImportError as e:
     ROUTERS_AVAILABLE = False
     CONSTITUTIONAL_ROUTER_AVAILABLE = False
@@ -75,11 +87,13 @@ except ImportError as e:
     GI_FORMULA_ROUTER_AVAILABLE = False
     CK_THEORY_ROUTER_AVAILABLE = False
     UNCERTAINTY_ROUTER_AVAILABLE = False
+    GOVERNANCE_ROUTER_AVAILABLE = False
     logger.warning(f"Routers not available: {e}")
 
 # Import auth router separately
 try:
     from app.routers.auth import router as auth_router
+
     AUTH_ROUTER_AVAILABLE = True
 except ImportError as e:
     AUTH_ROUTER_AVAILABLE = False
@@ -88,6 +102,7 @@ except ImportError as e:
 # Import project context routers separately (optional)
 try:
     from app.routers import project_context_router, projects_router
+
     PROJECT_CONTEXT_AVAILABLE = True
 except ImportError as e:
     PROJECT_CONTEXT_AVAILABLE = False
@@ -96,6 +111,7 @@ except ImportError as e:
 # Import modules router for Standard Level MDO
 try:
     from app.routers.modules import router as modules_router
+
     MODULES_ROUTER_AVAILABLE = True
 except ImportError as e:
     MODULES_ROUTER_AVAILABLE = False
@@ -104,6 +120,7 @@ except ImportError as e:
 # Import tasks router for Task Management
 try:
     from app.routers.tasks import router as tasks_router
+
     TASKS_ROUTER_AVAILABLE = True
 except ImportError as e:
     TASKS_ROUTER_AVAILABLE = False
@@ -112,6 +129,7 @@ except ImportError as e:
 # Import Obsidian router for Knowledge Management
 try:
     from app.routers.obsidian import router as obsidian_router
+
     OBSIDIAN_ROUTER_AVAILABLE = True
 except ImportError as e:
     OBSIDIAN_ROUTER_AVAILABLE = False
@@ -120,6 +138,7 @@ except ImportError as e:
 # Import Kanban Tasks router for Kanban-UDO Integration (Week 2 Day 3-4)
 try:
     from app.routers.kanban_tasks import router as kanban_tasks_router
+
     KANBAN_TASKS_ROUTER_AVAILABLE = True
 except ImportError as e:
     KANBAN_TASKS_ROUTER_AVAILABLE = False
@@ -127,7 +146,9 @@ except ImportError as e:
 
 # Import Kanban Dependencies router for DAG management (Week 2 Day 3-4)
 try:
-    from app.routers.kanban_dependencies import router as kanban_dependencies_router
+    from app.routers.kanban_dependencies import \
+        router as kanban_dependencies_router
+
     KANBAN_DEPENDENCIES_ROUTER_AVAILABLE = True
 except ImportError as e:
     KANBAN_DEPENDENCIES_ROUTER_AVAILABLE = False
@@ -136,6 +157,7 @@ except ImportError as e:
 # Import Kanban Projects router for Multi-Project management (Week 2 Day 3-4, Q5)
 try:
     from app.routers.kanban_projects import router as kanban_projects_router
+
     KANBAN_PROJECTS_ROUTER_AVAILABLE = True
 except ImportError as e:
     KANBAN_PROJECTS_ROUTER_AVAILABLE = False
@@ -144,6 +166,7 @@ except ImportError as e:
 # Import Kanban Context router for Context operations (Week 2 Day 5, Q4)
 try:
     from app.routers.kanban_context import router as kanban_context_router
+
     KANBAN_CONTEXT_ROUTER_AVAILABLE = True
 except ImportError as e:
     KANBAN_CONTEXT_ROUTER_AVAILABLE = False
@@ -152,6 +175,7 @@ except ImportError as e:
 # Import Kanban AI router for AI Task Suggestions (Week 3 Day 3, Q2)
 try:
     from app.routers.kanban_ai import router as kanban_ai_router
+
     KANBAN_AI_ROUTER_AVAILABLE = True
 except ImportError as e:
     KANBAN_AI_ROUTER_AVAILABLE = False
@@ -160,6 +184,7 @@ except ImportError as e:
 # Import Kanban Archive router for Done-End Archive (Week 3 Day 4-5, Q6)
 try:
     from app.routers.kanban_archive import router as kanban_archive_router
+
     KANBAN_ARCHIVE_ROUTER_AVAILABLE = True
 except ImportError as e:
     KANBAN_ARCHIVE_ROUTER_AVAILABLE = False
@@ -168,6 +193,7 @@ except ImportError as e:
 # Import Kanban WebSocket router for Real-time Updates (Week 7+)
 try:
     from app.routers.kanban_websocket import router as kanban_websocket_router
+
     KANBAN_WEBSOCKET_ROUTER_AVAILABLE = True
 except ImportError as e:
     KANBAN_WEBSOCKET_ROUTER_AVAILABLE = False
@@ -176,6 +202,7 @@ except ImportError as e:
 # Import Test WebSocket router for debugging (Week 7 Troubleshooting)
 try:
     from app.routers.test_websocket import router as test_websocket_router
+
     TEST_WEBSOCKET_ROUTER_AVAILABLE = True
 except ImportError as e:
     TEST_WEBSOCKET_ROUTER_AVAILABLE = False
@@ -184,6 +211,7 @@ except ImportError as e:
 # Import Admin router for Feature Flags (Week 4, Tier 1 Rollback)
 try:
     from app.routers.admin import router as admin_router
+
     ADMIN_ROUTER_AVAILABLE = True
 except ImportError as e:
     ADMIN_ROUTER_AVAILABLE = False
@@ -191,7 +219,9 @@ except ImportError as e:
 
 # Import Knowledge Feedback router for Accuracy Tracking (Week 6 Day 4-5)
 try:
-    from app.routers.knowledge_feedback import router as knowledge_feedback_router
+    from app.routers.knowledge_feedback import \
+        router as knowledge_feedback_router
+
     KNOWLEDGE_FEEDBACK_ROUTER_AVAILABLE = True
 except ImportError as e:
     KNOWLEDGE_FEEDBACK_ROUTER_AVAILABLE = False
@@ -200,6 +230,7 @@ except ImportError as e:
 # Import Knowledge Search router for 3-Tier Search (Week 6 Day 4 PM)
 try:
     from app.routers.knowledge_search import router as knowledge_search_router
+
     KNOWLEDGE_SEARCH_ROUTER_AVAILABLE = True
 except ImportError as e:
     KNOWLEDGE_SEARCH_ROUTER_AVAILABLE = False
@@ -210,6 +241,7 @@ try:
     from app.routers import websocket_handler
     from app.routers.websocket_handler import connection_manager
     from app.services.session_manager_v2 import get_session_manager
+
     WEBSOCKET_AVAILABLE = True
 except ImportError as e:
     WEBSOCKET_AVAILABLE = False
@@ -217,7 +249,8 @@ except ImportError as e:
 
 # Import Redis client
 try:
-    from app.services.redis_client import get_redis_client, cleanup_redis
+    from app.services.redis_client import cleanup_redis, get_redis_client
+
     REDIS_AVAILABLE = True
 except ImportError as e:
     REDIS_AVAILABLE = False
@@ -225,8 +258,12 @@ except ImportError as e:
 
 # Import async database and project context service
 try:
-    from backend.async_database import async_db, initialize_async_database, close_async_database
-    from app.services.project_context_service import init_project_context_service, enable_mock_service
+    from app.services.project_context_service import (
+        enable_mock_service, init_project_context_service)
+
+    from backend.async_database import (async_db, close_async_database,
+                                        initialize_async_database)
+
     ASYNC_DB_AVAILABLE = True
 except ImportError as e:
     ASYNC_DB_AVAILABLE = False
@@ -234,7 +271,8 @@ except ImportError as e:
 
 # Import error handler
 try:
-    from app.core.error_handler import setup_error_handlers, error_handler
+    from app.core.error_handler import error_handler, setup_error_handlers
+
     ERROR_HANDLER_AVAILABLE = True
 except ImportError as e:
     ERROR_HANDLER_AVAILABLE = False
@@ -242,25 +280,26 @@ except ImportError as e:
 
 # Import Phase Transition components
 try:
-    from app.services.phase_transition_listener import PhaseTransitionListener, create_listener_callback
-    from phase_state_manager import PhaseStateManager
+    from app.services.phase_transition_listener import (
+        PhaseTransitionListener, create_listener_callback)
     from app.services.time_tracking_service import TimeTrackingService
+
+    from phase_state_manager import PhaseStateManager
+
     PHASE_TRANSITION_AVAILABLE = True
-    logger.info(f"[DEBUG] Phase Transition components imported successfully, PHASE_TRANSITION_AVAILABLE = {PHASE_TRANSITION_AVAILABLE}")
+    logger.info(
+        f"[DEBUG] Phase Transition components imported successfully, PHASE_TRANSITION_AVAILABLE = {PHASE_TRANSITION_AVAILABLE}"
+    )
 except ImportError as e:
     PHASE_TRANSITION_AVAILABLE = False
     logger.warning(f"Phase Transition components not available: {e}")
 
 # Import security components
 try:
-    from app.core.security import (
-        setup_security,
-        JWTManager,
-        PasswordHasher,
-        SecureUserCreate,
-        SecureProjectCreate,
-        security
-    )
+    from app.core.security import (JWTManager, PasswordHasher,
+                                   SecureProjectCreate, SecureUserCreate,
+                                   security, setup_security)
+
     SECURITY_AVAILABLE = True
 except ImportError as e:
     SECURITY_AVAILABLE = False
@@ -268,11 +307,9 @@ except ImportError as e:
 
 # Import monitoring components
 try:
-    from app.core.monitoring import (
-        setup_monitoring,
-        performance_monitor,
-        monitor_performance
-    )
+    from app.core.monitoring import (monitor_performance, performance_monitor,
+                                     setup_monitoring)
+
     MONITORING_AVAILABLE = True
 except ImportError as e:
     MONITORING_AVAILABLE = False
@@ -282,8 +319,74 @@ except ImportError as e:
 app = FastAPI(
     title="UDO Development Platform API",
     version="3.0.0",
-    description="Real-time development automation and monitoring"
+    description="Real-time development automation and monitoring",
 )
+
+
+# ============================================================
+# Health Check Endpoint (P1 Requirement)
+# ============================================================
+@app.get("/health", tags=["system"])
+async def health_check():
+    """
+    Health check endpoint for monitoring and load balancers.
+    Returns system status, version, and component availability.
+    Also includes Docker container status and Obsidian vault existence for frontend env check.
+    """
+    logger.info("Health check requested")
+
+    health_status = {
+        "status": "healthy",
+        "version": "3.0.0",
+        "timestamp": datetime.now().isoformat(),
+        "components": {
+            "udo_system": UDO_AVAILABLE,
+            "routers": ROUTERS_AVAILABLE,
+            "auth": AUTH_ROUTER_AVAILABLE,
+            "database": ASYNC_DB_AVAILABLE,
+            "redis": REDIS_AVAILABLE,
+            "websocket": WEBSOCKET_AVAILABLE,
+            "governance": GOVERNANCE_ROUTER_AVAILABLE,
+        },
+        "environment": os.getenv("ENVIRONMENT", "development"),
+    }
+
+    # Check Docker container status
+    try:
+        import subprocess
+        result = subprocess.run(
+            ["docker", "ps", "-a", "--format", "{{.Names}} {{.Status}}"],
+            capture_output=True,
+            text=True,
+            timeout=5
+        )
+        if result.returncode == 0:
+            docker_status = {}
+            for line in result.stdout.strip().split("\n"):
+                if line:
+                    parts = line.split(" ", 1)
+                    if len(parts) == 2:
+                        docker_status[parts[0]] = parts[1]
+            health_status["docker"] = docker_status
+        else:
+            health_status["docker"] = {"error": "Docker command failed"}
+    except Exception as e:
+        health_status["docker"] = {"error": str(e)}
+
+    # Check Obsidian vault existence
+    obsidian_vault_path = os.path.join(
+        os.path.expanduser("~"), "Documents", "Obsidian Vault"
+    )
+    health_status["obsidian_vault_exists"] = os.path.isdir(obsidian_vault_path)
+
+    # Check if critical components are down
+    critical_down = not (ROUTERS_AVAILABLE and ASYNC_DB_AVAILABLE)
+    if critical_down:
+        health_status["status"] = "degraded"
+        logger.warning("Health check: System degraded - critical components unavailable")
+
+    return health_status
+
 
 # ============================================================
 # HIGH-03: Security Headers Middleware
@@ -294,7 +397,9 @@ class SecurityHeadersMiddleware(BaseHTTPMiddleware):
     async def dispatch(self, request: Request, call_next):
         # Skip WebSocket connections (let them pass through)
         # Check both lowercase and capitalized header names
-        upgrade_header = request.headers.get("upgrade") or request.headers.get("Upgrade")
+        upgrade_header = request.headers.get("upgrade") or request.headers.get(
+            "Upgrade"
+        )
         if upgrade_header and upgrade_header.lower() == "websocket":
             return await call_next(request)
 
@@ -310,11 +415,15 @@ class SecurityHeadersMiddleware(BaseHTTPMiddleware):
         response.headers["Referrer-Policy"] = "strict-origin-when-cross-origin"
 
         # Content Security Policy (relaxed for API)
-        response.headers["Content-Security-Policy"] = "default-src 'self'; frame-ancestors 'none'"
+        response.headers["Content-Security-Policy"] = (
+            "default-src 'self'; frame-ancestors 'none'"
+        )
 
         # HSTS (only in production)
         if os.environ.get("ENVIRONMENT") == "production":
-            response.headers["Strict-Transport-Security"] = "max-age=31536000; includeSubDomains"
+            response.headers["Strict-Transport-Security"] = (
+                "max-age=31536000; includeSubDomains"
+            )
 
         # Remove server information
         response.headers["Server"] = "UDO-API"
@@ -357,19 +466,20 @@ logger.info("[OK] CORS middleware ENABLED for API + WebSocket support")
 
 # NOTE: OPTIONS handled by CORSASGIWrapper at ASGI level (see below)
 
-# Add security headers middleware
-# TEMPORARILY DISABLED for WebSocket testing
-# app.add_middleware(SecurityHeadersMiddleware)
-logger.info("[WARN] Security headers middleware DISABLED for WebSocket testing")
+# Add security headers middleware (P0-3: Re-enabled)
+app.add_middleware(SecurityHeadersMiddleware)
+logger.info("[OK] Security headers middleware ENABLED (XSS/CSRF protection)")
 
 # ============================================================
 # Adaptive cache for expensive operations (uncertainty-aware TTL)
 # ============================================================
 from datetime import timedelta
+
 _cache = {
     "status": {"data": None, "expires": datetime.now()},
-    "metrics": {"data": None, "expires": datetime.now()}
+    "metrics": {"data": None, "expires": datetime.now()},
 }
+
 
 def get_adaptive_ttl(uncertainty_state: str = None) -> int:
     """Calculate TTL based on uncertainty state"""
@@ -380,12 +490,13 @@ def get_adaptive_ttl(uncertainty_state: str = None) -> int:
     # Adaptive TTL based on uncertainty state
     ttl_map = {
         "DETERMINISTIC": 300,  # 5 minutes (highly predictable)
-        "PROBABILISTIC": 60,   # 1 minute (statistically confident)
-        "QUANTUM": 10,         # 10 seconds (multiple possibilities)
-        "CHAOTIC": 2,          # 2 seconds (high uncertainty)
-        "VOID": 1              # 1 second (unknown territory)
+        "PROBABILISTIC": 60,  # 1 minute (statistically confident)
+        "QUANTUM": 10,  # 10 seconds (multiple possibilities)
+        "CHAOTIC": 2,  # 2 seconds (high uncertainty)
+        "VOID": 1,  # 1 second (unknown territory)
     }
     return ttl_map.get(uncertainty_state.upper(), 60)
+
 
 def get_cached(key: str, ttl_seconds: int = None):
     """Get cached value if not expired"""
@@ -394,6 +505,7 @@ def get_cached(key: str, ttl_seconds: int = None):
         return cache_entry["data"]
     return None
 
+
 def set_cached(key: str, data: any, ttl_seconds: int = None):
     """Set cached value with adaptive expiration"""
     if ttl_seconds is None:
@@ -401,29 +513,24 @@ def set_cached(key: str, data: any, ttl_seconds: int = None):
 
     _cache[key] = {
         "data": data,
-        "expires": datetime.now() + timedelta(seconds=ttl_seconds)
+        "expires": datetime.now() + timedelta(seconds=ttl_seconds),
     }
 
-# Setup global error handlers
-# TEMPORARILY DISABLED for WebSocket testing
-# if ERROR_HANDLER_AVAILABLE:
-#     setup_error_handlers(app)
-#     logger.info("[OK] Global error handlers configured")
-logger.info("[WARN] Error handlers DISABLED for WebSocket testing")
 
-# Setup security middleware
-# TEMPORARILY DISABLED for WebSocket testing
-# if SECURITY_AVAILABLE:
-#     setup_security(app)
-#     logger.info("[OK] Security middleware configured")
-logger.info("[WARN] Security middleware DISABLED for WebSocket testing")
+# Setup global error handlers (P0-3: Re-enabled)
+if ERROR_HANDLER_AVAILABLE:
+    setup_error_handlers(app)
+    logger.info("[OK] Global error handlers configured")
 
-# Setup performance monitoring
-# TEMPORARILY DISABLED for WebSocket testing
-# if MONITORING_AVAILABLE:
-#     setup_monitoring(app)
-#     logger.info("[OK] Performance monitoring configured")
-logger.info("[WARN] Performance monitoring DISABLED for WebSocket testing")
+# Setup security middleware (P0-3: Re-enabled - includes Rate Limiting)
+if SECURITY_AVAILABLE:
+    setup_security(app)
+    logger.info("[OK] Security middleware configured (Rate Limiting enabled)")
+
+# Setup performance monitoring (P0-3: Re-enabled)
+if MONITORING_AVAILABLE:
+    setup_monitoring(app)
+    logger.info("[OK] Performance monitoring configured")
 
 # Include routers
 if ROUTERS_AVAILABLE:
@@ -459,27 +566,39 @@ if OBSIDIAN_ROUTER_AVAILABLE:
 
 if KANBAN_TASKS_ROUTER_AVAILABLE:
     app.include_router(kanban_tasks_router)
-    logger.info("[OK] Kanban Tasks router included (Kanban-UDO Integration: /api/kanban/tasks)")
+    logger.info(
+        "[OK] Kanban Tasks router included (Kanban-UDO Integration: /api/kanban/tasks)"
+    )
 
 if KANBAN_DEPENDENCIES_ROUTER_AVAILABLE:
     app.include_router(kanban_dependencies_router)
-    logger.info("[OK] Kanban Dependencies router included (DAG Management: /api/kanban/dependencies)")
+    logger.info(
+        "[OK] Kanban Dependencies router included (DAG Management: /api/kanban/dependencies)"
+    )
 
 if KANBAN_PROJECTS_ROUTER_AVAILABLE:
     app.include_router(kanban_projects_router)
-    logger.info("[OK] Kanban Projects router included (Multi-Project Q5: /api/kanban/projects)")
+    logger.info(
+        "[OK] Kanban Projects router included (Multi-Project Q5: /api/kanban/projects)"
+    )
 
 if KANBAN_CONTEXT_ROUTER_AVAILABLE:
     app.include_router(kanban_context_router)
-    logger.info("[OK] Kanban Context router included (Context Operations Q4: /api/kanban/context)")
+    logger.info(
+        "[OK] Kanban Context router included (Context Operations Q4: /api/kanban/context)"
+    )
 
 if KANBAN_AI_ROUTER_AVAILABLE:
     app.include_router(kanban_ai_router)
-    logger.info("[OK] Kanban AI router included (AI Task Suggestions Q2: /api/kanban/ai)")
+    logger.info(
+        "[OK] Kanban AI router included (AI Task Suggestions Q2: /api/kanban/ai)"
+    )
 
 if KANBAN_ARCHIVE_ROUTER_AVAILABLE:
     app.include_router(kanban_archive_router)
-    logger.info("[OK] Kanban Archive router included (Done-End Archive Q6: /api/kanban/archive)")
+    logger.info(
+        "[OK] Kanban Archive router included (Done-End Archive Q6: /api/kanban/archive)"
+    )
 
 if TEST_WEBSOCKET_ROUTER_AVAILABLE:
     app.include_router(test_websocket_router)
@@ -487,16 +606,26 @@ if TEST_WEBSOCKET_ROUTER_AVAILABLE:
 
 if KANBAN_WEBSOCKET_ROUTER_AVAILABLE:
     app.include_router(kanban_websocket_router)
-    logger.info("[OK] Kanban WebSocket router included (Real-time Updates Week 7+: /ws/kanban)")
+    logger.info(
+        "[OK] Kanban WebSocket router included (Real-time Updates Week 7+: /ws/kanban)"
+    )
 
 if ADMIN_ROUTER_AVAILABLE:
     app.include_router(admin_router)
-    logger.info("[OK] Admin router included (Feature Flags Tier 1 Rollback: /api/admin)")
+    logger.info(
+        "[OK] Admin router included (Feature Flags Tier 1 Rollback: /api/admin)"
+    )
 
 if KNOWLEDGE_FEEDBACK_ROUTER_AVAILABLE:
-    logger.info(f"[DEBUG] knowledge_feedback_router object: {knowledge_feedback_router}")
-    logger.info(f"[DEBUG] knowledge_feedback_router prefix: {knowledge_feedback_router.prefix}")
-    logger.info(f"[DEBUG] knowledge_feedback_router routes: {len(knowledge_feedback_router.routes)}")
+    logger.info(
+        f"[DEBUG] knowledge_feedback_router object: {knowledge_feedback_router}"
+    )
+    logger.info(
+        f"[DEBUG] knowledge_feedback_router prefix: {knowledge_feedback_router.prefix}"
+    )
+    logger.info(
+        f"[DEBUG] knowledge_feedback_router routes: {len(knowledge_feedback_router.routes)}"
+    )
 
     # List all routes before including
     logger.info(f"[DEBUG] App routes before include: {len(app.routes)}")
@@ -507,14 +636,24 @@ if KNOWLEDGE_FEEDBACK_ROUTER_AVAILABLE:
     logger.info(f"[DEBUG] App routes after include: {len(app.routes)}")
 
     # List knowledge routes
-    knowledge_routes = [route for route in app.routes if hasattr(route, 'path') and '/knowledge' in route.path]
-    logger.info(f"[DEBUG] Knowledge routes: {[route.path for route in knowledge_routes]}")
+    knowledge_routes = [
+        route
+        for route in app.routes
+        if hasattr(route, "path") and "/knowledge" in route.path
+    ]
+    logger.info(
+        f"[DEBUG] Knowledge routes: {[route.path for route in knowledge_routes]}"
+    )
 
-    logger.info("[OK] Knowledge Feedback router included (Accuracy Tracking Week 6: /api/knowledge)")
+    logger.info(
+        "[OK] Knowledge Feedback router included (Accuracy Tracking Week 6: /api/knowledge)"
+    )
 
 if KNOWLEDGE_SEARCH_ROUTER_AVAILABLE:
     app.include_router(knowledge_search_router)
-    logger.info("[OK] Knowledge Search router included (3-Tier Search Week 6: /api/knowledge/search)")
+    logger.info(
+        "[OK] Knowledge Search router included (3-Tier Search Week 6: /api/knowledge/search)"
+    )
 
 if TIME_TRACKING_ROUTER_AVAILABLE:
     app.include_router(time_tracking_router)
@@ -533,11 +672,17 @@ if UNCERTAINTY_ROUTER_AVAILABLE:
     app.include_router(uncertainty_router)
     logger.info("[OK] Uncertainty Map router included (Predictive Uncertainty)")
 
+# Governance router for project rules and templates
+if GOVERNANCE_ROUTER_AVAILABLE:
+    app.include_router(governance_router)
+    logger.info("[OK] Governance router included (Project Rules & Templates)")
+
 # TEMPORARILY DISABLED - Conflicts with Kanban WebSocket
-# if WEBSOCKET_AVAILABLE:
-#     app.include_router(websocket_handler.router)
-#     logger.info("[OK] WebSocket handler included")
-logger.info("[WARN] WebSocket handler DISABLED to test Kanban WebSocket")
+if WEBSOCKET_AVAILABLE:
+    app.include_router(websocket_handler.router)
+    logger.info("[OK] WebSocket handler included")
+    # logger.info("[WARN] WebSocket handler DISABLED to test Kanban WebSocket")
+
 
 # ============================================================
 # ASGI-Level CORS Wrapper - Intercepts ALL requests BEFORE routing
@@ -581,7 +726,10 @@ class CORSASGIWrapper:
             # Build CORS response headers
             response_headers = [
                 (b"access-control-allow-origin", origin if origin != b"*" else b"*"),
-                (b"access-control-allow-methods", b"GET, POST, PUT, DELETE, PATCH, OPTIONS, HEAD"),
+                (
+                    b"access-control-allow-methods",
+                    b"GET, POST, PUT, DELETE, PATCH, OPTIONS, HEAD",
+                ),
                 (b"access-control-allow-headers", request_headers),
                 (b"access-control-allow-credentials", b"true"),
                 (b"access-control-max-age", b"600"),
@@ -590,17 +738,21 @@ class CORSASGIWrapper:
             ]
 
             # Send HTTP response start
-            await send({
-                "type": "http.response.start",
-                "status": 200,
-                "headers": response_headers,
-            })
+            await send(
+                {
+                    "type": "http.response.start",
+                    "status": 200,
+                    "headers": response_headers,
+                }
+            )
 
             # Send empty body and complete
-            await send({
-                "type": "http.response.body",
-                "body": b"",
-            })
+            await send(
+                {
+                    "type": "http.response.body",
+                    "body": b"",
+                }
+            )
 
             # Log for debugging
             path = scope.get("path", "/")
@@ -609,6 +761,7 @@ class CORSASGIWrapper:
 
         # For non-OPTIONS requests, proceed normally
         await self.app(scope, receive, send)
+
 
 # Wrap the entire FastAPI app with CORS handler
 # This MUST be after all routers are included
@@ -622,6 +775,7 @@ logger.info("[OK] ASGI-level CORS wrapper applied (intercepts OPTIONS before rou
 # Global UDO instance (lazy-loaded on first request)
 _udo_system_instance = None
 _udo_initialization_lock = False
+
 
 def get_udo_system():
     """Lazy initialization of UDO system (initialize on first request)
@@ -661,6 +815,7 @@ def get_udo_system():
 
     return _udo_system_instance
 
+
 # Backward compatibility alias
 udo_system = None
 
@@ -671,6 +826,7 @@ phase_transition_listener = None
 # TEST: Minimal WebSocket endpoint
 from fastapi import WebSocket
 
+
 @app.websocket("/ws/test")
 async def test_websocket(websocket: WebSocket):
     """Minimal WebSocket endpoint for testing"""
@@ -678,15 +834,18 @@ async def test_websocket(websocket: WebSocket):
     await websocket.send_text("Hello from test WebSocket!")
     await websocket.close()
 
+
 # Pydantic models
 class TaskRequest(BaseModel):
     task: str
     phase: Optional[str] = None
     priority: Optional[str] = "normal"
 
+
 class SystemCommand(BaseModel):
     command: str
     params: Optional[Dict] = {}
+
 
 class DashboardMetrics(BaseModel):
     system_status: Dict
@@ -697,6 +856,7 @@ class DashboardMetrics(BaseModel):
     ml_metrics: Dict
     recent_tasks: List[Dict]
     performance_metrics: Dict
+
 
 # Startup event
 @app.on_event("startup")
@@ -710,7 +870,9 @@ async def startup_event():
             if await redis_client.ensure_connected():
                 logger.info("[OK] Redis client initialized")
             else:
-                logger.warning("[WARN] Redis not available, distributed features disabled")
+                logger.warning(
+                    "[WARN] Redis not available, distributed features disabled"
+                )
         except Exception as e:
             logger.warning(f"[WARN] Redis initialization failed: {e}")
 
@@ -723,7 +885,8 @@ async def startup_event():
             logger.warning(f"[WARN] SessionManager initialization failed: {e}")
 
     # Initialize async database and project context service
-    if ASYNC_DB_AVAILABLE:
+    # FORCE MOCK: Temporarily disable DB to fix 503
+    if False: # ASYNC_DB_AVAILABLE:
         try:
             await initialize_async_database()
             logger.info("[OK] Async database initialized")
@@ -736,16 +899,24 @@ async def startup_event():
             await project_context_service.initialize_default_project()
             logger.info("[OK] Project context service initialized")
         except Exception as e:
-            logger.warning(f"[WARN]  Database not available, falling back to mock service: {e}")
-            logger.info("[EMOJI] To enable database features, ensure PostgreSQL is running and database is created")
+            logger.warning(
+                f"[WARN]  Database not available, falling back to mock service: {e}"
+            )
+            logger.info(
+                "[EMOJI] To enable database features, ensure PostgreSQL is running and database is created"
+            )
             # Enable mock service as fallback
-            from app.services.project_context_service import enable_mock_service
+            from app.services.project_context_service import \
+                enable_mock_service, get_project_context_service
+
             enable_mock_service()
-            logger.info("[OK] Mock service enabled as fallback")
+            svc = get_project_context_service()
+            logger.info(f"[OK] Mock service enabled as fallback. Service instance: {svc}")
     else:
         # If async database module is not available at all
         logger.warning("[WARN] Async database module not available, using mock service")
         from app.services.project_context_service import enable_mock_service
+
         enable_mock_service()
         logger.info("[OK] Mock service enabled (async_database module missing)")
 
@@ -755,11 +926,14 @@ async def startup_event():
         try:
             logger.info("[EMOJI] Initializing UDO system (startup)...")
             from src.integrated_udo_system import IntegratedUDOSystem
+
             udo_system = IntegratedUDOSystem(project_name="UDO-Dashboard")
             logger.info("[OK] UDO system initialized with all components")
         except Exception as e:
             logger.error(f"[FAIL] Failed to initialize UDO system: {e}")
-            logger.warning("[WARN] Uncertainty Map and related features will be unavailable")
+            logger.warning(
+                "[WARN] Uncertainty Map and related features will be unavailable"
+            )
             udo_system = None
     else:
         logger.warning("[WARN] UDO system not available (src modules missing)")
@@ -777,7 +951,9 @@ async def startup_event():
                 try:
                     db_pool = async_db.get_pool()
                     if db_pool is None:
-                        raise RuntimeError("Database pool is None - database not initialized")
+                        raise RuntimeError(
+                            "Database pool is None - database not initialized"
+                        )
 
                     time_tracking_service = TimeTrackingService(pool=db_pool)
 
@@ -788,25 +964,33 @@ async def startup_event():
                             session_manager = await get_session_manager()
                             broadcast_func = session_manager.broadcast_to_all
                         except Exception as e:
-                            logger.warning(f"[WARN] WebSocket broadcast not available for phase transitions: {e}")
+                            logger.warning(
+                                f"[WARN] WebSocket broadcast not available for phase transitions: {e}"
+                            )
 
                     # Initialize PhaseTransitionListener
                     phase_transition_listener = PhaseTransitionListener(
                         pool=db_pool,
                         time_tracking_service=time_tracking_service,
-                        broadcast_func=broadcast_func
+                        broadcast_func=broadcast_func,
                     )
 
                     # Register listener callback with PhaseStateManager
                     callback = create_listener_callback(phase_transition_listener)
                     phase_state_manager.register_listener(callback)
 
-                    logger.info("[OK] PhaseTransitionListener initialized and registered")
+                    logger.info(
+                        "[OK] PhaseTransitionListener initialized and registered"
+                    )
                 except Exception as e:
                     logger.warning(f"[WARN] Phase Transition with database failed: {e}")
-                    logger.info("[EMOJI] Phase transitions will not auto-track time without database")
+                    logger.info(
+                        "[EMOJI] Phase transitions will not auto-track time without database"
+                    )
             else:
-                logger.info("[EMOJI] Phase Transition System requires database for time tracking")
+                logger.info(
+                    "[EMOJI] Phase Transition System requires database for time tracking"
+                )
         except Exception as e:
             logger.error(f"[FAIL] Failed to initialize Phase Transition System: {e}")
     else:
@@ -866,23 +1050,27 @@ async def shutdown_event():
     # Stop background sync
     try:
         from app.background_tasks import stop_background_sync
+
         await stop_background_sync()
         logger.info("[OK] Background sync stopped")
     except Exception as e:
         logger.error(f"[FAIL] Failed to stop background sync: {e}")
 
+
 # Error statistics endpoint (if error handler available)
 # HIGH-04: Protected in production (internal debugging endpoint)
 if ERROR_HANDLER_AVAILABLE:
+
     @app.get("/api/errors/stats")
     async def get_error_statistics():
         """Get error statistics and history (development only)"""
         if IS_PRODUCTION:
             raise HTTPException(
                 status_code=403,
-                detail="Error statistics endpoint is disabled in production"
+                detail="Error statistics endpoint is disabled in production",
             )
         return error_handler.get_error_statistics()
+
 
 # Health check
 @app.get("/api/health")
@@ -892,8 +1080,10 @@ async def health_check():
         "status": "healthy",
         "udo_available": UDO_AVAILABLE,
         "database_available": False,
-        "project_context_available": PROJECT_CONTEXT_AVAILABLE if ROUTERS_AVAILABLE else False,
-        "timestamp": datetime.now().isoformat()
+        "project_context_available": (
+            PROJECT_CONTEXT_AVAILABLE if ROUTERS_AVAILABLE else False
+        ),
+        "timestamp": datetime.now().isoformat(),
     }
 
     # Check async database health
@@ -910,16 +1100,14 @@ async def health_check():
 
     return health_status
 
+
 # Get system status
 @app.get("/api/status")
 async def get_system_status():
     # Lazy initialization: system initializes on first request
     udo = get_udo_system()
     if not udo:
-        return {
-            "status": "offline",
-            "message": "UDO system not initialized"
-        }
+        return {"status": "offline", "message": "UDO system not initialized"}
 
     # Check cache first (adaptive TTL based on uncertainty)
     cached = get_cached("status")
@@ -934,12 +1122,13 @@ async def get_system_status():
         latest_execution = None
         if udo.execution_history:
             latest_execution = udo.execution_history[-1]
-        uncertainty_state = latest_execution.get("uncertainty", {}).get("state") if latest_execution else None
+        uncertainty_state = (
+            latest_execution.get("uncertainty", {}).get("state")
+            if latest_execution
+            else None
+        )
 
-        result = {
-            "status": "online",
-            "report": report
-        }
+        result = {"status": "online", "report": report}
 
         # Cache with adaptive TTL
         ttl = get_adaptive_ttl(uncertainty_state)
@@ -947,6 +1136,7 @@ async def get_system_status():
         return result
     except Exception as e:
         raise HTTPException(status_code=500, detail=str(e))
+
 
 # Execute development cycle
 @app.post("/api/execute")
@@ -956,21 +1146,18 @@ async def execute_task(request: TaskRequest):
         raise HTTPException(status_code=503, detail="UDO system not available")
 
     try:
-        result = udo.execute_development_cycle(
-            task=request.task,
-            phase=request.phase
-        )
+        result = udo.execute_development_cycle(task=request.task, phase=request.phase)
 
         # Broadcast update to connected clients
         if WEBSOCKET_AVAILABLE:
-            await connection_manager.broadcast_to_all({
-                "type": "task_executed",
-                "data": result
-            })
+            await connection_manager.broadcast_to_all(
+                {"type": "task_executed", "data": result}
+            )
 
         return {"success": True, "result": result}
     except Exception as e:
         raise HTTPException(status_code=500, detail=str(e))
+
 
 # Train ML models
 @app.post("/api/train")
@@ -985,6 +1172,7 @@ async def train_models():
     except Exception as e:
         raise HTTPException(status_code=500, detail=str(e))
 
+
 # Get dashboard metrics
 @app.get("/api/metrics")
 async def get_metrics():
@@ -994,8 +1182,10 @@ async def get_metrics():
         # Return mock data if UDO not available
         return {
             "system_status": {
-                "udo": False, "uncertainty": False,
-                "ai_connector": False, "ml_system": False
+                "udo": False,
+                "uncertainty": False,
+                "ai_connector": False,
+                "ml_system": False,
             },
             "current_phase": "ideation",
             "confidence_level": 0.0,
@@ -1003,7 +1193,7 @@ async def get_metrics():
             "ai_services": {},
             "ml_metrics": {},
             "recent_tasks": [],
-            "performance_metrics": {}
+            "performance_metrics": {},
         }
 
     # Check cache first (adaptive TTL)
@@ -1020,20 +1210,38 @@ async def get_metrics():
         if udo.execution_history:
             latest_execution = udo.execution_history[-1]
 
-        uncertainty_state = latest_execution.get("uncertainty", {}).get("state", "unknown") if latest_execution else "unknown"
+        uncertainty_state = (
+            latest_execution.get("uncertainty", {}).get("state", "unknown")
+            if latest_execution
+            else "unknown"
+        )
 
         metrics = {
             "system_status": report.get("status", {}),
-            "current_phase": report.get("project_context", {}).get("current_phase", "unknown"),
-            "confidence_level": latest_execution.get("plan", {}).get("confidence", 0.0) if latest_execution else 0.0,
+            "current_phase": report.get("project_context", {}).get(
+                "current_phase", "unknown"
+            ),
+            "confidence_level": (
+                latest_execution.get("plan", {}).get("confidence", 0.0)
+                if latest_execution
+                else 0.0
+            ),
             "uncertainty_state": uncertainty_state,
             "ai_services": report.get("ai_services", {}),
             "ml_metrics": report.get("ml_models", {}),
             "recent_tasks": udo.execution_history[-5:] if udo else [],
             "performance_metrics": {
                 "execution_count": len(udo.execution_history) if udo else 0,
-                "avg_confidence": sum(e.get("plan", {}).get("confidence", 0) for e in udo.execution_history) / max(len(udo.execution_history), 1) if udo and udo.execution_history else 0
-            }
+                "avg_confidence": (
+                    sum(
+                        e.get("plan", {}).get("confidence", 0)
+                        for e in udo.execution_history
+                    )
+                    / max(len(udo.execution_history), 1)
+                    if udo and udo.execution_history
+                    else 0
+                ),
+            },
         }
 
         # Cache with adaptive TTL based on uncertainty state
@@ -1044,27 +1252,39 @@ async def get_metrics():
         logger.error(f"Error getting metrics: {e}")
         raise HTTPException(status_code=500, detail=str(e))
 
+
 # Get phase-specific data
 @app.get("/api/phases/{phase}")
 async def get_phase_data(phase: str):
     valid_phases = ["ideation", "design", "mvp", "implementation", "testing"]
     if phase not in valid_phases:
-        raise HTTPException(status_code=400, detail=f"Invalid phase. Must be one of {valid_phases}")
+        raise HTTPException(
+            status_code=400, detail=f"Invalid phase. Must be one of {valid_phases}"
+        )
 
     if not udo_system:
         return {"phase": phase, "data": {}}
 
     # Get phase-specific executions
-    phase_executions = [e for e in udo_system.execution_history if e.get("phase") == phase]
+    phase_executions = [
+        e for e in udo_system.execution_history if e.get("phase") == phase
+    ]
 
     return {
         "phase": phase,
         "execution_count": len(phase_executions),
-        "avg_confidence": sum(e.get("plan", {}).get("confidence", 0) for e in phase_executions) / max(len(phase_executions), 1) if phase_executions else 0,
-        "recent_executions": phase_executions[-3:]
+        "avg_confidence": (
+            sum(e.get("plan", {}).get("confidence", 0) for e in phase_executions)
+            / max(len(phase_executions), 1)
+            if phase_executions
+            else 0
+        ),
+        "recent_executions": phase_executions[-3:],
     }
 
+
 # WebSocket handled by websocket_handler router (included at line 248)
+
 
 # System control endpoints
 @app.post("/api/control")
@@ -1091,17 +1311,19 @@ async def system_control(command: SystemCommand):
             if new_phase:
                 udo_system.project_context.current_phase = new_phase
                 if WEBSOCKET_AVAILABLE:
-                    await connection_manager.broadcast_to_all({
-                        "type": "phase_changed",
-                        "data": {"new_phase": new_phase}
-                    })
+                    await connection_manager.broadcast_to_all(
+                        {"type": "phase_changed", "data": {"new_phase": new_phase}}
+                    )
                 return {"success": True, "message": f"Phase changed to {new_phase}"}
 
         else:
-            raise HTTPException(status_code=400, detail=f"Unknown command: {command.command}")
+            raise HTTPException(
+                status_code=400, detail=f"Unknown command: {command.command}"
+            )
 
     except Exception as e:
         raise HTTPException(status_code=500, detail=str(e))
+
 
 # Mock data endpoint for development (HIGH-04: Protected in production)
 @app.get("/api/mock/generate")
@@ -1110,8 +1332,7 @@ async def generate_mock_data():
     # HIGH-04: Block debug endpoints in production
     if IS_PRODUCTION:
         raise HTTPException(
-            status_code=403,
-            detail="Debug endpoints are disabled in production"
+            status_code=403, detail="Debug endpoints are disabled in production"
         )
 
     import random
@@ -1125,25 +1346,30 @@ async def generate_mock_data():
             "total_executions": random.randint(50, 200),
             "success_rate": random.uniform(0.7, 0.95),
             "avg_confidence": random.uniform(0.6, 0.9),
-            "avg_uncertainty": random.uniform(0.1, 0.5)
-        }
+            "avg_uncertainty": random.uniform(0.1, 0.5),
+        },
     }
 
     # Generate mock execution history
     for i in range(10):
-        mock_data["executions"].append({
-            "id": i + 1,
-            "task": f"Task {i + 1}: {'Implement feature' if i % 2 else 'Fix bug'}",
-            "phase": random.choice(phases),
-            "confidence": random.uniform(0.5, 0.95),
-            "uncertainty_state": random.choice(states),
-            "timestamp": datetime.now().isoformat(),
-            "decision": random.choice(["GO", "GO_WITH_CHECKPOINTS", "NO_GO"]),
-            "duration": random.randint(100, 5000)  # ms
-        })
+        mock_data["executions"].append(
+            {
+                "id": i + 1,
+                "task": f"Task {i + 1}: {'Implement feature' if i % 2 else 'Fix bug'}",
+                "phase": random.choice(phases),
+                "confidence": random.uniform(0.5, 0.95),
+                "uncertainty_state": random.choice(states),
+                "timestamp": datetime.now().isoformat(),
+                "decision": random.choice(["GO", "GO_WITH_CHECKPOINTS", "NO_GO"]),
+                "duration": random.randint(100, 5000),  # ms
+            }
+        )
 
     return mock_data
 
+
 if __name__ == "__main__":
     import uvicorn
+
     uvicorn.run(app, host="0.0.0.0", port=8000, reload=True)
+# Trigger reload

@@ -2,9 +2,10 @@
 """
 Check Knowledge Tables and Run Migration 003
 """
-import psycopg2
-from pathlib import Path
 import logging
+from pathlib import Path
+
+import psycopg2
 
 logging.basicConfig(level=logging.INFO, format='%(asctime)s - %(levelname)s - %(message)s')
 logger = logging.getLogger(__name__)

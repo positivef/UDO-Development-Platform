@@ -14,22 +14,25 @@ Endpoints tested:
 7. GET /api/knowledge/improvement-suggestions (mocked)
 8. DELETE /api/knowledge/feedback/{feedback_id} (mocked)
 """
-import pytest
-from fastapi.testclient import TestClient
-from unittest.mock import MagicMock, patch
+
 from datetime import datetime, timezone
+from unittest.mock import MagicMock, patch
 from uuid import uuid4
 
-from backend.main import app
-from backend.app.db.database import get_db
+import pytest
+from fastapi.testclient import TestClient
 
+from backend.app.db.database import get_db
+from backend.main import app
 
 # ============================================================================
 # Mock Database Session Override
 # ============================================================================
 
+
 class MockSession:
     """Mock SQLAlchemy session that prevents real DB calls"""
+
     def __init__(self):
         self.committed = False
         self.added_items = []
@@ -52,6 +55,7 @@ class MockSession:
 
 class MockQuery:
     """Mock query that returns empty results"""
+
     def filter(self, *args, **kwargs):
         return self
 
@@ -90,6 +94,7 @@ client = TestClient(app)
 # Health Check Tests
 # ============================================================================
 
+
 def test_health_check():
     """Test health endpoint - no database required"""
     response = client.get("/api/knowledge/health")
@@ -103,11 +108,11 @@ def test_health_check():
 # Search Tests (knowledge_search router - no DB required)
 # ============================================================================
 
+
 def test_search_endpoint():
     """Test 3-tier search endpoint - uses file system, not DB"""
     response = client.get(
-        "/api/knowledge/search",
-        params={"query": "authentication", "max_results": 5}
+        "/api/knowledge/search", params={"query": "authentication", "max_results": 5}
     )
     assert response.status_code == 200
 
@@ -136,6 +141,7 @@ def test_search_stats():
 # Feedback Tests (with proper service mocking)
 # ============================================================================
 
+
 def test_submit_feedback_validation():
     """Test feedback submission - validates request format"""
     # Test with invalid payload (missing required fields)
@@ -146,7 +152,7 @@ def test_submit_feedback_validation():
     feedback = {
         "document_id": "test_doc.md",
         "search_query": "test query",
-        "is_helpful": True
+        "is_helpful": True,
     }
 
     # This will fail at service level with mock, but validates routing
@@ -164,7 +170,7 @@ def test_submit_feedback_with_all_fields():
         "is_helpful": True,
         "reason": None,
         "session_id": "session_123",
-        "implicit_accept": True
+        "implicit_accept": True,
     }
 
     response = client.post("/api/knowledge/feedback", json=feedback)
@@ -178,7 +184,7 @@ def test_submit_feedback_negative():
         "document_id": "unhelpful_doc.md",
         "search_query": "search that failed",
         "is_helpful": False,
-        "reason": "Document was outdated"
+        "reason": "Document was outdated",
     }
 
     response = client.post("/api/knowledge/feedback", json=feedback)
@@ -188,6 +194,7 @@ def test_submit_feedback_negative():
 # ============================================================================
 # Metrics Tests
 # ============================================================================
+
 
 def test_get_metrics_endpoint_exists():
     """Test metrics endpoint is accessible"""
@@ -213,6 +220,7 @@ def test_get_metrics_with_days_param():
 # Document Score Tests
 # ============================================================================
 
+
 def test_get_document_score_not_found():
     """Test document score for non-existent document"""
     response = client.get("/api/knowledge/documents/nonexistent.md/score")
@@ -236,6 +244,7 @@ def test_get_document_score_endpoint_structure():
 # Improvement Suggestions Tests
 # ============================================================================
 
+
 def test_improvement_suggestions_endpoint():
     """Test improvement suggestions endpoint"""
     response = client.get("/api/knowledge/improvement-suggestions")
@@ -249,6 +258,7 @@ def test_improvement_suggestions_endpoint():
 # ============================================================================
 # Delete Tests
 # ============================================================================
+
 
 def test_delete_feedback_not_found():
     """Test delete feedback - not found case"""
@@ -268,6 +278,7 @@ def test_delete_feedback_invalid_uuid():
 # ============================================================================
 # Edge Cases and Error Handling
 # ============================================================================
+
 
 def test_feedback_missing_required_field():
     """Test feedback with missing required field"""
@@ -289,8 +300,7 @@ def test_search_empty_query():
 def test_search_special_characters():
     """Test search with special characters"""
     response = client.get(
-        "/api/knowledge/search",
-        params={"query": "error: 401 'auth'"}
+        "/api/knowledge/search", params={"query": "error: 401 'auth'"}
     )
     assert response.status_code == 200
 
@@ -305,6 +315,7 @@ def test_metrics_negative_days():
 # ============================================================================
 # Cleanup
 # ============================================================================
+
 
 def teardown_module():
     """Clean up dependency overrides after tests"""

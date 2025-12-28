@@ -14,21 +14,17 @@ Key Enhancements:
 
 import os
 import sys
-from pathlib import Path
-from typing import Dict, Any, Optional
 from datetime import datetime, timedelta
+from pathlib import Path
+from typing import Any, Dict, Optional
 
 # Add parent directory to path for imports
 sys.path.insert(0, str(Path(__file__).parent.parent))
 
-from src.uncertainty_map_v3 import (
-    UncertaintyMapV3,
-    UncertaintyVector,
-    UncertaintyState,
-    PredictiveModel,
-    MitigationStrategy
-)
 from src.adaptive_bayesian_uncertainty import AdaptiveBayesianUncertainty
+from src.uncertainty_map_v3 import (MitigationStrategy, PredictiveModel,
+                                    UncertaintyMapV3, UncertaintyState,
+                                    UncertaintyVector)
 
 
 class IntegratedUncertaintyMapV3:
@@ -39,8 +35,9 @@ class IntegratedUncertaintyMapV3:
     real-time learning capabilities from the AdaptiveBayesianUncertainty system.
     """
 
-    def __init__(self, project_path: str = ".",
-                 data_dir: str = "data/uncertainty_learning"):
+    def __init__(
+        self, project_path: str = ".", data_dir: str = "data/uncertainty_learning"
+    ):
         """
         Initialize integrated uncertainty system
 
@@ -53,8 +50,7 @@ class IntegratedUncertaintyMapV3:
 
         # Initialize Bayesian learning system
         self.bayesian_system = AdaptiveBayesianUncertainty(
-            project_name="UDO-Platform",
-            storage_dir=Path(data_dir)
+            project_name="UDO-Platform", storage_dir=Path(data_dir)
         )
 
         # Track integration metrics
@@ -62,12 +58,14 @@ class IntegratedUncertaintyMapV3:
             "predictions_made": 0,
             "bayesian_corrections": 0,
             "accuracy_improvements": [],
-            "bias_corrections": []
+            "bias_corrections": [],
         }
 
         print("[OK] Integrated Uncertainty Map v3 initialized with Bayesian Learning")
 
-    def predict(self, phase: str = "implementation", hours_ahead: int = 24) -> Dict[str, Any]:
+    def predict(
+        self, phase: str = "implementation", hours_ahead: int = 24
+    ) -> Dict[str, Any]:
         """
         Enhanced prediction with Bayesian learning
 
@@ -83,12 +81,14 @@ class IntegratedUncertaintyMapV3:
             "phase": phase,
             "has_code": True,
             "team_size": 5,
-            "timeline_weeks": 4
+            "timeline_weeks": 4,
         }
         current_vector, state = self.original_map.analyze_context(context)
 
         # Get original prediction using predict_evolution
-        predictive_model = self.original_map.predict_evolution(current_vector, phase, hours_ahead)
+        predictive_model = self.original_map.predict_evolution(
+            current_vector, phase, hours_ahead
+        )
 
         # Calculate predicted magnitude using the predictive model
         predicted_magnitude = predictive_model.predict_future(hours_ahead)
@@ -101,7 +101,7 @@ class IntegratedUncertaintyMapV3:
                 "timeline": current_vector.timeline,
                 "market": current_vector.market,
                 "quality": current_vector.quality,
-                "magnitude": current_vector.magnitude
+                "magnitude": current_vector.magnitude,
             },
             "prediction": {
                 "technical": current_vector.technical * 0.9,  # Simulated prediction
@@ -110,10 +110,12 @@ class IntegratedUncertaintyMapV3:
                 "market": current_vector.market * 0.9,
                 "quality": current_vector.quality * 0.92,
                 "predicted_magnitude": predicted_magnitude,
-                "quantum_state": self.original_map.classify_state(predicted_magnitude).value,
-                "trend": predictive_model.trend
+                "quantum_state": self.original_map.classify_state(
+                    predicted_magnitude
+                ).value,
+                "trend": predictive_model.trend,
             },
-            "phase": phase
+            "phase": phase,
         }
 
         # Get current uncertainty vector
@@ -121,15 +123,12 @@ class IntegratedUncertaintyMapV3:
 
         # Get Bayesian-enhanced prediction
         bayesian_prediction = self.bayesian_system.predict(
-            current_uncertainty=current_vector,
-            hours_ahead=hours_ahead,
-            phase=phase
+            current_uncertainty=current_vector, hours_ahead=hours_ahead, phase=phase
         )
 
         # Merge predictions intelligently
         enhanced_prediction = self._merge_predictions(
-            original_prediction,
-            bayesian_prediction
+            original_prediction, bayesian_prediction
         )
 
         # Track metrics
@@ -138,16 +137,22 @@ class IntegratedUncertaintyMapV3:
         # Add learning metadata
         enhanced_prediction["learning_metadata"] = {
             "bayesian_confidence": bayesian_prediction.get("confidence", 0),
-            "bias_detected": bayesian_prediction.get("bias_profile", {}).get("type", "unbiased"),
+            "bias_detected": bayesian_prediction.get("bias_profile", {}).get(
+                "type", "unbiased"
+            ),
             "correction_applied": bayesian_prediction.get("correction_factor", 0),
             "learning_enabled": True,
-            "predictions_count": self.metrics["predictions_made"]
+            "predictions_count": self.metrics["predictions_made"],
         }
 
         print(f"🧠 Bayesian Enhancement Applied:")
         print(f"   - Confidence: {bayesian_prediction.get('confidence', 0):.1%}")
-        print(f"   - Bias: {bayesian_prediction.get('bias_profile', {}).get('type', 'unbiased')}")
-        print(f"   - Correction: {bayesian_prediction.get('correction_factor', 0):+.3f}")
+        print(
+            f"   - Bias: {bayesian_prediction.get('bias_profile', {}).get('type', 'unbiased')}"
+        )
+        print(
+            f"   - Correction: {bayesian_prediction.get('correction_factor', 0):+.3f}"
+        )
 
         return enhanced_prediction
 
@@ -166,16 +171,20 @@ class IntegratedUncertaintyMapV3:
         self.bayesian_system.learn_from_observation(pred_vector, actual)
 
         # Calculate improvement
-        error_before = abs(pred_vector.get("magnitude", 0.5) - actual.get("magnitude", 0.5))
+        error_before = abs(
+            pred_vector.get("magnitude", 0.5) - actual.get("magnitude", 0.5)
+        )
 
         # Get corrected prediction
         corrected = self.bayesian_system.predict(
             current_uncertainty=actual,
-            hours_ahead=0,  # Current state
-            phase=predicted.get("phase", "implementation")
+            hours_ahead=0,
+            phase=predicted.get("phase", "implementation"),  # Current state
         )
 
-        error_after = abs(corrected.get("predicted_magnitude", 0.5) - actual.get("magnitude", 0.5))
+        error_after = abs(
+            corrected.get("predicted_magnitude", 0.5) - actual.get("magnitude", 0.5)
+        )
         improvement = (error_before - error_after) / max(error_before, 0.001) * 100
 
         self.metrics["accuracy_improvements"].append(improvement)
@@ -183,7 +192,9 @@ class IntegratedUncertaintyMapV3:
         print(f"[EMOJI] Learning Complete:")
         print(f"   - Error reduction: {improvement:.1f}%")
         print(f"   - Total observations: {len(self.metrics['accuracy_improvements'])}")
-        print(f"   - Average improvement: {sum(self.metrics['accuracy_improvements'])/max(len(self.metrics['accuracy_improvements']), 1):.1f}%")
+        print(
+            f"   - Average improvement: {sum(self.metrics['accuracy_improvements'])/max(len(self.metrics['accuracy_improvements']), 1):.1f}%"
+        )
 
     def get_performance_report(self) -> Dict[str, Any]:
         """
@@ -204,9 +215,13 @@ class IntegratedUncertaintyMapV3:
                 "learning_enabled": True,
                 "average_confidence": bayesian_perf.get("average_confidence", 0),
                 "bias_profile": bayesian_perf.get("bias_profile", {}),
-                "accuracy_trend": "improving" if len(self.metrics["accuracy_improvements"]) > 0 and
-                                 sum(self.metrics["accuracy_improvements"][-5:]) > 0 else "stable"
-            }
+                "accuracy_trend": (
+                    "improving"
+                    if len(self.metrics["accuracy_improvements"]) > 0
+                    and sum(self.metrics["accuracy_improvements"][-5:]) > 0
+                    else "stable"
+                ),
+            },
         }
 
         return report
@@ -231,12 +246,16 @@ class IntegratedUncertaintyMapV3:
     def _extract_current_vector(self, prediction: Dict[str, Any]) -> Dict[str, float]:
         """Extract current uncertainty vector from prediction"""
         return {
-            "technical": prediction.get("current_uncertainty", {}).get("technical", 0.5),
+            "technical": prediction.get("current_uncertainty", {}).get(
+                "technical", 0.5
+            ),
             "resource": prediction.get("current_uncertainty", {}).get("resource", 0.5),
             "timeline": prediction.get("current_uncertainty", {}).get("timeline", 0.5),
             "market": prediction.get("current_uncertainty", {}).get("market", 0.5),
             "quality": prediction.get("current_uncertainty", {}).get("quality", 0.5),
-            "magnitude": prediction.get("current_uncertainty", {}).get("magnitude", 0.5)
+            "magnitude": prediction.get("current_uncertainty", {}).get(
+                "magnitude", 0.5
+            ),
         }
 
     def _extract_predicted_vector(self, prediction: Dict[str, Any]) -> Dict[str, float]:
@@ -247,11 +266,14 @@ class IntegratedUncertaintyMapV3:
             "timeline": prediction.get("prediction", {}).get("timeline", 0.5),
             "market": prediction.get("prediction", {}).get("market", 0.5),
             "quality": prediction.get("prediction", {}).get("quality", 0.5),
-            "magnitude": prediction.get("prediction", {}).get("predicted_magnitude", 0.5)
+            "magnitude": prediction.get("prediction", {}).get(
+                "predicted_magnitude", 0.5
+            ),
         }
 
-    def _merge_predictions(self, original: Dict[str, Any],
-                          bayesian: Dict[str, Any]) -> Dict[str, Any]:
+    def _merge_predictions(
+        self, original: Dict[str, Any], bayesian: Dict[str, Any]
+    ) -> Dict[str, Any]:
         """
         Intelligently merge original and Bayesian predictions
 
@@ -275,13 +297,17 @@ class IntegratedUncertaintyMapV3:
                 if dim in merged["prediction"] and dim in bayesian["dimensions"]:
                     orig_val = merged["prediction"][dim]
                     bayes_val = bayesian["dimensions"][dim]["predicted"]
-                    merged["prediction"][dim] = orig_weight * orig_val + bayes_weight * bayes_val
+                    merged["prediction"][dim] = (
+                        orig_weight * orig_val + bayes_weight * bayes_val
+                    )
 
         # Update magnitude
         if "predicted_magnitude" in bayesian:
             orig_mag = merged.get("prediction", {}).get("predicted_magnitude", 0.5)
             bayes_mag = bayesian["predicted_magnitude"]
-            merged["prediction"]["predicted_magnitude"] = orig_weight * orig_mag + bayes_weight * bayes_mag
+            merged["prediction"]["predicted_magnitude"] = (
+                orig_weight * orig_mag + bayes_weight * bayes_mag
+            )
 
         # Apply bias correction if significant
         if abs(bayesian.get("correction_factor", 0)) > 0.05:
@@ -317,7 +343,9 @@ def demo_integration():
     # Make initial prediction
     print("\n1⃣ Making Initial Prediction...")
     prediction1 = integrated.predict(phase="implementation", hours_ahead=24)
-    print(f"   - Predicted magnitude: {prediction1['prediction']['predicted_magnitude']:.3f}")
+    print(
+        f"   - Predicted magnitude: {prediction1['prediction']['predicted_magnitude']:.3f}"
+    )
     print(f"   - Quantum state: {prediction1['prediction']['quantum_state']}")
 
     # Simulate actual outcome
@@ -328,7 +356,7 @@ def demo_integration():
         "timeline": 0.5,
         "market": 0.35,
         "quality": 0.45,
-        "magnitude": 0.37
+        "magnitude": 0.37,
     }
     print(f"   - Actual magnitude: {actual['magnitude']:.3f}")
 
@@ -339,15 +367,21 @@ def demo_integration():
     # Make improved prediction
     print("\n4⃣ Making Improved Prediction...")
     prediction2 = integrated.predict(phase="implementation", hours_ahead=24)
-    print(f"   - Predicted magnitude: {prediction2['prediction']['predicted_magnitude']:.3f}")
-    print(f"   - Learning confidence: {prediction2['learning_metadata']['bayesian_confidence']:.1%}")
+    print(
+        f"   - Predicted magnitude: {prediction2['prediction']['predicted_magnitude']:.3f}"
+    )
+    print(
+        f"   - Learning confidence: {prediction2['learning_metadata']['bayesian_confidence']:.1%}"
+    )
 
     # Show performance report
     print("\n5⃣ Performance Report:")
     report = integrated.get_performance_report()
     print(f"   - Total predictions: {report['summary']['total_predictions']}")
     print(f"   - Accuracy trend: {report['summary']['accuracy_trend']}")
-    print(f"   - Bias detected: {report['bayesian_performance'].get('bias_profile', {}).get('type', 'unbiased')}")
+    print(
+        f"   - Bias detected: {report['bayesian_performance'].get('bias_profile', {}).get('type', 'unbiased')}"
+    )
 
     # Save state
     print("\n6⃣ Saving Learning State...")

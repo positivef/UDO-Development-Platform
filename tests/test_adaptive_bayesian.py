@@ -24,13 +24,9 @@ import tempfile
 import shutil
 
 # Add src to path
-sys.path.insert(0, os.path.join(os.path.dirname(__file__), '..', 'src'))
+sys.path.insert(0, os.path.join(os.path.dirname(__file__), "..", "src"))
 
-from adaptive_bayesian_uncertainty import (
-    BayesianBelief,
-    BiasProfile,
-    AdaptiveBayesianUncertainty
-)
+from adaptive_bayesian_uncertainty import BayesianBelief, BiasProfile, AdaptiveBayesianUncertainty
 from uncertainty_map_v3 import UncertaintyVector
 
 
@@ -40,13 +36,7 @@ class TestBayesianBelief(unittest.TestCase):
     def setUp(self):
         """Initialize test belief"""
         self.belief = BayesianBelief(
-            mean=0.5,
-            variance=0.1,
-            alpha=5,
-            beta=5,
-            confidence=0.5,
-            observations=10,
-            last_updated=datetime.now()
+            mean=0.5, variance=0.1, alpha=5, beta=5, confidence=0.5, observations=10, last_updated=datetime.now()
         )
 
     def test_belief_update_correct_prediction(self):
@@ -112,7 +102,7 @@ class TestBiasProfile(unittest.TestCase):
         # Simulate consistently optimistic predictions
         for _ in range(20):
             predicted = 0.3  # Predict low uncertainty
-            actual = 0.5     # Actual is higher
+            actual = 0.5  # Actual is higher
             self.profile.update(predicted, actual)
 
         bias_type = self.profile.get_bias_type()
@@ -127,7 +117,7 @@ class TestBiasProfile(unittest.TestCase):
         # Simulate consistently pessimistic predictions
         for _ in range(20):
             predicted = 0.7  # Predict high uncertainty
-            actual = 0.4     # Actual is lower
+            actual = 0.4  # Actual is lower
             self.profile.update(predicted, actual)
 
         bias_type = self.profile.get_bias_type()
@@ -170,10 +160,7 @@ class TestAdaptiveBayesianUncertainty(unittest.TestCase):
     def setUp(self):
         """Initialize Bayesian system with temporary storage"""
         self.temp_dir = tempfile.mkdtemp()
-        self.bayesian = AdaptiveBayesianUncertainty(
-            "test-project",
-            storage_dir=Path(self.temp_dir)
-        )
+        self.bayesian = AdaptiveBayesianUncertainty("test-project", storage_dir=Path(self.temp_dir))
 
     def tearDown(self):
         """Clean up temporary files"""
@@ -182,8 +169,8 @@ class TestAdaptiveBayesianUncertainty(unittest.TestCase):
     def test_initialization(self):
         """Test system initialization"""
         # Check beliefs are initialized for all phases
-        phases = ['ideation', 'design', 'mvp', 'implementation', 'testing']
-        dimensions = ['technical', 'market', 'resource', 'timeline', 'quality']
+        phases = ["ideation", "design", "mvp", "implementation", "testing"]
+        dimensions = ["technical", "market", "resource", "timeline", "quality"]
 
         for phase in phases:
             self.assertIn(phase, self.bayesian.beliefs)
@@ -197,59 +184,44 @@ class TestAdaptiveBayesianUncertainty(unittest.TestCase):
     def test_prediction_structure(self):
         """Test prediction output structure"""
         vector = UncertaintyVector(0.5, 0.6, 0.4, 0.7, 0.5)
-        prediction = self.bayesian.predict_uncertainty(
-            vector,
-            phase='implementation',
-            horizon_hours=24
-        )
+        prediction = self.bayesian.predict_uncertainty(vector, phase="implementation", horizon_hours=24)
 
         # Check required fields
-        self.assertIn('predicted_magnitude', prediction)
-        self.assertIn('confidence', prediction)
-        self.assertIn('overall_trend', prediction)
-        self.assertIn('dimension_predictions', prediction)
-        self.assertIn('quantum_state', prediction)
-        self.assertIn('bias_profile', prediction)
-        self.assertIn('recommendations', prediction)
+        self.assertIn("predicted_magnitude", prediction)
+        self.assertIn("confidence", prediction)
+        self.assertIn("overall_trend", prediction)
+        self.assertIn("dimension_predictions", prediction)
+        self.assertIn("quantum_state", prediction)
+        self.assertIn("bias_profile", prediction)
+        self.assertIn("recommendations", prediction)
 
         # Check value ranges
-        self.assertGreaterEqual(prediction['predicted_magnitude'], 0)
-        self.assertLessEqual(prediction['predicted_magnitude'], 1)
-        self.assertGreaterEqual(prediction['confidence'], 0)
-        self.assertLessEqual(prediction['confidence'], 1)
+        self.assertGreaterEqual(prediction["predicted_magnitude"], 0)
+        self.assertLessEqual(prediction["predicted_magnitude"], 1)
+        self.assertGreaterEqual(prediction["confidence"], 0)
+        self.assertLessEqual(prediction["confidence"], 1)
 
     def test_learning_from_observations(self):
         """Test that system learns from observations"""
         vector = UncertaintyVector(0.6, 0.7, 0.5, 0.6, 0.4)
 
         # Make initial prediction
-        pred1 = self.bayesian.predict_uncertainty(vector, 'design', 24)
-        initial_confidence = pred1['confidence']
+        pred1 = self.bayesian.predict_uncertainty(vector, "design", 24)
+        initial_confidence = pred1["confidence"]
 
         # Simulate multiple observations
         for i in range(5):
             # Create slightly different observed vector
-            observed = UncertaintyVector(
-                0.6 + i * 0.02,
-                0.7 - i * 0.03,
-                0.5 + i * 0.01,
-                0.6 - i * 0.02,
-                0.4 + i * 0.02
-            )
+            observed = UncertaintyVector(0.6 + i * 0.02, 0.7 - i * 0.03, 0.5 + i * 0.01, 0.6 - i * 0.02, 0.4 + i * 0.02)
 
             # Update with observation
-            self.bayesian.update_with_observation(
-                'design',
-                pred1,
-                observed,
-                outcome_success=True
-            )
+            self.bayesian.update_with_observation("design", pred1, observed, outcome_success=True)
 
         # Make new prediction
-        pred2 = self.bayesian.predict_uncertainty(vector, 'design', 24)
+        pred2 = self.bayesian.predict_uncertainty(vector, "design", 24)
 
         # Confidence should increase with observations
-        self.assertGreater(pred2['confidence'], initial_confidence)
+        self.assertGreater(pred2["confidence"], initial_confidence)
 
         # Should have recorded observations
         self.assertGreater(len(self.bayesian.observation_history), 0)
@@ -260,27 +232,27 @@ class TestAdaptiveBayesianUncertainty(unittest.TestCase):
 
         # Create systematic bias by providing biased observations
         for _ in range(10):
-            pred = self.bayesian.predict_uncertainty(vector, 'mvp', 24)
+            pred = self.bayesian.predict_uncertainty(vector, "mvp", 24)
 
             # Always observe lower uncertainty (optimistic reality)
             observed = UncertaintyVector(0.3, 0.3, 0.3, 0.3, 0.3)
-            self.bayesian.update_with_observation('mvp', pred, observed)
+            self.bayesian.update_with_observation("mvp", pred, observed)
 
         # Check bias is detected
-        bias_type = self.bayesian.bias_profiles['mvp'].get_bias_type()
-        self.assertIn(bias_type, ['optimistic', 'highly_optimistic'])
+        bias_type = self.bayesian.bias_profiles["mvp"].get_bias_type()
+        self.assertIn(bias_type, ["optimistic", "highly_optimistic"])
 
         # Make new prediction
-        pred = self.bayesian.predict_uncertainty(vector, 'mvp', 24)
+        pred = self.bayesian.predict_uncertainty(vector, "mvp", 24)
 
         # Correction should be applied
-        correction = pred['bias_profile']['correction_applied']
+        correction = pred["bias_profile"]["correction_applied"]
         self.assertNotEqual(correction, 0)
 
     def test_kalman_filtering(self):
         """Test Kalman filter smoothing"""
         # Initial state
-        initial_state = self.bayesian.kalman_state['x']
+        initial_state = self.bayesian.kalman_state["x"]
 
         # Apply multiple updates
         measurements = [0.4, 0.42, 0.45, 0.43, 0.44]
@@ -293,17 +265,11 @@ class TestAdaptiveBayesianUncertainty(unittest.TestCase):
             self.assertTrue(min(meas, pred) - 0.15 <= filtered <= max(meas, pred) + 0.15)
 
         # State should have changed
-        self.assertNotEqual(self.bayesian.kalman_state['x'], initial_state)
+        self.assertNotEqual(self.bayesian.kalman_state["x"], initial_state)
 
     def test_quantum_state_classification(self):
         """Test quantum state classification"""
-        test_cases = [
-            (0.05, 'deterministic'),
-            (0.2, 'probabilistic'),
-            (0.45, 'quantum'),
-            (0.7, 'chaotic'),
-            (0.9, 'void')
-        ]
+        test_cases = [(0.05, "deterministic"), (0.2, "probabilistic"), (0.45, "quantum"), (0.7, "chaotic"), (0.9, "void")]
 
         for magnitude, expected_state in test_cases:
             state = self.bayesian._classify_quantum_state(magnitude)
@@ -313,66 +279,57 @@ class TestAdaptiveBayesianUncertainty(unittest.TestCase):
         """Test that recommendations are generated appropriately"""
         # High uncertainty vector
         high_uncertainty = UncertaintyVector(0.8, 0.9, 0.7, 0.8, 0.6)
-        pred = self.bayesian.predict_uncertainty(high_uncertainty, 'ideation', 24)
+        pred = self.bayesian.predict_uncertainty(high_uncertainty, "ideation", 24)
 
         # Should have recommendations
-        self.assertGreater(len(pred['recommendations']), 0)
+        self.assertGreater(len(pred["recommendations"]), 0)
 
         # Recommendations should target high uncertainty dimensions
-        for rec in pred['recommendations']:
-            self.assertIn('action', rec)
-            self.assertIn('urgency', rec)
-            self.assertIn('confidence', rec)
+        for rec in pred["recommendations"]:
+            self.assertIn("action", rec)
+            self.assertIn("urgency", rec)
+            self.assertIn("confidence", rec)
 
     def test_performance_report(self):
         """Test performance reporting"""
         # Make some predictions and updates
         vector = UncertaintyVector(0.5, 0.5, 0.5, 0.5, 0.5)
         for i in range(3):
-            pred = self.bayesian.predict_uncertainty(vector, 'testing', 24)
+            pred = self.bayesian.predict_uncertainty(vector, "testing", 24)
             observed = UncertaintyVector(0.5, 0.5, 0.5, 0.5, 0.5)
-            self.bayesian.update_with_observation('testing', pred, observed)
+            self.bayesian.update_with_observation("testing", pred, observed)
 
         report = self.bayesian.get_performance_report()
 
         # Check report structure
-        self.assertIn('total_predictions', report)
-        self.assertIn('overall_accuracy', report)
-        self.assertIn('improvement_rate', report)
-        self.assertIn('phase_biases', report)
-        self.assertIn('learning_status', report)
+        self.assertIn("total_predictions", report)
+        self.assertIn("overall_accuracy", report)
+        self.assertIn("improvement_rate", report)
+        self.assertIn("phase_biases", report)
+        self.assertIn("learning_status", report)
 
         # Values should be reasonable
-        self.assertGreaterEqual(report['overall_accuracy'], 0)
-        self.assertLessEqual(report['overall_accuracy'], 100)
+        self.assertGreaterEqual(report["overall_accuracy"], 0)
+        self.assertLessEqual(report["overall_accuracy"], 100)
 
     def test_state_persistence(self):
         """Test saving and loading state"""
         # Make some observations
         vector = UncertaintyVector(0.5, 0.5, 0.5, 0.5, 0.5)
-        pred = self.bayesian.predict_uncertainty(vector, 'design', 24)
+        pred = self.bayesian.predict_uncertainty(vector, "design", 24)
         observed = UncertaintyVector(0.4, 0.4, 0.4, 0.4, 0.4)
-        self.bayesian.update_with_observation('design', pred, observed)
+        self.bayesian.update_with_observation("design", pred, observed)
 
         # Save state
         self.bayesian.save_state()
 
         # Create new instance and load state
-        bayesian2 = AdaptiveBayesianUncertainty(
-            "test-project",
-            storage_dir=Path(self.temp_dir)
-        )
+        bayesian2 = AdaptiveBayesianUncertainty("test-project", storage_dir=Path(self.temp_dir))
         bayesian2.load_state()
 
         # Should have same metrics
-        self.assertEqual(
-            bayesian2.metrics['predictions_made'],
-            self.bayesian.metrics['predictions_made']
-        )
-        self.assertEqual(
-            len(bayesian2.observation_history),
-            len(self.bayesian.observation_history)
-        )
+        self.assertEqual(bayesian2.metrics["predictions_made"], self.bayesian.metrics["predictions_made"])
+        self.assertEqual(len(bayesian2.observation_history), len(self.bayesian.observation_history))
 
     def test_improvement_over_time(self):
         """Test that system improves over time"""
@@ -382,7 +339,7 @@ class TestAdaptiveBayesianUncertainty(unittest.TestCase):
         # Simulate learning cycles
         for i in range(20):
             # Make prediction
-            pred = self.bayesian.predict_uncertainty(vector, 'implementation', 24)
+            pred = self.bayesian.predict_uncertainty(vector, "implementation", 24)
 
             # Create realistic observed outcome (slightly noisy)
             noise = np.random.normal(0, 0.05, 5)
@@ -391,15 +348,15 @@ class TestAdaptiveBayesianUncertainty(unittest.TestCase):
                 max(0, min(1, 0.6 + noise[1])),
                 max(0, min(1, 0.4 + noise[2])),
                 max(0, min(1, 0.5 + noise[3])),
-                max(0, min(1, 0.5 + noise[4]))
+                max(0, min(1, 0.5 + noise[4])),
             )
 
             # Calculate accuracy
-            accuracy = 1.0 - abs(pred['predicted_magnitude'] - observed.magnitude())
+            accuracy = 1.0 - abs(pred["predicted_magnitude"] - observed.magnitude())
             accuracies.append(accuracy)
 
             # Update with observation
-            self.bayesian.update_with_observation('implementation', pred, observed)
+            self.bayesian.update_with_observation("implementation", pred, observed)
 
         # Later predictions should be more accurate on average
         early_avg = np.mean(accuracies[:5])
@@ -412,12 +369,12 @@ class TestAdaptiveBayesianUncertainty(unittest.TestCase):
         """Test edge cases and error handling"""
         # Test with extreme values
         extreme_vector = UncertaintyVector(0.0, 1.0, 0.0, 1.0, 0.5)
-        pred = self.bayesian.predict_uncertainty(extreme_vector, 'testing', 24)
+        pred = self.bayesian.predict_uncertainty(extreme_vector, "testing", 24)
         self.assertIsNotNone(pred)
 
         # Test with invalid phase
         with self.assertRaises(ValueError):
-            self.bayesian.predict_uncertainty(extreme_vector, 'invalid_phase', 24)
+            self.bayesian.predict_uncertainty(extreme_vector, "invalid_phase", 24)
 
         # Test model optimization with insufficient data
         self.bayesian._optimize_model_parameters()  # Should not crash
@@ -434,32 +391,25 @@ class TestIntegration(unittest.TestCase):
         """Test complete prediction-observation-learning cycle"""
         temp_dir = tempfile.mkdtemp()
         try:
-            bayesian = AdaptiveBayesianUncertainty(
-                "integration-test",
-                storage_dir=Path(temp_dir)
-            )
+            bayesian = AdaptiveBayesianUncertainty("integration-test", storage_dir=Path(temp_dir))
 
-            phases = ['ideation', 'design', 'mvp', 'implementation', 'testing']
+            phases = ["ideation", "design", "mvp", "implementation", "testing"]
             uncertainties = [
                 UncertaintyVector(0.8, 0.9, 0.6, 0.5, 0.4),
                 UncertaintyVector(0.6, 0.7, 0.5, 0.6, 0.5),
                 UncertaintyVector(0.5, 0.5, 0.5, 0.7, 0.6),
                 UncertaintyVector(0.4, 0.3, 0.5, 0.8, 0.7),
-                UncertaintyVector(0.2, 0.2, 0.3, 0.4, 0.6)
+                UncertaintyVector(0.2, 0.2, 0.3, 0.4, 0.6),
             ]
 
             # Run through project lifecycle
             for phase, uncertainty in zip(phases, uncertainties):
                 # Make prediction
-                prediction = bayesian.predict_uncertainty(
-                    uncertainty,
-                    phase,
-                    horizon_hours=48
-                )
+                prediction = bayesian.predict_uncertainty(uncertainty, phase, horizon_hours=48)
 
                 # Verify prediction structure
                 self.assertIsNotNone(prediction)
-                self.assertIn('predicted_magnitude', prediction)
+                self.assertIn("predicted_magnitude", prediction)
 
                 # Simulate observed outcome (with some noise)
                 noise_factor = 0.9 + np.random.random() * 0.2
@@ -468,27 +418,21 @@ class TestIntegration(unittest.TestCase):
                     uncertainty.market * noise_factor,
                     uncertainty.resource * noise_factor,
                     uncertainty.timeline * noise_factor,
-                    uncertainty.quality * noise_factor
+                    uncertainty.quality * noise_factor,
                 )
 
                 # Update with observation
-                bayesian.update_with_observation(
-                    phase,
-                    prediction,
-                    observed,
-                    outcome_success=True
-                )
+                bayesian.update_with_observation(phase, prediction, observed, outcome_success=True)
 
             # Get final report
             report = bayesian.get_performance_report()
 
             # Should have made predictions
-            self.assertEqual(report['total_predictions'], 5)
-            self.assertGreater(report['overall_accuracy'], 0)
+            self.assertEqual(report["total_predictions"], 5)
+            self.assertGreater(report["overall_accuracy"], 0)
 
             # Should have learning status
-            self.assertIn(report['learning_status'],
-                         ['initializing', 'rapidly_improving', 'steadily_improving', 'stable'])
+            self.assertIn(report["learning_status"], ["initializing", "rapidly_improving", "steadily_improving", "stable"])
 
         finally:
             shutil.rmtree(temp_dir, ignore_errors=True)
@@ -513,14 +457,14 @@ def run_tests():
     return result.wasSuccessful()
 
 
-if __name__ == '__main__':
+if __name__ == "__main__":
     success = run_tests()
     if success:
-        print("\n" + "="*60)
+        print("\n" + "=" * 60)
         print("[OK] All Bayesian Learning tests passed!")
-        print("="*60)
+        print("=" * 60)
     else:
-        print("\n" + "="*60)
+        print("\n" + "=" * 60)
         print("[FAIL] Some tests failed. Please review the output above.")
-        print("="*60)
+        print("=" * 60)
     sys.exit(0 if success else 1)

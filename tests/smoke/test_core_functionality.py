@@ -33,13 +33,7 @@ class TestSmokeUncertaintyGraph:
         # Create a simple uncertainty vector
         from uncertainty_map_v3 import UncertaintyVector
 
-        vector = UncertaintyVector(
-            technical=0.3,
-            market=0.2,
-            resource=0.4,
-            timeline=0.5,
-            quality=0.3
-        )
+        vector = UncertaintyVector(technical=0.3, market=0.2, resource=0.4, timeline=0.5, quality=0.3)
 
         # Should be able to classify state
         state = uncertainty_map.classify_state(vector.magnitude())
@@ -50,15 +44,15 @@ class TestSmokeUncertaintyGraph:
             UncertaintyState.PROBABILISTIC,
             UncertaintyState.QUANTUM,
             UncertaintyState.CHAOTIC,
-            UncertaintyState.VOID
+            UncertaintyState.VOID,
         ]
 
         # Should be able to generate mitigation
         mitigation = uncertainty_map.generate_mitigation(vector, state)
 
         assert mitigation is not None
-        assert hasattr(mitigation, 'strategy')
-        assert hasattr(mitigation, 'cost')
+        assert hasattr(mitigation, "strategy")
+        assert hasattr(mitigation, "cost")
 
         print(f"[OK] SMOKE 1 PASSED: Uncertainty graph renders (state={state.value})")
 
@@ -73,7 +67,7 @@ class TestSmokeAPIResponds:
             import backend.main as backend_main
 
             # Verify FastAPI app exists
-            assert hasattr(backend_main, 'app')
+            assert hasattr(backend_main, "app")
             assert backend_main.app is not None
 
             # Verify critical routers are loaded
@@ -139,22 +133,16 @@ class TestSmokeBasicPrediction:
         from uncertainty_map_v3 import UncertaintyVector
 
         # Historical uncertainty (t=0)
-        current_vector = UncertaintyVector(
-            technical=0.3,
-            market=0.2,
-            resource=0.4,
-            timeline=0.5,
-            quality=0.3
-        )
+        current_vector = UncertaintyVector(technical=0.3, market=0.2, resource=0.4, timeline=0.5, quality=0.3)
 
         # Predict 24 hours ahead
         prediction = uncertainty_map.predict_24h(current_vector)
 
         # Verify prediction structure
         assert prediction is not None
-        assert hasattr(prediction, 'trend')
-        assert hasattr(prediction, 'velocity')
-        assert hasattr(prediction, 'acceleration')
+        assert hasattr(prediction, "trend")
+        assert hasattr(prediction, "velocity")
+        assert hasattr(prediction, "acceleration")
 
         # Verify prediction is different from current state
         # (unless uncertainty is DETERMINISTIC)
@@ -166,7 +154,7 @@ class TestSmokeBasicPrediction:
             UncertaintyState.PROBABILISTIC,
             UncertaintyState.QUANTUM,
             UncertaintyState.CHAOTIC,
-            UncertaintyState.VOID
+            UncertaintyState.VOID,
         ]
 
         print(f"[OK] SMOKE 4 PASSED: Basic prediction works (trend={prediction.trend:.2f})")
@@ -181,11 +169,7 @@ class TestSmokeConfidenceCalculation:
 
         # Test confidence calculation for Ideation phase
         confidence = udo.calculate_confidence_score(
-            phase="ideation",
-            completed_tasks=5,
-            total_tasks=10,
-            test_coverage=0.6,
-            quality_metrics={"pylint_score": 8.0}
+            phase="ideation", completed_tasks=5, total_tasks=10, test_coverage=0.6, quality_metrics={"pylint_score": 8.0}
         )
 
         # Verify confidence is in valid range
@@ -195,11 +179,7 @@ class TestSmokeConfidenceCalculation:
         assert 0.3 <= confidence <= 0.8
 
         # Test GO/NO_GO decision logic
-        decision = udo.make_decision(
-            phase="ideation",
-            confidence=confidence,
-            context={}
-        )
+        decision = udo.make_decision(phase="ideation", confidence=confidence, context={})
 
         assert decision in ["GO", "GO_WITH_CHECKPOINTS", "NO_GO"]
 

@@ -2,12 +2,12 @@
 Obsidian Task Files Cleanup Script
 
 Moves incorrectly placed task files from:
-  [EMOJI]/YYYY-MM-DD_task_*.md
+  개발일지/YYYY-MM-DD_task_*.md
 To correct location:
-  [EMOJI]/YYYY-MM-DD/YYYY-MM-DD_task_*.md
+  개발일지/YYYY-MM-DD/YYYY-MM-DD_task_*.md
 
 This fixes OBSIDIAN_SYNC_RULES.md violations where task files
-were created in the root of [EMOJI] instead of date-specific folders.
+were created in the root of 개발일지 instead of date-specific folders.
 """
 
 import os
@@ -22,7 +22,7 @@ OBSIDIAN_VAULT = os.getenv(
     r"C:\Users\user\Documents\Obsidian Vault"
 )
 
-DEV_LOG_DIR = Path(OBSIDIAN_VAULT) / "[EMOJI]"
+DEV_LOG_DIR = Path(OBSIDIAN_VAULT) / "개발일지"
 
 
 def parse_task_filename(filename: str) -> dict:
@@ -48,7 +48,7 @@ def parse_task_filename(filename: str) -> dict:
 
 def find_misplaced_task_files() -> dict:
     """
-    Find all task files in wrong location (root of [EMOJI]).
+    Find all task files in wrong location (root of 개발일지).
 
     Returns:
         dict mapping date -> list of task files
@@ -146,13 +146,13 @@ def create_date_summary(date: str) -> None:
 
 #kanban-archive #daily-summary
 
-## [EMOJI] Overview
+## 📊 Overview
 
 **Date**: {date}
 **Archived Tasks**: {len(task_files)}
-**Location**: `[EMOJI]/{date}/`
+**Location**: `개발일지/{date}/`
 
-## [EMOJI] Task Files
+## 📁 Task Files
 
 This folder contains {len(task_files)} archived Kanban tasks from {date}.
 
@@ -163,9 +163,9 @@ Each task file includes:
 - ROI Metrics (Estimated, Actual, Time Saved, Efficiency, Quality Score)
 - Constitutional Compliance status
 
-## [EMOJI] Related
+## 🔗 Related
 
-- [[[EMOJI]-MOC]]
+- [[개발일지-MOC]]
 - [[Kanban Archive MOC]]
 
 ---

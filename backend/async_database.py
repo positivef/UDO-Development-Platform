@@ -3,14 +3,15 @@ Async Database Connection and Configuration
 PostgreSQL connection management with async connection pooling (asyncpg)
 """
 
-import os
-import asyncpg
 import asyncio
-from typing import Optional, Callable, Any
 import logging
-from pathlib import Path
-from dotenv import load_dotenv
+import os
 from functools import wraps
+from pathlib import Path
+from typing import Any, Callable, Optional
+
+import asyncpg
+from dotenv import load_dotenv
 
 # Load .env file from backend directory
 env_path = Path(__file__).parent / ".env"
@@ -24,7 +25,7 @@ def async_retry(
     max_attempts: int = 3,
     delay: float = 1.0,
     backoff: float = 2.0,
-    exceptions: tuple = (asyncpg.PostgresError, asyncio.TimeoutError, ConnectionError)
+    exceptions: tuple = (asyncpg.PostgresError, asyncio.TimeoutError, ConnectionError),
 ):
     """
     Retry decorator for async functions with exponential backoff
@@ -35,6 +36,7 @@ def async_retry(
         backoff: Multiplier for delay after each attempt
         exceptions: Tuple of exceptions to retry on
     """
+
     def decorator(func: Callable) -> Callable:
         @wraps(func)
         async def wrapper(*args, **kwargs) -> Any:
@@ -62,6 +64,7 @@ def async_retry(
             raise last_exception
 
         return wrapper
+
     return decorator
 
 
@@ -70,15 +73,16 @@ class AsyncDatabaseConfig:
 
     def __init__(self):
         """Load configuration from environment variables"""
-        self.host = os.getenv('DB_HOST', 'localhost')
-        self.port = int(os.getenv('DB_PORT', '5432'))
-        self.database = os.getenv('DB_NAME', 'udo_dev')
-        self.user = os.getenv('DB_USER', 'postgres')
-        self.password = os.getenv('DB_PASSWORD', 'postgres')
+        self.host = os.getenv("DB_HOST", "localhost")
+        self.port = int(os.getenv("DB_PORT", "5432"))
+        self.database = os.getenv("DB_NAME", "udo_dev")
+        self.user = os.getenv("DB_USER", "postgres")
+        self.password = os.getenv("DB_PASSWORD", "postgres")
 
-        # Connection pool settings
-        self.min_size = int(os.getenv('DB_POOL_MIN', '2'))
-        self.max_size = int(os.getenv('DB_POOL_MAX', '10'))
+        # Connection pool settings (P0-5: Expanded to match sync pool capacity)
+        # Increased from min=2/max=10 to min=5/max=30 for production load
+        self.min_size = int(os.getenv("DB_POOL_MIN", "5"))
+        self.max_size = int(os.getenv("DB_POOL_MAX", "30"))
 
     def get_dsn(self) -> str:
         """Get database DSN (connection string)"""
@@ -115,11 +119,13 @@ class AsyncDatabase:
                 min_size=self.config.min_size,
                 max_size=self.config.max_size,
                 timeout=5.0,  # 5 second connection timeout
-                command_timeout=10.0  # 10 second command timeout
+                command_timeout=10.0,  # 10 second command timeout
             )
             self._initialized = True
             logger.info(f"[OK] Async database pool initialized: {self.config.database}")
-            logger.info(f"   Pool size: min={self.config.min_size}, max={self.config.max_size}")
+            logger.info(
+                f"   Pool size: min={self.config.min_size}, max={self.config.max_size}"
+            )
         except Exception as e:
             logger.error(f"[FAIL] Failed to initialize async database pool: {e}")
             raise
@@ -142,7 +148,9 @@ class AsyncDatabase:
             RuntimeError if pool not initialized
         """
         if not self._initialized or not self._pool:
-            raise RuntimeError("Database pool not initialized. Call initialize() first.")
+            raise RuntimeError(
+                "Database pool not initialized. Call initialize() first."
+            )
         return self._pool
 
     @async_retry(max_attempts=2, delay=0.5, backoff=2.0)
@@ -177,7 +185,7 @@ class AsyncDatabase:
                 "size": 0,
                 "free": 0,
                 "min_size": self.config.min_size,
-                "max_size": self.config.max_size
+                "max_size": self.config.max_size,
             }
 
         return {
@@ -186,7 +194,7 @@ class AsyncDatabase:
             "free": self._pool.get_idle_size(),
             "in_use": self._pool.get_size() - self._pool.get_idle_size(),
             "min_size": self._pool.get_min_size(),
-            "max_size": self._pool.get_max_size()
+            "max_size": self._pool.get_max_size(),
         }
 
 
@@ -233,11 +241,13 @@ if __name__ == "__main__":
                 # Test query
                 pool = async_db.get_pool()
                 async with pool.acquire() as conn:
-                    result = await conn.fetchval("""
+                    result = await conn.fetchval(
+                        """
                         SELECT COUNT(*)
                         FROM information_schema.tables
                         WHERE table_schema = 'public'
-                    """)
+                    """
+                    )
                     print(f"Tables in database: {result}")
             else:
                 print("[FAIL] Async database connection failed!")
@@ -245,6 +255,7 @@ if __name__ == "__main__":
         except Exception as e:
             print(f"[FAIL] Error: {e}")
             import traceback
+
             traceback.print_exc()
         finally:
             await close_async_database()

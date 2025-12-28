@@ -1,0 +1,65 @@
+# Standard Template - .governance.yaml
+# 팀 프로젝트용 표준 설정
+
+version: "1.0.0"
+
+project:
+  name: "my-project"
+  type: "web"
+  size: "standard"
+
+rules:
+  strict_mode: true
+  skip_rules: []
+
+languages:
+  python:
+    enabled: true
+    version: "3.13"
+    formatter: "black"
+    linter: "flake8"
+    type_checker: "mypy"
+    max_line_length: 127
+    max_complexity: 10
+  typescript:
+    enabled: true
+    version: "5.x"
+    linter: "eslint"
+    strict_mode: true
+
+git:
+  branch_protection:
+    main: true
+    develop: true
+  commit_format: "conventional"
+
+testing:
+  backend:
+    framework: "pytest"
+    coverage_target: 80
+    required: true
+  frontend:
+    framework: "playwright"
+    required: true
+
+documentation:
+  require_readme: true
+  require_claude_md: true
+  require_agents_md: true
+  auto_sync_obsidian: false
+
+uncertainty:
+  enabled: true
+  monitor_frequency: "weekly"
+  alert_threshold: 50
+
+ci_cd:
+  provider: "github-actions"
+  run_on_pr: true
+  run_on_push: true
+  nightly_tests: false
+
+auto_update:
+  enabled: true
+  frequency: "monthly"
+  version_policy: "minor"

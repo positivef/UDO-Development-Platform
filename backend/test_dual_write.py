@@ -2,6 +2,7 @@
 Test script for dual_write_manager.py
 Validates PostgreSQL + Redis dual-write functionality
 """
+
 import asyncio
 import sys
 from pathlib import Path
@@ -9,7 +10,7 @@ from pathlib import Path
 # Add backend to path
 sys.path.insert(0, str(Path(__file__).parent))
 
-from app.db.database import get_db, engine, Base
+from app.db.database import Base, engine, get_db
 from app.db.dual_write_manager import DualWriteManager
 
 
@@ -49,12 +50,11 @@ async def test_dual_write():
         "project_name": "UDO-Test",
         "phase": "testing",
         "confidence": 0.95,
-        "tasks": ["Test dual-write", "Verify consistency"]
+        "tasks": ["Test dual-write", "Verify consistency"],
     }
 
     success, primary = await manager.write_project_context(
-        project_id=test_project_id,
-        data=test_data
+        project_id=test_project_id, data=test_data
     )
 
     if success:
@@ -65,9 +65,7 @@ async def test_dual_write():
 
     # Test read operation
     print("\n5. Testing read operation...")
-    result = await manager.read_project_context(
-        project_id=test_project_id
-    )
+    result = await manager.read_project_context(project_id=test_project_id)
 
     if result:
         print(f"[OK] Read successful")
@@ -101,5 +99,6 @@ if __name__ == "__main__":
     except Exception as e:
         print(f"\n[FAIL] Test failed with error: {e}")
         import traceback
+
         traceback.print_exc()
         sys.exit(1)

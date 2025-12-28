@@ -39,6 +39,7 @@ logger = logging.getLogger(__name__)
 # Bash Command Wrapper
 # =============================================================================
 
+
 @auto_3tier
 def bash_with_recovery(
     cmd: str,
@@ -46,7 +47,7 @@ def bash_with_recovery(
     shell: bool = False,
     timeout: Optional[int] = 120,
     check: bool = False,
-    capture_output: bool = True
+    capture_output: bool = True,
 ) -> Dict[str, Any]:
     """
     Execute bash command with automatic 3-Tier error recovery
@@ -87,20 +88,14 @@ def bash_with_recovery(
             cmd_list = cmd.split()
 
         process = subprocess.run(
-            cmd_list,
-            cwd=cwd,
-            shell=shell,
-            timeout=timeout,
-            check=check,
-            capture_output=capture_output,
-            text=True
+            cmd_list, cwd=cwd, shell=shell, timeout=timeout, check=check, capture_output=capture_output, text=True
         )
 
         result = {
             "exit_code": process.returncode,
             "stdout": process.stdout if capture_output else "",
             "stderr": process.stderr if capture_output else "",
-            "success": process.returncode == 0
+            "success": process.returncode == 0,
         }
 
         if result["success"]:
@@ -112,45 +107,24 @@ def bash_with_recovery(
 
     except subprocess.TimeoutExpired as e:
         logger.error(f"[FAIL] Command timeout: {cmd[:100]}")
-        return {
-            "exit_code": -1,
-            "stdout": "",
-            "stderr": f"Timeout after {timeout}s",
-            "success": False,
-            "error": str(e)
-        }
+        return {"exit_code": -1, "stdout": "", "stderr": f"Timeout after {timeout}s", "success": False, "error": str(e)}
 
     except FileNotFoundError as e:
         logger.error(f"[FAIL] Command not found: {cmd[:100]}")
-        return {
-            "exit_code": 127,
-            "stdout": "",
-            "stderr": f"Command not found: {e}",
-            "success": False,
-            "error": str(e)
-        }
+        return {"exit_code": 127, "stdout": "", "stderr": f"Command not found: {e}", "success": False, "error": str(e)}
 
     except Exception as e:
         logger.error(f"[FAIL] Command exception: {e}")
-        return {
-            "exit_code": -1,
-            "stdout": "",
-            "stderr": str(e),
-            "success": False,
-            "error": str(e)
-        }
+        return {"exit_code": -1, "stdout": "", "stderr": str(e), "success": False, "error": str(e)}
 
 
 # =============================================================================
 # File Read Wrapper
 # =============================================================================
 
+
 @auto_3tier
-def read_with_recovery(
-    file_path: str,
-    encoding: str = "utf-8",
-    errors: str = "strict"
-) -> Dict[str, Any]:
+def read_with_recovery(file_path: str, encoding: str = "utf-8", errors: str = "strict") -> Dict[str, Any]:
     """
     Read file with automatic 3-Tier error recovery
 
@@ -190,7 +164,7 @@ def read_with_recovery(
                 "content": "",
                 "file_path": file_path,
                 "size_bytes": 0,
-                "error": f"FileNotFoundError: {file_path}"
+                "error": f"FileNotFoundError: {file_path}",
             }
 
         if not path.is_file():
@@ -200,32 +174,21 @@ def read_with_recovery(
                 "content": "",
                 "file_path": file_path,
                 "size_bytes": 0,
-                "error": f"Not a file: {file_path}"
+                "error": f"Not a file: {file_path}",
             }
 
-        with open(file_path, 'r', encoding=encoding, errors=errors) as f:
+        with open(file_path, "r", encoding=encoding, errors=errors) as f:
             content = f.read()
 
         size_bytes = path.stat().st_size
 
         logger.info(f"[OK] Read {size_bytes} bytes from {path.name}")
 
-        return {
-            "success": True,
-            "content": content,
-            "file_path": file_path,
-            "size_bytes": size_bytes
-        }
+        return {"success": True, "content": content, "file_path": file_path, "size_bytes": size_bytes}
 
     except PermissionError as e:
         logger.error(f"[FAIL] Permission denied: {file_path}")
-        return {
-            "success": False,
-            "content": "",
-            "file_path": file_path,
-            "size_bytes": 0,
-            "error": f"PermissionError: {e}"
-        }
+        return {"success": False, "content": "", "file_path": file_path, "size_bytes": 0, "error": f"PermissionError: {e}"}
 
     except UnicodeDecodeError as e:
         logger.error(f"[FAIL] Encoding error: {file_path}")
@@ -234,32 +197,22 @@ def read_with_recovery(
             "content": "",
             "file_path": file_path,
             "size_bytes": 0,
-            "error": f"UnicodeDecodeError: Try encoding='latin-1' or errors='ignore'"
+            "error": f"UnicodeDecodeError: Try encoding='latin-1' or errors='ignore'",
         }
 
     except Exception as e:
         logger.error(f"[FAIL] Read error: {e}")
-        return {
-            "success": False,
-            "content": "",
-            "file_path": file_path,
-            "size_bytes": 0,
-            "error": str(e)
-        }
+        return {"success": False, "content": "", "file_path": file_path, "size_bytes": 0, "error": str(e)}
 
 
 # =============================================================================
 # File Edit Wrapper
 # =============================================================================
 
+
 @auto_3tier
 def edit_with_recovery(
-    file_path: str,
-    old_string: str,
-    new_string: str,
-    replace_all: bool = False,
-    encoding: str = "utf-8",
-    backup: bool = True
+    file_path: str, old_string: str, new_string: str, replace_all: bool = False, encoding: str = "utf-8", backup: bool = True
 ) -> Dict[str, Any]:
     """
     Edit file with automatic 3-Tier error recovery
@@ -302,15 +255,10 @@ def edit_with_recovery(
         path = Path(file_path)
 
         if not path.exists():
-            return {
-                "success": False,
-                "file_path": file_path,
-                "replacements": 0,
-                "error": f"FileNotFoundError: {file_path}"
-            }
+            return {"success": False, "file_path": file_path, "replacements": 0, "error": f"FileNotFoundError: {file_path}"}
 
         # Read original content
-        with open(file_path, 'r', encoding=encoding) as f:
+        with open(file_path, "r", encoding=encoding) as f:
             original = f.read()
 
         # Count occurrences
@@ -322,7 +270,7 @@ def edit_with_recovery(
                 "success": False,
                 "file_path": file_path,
                 "replacements": 0,
-                "error": f"String not found: '{old_string[:50]}...'"
+                "error": f"String not found: '{old_string[:50]}...'",
             }
 
         # Replace
@@ -335,7 +283,7 @@ def edit_with_recovery(
                     "success": False,
                     "file_path": file_path,
                     "replacements": 0,
-                    "error": f"Multiple occurrences ({count}) found. Use replace_all=True"
+                    "error": f"Multiple occurrences ({count}) found. Use replace_all=True",
                 }
             modified = original.replace(old_string, new_string, 1)
             replacements = 1
@@ -344,52 +292,34 @@ def edit_with_recovery(
         backup_path = None
         if backup:
             backup_path = str(path) + ".bak"
-            with open(backup_path, 'w', encoding=encoding) as f:
+            with open(backup_path, "w", encoding=encoding) as f:
                 f.write(original)
 
         # Write modified content
-        with open(file_path, 'w', encoding=encoding) as f:
+        with open(file_path, "w", encoding=encoding) as f:
             f.write(modified)
 
         logger.info(f"[OK] Edited {path.name} ({replacements} replacement{'s' if replacements > 1 else ''})")
 
-        return {
-            "success": True,
-            "file_path": file_path,
-            "replacements": replacements,
-            "backup_path": backup_path
-        }
+        return {"success": True, "file_path": file_path, "replacements": replacements, "backup_path": backup_path}
 
     except PermissionError as e:
         logger.error(f"[FAIL] Permission denied: {file_path}")
-        return {
-            "success": False,
-            "file_path": file_path,
-            "replacements": 0,
-            "error": f"PermissionError: {e}"
-        }
+        return {"success": False, "file_path": file_path, "replacements": 0, "error": f"PermissionError: {e}"}
 
     except Exception as e:
         logger.error(f"[FAIL] Edit error: {e}")
-        return {
-            "success": False,
-            "file_path": file_path,
-            "replacements": 0,
-            "error": str(e)
-        }
+        return {"success": False, "file_path": file_path, "replacements": 0, "error": str(e)}
 
 
 # =============================================================================
 # File Write Wrapper
 # =============================================================================
 
+
 @auto_3tier
 def write_with_recovery(
-    file_path: str,
-    content: str,
-    encoding: str = "utf-8",
-    create_dirs: bool = True,
-    backup_if_exists: bool = True
+    file_path: str, content: str, encoding: str = "utf-8", create_dirs: bool = True, backup_if_exists: bool = True
 ) -> Dict[str, Any]:
     """
     Write file with automatic 3-Tier error recovery
@@ -437,58 +367,39 @@ def write_with_recovery(
         backup_path = None
         if backup_if_exists and path.exists():
             backup_path = str(path) + ".bak"
-            with open(file_path, 'r', encoding=encoding) as f:
+            with open(file_path, "r", encoding=encoding) as f:
                 original = f.read()
-            with open(backup_path, 'w', encoding=encoding) as f:
+            with open(backup_path, "w", encoding=encoding) as f:
                 f.write(original)
             logger.info(f"[EMOJI] Backup created: {Path(backup_path).name}")
 
         # Write content
-        with open(file_path, 'w', encoding=encoding) as f:
+        with open(file_path, "w", encoding=encoding) as f:
             f.write(content)
 
         size_bytes = len(content.encode(encoding))
 
         logger.info(f"[OK] Wrote {size_bytes} bytes to {path.name}")
 
-        return {
-            "success": True,
-            "file_path": file_path,
-            "size_bytes": size_bytes,
-            "backup_path": backup_path
-        }
+        return {"success": True, "file_path": file_path, "size_bytes": size_bytes, "backup_path": backup_path}
 
     except PermissionError as e:
         logger.error(f"[FAIL] Permission denied: {file_path}")
-        return {
-            "success": False,
-            "file_path": file_path,
-            "size_bytes": 0,
-            "error": f"PermissionError: {e}"
-        }
+        return {"success": False, "file_path": file_path, "size_bytes": 0, "error": f"PermissionError: {e}"}
 
     except OSError as e:
         logger.error(f"[FAIL] OS error: {e}")
-        return {
-            "success": False,
-            "file_path": file_path,
-            "size_bytes": 0,
-            "error": f"OSError: {e}"
-        }
+        return {"success": False, "file_path": file_path, "size_bytes": 0, "error": f"OSError: {e}"}
 
     except Exception as e:
         logger.error(f"[FAIL] Write error: {e}")
-        return {
-            "success": False,
-            "file_path": file_path,
-            "size_bytes": 0,
-            "error": str(e)
-        }
+        return {"success": False, "file_path": file_path, "size_bytes": 0, "error": str(e)}
 
 
 # =============================================================================
 # Utility Functions
 # =============================================================================
+
 
 def get_wrapper_statistics() -> Dict[str, Any]:
     """
@@ -501,12 +412,14 @@ def get_wrapper_statistics() -> Dict[str, Any]:
     - Time saved
     """
     from scripts.auto_3tier_wrapper import get_statistics
+
     return get_statistics()
 
 
 def reset_wrapper_statistics():
     """Reset all tool wrapper statistics"""
     from scripts.auto_3tier_wrapper import reset_statistics
+
     reset_statistics()
 
 

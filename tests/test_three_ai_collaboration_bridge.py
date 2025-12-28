@@ -9,14 +9,14 @@ import os
 from pathlib import Path
 import unittest
 
-# Windows Unicode [EMOJI] [EMOJI] [EMOJI] [EMOJI]
+# Windows Unicode 인코딩 문제 근본 해결
 if sys.platform == 'win32':
     os.environ['PYTHONIOENCODING'] = 'utf-8'
     if hasattr(sys.stdout, 'reconfigure'):
         sys.stdout.reconfigure(encoding='utf-8')
         sys.stderr.reconfigure(encoding='utf-8')
 
-# [EMOJI] [EMOJI]
+# 경로 추가
 sys.path.append(str(Path(__file__).parent.parent / "src"))
 
 from three_ai_collaboration_bridge import ThreeAICollaborationBridge

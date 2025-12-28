@@ -2,34 +2,41 @@
 """
 Check Knowledge Tables and Run Migration 003
 """
-import psycopg2
-from pathlib import Path
 import logging
+from pathlib import Path
 
-logging.basicConfig(level=logging.INFO, format='%(asctime)s - %(levelname)s - %(message)s')
+import psycopg2
+
+logging.basicConfig(
+    level=logging.INFO, format="%(asctime)s - %(levelname)s - %(message)s"
+)
 logger = logging.getLogger(__name__)
+
 
 def check_tables_exist(conn):
     """Check if knowledge tables already exist"""
     cursor = conn.cursor()
-    cursor.execute("""
+    cursor.execute(
+        """
         SELECT table_name
         FROM information_schema.tables
         WHERE table_schema = 'public'
         AND table_name LIKE 'knowledge%'
         ORDER BY table_name
-    """)
+    """
+    )
     tables = [row[0] for row in cursor.fetchall()]
     return tables
+
 
 def run_migration():
     """Run knowledge reuse schema migration"""
     db_config = {
-        'host': 'localhost',
-        'port': 5432,
-        'database': 'udo_v3',
-        'user': 'udo_dev',
-        'password': 'dev_password_123'
+        "host": "localhost",
+        "port": 5432,
+        "database": "udo_v3",
+        "user": "udo_dev",
+        "password": "dev_password_123",
     }
 
     try:
@@ -50,17 +57,20 @@ def run_migration():
 
         # Read and execute migration SQL
         migration_file = Path(__file__).parent / "003_knowledge_reuse_schema.sql"
-        with open(migration_file, 'r', encoding='utf-8') as f:
+        with open(migration_file, "r", encoding="utf-8") as f:
             sql_content = f.read()
 
         cursor = conn.cursor()
         cursor.execute(sql_content)
 
         # Record in schema_migrations
-        cursor.execute("""
+        cursor.execute(
+            """
             INSERT INTO schema_migrations (version, filename, success)
             VALUES (%s, %s, %s)
-        """, ('003_knowledge_reuse_schema', '003_knowledge_reuse_schema.sql', True))
+        """,
+            ("003_knowledge_reuse_schema", "003_knowledge_reuse_schema.sql", True),
+        )
 
         conn.commit()
         logger.info("[OK] Migration 003 executed successfully")
@@ -77,6 +87,7 @@ def run_migration():
             conn.rollback()
             conn.close()
         raise
+
 
 if __name__ == "__main__":
     run_migration()

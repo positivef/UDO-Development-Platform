@@ -7,21 +7,20 @@ Implements Q6: Done-End archive with GPT-4o summarization and Obsidian sync.
 
 from typing import Optional
 from uuid import UUID
+
 from fastapi import APIRouter, Depends, Query, status
 from fastapi.responses import JSONResponse
 
-from backend.app.core.security import require_role, UserRole, get_current_user
-from backend.app.services.kanban_archive_service import kanban_archive_service
-from backend.app.models.kanban_archive import (
-    ArchiveTaskRequest,
-    ArchiveTaskResponse,
-    ArchiveListResponse,
-    ArchivedTaskWithMetrics,
-    ArchiveFilters,
-    TaskNotArchivableError,
-    AISummaryGenerationError,
-    ObsidianSyncError,
-)
+from app.core.security import UserRole, get_current_user, require_role
+from app.models.kanban_archive import (AISummaryGenerationError,
+                                               ArchivedTaskWithMetrics,
+                                               ArchiveFilters,
+                                               ArchiveListResponse,
+                                               ArchiveTaskRequest,
+                                               ArchiveTaskResponse,
+                                               ObsidianSyncError,
+                                               TaskNotArchivableError)
+from app.services.kanban_archive_service import kanban_archive_service
 
 router = APIRouter(prefix="/api/kanban/archive", tags=["Kanban Archive"])
 
@@ -30,9 +29,11 @@ router = APIRouter(prefix="/api/kanban/archive", tags=["Kanban Archive"])
 # Error Response Helper
 # ============================================================================
 
+
 def error_response(code: str, message: str, status_code: int, details: dict = None):
     """Standard error response format"""
-    from datetime import datetime, UTC
+    from datetime import UTC, datetime
+
     return JSONResponse(
         status_code=status_code,
         content={
@@ -40,9 +41,9 @@ def error_response(code: str, message: str, status_code: int, details: dict = No
                 "code": code,
                 "message": message,
                 "details": details or {},
-                "timestamp": datetime.now(UTC).isoformat() + "Z"
+                "timestamp": datetime.now(UTC).isoformat() + "Z",
             }
-        }
+        },
     )
 
 
@@ -50,17 +51,17 @@ def error_response(code: str, message: str, status_code: int, details: dict = No
 # 1. Archive Task (Q6: Done-End + AI Summarization)
 # ============================================================================
 
+
 @router.post(
     "",
     response_model=ArchiveTaskResponse,
     status_code=status.HTTP_201_CREATED,
     dependencies=[Depends(require_role(UserRole.DEVELOPER))],
     summary="Archive completed task",
-    description="Archive completed task with AI summarization and Obsidian sync (Q6: Done-End)"
+    description="Archive completed task with AI summarization and Obsidian sync (Q6: Done-End)",
 )
 async def archive_task(
-    request: ArchiveTaskRequest,
-    current_user: dict = Depends(get_current_user)
+    request: ArchiveTaskRequest, current_user: dict = Depends(get_current_user)
 ):
     """
     Archive a completed Kanban task with AI summarization and knowledge extraction.
@@ -102,14 +103,14 @@ async def archive_task(
             code="TASK_NOT_ARCHIVABLE",
             message=str(e),
             status_code=status.HTTP_409_CONFLICT,
-            details={"task_id": str(request.task_id)}
+            details={"task_id": str(request.task_id)},
         )
     except Exception as e:
         return error_response(
             code="ARCHIVE_FAILED",
             message=f"Failed to archive task: {str(e)}",
             status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
-            details={"task_id": str(request.task_id)}
+            details={"task_id": str(request.task_id)},
         )
 
 
@@ -117,22 +118,27 @@ async def archive_task(
 # 2. Get Archive List
 # ============================================================================
 
+
 @router.get(
     "",
     response_model=ArchiveListResponse,
     dependencies=[Depends(require_role(UserRole.VIEWER))],
     summary="Get archived tasks list",
-    description="Get paginated list of archived tasks with filtering and ROI statistics"
+    description="Get paginated list of archived tasks with filtering and ROI statistics",
 )
 async def get_archive_list(
     phase: Optional[str] = Query(None, description="Filter by phase"),
     archived_by: Optional[str] = Query(None, description="Filter by archiver"),
     ai_suggested: Optional[bool] = Query(None, description="Filter by AI suggestion"),
-    obsidian_synced: Optional[bool] = Query(None, description="Filter by Obsidian sync status"),
-    min_quality_score: Optional[int] = Query(None, ge=0, le=100, description="Minimum quality score"),
+    obsidian_synced: Optional[bool] = Query(
+        None, description="Filter by Obsidian sync status"
+    ),
+    min_quality_score: Optional[int] = Query(
+        None, ge=0, le=100, description="Minimum quality score"
+    ),
     page: int = Query(1, ge=1, description="Page number (1-indexed)"),
     per_page: int = Query(20, ge=1, le=100, description="Items per page (max 100)"),
-    current_user: dict = Depends(get_current_user)
+    current_user: dict = Depends(get_current_user),
 ):
     """
     Get paginated list of archived tasks with filtering.
@@ -159,13 +165,11 @@ async def get_archive_list(
             archived_by=archived_by,
             ai_suggested=ai_suggested,
             obsidian_synced=obsidian_synced,
-            min_quality_score=min_quality_score
+            min_quality_score=min_quality_score,
         )
 
         response = await kanban_archive_service.get_archive_list(
-            filters=filters,
-            page=page,
-            per_page=per_page
+            filters=filters, page=page, per_page=per_page
         )
 
         return response
@@ -174,7 +178,7 @@ async def get_archive_list(
         return error_response(
             code="ARCHIVE_LIST_FAILED",
             message=f"Failed to retrieve archive list: {str(e)}",
-            status_code=status.HTTP_500_INTERNAL_SERVER_ERROR
+            status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
         )
 
 
@@ -182,16 +186,16 @@ async def get_archive_list(
 # 3. Get Specific Archived Task
 # ============================================================================
 
+
 @router.get(
     "/{task_id}",
     response_model=ArchivedTaskWithMetrics,
     dependencies=[Depends(require_role(UserRole.VIEWER))],
     summary="Get specific archived task",
-    description="Get detailed information about a specific archived task"
+    description="Get detailed information about a specific archived task",
 )
 async def get_archived_task(
-    task_id: UUID,
-    current_user: dict = Depends(get_current_user)
+    task_id: UUID, current_user: dict = Depends(get_current_user)
 ):
     """
     Get detailed information about a specific archived task.
@@ -218,7 +222,7 @@ async def get_archived_task(
                 code="ARCHIVED_TASK_NOT_FOUND",
                 message=f"Archived task {task_id} not found",
                 status_code=status.HTTP_404_NOT_FOUND,
-                details={"task_id": str(task_id)}
+                details={"task_id": str(task_id)},
             )
 
         return archived_task
@@ -228,7 +232,7 @@ async def get_archived_task(
             code="ARCHIVED_TASK_RETRIEVAL_FAILED",
             message=f"Failed to retrieve archived task: {str(e)}",
             status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
-            details={"task_id": str(task_id)}
+            details={"task_id": str(task_id)},
         )
 
 
@@ -236,15 +240,16 @@ async def get_archived_task(
 # 4. Get ROI Statistics (Optional Endpoint)
 # ============================================================================
 
+
 @router.get(
     "/statistics/roi",
     dependencies=[Depends(require_role(UserRole.VIEWER))],
     summary="Get ROI statistics",
-    description="Get aggregated ROI statistics across all archived tasks"
+    description="Get aggregated ROI statistics across all archived tasks",
 )
 async def get_roi_statistics(
     phase: Optional[str] = Query(None, description="Filter by phase"),
-    current_user: dict = Depends(get_current_user)
+    current_user: dict = Depends(get_current_user),
 ):
     """
     Get aggregated ROI statistics across archived tasks.
@@ -266,9 +271,7 @@ async def get_roi_statistics(
 
         # Get all archives with filter
         response = await kanban_archive_service.get_archive_list(
-            filters=filters,
-            page=1,
-            per_page=1000  # Get all for statistics
+            filters=filters, page=1, per_page=1000  # Get all for statistics
         )
 
         return response.roi_statistics
@@ -277,5 +280,5 @@ async def get_roi_statistics(
         return error_response(
             code="ROI_STATISTICS_FAILED",
             message=f"Failed to calculate ROI statistics: {str(e)}",
-            status_code=status.HTTP_500_INTERNAL_SERVER_ERROR
+            status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
         )

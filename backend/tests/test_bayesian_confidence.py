@@ -10,36 +10,32 @@ Validates:
 - API endpoint functionality
 """
 
-import pytest
+import sys
 from datetime import datetime, timedelta
+from pathlib import Path
 from typing import List
 
-import sys
-from pathlib import Path
+import pytest
 
 # Add backend directory to path
 backend_dir = Path(__file__).parent.parent
 sys.path.insert(0, str(backend_dir))
 
-from app.models.uncertainty import (
-    BayesianConfidenceRequest,
-    BayesianConfidenceResponse,
-    UncertaintyStateEnum
-)
-from app.services.bayesian_confidence import (
-    OptimizedBayesianScorer,
-    calculate_bayesian_confidence,
-    classify_uncertainty_state,
-    _calculate_risk_level,
-    _calculate_monitoring_level,
-    _generate_recommendations,
-    PHASE_PRIORS
-)
-
+from app.models.uncertainty import (BayesianConfidenceRequest,
+                                    BayesianConfidenceResponse,
+                                    UncertaintyStateEnum)
+from app.services.bayesian_confidence import (PHASE_PRIORS,
+                                              OptimizedBayesianScorer,
+                                              _calculate_monitoring_level,
+                                              _calculate_risk_level,
+                                              _generate_recommendations,
+                                              calculate_bayesian_confidence,
+                                              classify_uncertainty_state)
 
 # ============================================================================
 # Unit Tests for Core Bayesian Calculations
 # ============================================================================
+
 
 class TestOptimizedBayesianScorer:
     """Test OptimizedBayesianScorer class"""
@@ -94,7 +90,7 @@ class TestOptimizedBayesianScorer:
             "has_code": False,
             "team_size": 1,
             "validation_score": 0.5,
-            "timeline_weeks": 8
+            "timeline_weeks": 8,
         }
 
         likelihood = scorer.calculate_likelihood(context, [])
@@ -109,11 +105,15 @@ class TestOptimizedBayesianScorer:
         context = {"has_code": True}
 
         # All successes should give high likelihood
-        high_likelihood = scorer.calculate_likelihood(context, [True, True, True, True, True])
+        high_likelihood = scorer.calculate_likelihood(
+            context, [True, True, True, True, True]
+        )
         assert high_likelihood > 0.8
 
         # All failures should give low likelihood
-        low_likelihood = scorer.calculate_likelihood(context, [False, False, False, False, False])
+        low_likelihood = scorer.calculate_likelihood(
+            context, [False, False, False, False, False]
+        )
         assert low_likelihood < 0.3
 
     def test_likelihood_context_adjustments(self):
@@ -125,7 +125,7 @@ class TestOptimizedBayesianScorer:
             "team_size": 1,
             "has_code": True,
             "validation_score": 0.7,
-            "timeline_weeks": 12
+            "timeline_weeks": 12,
         }
         likelihood_solo = scorer.calculate_likelihood(context_solo, [])
 
@@ -134,7 +134,7 @@ class TestOptimizedBayesianScorer:
             "team_size": 8,
             "has_code": False,
             "validation_score": 0.3,
-            "timeline_weeks": 2
+            "timeline_weeks": 2,
         }
         likelihood_large = scorer.calculate_likelihood(context_large, [])
 
@@ -147,7 +147,7 @@ class TestOptimizedBayesianScorer:
 
         # Start with ideation prior
         prior_alpha = PHASE_PRIORS["ideation"]["alpha"]  # 4.0
-        prior_beta = PHASE_PRIORS["ideation"]["beta"]    # 6.0
+        prior_beta = PHASE_PRIORS["ideation"]["beta"]  # 6.0
 
         # High likelihood evidence
         likelihood = 0.8
@@ -173,7 +173,7 @@ class TestOptimizedBayesianScorer:
             "has_code": True,
             "validation_score": 0.7,
             "team_size": 3,
-            "timeline_weeks": 8
+            "timeline_weeks": 8,
         }
 
         confidence_score = 0.72
@@ -189,13 +189,21 @@ class TestOptimizedBayesianScorer:
         assert "dominant_dimension" in vector
 
         # All values should be in [0, 1]
-        for key in ["technical", "market", "resource", "timeline", "quality", "magnitude"]:
+        for key in [
+            "technical",
+            "market",
+            "resource",
+            "timeline",
+            "quality",
+            "magnitude",
+        ]:
             assert 0.0 <= vector[key] <= 1.0
 
 
 # ============================================================================
 # Unit Tests for State Classification
 # ============================================================================
+
 
 class TestStateClassification:
     """Test uncertainty state classification"""
@@ -253,6 +261,7 @@ class TestStateClassification:
 # ============================================================================
 # Unit Tests for Risk and Monitoring Levels
 # ============================================================================
+
 
 class TestRiskAndMonitoring:
     """Test risk level and monitoring level calculations"""
@@ -313,6 +322,7 @@ class TestRiskAndMonitoring:
 # Unit Tests for Recommendations Generation
 # ============================================================================
 
+
 class TestRecommendationsGeneration:
     """Test recommendations generation logic"""
 
@@ -322,7 +332,7 @@ class TestRecommendationsGeneration:
             state=UncertaintyStateEnum.DETERMINISTIC,
             risk_level="low",
             dominant_dimension="technical",
-            confidence_score=0.95
+            confidence_score=0.95,
         )
 
         assert len(recs) >= 2
@@ -334,7 +344,7 @@ class TestRecommendationsGeneration:
             state=UncertaintyStateEnum.PROBABILISTIC,
             risk_level="medium",
             dominant_dimension="timeline",
-            confidence_score=0.75
+            confidence_score=0.75,
         )
 
         assert len(recs) >= 3
@@ -347,7 +357,7 @@ class TestRecommendationsGeneration:
             state=UncertaintyStateEnum.QUANTUM,
             risk_level="medium",
             dominant_dimension="technical",
-            confidence_score=0.50
+            confidence_score=0.50,
         )
 
         assert len(recs) >= 4
@@ -359,7 +369,7 @@ class TestRecommendationsGeneration:
             state=UncertaintyStateEnum.CHAOTIC,
             risk_level="high",
             dominant_dimension="market",
-            confidence_score=0.25
+            confidence_score=0.25,
         )
 
         assert len(recs) >= 5
@@ -371,16 +381,19 @@ class TestRecommendationsGeneration:
             state=UncertaintyStateEnum.VOID,
             risk_level="critical",
             dominant_dimension="technical",
-            confidence_score=0.05
+            confidence_score=0.05,
         )
 
         assert len(recs) >= 5
-        assert any("DO NOT PROCEED" in rec or "Extreme uncertainty" in rec for rec in recs)
+        assert any(
+            "DO NOT PROCEED" in rec or "Extreme uncertainty" in rec for rec in recs
+        )
 
 
 # ============================================================================
 # Integration Tests for Full Bayesian Confidence Calculation
 # ============================================================================
+
 
 class TestBayesianConfidenceCalculation:
     """Test full Bayesian confidence calculation workflow"""
@@ -394,10 +407,10 @@ class TestBayesianConfidenceCalculation:
                 "has_code": False,
                 "validation_score": 0.3,
                 "team_size": 1,
-                "timeline_weeks": 4
+                "timeline_weeks": 4,
             },
             historical_outcomes=[],
-            use_fast_mode=True
+            use_fast_mode=True,
         )
 
         response = calculate_bayesian_confidence(request)
@@ -417,10 +430,10 @@ class TestBayesianConfidenceCalculation:
                 "has_code": True,
                 "validation_score": 0.7,
                 "team_size": 3,
-                "timeline_weeks": 8
+                "timeline_weeks": 8,
             },
             historical_outcomes=[True, True, False, True, True],
-            use_fast_mode=True
+            use_fast_mode=True,
         )
 
         response = calculate_bayesian_confidence(request)
@@ -430,7 +443,7 @@ class TestBayesianConfidenceCalculation:
         assert response.state in [
             UncertaintyStateEnum.DETERMINISTIC,
             UncertaintyStateEnum.PROBABILISTIC,
-            UncertaintyStateEnum.QUANTUM
+            UncertaintyStateEnum.QUANTUM,
         ]
 
     def test_testing_phase_calculation(self):
@@ -442,10 +455,10 @@ class TestBayesianConfidenceCalculation:
                 "has_code": True,
                 "validation_score": 0.8,
                 "team_size": 2,
-                "timeline_weeks": 12
+                "timeline_weeks": 12,
             },
             historical_outcomes=[True] * 8 + [False] * 2,
-            use_fast_mode=False  # Test full mode
+            use_fast_mode=False,  # Test full mode
         )
 
         response = calculate_bayesian_confidence(request)
@@ -454,7 +467,7 @@ class TestBayesianConfidenceCalculation:
         assert response.confidence_score > 0.7
         assert response.state in [
             UncertaintyStateEnum.DETERMINISTIC,
-            UncertaintyStateEnum.PROBABILISTIC
+            UncertaintyStateEnum.PROBABILISTIC,
         ]
         assert response.decision == "GO"
 
@@ -472,10 +485,10 @@ class TestBayesianConfidenceCalculation:
                 "has_code": True,
                 "validation_score": 0.7,
                 "team_size": 3,
-                "timeline_weeks": 8
+                "timeline_weeks": 8,
             },
             historical_outcomes=[True] * 5,
-            use_fast_mode=True
+            use_fast_mode=True,
         )
 
         start = datetime.now()
@@ -495,10 +508,10 @@ class TestBayesianConfidenceCalculation:
                 "has_code": True,
                 "validation_score": 0.7,
                 "team_size": 3,
-                "timeline_weeks": 8
+                "timeline_weeks": 8,
             },
             historical_outcomes=[True, True, False, True],
-            use_fast_mode=False
+            use_fast_mode=False,
         )
 
         response = calculate_bayesian_confidence(request)
@@ -526,10 +539,10 @@ class TestBayesianConfidenceCalculation:
                 "has_code": True,
                 "validation_score": 0.9,
                 "team_size": 1,
-                "timeline_weeks": 12
+                "timeline_weeks": 12,
             },
             historical_outcomes=[True] * 10,
-            use_fast_mode=True
+            use_fast_mode=True,
         )
 
         response = calculate_bayesian_confidence(request)
@@ -538,7 +551,7 @@ class TestBayesianConfidenceCalculation:
         assert response.decision == "GO"
         assert response.state in [
             UncertaintyStateEnum.DETERMINISTIC,
-            UncertaintyStateEnum.PROBABILISTIC
+            UncertaintyStateEnum.PROBABILISTIC,
         ]
 
     def test_decision_logic_checkpoints(self):
@@ -550,10 +563,10 @@ class TestBayesianConfidenceCalculation:
                 "has_code": False,  # No code increases uncertainty
                 "validation_score": 0.3,  # Low validation
                 "team_size": 8,  # Large team
-                "timeline_weeks": 3  # Tight timeline
+                "timeline_weeks": 3,  # Tight timeline
             },
             historical_outcomes=[True, False, False, True, False],
-            use_fast_mode=True
+            use_fast_mode=True,
         )
 
         response = calculate_bayesian_confidence(request)
@@ -566,7 +579,7 @@ class TestBayesianConfidenceCalculation:
             UncertaintyStateEnum.PROBABILISTIC,
             UncertaintyStateEnum.QUANTUM,
             UncertaintyStateEnum.CHAOTIC,
-            UncertaintyStateEnum.VOID
+            UncertaintyStateEnum.VOID,
         ]
 
     def test_decision_logic_no_go(self):
@@ -578,10 +591,10 @@ class TestBayesianConfidenceCalculation:
                 "has_code": False,
                 "validation_score": 0.1,
                 "team_size": 10,
-                "timeline_weeks": 2
+                "timeline_weeks": 2,
             },
             historical_outcomes=[False] * 10,
-            use_fast_mode=True
+            use_fast_mode=True,
         )
 
         response = calculate_bayesian_confidence(request)
@@ -590,7 +603,7 @@ class TestBayesianConfidenceCalculation:
         assert response.decision in ["GO_WITH_CHECKPOINTS", "NO_GO"]
         assert response.state in [
             UncertaintyStateEnum.CHAOTIC,
-            UncertaintyStateEnum.VOID
+            UncertaintyStateEnum.VOID,
         ]
 
     def test_recommendations_present(self):
@@ -602,10 +615,10 @@ class TestBayesianConfidenceCalculation:
                 "has_code": True,
                 "validation_score": 0.7,
                 "team_size": 3,
-                "timeline_weeks": 8
+                "timeline_weeks": 8,
             },
             historical_outcomes=[True, True, False, True, True],
-            use_fast_mode=True
+            use_fast_mode=True,
         )
 
         response = calculate_bayesian_confidence(request)
@@ -623,10 +636,10 @@ class TestBayesianConfidenceCalculation:
                 "has_code": True,
                 "validation_score": 0.7,
                 "team_size": 3,
-                "timeline_weeks": 8
+                "timeline_weeks": 8,
             },
             historical_outcomes=[],
-            use_fast_mode=True
+            use_fast_mode=True,
         )
 
         before = datetime.now()

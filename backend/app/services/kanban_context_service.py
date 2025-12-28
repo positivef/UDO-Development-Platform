@@ -13,14 +13,14 @@ Key features:
 Week 6 Day 2: Migrated from mock data to real PostgreSQL database.
 """
 
-from typing import Dict, Optional
-from uuid import UUID, uuid4
-from datetime import datetime, UTC
 import hashlib
-import logging
-import zipfile
 import io
 import json
+import logging
+import zipfile
+from datetime import UTC, datetime
+from typing import Dict, Optional
+from uuid import UUID, uuid4
 
 # Optional asyncpg import (not needed for Mock mode)
 try:
@@ -28,17 +28,15 @@ try:
 except ImportError:
     asyncpg = None
 
-from backend.app.models.kanban_context import (
-    TaskContext,
-    ContextMetadata,
-    ContextUploadRequest,
-    ContextLoadRequest,
-    ContextLoadResponse,
-    ContextUploadResponse,
-    ContextNotFoundError,
-    ContextSizeLimitExceeded,
-    InvalidContextFiles,
-)
+from app.models.kanban_context import (ContextLoadRequest,
+                                               ContextLoadResponse,
+                                               ContextMetadata,
+                                               ContextNotFoundError,
+                                               ContextSizeLimitExceeded,
+                                               ContextUploadRequest,
+                                               ContextUploadResponse,
+                                               InvalidContextFiles,
+                                               TaskContext)
 
 logger = logging.getLogger(__name__)
 
@@ -102,31 +100,31 @@ class KanbanContextService:
                 return None
 
             # Extract metadata from JSONB
-            metadata_json = row['context_metadata'] or {}
+            metadata_json = row["context_metadata"] or {}
             if isinstance(metadata_json, str):
                 metadata_json = json.loads(metadata_json)
 
-            file_count = len(metadata_json.get('files', []))
-            git_branch = metadata_json.get('git_branch')
-            last_commit_hash = metadata_json.get('last_commit_hash')
+            file_count = len(metadata_json.get("files", []))
+            git_branch = metadata_json.get("git_branch")
+            last_commit_hash = metadata_json.get("last_commit_hash")
 
             # Calculate avg load time from total loads
-            total_loads = row['load_count'] + row['manual_loads']
-            avg_load_time_ms = metadata_json.get('avg_load_time_ms')
+            total_loads = row["load_count"] + row["manual_loads"]
+            avg_load_time_ms = metadata_json.get("avg_load_time_ms")
 
             return ContextMetadata(
-                context_id=row['context_id'],
-                task_id=row['task_id'],
+                context_id=row["context_id"],
+                task_id=row["task_id"],
                 file_count=file_count,
                 git_branch=git_branch,
                 last_commit_hash=last_commit_hash,
                 zip_url=f"{self._storage_url}/{task_id}/download",
-                zip_size_bytes=row['zip_size_bytes'],
-                last_loaded_at=row['last_loaded_at'],
+                zip_size_bytes=row["zip_size_bytes"],
+                last_loaded_at=row["last_loaded_at"],
                 load_count=total_loads,
                 avg_load_time_ms=avg_load_time_ms,
-                created_at=row['created_at'],
-                updated_at=row['updated_at'],
+                created_at=row["created_at"],
+                updated_at=row["updated_at"],
             )
 
     async def get_context_full(self, task_id: UUID) -> Optional[TaskContext]:
@@ -160,35 +158,35 @@ class KanbanContextService:
                 return None
 
             # Extract metadata from JSONB
-            metadata_json = row['context_metadata'] or {}
+            metadata_json = row["context_metadata"] or {}
             if isinstance(metadata_json, str):
                 metadata_json = json.loads(metadata_json)
 
-            files = metadata_json.get('files', [])
-            git_branch = metadata_json.get('git_branch')
-            last_commit_hash = metadata_json.get('last_commit_hash')
-            last_commit_message = metadata_json.get('last_commit_message')
-            zip_checksum = metadata_json.get('zip_checksum')
-            obsidian_notes = metadata_json.get('obsidian_notes', [])
-            avg_load_time_ms = metadata_json.get('avg_load_time_ms')
+            files = metadata_json.get("files", [])
+            git_branch = metadata_json.get("git_branch")
+            last_commit_hash = metadata_json.get("last_commit_hash")
+            last_commit_message = metadata_json.get("last_commit_message")
+            zip_checksum = metadata_json.get("zip_checksum")
+            obsidian_notes = metadata_json.get("obsidian_notes", [])
+            avg_load_time_ms = metadata_json.get("avg_load_time_ms")
 
-            total_loads = row['load_count'] + row['manual_loads']
+            total_loads = row["load_count"] + row["manual_loads"]
 
             return TaskContext(
-                context_id=row['context_id'],
-                task_id=row['task_id'],
+                context_id=row["context_id"],
+                task_id=row["task_id"],
                 files=files,
                 file_count=len(files),
                 git_branch=git_branch,
                 last_commit_hash=last_commit_hash,
                 last_commit_message=last_commit_message,
                 zip_url=f"{self._storage_url}/{task_id}/download",
-                zip_size_bytes=row['zip_size_bytes'],
+                zip_size_bytes=row["zip_size_bytes"],
                 zip_checksum=zip_checksum,
                 obsidian_notes=obsidian_notes,
-                created_at=row['created_at'],
-                updated_at=row['updated_at'],
-                last_loaded_at=row['last_loaded_at'],
+                created_at=row["created_at"],
+                updated_at=row["updated_at"],
+                last_loaded_at=row["last_loaded_at"],
                 load_count=total_loads,
                 avg_load_time_ms=avg_load_time_ms,
             )
@@ -211,19 +209,17 @@ class KanbanContextService:
             """
             row = await conn.fetchrow(query, task_id)
 
-            if not row or not row['context_zip']:
+            if not row or not row["context_zip"]:
                 return None
 
-            return bytes(row['context_zip'])
+            return bytes(row["context_zip"])
 
     # ========================================================================
     # Context Upload Operations
     # ========================================================================
 
     async def upload_context(
-        self,
-        task_id: UUID,
-        upload_request: ContextUploadRequest
+        self, task_id: UUID, upload_request: ContextUploadRequest
     ) -> ContextUploadResponse:
         """
         Upload context files as metadata (no actual ZIP creation).
@@ -289,8 +285,8 @@ class KanbanContextService:
             """
             row = await conn.fetchrow(query, task_id, json.dumps(metadata))
 
-            context_id = row['context_id']
-            created_at = row['created_at']
+            context_id = row["context_id"]
+            created_at = row["created_at"]
 
         logger.info(
             f"Uploaded context metadata for task {task_id}: "
@@ -308,10 +304,7 @@ class KanbanContextService:
         )
 
     async def upload_context_file(
-        self,
-        task_id: UUID,
-        filename: str,
-        contents: bytes
+        self, task_id: UUID, filename: str, contents: bytes
     ) -> ContextUploadResponse:
         """
         Upload context ZIP file (Week 6 Day 2: Database storage).
@@ -340,11 +333,10 @@ class KanbanContextService:
         # Extract file list from ZIP
         try:
             zip_buffer = io.BytesIO(contents)
-            with zipfile.ZipFile(zip_buffer, 'r') as zip_file:
+            with zipfile.ZipFile(zip_buffer, "r") as zip_file:
                 # Get file list (exclude directories)
                 file_list = [
-                    name for name in zip_file.namelist()
-                    if not name.endswith('/')
+                    name for name in zip_file.namelist() if not name.endswith("/")
                 ]
 
                 if not file_list:
@@ -352,8 +344,7 @@ class KanbanContextService:
 
                 # Extract file sizes for metadata
                 total_uncompressed_size = sum(
-                    info.file_size for info in zip_file.infolist()
-                    if not info.is_dir()
+                    info.file_size for info in zip_file.infolist() if not info.is_dir()
                 )
 
         except zipfile.BadZipFile:
@@ -363,7 +354,9 @@ class KanbanContextService:
         zip_checksum = hashlib.sha256(contents).hexdigest()
 
         # Calculate compression ratio
-        compression_ratio = file_size / total_uncompressed_size if total_uncompressed_size > 0 else 1.0
+        compression_ratio = (
+            file_size / total_uncompressed_size if total_uncompressed_size > 0 else 1.0
+        )
 
         # Build metadata JSONB
         metadata = {
@@ -398,8 +391,8 @@ class KanbanContextService:
             """
             row = await conn.fetchrow(query, task_id, contents, json.dumps(metadata))
 
-            context_id = row['context_id']
-            created_at = row['created_at']
+            context_id = row["context_id"]
+            created_at = row["created_at"]
 
         logger.info(
             f"Uploaded ZIP file for task {task_id}: {filename}, "
@@ -422,9 +415,7 @@ class KanbanContextService:
     # ========================================================================
 
     async def track_context_load(
-        self,
-        task_id: UUID,
-        load_request: ContextLoadRequest
+        self, task_id: UUID, load_request: ContextLoadRequest
     ) -> ContextLoadResponse:
         """
         Track context load (Q4: Double-click auto-load).
@@ -458,17 +449,17 @@ class KanbanContextService:
                 raise ContextNotFoundError(f"Context not found for task {task_id}")
 
             # Calculate new average load time
-            old_count = row['double_click_loads'] + row['manual_loads']
-            metadata_json = row['context_metadata'] or {}
+            old_count = row["double_click_loads"] + row["manual_loads"]
+            metadata_json = row["context_metadata"] or {}
             if isinstance(metadata_json, str):
                 metadata_json = json.loads(metadata_json)
 
-            old_avg = metadata_json.get('avg_load_time_ms', 0)
+            old_avg = metadata_json.get("avg_load_time_ms", 0)
             new_count = old_count + 1
             new_avg = ((old_avg * old_count) + load_request.load_time_ms) // new_count
 
             # Update metadata with new avg
-            metadata_json['avg_load_time_ms'] = new_avg
+            metadata_json["avg_load_time_ms"] = new_avg
 
             # Update database
             update_query = """
@@ -481,8 +472,10 @@ class KanbanContextService:
                 WHERE task_id = $1
                 RETURNING last_loaded_at
             """
-            update_row = await conn.fetchrow(update_query, task_id, json.dumps(metadata_json))
-            last_loaded_at = update_row['last_loaded_at']
+            update_row = await conn.fetchrow(
+                update_query, task_id, json.dumps(metadata_json)
+            )
+            last_loaded_at = update_row["last_loaded_at"]
 
         logger.info(
             f"Tracked context load for task {task_id}: "
@@ -544,6 +537,7 @@ class KanbanContextService:
 # ============================================================================
 # Mock Service for Testing
 # ============================================================================
+
 
 class MockKanbanContextService:
     """
@@ -620,8 +614,7 @@ class MockKanbanContextService:
 
         # Remove existing context for task
         self._mock_contexts = {
-            k: v for k, v in self._mock_contexts.items()
-            if v.task_id != task_id
+            k: v for k, v in self._mock_contexts.items() if v.task_id != task_id
         }
         self._mock_contexts[context_id] = context
 
@@ -645,8 +638,8 @@ class MockKanbanContextService:
 
         try:
             zip_buffer = io.BytesIO(contents)
-            with zipfile.ZipFile(zip_buffer, 'r') as zip_file:
-                file_list = [n for n in zip_file.namelist() if not n.endswith('/')]
+            with zipfile.ZipFile(zip_buffer, "r") as zip_file:
+                file_list = [n for n in zip_file.namelist() if not n.endswith("/")]
                 if not file_list:
                     raise InvalidContextFiles("ZIP file contains no files")
         except zipfile.BadZipFile:
@@ -666,8 +659,7 @@ class MockKanbanContextService:
         )
 
         self._mock_contexts = {
-            k: v for k, v in self._mock_contexts.items()
-            if v.task_id != task_id
+            k: v for k, v in self._mock_contexts.items() if v.task_id != task_id
         }
         self._mock_contexts[context_id] = context
 
@@ -727,6 +719,7 @@ kanban_context_service = MockKanbanContextService()
 # Dependency Injection
 # ============================================================================
 
+
 def get_kanban_context_service() -> KanbanContextService:
     """
     Dependency function for FastAPI routes.
@@ -738,6 +731,8 @@ def get_kanban_context_service() -> KanbanContextService:
 
     db_pool = async_db.get_pool()
     if db_pool is None:
-        raise RuntimeError("Database pool not initialized. Ensure startup_event has run.")
+        raise RuntimeError(
+            "Database pool not initialized. Ensure startup_event has run."
+        )
 
     return KanbanContextService(db_pool=db_pool)

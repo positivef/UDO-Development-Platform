@@ -24,7 +24,7 @@ FMEA, RPN. 보완: 다차원 요인(팀, 예산) 추가; 가상 데이터 시뮬
 ### 2.1 주요 영역
 - 코드 중복: 이전 추정 500-700 LOC → 컨텍스트 파일 구조(backend 14,968 LOC, src 51,755 LOC) 기반 가상 분할 분석으로 550 LOC 확인 (uncertainty_map_v3.py quantum 로직 중복 200 LOC, services 간 Dict 150 LOC).
 - 타입 오류: 7 mypy 유지.
-  
+
   | 오류 유형 | 개수 | 예시 | 보완 영향 |
   |----------|------|------|----------|
   | Optional 누락 | 3 | timestamp: str = None → NoneType. | 팀 수준 낮으면 발생 +20%. |

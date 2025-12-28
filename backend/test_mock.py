@@ -1,7 +1,8 @@
 #!/usr/bin/env python3
 """Test mock service availability"""
 
-from app.services.project_context_service import get_project_context_service, enable_mock_service
+from app.services.project_context_service import (enable_mock_service,
+                                                  get_project_context_service)
 
 # Enable mock service mode
 print("Enabling mock service mode...")
@@ -16,7 +17,12 @@ if service:
     print(f"Service class name: {service.__class__.__name__}")
 
     # Check if it has the required methods
-    required_methods = ['list_projects', 'get_current_project', 'save_context', 'load_context']
+    required_methods = [
+        "list_projects",
+        "get_current_project",
+        "save_context",
+        "load_context",
+    ]
     for method in required_methods:
         if hasattr(service, method):
             print(f"  Has method: {method}")

@@ -24,8 +24,9 @@ from typing import Dict, List, Optional, Tuple
 def get_storage_dir() -> Path:
     """Get UDO storage directory"""
     import os
-    env_dir = os.environ.get('UDO_STORAGE_DIR') or os.environ.get('UDO_HOME')
-    base_dir = Path(env_dir).expanduser() if env_dir else Path.home() / '.udo'
+
+    env_dir = os.environ.get("UDO_STORAGE_DIR") or os.environ.get("UDO_HOME")
+    base_dir = Path(env_dir).expanduser() if env_dir else Path.home() / ".udo"
     base_dir.mkdir(parents=True, exist_ok=True)
     return base_dir
 
@@ -39,41 +40,48 @@ def run_coverage_test() -> Tuple[float, Dict[str, float]]:
     """
     try:
         import sys
+
         # Run pytest with coverage using current Python executable
         result = subprocess.run(
             [
-                sys.executable, "-m", "pytest",
-                "backend/tests/", "tests/",
-                "--cov=backend", "--cov=src",
+                sys.executable,
+                "-m",
+                "pytest",
+                "backend/tests/",
+                "tests/",
+                "--cov=backend",
+                "--cov=src",
                 "--cov-report=term",
-                "-q", "--tb=line", "--disable-warnings"
+                "-q",
+                "--tb=line",
+                "--disable-warnings",
             ],
             capture_output=True,
             text=True,
-            encoding='utf-8',
-            errors='replace',
+            encoding="utf-8",
+            errors="replace",
             timeout=300,
-            cwd=Path.cwd()
+            cwd=Path.cwd(),
         )
 
         # Parse coverage output
         total_coverage = 0.0
         module_coverage = {}
 
-        for line in result.stdout.split('\n'):
-            if 'TOTAL' in line:
+        for line in result.stdout.split("\n"):
+            if "TOTAL" in line:
                 # Extract total coverage percentage
                 parts = line.split()
                 for part in parts:
-                    if '%' in part:
-                        total_coverage = float(part.replace('%', ''))
+                    if "%" in part:
+                        total_coverage = float(part.replace("%", ""))
                         break
-            elif line.strip() and not line.startswith('=') and not line.startswith('-'):
+            elif line.strip() and not line.startswith("=") and not line.startswith("-"):
                 # Extract module-specific coverage
                 parts = line.split()
-                if len(parts) >= 4 and parts[-1].endswith('%'):
+                if len(parts) >= 4 and parts[-1].endswith("%"):
                     module_name = parts[0]
-                    coverage_pct = float(parts[-1].replace('%', ''))
+                    coverage_pct = float(parts[-1].replace("%", ""))
                     module_coverage[module_name] = coverage_pct
 
         return total_coverage, module_coverage
@@ -104,8 +112,8 @@ def record_coverage(total_coverage: float, module_coverage: Dict[str, float]) ->
         "metadata": {
             "total_modules": len(module_coverage),
             "modules_above_80": sum(1 for cov in module_coverage.values() if cov >= 80),
-            "modules_below_50": sum(1 for cov in module_coverage.values() if cov < 50)
-        }
+            "modules_below_50": sum(1 for cov in module_coverage.values() if cov < 50),
+        },
     }
 
     with open(trend_file, "a", encoding="utf-8") as f:
@@ -200,10 +208,9 @@ def generate_coverage_report() -> str:
         report_lines.append("  Significant Changes (>=5%):")
         for module, first_cov, latest_cov, delta in changes[:10]:
             direction = "+" if delta > 0 else ""
-            module_short = module.split('/')[-1] if '/' in module else module
+            module_short = module.split("/")[-1] if "/" in module else module
             report_lines.append(
-                f"    {module_short:40s}: {first_cov:5.1f}% -> {latest_cov:5.1f}% "
-                f"({direction}{delta:.1f}%)"
+                f"    {module_short:40s}: {first_cov:5.1f}% -> {latest_cov:5.1f}% " f"({direction}{delta:.1f}%)"
             )
     else:
         report_lines.append("  No significant module changes detected")
@@ -267,30 +274,11 @@ def check_regression(threshold: float = 2.0) -> bool:
 
 
 def main():
-    parser = argparse.ArgumentParser(
-        description="Coverage Trend Tracker for UDO Platform"
-    )
-    parser.add_argument(
-        "--record",
-        action="store_true",
-        help="Run coverage test and record snapshot"
-    )
-    parser.add_argument(
-        "--report",
-        action="store_true",
-        help="Generate coverage trend report"
-    )
-    parser.add_argument(
-        "--check-regression",
-        action="store_true",
-        help="Check for coverage regression from last measurement"
-    )
-    parser.add_argument(
-        "--threshold",
-        type=float,
-        default=2.0,
-        help="Regression threshold in percentage points (default 2%)"
-    )
+    parser = argparse.ArgumentParser(description="Coverage Trend Tracker for UDO Platform")
+    parser.add_argument("--record", action="store_true", help="Run coverage test and record snapshot")
+    parser.add_argument("--report", action="store_true", help="Generate coverage trend report")
+    parser.add_argument("--check-regression", action="store_true", help="Check for coverage regression from last measurement")
+    parser.add_argument("--threshold", type=float, default=2.0, help="Regression threshold in percentage points (default 2%)")
 
     args = parser.parse_args()
 

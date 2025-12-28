@@ -1,7 +1,7 @@
 """
 Authentication Router
 
-[EMOJI] [EMOJI] [EMOJI] [EMOJI] [EMOJI].
+사용자 인증 관련 엔드포인트를 제공합니다.
 """
 
 from typing import Dict, Any
@@ -20,7 +20,7 @@ from app.core.security import (
     security
 )
 
-# Mock user storage ([EMOJI] [EMOJI] [EMOJI] [EMOJI])
+# Mock user storage (실제 환경에서는 데이터베이스 사용)
 from app.services.auth_service import AuthService
 
 logger = logging.getLogger(__name__)
@@ -36,30 +36,30 @@ router = APIRouter(
 
 # Request/Response models
 class LoginRequest(BaseModel):
-    """[EMOJI] [EMOJI] [EMOJI]"""
+    """로그인 요청 모델"""
     email: str = Field(..., description="User email")
     password: str = Field(..., description="User password")
 
 class LoginResponse(BaseModel):
-    """[EMOJI] [EMOJI] [EMOJI]"""
+    """로그인 응답 모델"""
     access_token: str
     refresh_token: str
     token_type: str = "bearer"
     user: Dict[str, Any]
 
 class RegisterRequest(BaseModel):
-    """[EMOJI] [EMOJI] [EMOJI]"""
+    """회원가입 요청 모델"""
     email: str = Field(..., description="User email")
     password: str = Field(..., min_length=8, description="User password")
     username: str = Field(..., min_length=3, max_length=50, description="Username")
     full_name: str = Field(None, description="Full name")
 
 class RefreshTokenRequest(BaseModel):
-    """[EMOJI] [EMOJI] [EMOJI] [EMOJI]"""
+    """토큰 갱신 요청 모델"""
     refresh_token: str = Field(..., description="Refresh token")
 
 class TokenResponse(BaseModel):
-    """[EMOJI] [EMOJI] [EMOJI]"""
+    """토큰 응답 모델"""
     access_token: str
     refresh_token: str
     token_type: str = "bearer"
@@ -71,21 +71,21 @@ auth_service = AuthService()
 @router.post("/register", response_model=LoginResponse)
 async def register(request: RegisterRequest):
     """
-    [EMOJI] [EMOJI] [EMOJI]
+    새로운 사용자 등록
 
-    - Email [EMOJI] [EMOJI]
-    - [EMOJI] [EMOJI] [EMOJI]
-    - [EMOJI] [EMOJI] [EMOJI] [EMOJI] [EMOJI]
+    - Email 중복 검사
+    - 비밀번호 강도 검증
+    - 사용자 생성 후 토큰 발급
     """
     try:
-        # Email [EMOJI] [EMOJI]
+        # Email 유효성 검사
         if not InputValidator.validate_email(request.email):
             raise HTTPException(
                 status_code=status.HTTP_400_BAD_REQUEST,
                 detail="Invalid email format"
             )
 
-        # [EMOJI] [EMOJI] [EMOJI]
+        # 비밀번호 강도 검증
         password_validation = InputValidator.validate_password(request.password)
         if not password_validation["valid"]:
             raise HTTPException(
@@ -93,14 +93,14 @@ async def register(request: RegisterRequest):
                 detail="; ".join(password_validation["errors"])
             )
 
-        # [EMOJI] [EMOJI] (SecureUserCreate [EMOJI] [EMOJI])
+        # 사용자 생성 (SecureUserCreate 모델 사용)
         secure_user = SecureUserCreate(
             email=request.email,
             password=request.password,
             username=request.username
         )
 
-        # AuthService[EMOJI] [EMOJI] [EMOJI] [EMOJI]
+        # AuthService를 통해 사용자 생성
         user = await auth_service.create_user(
             email=secure_user.email,
             password=request.password,  # Raw password (will be hashed in service)
@@ -114,7 +114,7 @@ async def register(request: RegisterRequest):
                 detail="User already exists"
             )
 
-        # [EMOJI] [EMOJI] (RBAC: role [EMOJI])
+        # 토큰 생성 (RBAC: role 포함)
         access_token = JWTManager.create_access_token(
             data={"sub": user["email"], "user_id": user["id"], "role": user.get("role", "viewer")}
         )
@@ -149,20 +149,20 @@ async def register(request: RegisterRequest):
 @router.post("/login", response_model=LoginResponse)
 async def login(request: LoginRequest):
     """
-    [EMOJI] [EMOJI]
+    사용자 로그인
 
-    - Email/[EMOJI] [EMOJI]
-    - [EMOJI] [EMOJI] [EMOJI] [EMOJI] [EMOJI] [EMOJI]
+    - Email/비밀번호 검증
+    - 액세스 토큰 및 리프레시 토큰 발급
     """
     try:
-        # Email [EMOJI] [EMOJI]
+        # Email 유효성 검사
         if not InputValidator.validate_email(request.email):
             raise HTTPException(
                 status_code=status.HTTP_400_BAD_REQUEST,
                 detail="Invalid email format"
             )
 
-        # [EMOJI] [EMOJI]
+        # 사용자 인증
         user = await auth_service.authenticate_user(
             email=request.email,
             password=request.password
@@ -174,7 +174,7 @@ async def login(request: LoginRequest):
                 detail="Invalid email or password"
             )
 
-        # [EMOJI] [EMOJI] (RBAC: role [EMOJI])
+        # 토큰 생성 (RBAC: role 포함)
         access_token = JWTManager.create_access_token(
             data={"sub": user["email"], "user_id": user["id"], "role": user.get("role", "viewer")}
         )
@@ -209,24 +209,24 @@ async def login(request: LoginRequest):
 @router.post("/refresh", response_model=TokenResponse)
 async def refresh_token(request: RefreshTokenRequest):
     """
-    [EMOJI] [EMOJI]
+    토큰 갱신
 
-    - [EMOJI] [EMOJI] [EMOJI]
-    - [EMOJI] [EMOJI] [EMOJI] [EMOJI]
-    - [EMOJI] [EMOJI] [EMOJI] [EMOJI] (rotate)
+    - 리프레시 토큰 검증
+    - 새로운 액세스 토큰 발급
+    - 새로운 리프레시 토큰 발급 (rotate)
     """
     try:
-        # [EMOJI] [EMOJI] [EMOJI]
-        payload = JWTManager.decode_token(request.refresh_token)
+        # 리프레시 토큰 디코드
+        payload = await JWTManager.decode_token_async(request.refresh_token)
 
-        # [EMOJI] [EMOJI] [EMOJI]
+        # 토큰 타입 확인
         if payload.get("type") != "refresh":
             raise HTTPException(
                 status_code=status.HTTP_401_UNAUTHORIZED,
                 detail="Invalid token type"
             )
 
-        # [EMOJI] [EMOJI]
+        # 사용자 확인
         user_email = payload.get("sub")
         user_id = payload.get("user_id")
         user_role = payload.get("role", "viewer")  # RBAC: Preserve role in refresh
@@ -237,7 +237,7 @@ async def refresh_token(request: RefreshTokenRequest):
                 detail="Invalid token payload"
             )
 
-        # [EMOJI] [EMOJI] [EMOJI] (RBAC: role [EMOJI])
+        # 새 토큰 생성 (RBAC: role 포함)
         new_access_token = JWTManager.create_access_token(
             data={"sub": user_email, "user_id": user_id, "role": user_role}
         )
@@ -268,16 +268,16 @@ async def get_current_user(
     credentials: HTTPAuthorizationCredentials = Depends(security)
 ):
     """
-    [EMOJI] [EMOJI] [EMOJI] [EMOJI] [EMOJI]
+    현재 로그인한 사용자 정보 조회
 
-    - JWT [EMOJI] [EMOJI]
-    - [EMOJI] [EMOJI] [EMOJI]
+    - JWT 토큰 검증
+    - 사용자 정보 반환
     """
     try:
-        # [EMOJI] [EMOJI]
+        # 토큰 검증
         payload = JWTManager.verify_token(credentials)
 
-        # [EMOJI] [EMOJI] [EMOJI]
+        # 사용자 정보 조회
         user_email = payload.get("sub")
         user_id = payload.get("user_id")
 
@@ -312,17 +312,17 @@ async def logout(
     credentials: HTTPAuthorizationCredentials = Depends(security)
 ):
     """
-    [EMOJI] [EMOJI]
+    사용자 로그아웃
 
-    - [EMOJI] [EMOJI] ([EMOJI] [EMOJI] Redis [EMOJI] [EMOJI] [EMOJI])
-    - [EMOJI] [EMOJI] [EMOJI]
+    - 토큰 무효화 (실제 환경에서는 Redis 등에 블랙리스트 저장)
+    - 로그아웃 성공 응답
     """
     try:
-        # [EMOJI] [EMOJI]
+        # 토큰 검증
         payload = JWTManager.verify_token(credentials)
         user_email = payload.get("sub")
 
-        # TODO: [EMOJI] [EMOJI] [EMOJI] [EMOJI] [EMOJI]
+        # TODO: 실제 환경에서는 토큰을 블랙리스트에 추가
         # await auth_service.blacklist_token(credentials.credentials)
 
         logger.info(f"User logged out: {user_email}")
@@ -331,7 +331,7 @@ async def logout(
 
     except Exception as e:
         logger.error(f"Logout error: {e}")
-        # [EMOJI] [EMOJI] [EMOJI] [EMOJI]
+        # 로그아웃은 항상 성공 응답
         return {"message": "Logged out"}
 
 

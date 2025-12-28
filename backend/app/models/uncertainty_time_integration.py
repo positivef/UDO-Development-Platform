@@ -5,17 +5,19 @@ Models for integrating Uncertainty Map v3 with Time Tracking Service.
 Enables uncertainty-aware time tracking and predictive baseline adjustments.
 """
 
-from pydantic import BaseModel, Field
-from typing import Optional, Dict, Any, List
 from datetime import datetime
+from typing import Any, Dict, List, Optional
 from uuid import UUID
 
-from .uncertainty import UncertaintyVectorResponse, UncertaintyStateEnum
-from .time_tracking import TaskType, Phase, AIModel
+from pydantic import BaseModel, Field
+
+from .time_tracking import AIModel, Phase, TaskType
+from .uncertainty import UncertaintyStateEnum, UncertaintyVectorResponse
 
 
 class UncertaintyAwareTrackingRequest(BaseModel):
     """Request to start tracking with uncertainty context"""
+
     task_id: str
     task_type: TaskType
     phase: Phase = Phase.IMPLEMENTATION
@@ -24,7 +26,7 @@ class UncertaintyAwareTrackingRequest(BaseModel):
     # Uncertainty context
     uncertainty_context: Dict[str, Any] = Field(
         ...,
-        description="Context for uncertainty analysis (phase, has_code, validation_score, etc.)"
+        description="Context for uncertainty analysis (phase, has_code, validation_score, etc.)",
     )
 
     metadata: Optional[Dict[str, Any]] = None
@@ -42,18 +44,16 @@ class UncertaintyAwareTrackingRequest(BaseModel):
                     "has_code": True,
                     "validation_score": 0.7,
                     "team_size": 3,
-                    "timeline_weeks": 8
+                    "timeline_weeks": 8,
                 },
-                "metadata": {
-                    "component": "authentication",
-                    "complexity": "high"
-                }
+                "metadata": {"component": "authentication", "complexity": "high"},
             }
         }
 
 
 class UncertaintyAwareTrackingResponse(BaseModel):
     """Response after starting uncertainty-aware tracking"""
+
     success: bool
     session_id: UUID
     message: str
@@ -65,20 +65,18 @@ class UncertaintyAwareTrackingResponse(BaseModel):
     uncertainty_vector: UncertaintyVectorResponse
     uncertainty_state: UncertaintyStateEnum
     adjusted_baseline_seconds: int = Field(
-        ...,
-        description="Baseline adjusted based on uncertainty level"
+        ..., description="Baseline adjusted based on uncertainty level"
     )
     confidence_score: float = Field(
         ...,
         ge=0,
         le=1,
-        description="Confidence in completing task within adjusted baseline"
+        description="Confidence in completing task within adjusted baseline",
     )
 
     # Risk assessment
     risk_factors: List[str] = Field(
-        ...,
-        description="Identified risk factors for this task"
+        ..., description="Identified risk factors for this task"
     )
 
     class Config:
@@ -95,7 +93,7 @@ class UncertaintyAwareTrackingResponse(BaseModel):
                     "timeline": 0.5,
                     "quality": 0.3,
                     "magnitude": 0.38,
-                    "dominant_dimension": "timeline"
+                    "dominant_dimension": "timeline",
                 },
                 "uncertainty_state": "quantum",
                 "adjusted_baseline_seconds": 15000,
@@ -103,8 +101,8 @@ class UncertaintyAwareTrackingResponse(BaseModel):
                 "risk_factors": [
                     "Timeline uncertainty high (50%)",
                     "Quantum state - multiple possible outcomes",
-                    "Complex refactoring with existing code"
-                ]
+                    "Complex refactoring with existing code",
+                ],
             }
         }
 
@@ -119,29 +117,26 @@ class CorrelationAnalysisResponse(BaseModel):
     # Overall correlations
     uncertainty_duration_correlation: float = Field(
         ...,
-        description="Correlation between uncertainty magnitude and task duration (-1 to 1)"
+        description="Correlation between uncertainty magnitude and task duration (-1 to 1)",
     )
     uncertainty_success_correlation: float = Field(
         ...,
-        description="Correlation between uncertainty magnitude and success rate (-1 to 1)"
+        description="Correlation between uncertainty magnitude and success rate (-1 to 1)",
     )
 
     # State-specific metrics
     state_performance: Dict[str, Dict[str, Any]] = Field(
-        ...,
-        description="Performance metrics grouped by uncertainty state"
+        ..., description="Performance metrics grouped by uncertainty state"
     )
 
     # Dimension-specific metrics
     dimension_impact: Dict[str, Dict[str, Any]] = Field(
-        ...,
-        description="Impact of each uncertainty dimension on performance"
+        ..., description="Impact of each uncertainty dimension on performance"
     )
 
     # Insights
     insights: List[str] = Field(
-        ...,
-        description="Data-driven insights from correlation analysis"
+        ..., description="Data-driven insights from correlation analysis"
     )
 
     class Config:
@@ -158,42 +153,42 @@ class CorrelationAnalysisResponse(BaseModel):
                         "avg_baseline_seconds": 1800,
                         "success_rate": 0.98,
                         "avg_efficiency": 0.75,
-                        "task_count": 35
+                        "task_count": 35,
                     },
                     "probabilistic": {
                         "avg_duration_seconds": 1200,
                         "avg_baseline_seconds": 3600,
                         "success_rate": 0.92,
                         "avg_efficiency": 0.67,
-                        "task_count": 45
+                        "task_count": 45,
                     },
                     "quantum": {
                         "avg_duration_seconds": 4500,
                         "avg_baseline_seconds": 7200,
                         "success_rate": 0.76,
                         "avg_efficiency": 0.38,
-                        "task_count": 32
-                    }
+                        "task_count": 32,
+                    },
                 },
                 "dimension_impact": {
                     "technical": {
                         "correlation_with_duration": 0.65,
                         "correlation_with_success": -0.52,
-                        "most_impacted_phase": "implementation"
+                        "most_impacted_phase": "implementation",
                     },
                     "timeline": {
                         "correlation_with_duration": 0.81,
                         "correlation_with_success": -0.67,
-                        "most_impacted_phase": "testing"
-                    }
+                        "most_impacted_phase": "testing",
+                    },
                 },
                 "insights": [
                     "Strong positive correlation (0.73) between uncertainty and duration - higher uncertainty = longer tasks",
                     "Tasks in quantum/chaotic states take 3-4x longer than deterministic states",
                     "Timeline uncertainty is the strongest predictor of task overruns",
                     "Success rate drops from 98% (deterministic) to 76% (quantum)",
-                    "Technical uncertainty has high impact during implementation phase"
-                ]
+                    "Technical uncertainty has high impact during implementation phase",
+                ],
             }
         }
 
@@ -212,30 +207,23 @@ class AdjustedBaselineResponse(BaseModel):
     uncertainty_state: UncertaintyStateEnum
     adjusted_baseline_seconds: int
     adjustment_percentage: float = Field(
-        ...,
-        description="Percentage adjustment from standard baseline"
+        ..., description="Percentage adjustment from standard baseline"
     )
 
     # Confidence
     confidence_score: float = Field(
-        ...,
-        ge=0,
-        le=1,
-        description="Confidence in adjusted baseline accuracy"
+        ..., ge=0, le=1, description="Confidence in adjusted baseline accuracy"
     )
     confidence_interval_lower: int = Field(
-        ...,
-        description="Lower bound of time estimate (seconds)"
+        ..., description="Lower bound of time estimate (seconds)"
     )
     confidence_interval_upper: int = Field(
-        ...,
-        description="Upper bound of time estimate (seconds)"
+        ..., description="Upper bound of time estimate (seconds)"
     )
 
     # Explanation
     adjustment_factors: List[str] = Field(
-        ...,
-        description="Factors that influenced baseline adjustment"
+        ..., description="Factors that influenced baseline adjustment"
     )
 
     class Config:
@@ -251,7 +239,7 @@ class AdjustedBaselineResponse(BaseModel):
                     "timeline": 0.7,
                     "quality": 0.5,
                     "magnitude": 0.54,
-                    "dominant_dimension": "timeline"
+                    "dominant_dimension": "timeline",
                 },
                 "uncertainty_state": "quantum",
                 "adjusted_baseline_seconds": 21600,
@@ -263,8 +251,8 @@ class AdjustedBaselineResponse(BaseModel):
                     "Quantum uncertainty state (+40%)",
                     "High timeline uncertainty (70%) (+25%)",
                     "Technical uncertainty above threshold (+15%)",
-                    "Implementation phase complexity factor (+10%)"
-                ]
+                    "Implementation phase complexity factor (+10%)",
+                ],
             }
         }
 
@@ -281,36 +269,26 @@ class MitigationEffectivenessResponse(BaseModel):
 
     # Effectiveness metrics
     avg_uncertainty_reduction: float = Field(
-        ...,
-        description="Average reduction in uncertainty magnitude after mitigation"
+        ..., description="Average reduction in uncertainty magnitude after mitigation"
     )
     avg_time_improvement: float = Field(
-        ...,
-        description="Average improvement in task duration (seconds)"
+        ..., description="Average improvement in task duration (seconds)"
     )
     success_rate_improvement: float = Field(
-        ...,
-        description="Improvement in success rate after applying mitigation"
+        ..., description="Improvement in success rate after applying mitigation"
     )
 
     # ROI
     avg_mitigation_cost_hours: float
     avg_time_saved_hours: float
-    roi_ratio: float = Field(
-        ...,
-        description="ROI ratio: time_saved / mitigation_cost"
-    )
+    roi_ratio: float = Field(..., description="ROI ratio: time_saved / mitigation_cost")
 
     # Recommendation
     effectiveness_score: float = Field(
-        ...,
-        ge=0,
-        le=1,
-        description="Overall effectiveness score (0-1)"
+        ..., ge=0, le=1, description="Overall effectiveness score (0-1)"
     )
     recommended: bool = Field(
-        ...,
-        description="Whether this mitigation is recommended for similar tasks"
+        ..., description="Whether this mitigation is recommended for similar tasks"
     )
 
     class Config:
@@ -321,7 +299,7 @@ class MitigationEffectivenessResponse(BaseModel):
                 "times_applied": 12,
                 "tasks_tracked": [
                     "550e8400-e29b-41d4-a716-446655440001",
-                    "550e8400-e29b-41d4-a716-446655440002"
+                    "550e8400-e29b-41d4-a716-446655440002",
                 ],
                 "avg_uncertainty_reduction": 0.23,
                 "avg_time_improvement": 3600.0,
@@ -330,6 +308,6 @@ class MitigationEffectivenessResponse(BaseModel):
                 "avg_time_saved_hours": 18.5,
                 "roi_ratio": 1.54,
                 "effectiveness_score": 0.78,
-                "recommended": True
+                "recommended": True,
             }
         }

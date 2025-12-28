@@ -38,7 +38,7 @@ RETENTION_POLICY: Dict[str, int] = {
     "worklog": 30,
     "analysis": 90,
     "completion": 0,  # Permanent
-    "decisions": 0,   # Permanent
+    "decisions": 0,  # Permanent
 }
 
 # Stage 1: In-project archive (grace period)
@@ -62,12 +62,7 @@ def get_last_project_activity() -> datetime:
     """
     try:
         # Get last commit timestamp
-        result = subprocess.run(
-            ["git", "log", "-1", "--format=%ct"],
-            capture_output=True,
-            text=True,
-            cwd=get_project_root()
-        )
+        result = subprocess.run(["git", "log", "-1", "--format=%ct"], capture_output=True, text=True, cwd=get_project_root())
 
         if result.returncode == 0 and result.stdout.strip():
             timestamp = int(result.stdout.strip())
@@ -91,12 +86,7 @@ def get_project_name() -> str:
     """
     try:
         # Try to get from git remote
-        result = subprocess.run(
-            ["git", "remote", "get-url", "origin"],
-            capture_output=True,
-            text=True,
-            cwd=get_project_root()
-        )
+        result = subprocess.run(["git", "remote", "get-url", "origin"], capture_output=True, text=True, cwd=get_project_root())
 
         if result.returncode == 0 and result.stdout.strip():
             url = result.stdout.strip()
@@ -236,11 +226,7 @@ def get_file_age_days(filepath: Path, reference_time: datetime) -> int:
     return (reference_time - mtime).days
 
 
-def scan_folder(
-    folder_path: Path,
-    retention_days: int,
-    reference_time: datetime
-) -> List[Tuple[Path, int, str]]:
+def scan_folder(folder_path: Path, retention_days: int, reference_time: datetime) -> List[Tuple[Path, int, str]]:
     """
     Scan folder and return list of (filepath, age_days, status).
 
@@ -276,10 +262,7 @@ def scan_folder(
     return results
 
 
-def scan_internal_archive(
-    claudedocs: Path,
-    reference_time: datetime
-) -> List[Tuple[Path, int, str]]:
+def scan_internal_archive(claudedocs: Path, reference_time: datetime) -> List[Tuple[Path, int, str]]:
     """
     Scan in-project _archived/ folder for Stage 2 processing.
 
@@ -317,7 +300,7 @@ def cleanup_claudedocs(
     verbose: bool = False,
     archive: bool = True,
     auto_confirm: bool = False,
-    process_external: bool = False
+    process_external: bool = False,
 ) -> Dict[str, List[Path]]:
     """
     Main cleanup function with 2-stage archiving.
@@ -619,33 +602,15 @@ Examples:
 
   # Automated/CI mode (no prompts)
   python scripts/cleanup_claudedocs.py --execute --external --yes
-"""
+""",
     )
     parser.add_argument(
-        "--execute",
-        action="store_true",
-        help="Process expired files (shows summary and asks for confirmation)"
+        "--execute", action="store_true", help="Process expired files (shows summary and asks for confirmation)"
     )
-    parser.add_argument(
-        "--external", "-e",
-        action="store_true",
-        help="Also process Stage 2 (move archived files to D: drive)"
-    )
-    parser.add_argument(
-        "--yes", "-y",
-        action="store_true",
-        help="Skip confirmation prompt (for automation/CI)"
-    )
-    parser.add_argument(
-        "--verbose", "-v",
-        action="store_true",
-        help="Show all files, not just expired ones"
-    )
-    parser.add_argument(
-        "--no-archive",
-        action="store_true",
-        help="Permanently delete instead of archiving (use with caution)"
-    )
+    parser.add_argument("--external", "-e", action="store_true", help="Also process Stage 2 (move archived files to D: drive)")
+    parser.add_argument("--yes", "-y", action="store_true", help="Skip confirmation prompt (for automation/CI)")
+    parser.add_argument("--verbose", "-v", action="store_true", help="Show all files, not just expired ones")
+    parser.add_argument("--no-archive", action="store_true", help="Permanently delete instead of archiving (use with caution)")
 
     args = parser.parse_args()
 
@@ -654,7 +619,7 @@ Examples:
         verbose=args.verbose,
         archive=not args.no_archive,
         auto_confirm=args.yes,
-        process_external=args.external
+        process_external=args.external,
     )
 
 

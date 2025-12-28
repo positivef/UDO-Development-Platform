@@ -29,16 +29,16 @@ RAG (검색 증강 생성): 토큰 비용 절감과 정확도 향상을 위해 p
 graph TD
     Client[웹 대시보드\n(Next.js 14)] -->|REST API| API[FastAPI 서버 클러스터]
     Client -->|WebSocket| SocketSvc[실시간 알림 서비스]
-    
+
     subgraph "애플리케이션 계층 (Application Layer)"
         API -->|Enqueue Job| Redis[(Redis Task Queue)]
-        
+
         subgraph "백그라운드 워커 (Celery Workers)"
             Worker[AI 처리 워커]
             Worker -->|Pop Job| Redis
             Worker -->|RAG Search| VectorDB[(PostgreSQL + pgvector)]
             Worker -->|Generate| Bridge[AI 브리지 (Circuit Breaker)]
-            
+
             subgraph "지능형 처리 엔진"
                 Bridge --> Claude
                 Bridge --> Codex
@@ -46,7 +46,7 @@ graph TD
                 Bridge -->|Validation| Validator[응답 검증기]
             end
         end
-        
+
         Worker -->|Push Result| SocketSvc
     end
 

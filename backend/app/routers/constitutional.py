@@ -4,16 +4,19 @@ Constitutional API Router
 Provides endpoints for UDO Constitution enforcement and monitoring
 """
 
-from fastapi import APIRouter, HTTPException, Depends, Query
-from fastapi.responses import JSONResponse
-from typing import List, Optional, Dict, Any
+import logging
 from datetime import datetime, timedelta
 from pathlib import Path
-import logging
+from typing import Any, Dict, List, Optional
 
-from app.core.constitutional_guard import ConstitutionalGuard, ValidationResult, Severity
-from app.models.constitutional_violation import ConstitutionalViolation, ConstitutionalComplianceMetrics
-from database import Database
+from app.core.constitutional_guard import (ConstitutionalGuard,
+                                                    Severity,
+                                                    ValidationResult)
+from app.models.constitutional_violation import (
+    ConstitutionalComplianceMetrics, ConstitutionalViolation)
+from backend.database import Database
+from fastapi import APIRouter, Depends, HTTPException, Query
+from fastapi.responses import JSONResponse
 from pydantic import BaseModel, Field
 
 logger = logging.getLogger(__name__)
@@ -21,13 +24,15 @@ logger = logging.getLogger(__name__)
 router = APIRouter(
     prefix="/api/constitution",
     tags=["constitution"],
-    responses={404: {"description": "Not found"}}
+    responses={404: {"description": "Not found"}},
 )
 
 # Pydantic models for request/response
 
+
 class DesignReviewRequest(BaseModel):
     """Request for P1: Design Review First"""
+
     design_id: str
     risk_assessments: Dict[str, Any]
     user_approved: bool = False
@@ -37,6 +42,7 @@ class DesignReviewRequest(BaseModel):
 
 class ConfidenceValidationRequest(BaseModel):
     """Request for P2: Uncertainty Disclosure"""
+
     response_id: str
     ai_agent: str
     recommendation: str
@@ -47,6 +53,7 @@ class ConfidenceValidationRequest(BaseModel):
 
 class EvidenceValidationRequest(BaseModel):
     """Request for P3: Evidence-Based Decision"""
+
     claim_id: str
     type: str  # optimization, performance_improvement
     evidence: Dict[str, Any]
@@ -56,6 +63,7 @@ class EvidenceValidationRequest(BaseModel):
 
 class PhaseComplianceRequest(BaseModel):
     """Request for P4: Phase-Aware Compliance"""
+
     phase: str
     action: str
     quality_score: float
@@ -65,6 +73,7 @@ class PhaseComplianceRequest(BaseModel):
 
 class PhaseTransitionRequest(BaseModel):
     """Request for phase transition validation"""
+
     current_phase: str
     next_phase: str
     quality_score: float
@@ -74,17 +83,20 @@ class PhaseTransitionRequest(BaseModel):
 
 class AIConsensusRequest(BaseModel):
     """Request for P5: Multi-AI Consistency"""
+
     decisions: List[Dict[str, Any]]
 
 
 class ViolationResolveRequest(BaseModel):
     """Request to resolve a violation"""
+
     resolution_notes: str
     resolved_by: str
 
 
 class ComplianceReportRequest(BaseModel):
     """Request for compliance report"""
+
     period_start: Optional[str] = None
     period_end: Optional[str] = None
     article: Optional[str] = None
@@ -106,8 +118,11 @@ def get_database():
 # Constitution Endpoints
 # [EMOJI]
 
+
 @router.get("/")
-async def get_constitution(guard: ConstitutionalGuard = Depends(get_constitutional_guard)):
+async def get_constitution(
+    guard: ConstitutionalGuard = Depends(get_constitutional_guard),
+):
     """
     Get full UDO Constitution (P1-P17)
 
@@ -118,17 +133,20 @@ async def get_constitution(guard: ConstitutionalGuard = Depends(get_constitution
         if not guard.constitution:
             raise HTTPException(status_code=500, detail="Constitution not loaded")
 
-        return JSONResponse(content={
-            "version": guard.constitution.get("version"),
-            "effective_date": guard.constitution.get("effective_date"),
-            "applies_to": guard.constitution.get("applies_to"),
-            "articles": {
-                k: v for k, v in guard.constitution.items()
-                if k.startswith("P") and k[1:2].isdigit()
-            },
-            "enforcement": guard.constitution.get("enforcement"),
-            "metrics": guard.constitution.get("metrics")
-        })
+        return JSONResponse(
+            content={
+                "version": guard.constitution.get("version"),
+                "effective_date": guard.constitution.get("effective_date"),
+                "applies_to": guard.constitution.get("applies_to"),
+                "articles": {
+                    k: v
+                    for k, v in guard.constitution.items()
+                    if k.startswith("P") and k[1:2].isdigit()
+                },
+                "enforcement": guard.constitution.get("enforcement"),
+                "metrics": guard.constitution.get("metrics"),
+            }
+        )
     except Exception as e:
         logger.error(f"Error getting constitution: {e}")
         raise HTTPException(status_code=500, detail=str(e))
@@ -146,12 +164,14 @@ async def list_articles(guard: ConstitutionalGuard = Depends(get_constitutional_
         articles = []
         for key, value in guard.constitution.items():
             if key.startswith("P") and key[1:2].isdigit():
-                articles.append({
-                    "article": key,
-                    "title": value.get("title"),
-                    "priority": value.get("priority"),
-                    "description": value.get("description", "").split("\n")[0]
-                })
+                articles.append(
+                    {
+                        "article": key,
+                        "title": value.get("title"),
+                        "priority": value.get("priority"),
+                        "description": value.get("description", "").split("\n")[0],
+                    }
+                )
 
         return JSONResponse(content={"articles": articles})
     except Exception as e:
@@ -160,7 +180,9 @@ async def list_articles(guard: ConstitutionalGuard = Depends(get_constitutional_
 
 
 @router.get("/articles/{article}")
-async def get_article(article: str, guard: ConstitutionalGuard = Depends(get_constitutional_guard)):
+async def get_article(
+    article: str, guard: ConstitutionalGuard = Depends(get_constitutional_guard)
+):
     """
     Get specific constitutional article
 
@@ -194,10 +216,11 @@ async def get_article(article: str, guard: ConstitutionalGuard = Depends(get_con
 # Validation Endpoints
 # [EMOJI]
 
+
 @router.post("/validate/design")
 async def validate_design(
     request: DesignReviewRequest,
-    guard: ConstitutionalGuard = Depends(get_constitutional_guard)
+    guard: ConstitutionalGuard = Depends(get_constitutional_guard),
 ):
     """
     P1: Validate design review (8-Risk Check)
@@ -219,7 +242,7 @@ async def validate_design(
 @router.post("/validate/confidence")
 async def validate_confidence(
     request: ConfidenceValidationRequest,
-    guard: ConstitutionalGuard = Depends(get_constitutional_guard)
+    guard: ConstitutionalGuard = Depends(get_constitutional_guard),
 ):
     """
     P2: Validate uncertainty disclosure
@@ -241,7 +264,7 @@ async def validate_confidence(
 @router.post("/validate/evidence")
 async def validate_evidence(
     request: EvidenceValidationRequest,
-    guard: ConstitutionalGuard = Depends(get_constitutional_guard)
+    guard: ConstitutionalGuard = Depends(get_constitutional_guard),
 ):
     """
     P3: Validate evidence-based decision
@@ -263,7 +286,7 @@ async def validate_evidence(
 @router.post("/validate/phase-compliance")
 async def validate_phase_compliance(
     request: PhaseComplianceRequest,
-    guard: ConstitutionalGuard = Depends(get_constitutional_guard)
+    guard: ConstitutionalGuard = Depends(get_constitutional_guard),
 ):
     """
     P4: Validate phase-aware compliance
@@ -276,9 +299,7 @@ async def validate_phase_compliance(
     """
     try:
         result = await guard.validate_phase_compliance(
-            request.phase,
-            request.action,
-            request.dict()
+            request.phase, request.action, request.dict()
         )
         return JSONResponse(content=result.to_dict())
     except Exception as e:
@@ -289,7 +310,7 @@ async def validate_phase_compliance(
 @router.post("/validate/phase-transition")
 async def validate_phase_transition(
     request: PhaseTransitionRequest,
-    guard: ConstitutionalGuard = Depends(get_constitutional_guard)
+    guard: ConstitutionalGuard = Depends(get_constitutional_guard),
 ):
     """
     P4: Validate phase transition
@@ -302,9 +323,7 @@ async def validate_phase_transition(
     """
     try:
         result = await guard.validate_phase_transition(
-            request.current_phase,
-            request.next_phase,
-            request.dict()
+            request.current_phase, request.next_phase, request.dict()
         )
         return JSONResponse(content=result.to_dict())
     except Exception as e:
@@ -315,7 +334,7 @@ async def validate_phase_transition(
 @router.post("/validate/ai-consensus")
 async def validate_ai_consensus(
     request: AIConsensusRequest,
-    guard: ConstitutionalGuard = Depends(get_constitutional_guard)
+    guard: ConstitutionalGuard = Depends(get_constitutional_guard),
 ):
     """
     P5: Validate multi-AI consistency and get consensus
@@ -328,10 +347,9 @@ async def validate_ai_consensus(
     """
     try:
         result, consensus = await guard.validate_ai_consensus(request.decisions)
-        return JSONResponse(content={
-            "validation": result.to_dict(),
-            "consensus": consensus
-        })
+        return JSONResponse(
+            content={"validation": result.to_dict(), "consensus": consensus}
+        )
     except Exception as e:
         logger.error(f"Error validating AI consensus: {e}")
         raise HTTPException(status_code=500, detail=str(e))
@@ -341,6 +359,7 @@ async def validate_ai_consensus(
 # Violation Management Endpoints
 # [EMOJI]
 
+
 @router.get("/violations")
 async def get_violations(
     article: Optional[str] = Query(None, description="Filter by article"),
@@ -348,7 +367,7 @@ async def get_violations(
     resolved: Optional[bool] = Query(None, description="Filter by resolution status"),
     ai_agent: Optional[str] = Query(None, description="Filter by AI agent"),
     limit: int = Query(100, description="Maximum results"),
-    guard: ConstitutionalGuard = Depends(get_constitutional_guard)
+    guard: ConstitutionalGuard = Depends(get_constitutional_guard),
 ):
     """
     Get constitutional violations with optional filtering
@@ -366,9 +385,7 @@ async def get_violations(
     try:
         severity_enum = Severity(severity) if severity else None
         violations = guard.get_violations(
-            article=article,
-            severity=severity_enum,
-            resolved=resolved
+            article=article, severity=severity_enum, resolved=resolved
         )
 
         # Filter by AI agent if specified
@@ -378,10 +395,9 @@ async def get_violations(
         # Limit results
         violations = violations[:limit]
 
-        return JSONResponse(content={
-            "total": len(violations),
-            "violations": violations
-        })
+        return JSONResponse(
+            content={"total": len(violations), "violations": violations}
+        )
     except ValueError as e:
         raise HTTPException(status_code=400, detail=f"Invalid severity: {severity}")
     except Exception as e:
@@ -397,7 +413,7 @@ async def report_violation(
     severity: str,
     ai_agent: Optional[str] = None,
     metadata: Optional[Dict[str, Any]] = None,
-    guard: ConstitutionalGuard = Depends(get_constitutional_guard)
+    guard: ConstitutionalGuard = Depends(get_constitutional_guard),
 ):
     """
     Manually report a constitutional violation
@@ -421,14 +437,16 @@ async def report_violation(
             description=description,
             severity=severity_enum,
             ai_agent=ai_agent,
-            metadata=metadata
+            metadata=metadata,
         )
 
-        return JSONResponse(content={
-            "message": "Violation reported",
-            "article": article,
-            "severity": severity
-        })
+        return JSONResponse(
+            content={
+                "message": "Violation reported",
+                "article": article,
+                "severity": severity,
+            }
+        )
     except ValueError:
         raise HTTPException(status_code=400, detail=f"Invalid severity: {severity}")
     except Exception as e:
@@ -439,7 +457,7 @@ async def report_violation(
 @router.get("/violations/export")
 async def export_violations(
     filepath: Optional[str] = Query(None, description="Export file path"),
-    guard: ConstitutionalGuard = Depends(get_constitutional_guard)
+    guard: ConstitutionalGuard = Depends(get_constitutional_guard),
 ):
     """
     Export violations to JSON file
@@ -458,11 +476,13 @@ async def export_violations(
         export_path = Path(filepath)
         guard.export_violations(export_path)
 
-        return JSONResponse(content={
-            "message": "Violations exported",
-            "filepath": str(export_path),
-            "count": len(guard.violation_log)
-        })
+        return JSONResponse(
+            content={
+                "message": "Violations exported",
+                "filepath": str(export_path),
+                "count": len(guard.violation_log),
+            }
+        )
     except Exception as e:
         logger.error(f"Error exporting violations: {e}")
         raise HTTPException(status_code=500, detail=str(e))
@@ -472,8 +492,11 @@ async def export_violations(
 # Compliance Metrics Endpoints
 # [EMOJI]
 
+
 @router.get("/compliance/score")
-async def get_compliance_score(guard: ConstitutionalGuard = Depends(get_constitutional_guard)):
+async def get_compliance_score(
+    guard: ConstitutionalGuard = Depends(get_constitutional_guard),
+):
     """
     Get overall compliance score
 
@@ -488,22 +511,38 @@ async def get_compliance_score(guard: ConstitutionalGuard = Depends(get_constitu
         for v in guard.violation_log:
             if not v["resolved"]:
                 severity = v["severity"]
-                violations_by_severity[severity] = violations_by_severity.get(severity, 0) + 1
+                violations_by_severity[severity] = (
+                    violations_by_severity.get(severity, 0) + 1
+                )
 
         # Count violations by article
         violations_by_article = {}
         for v in guard.violation_log:
             if not v["resolved"]:
                 article = v["article"]
-                violations_by_article[article] = violations_by_article.get(article, 0) + 1
+                violations_by_article[article] = (
+                    violations_by_article.get(article, 0) + 1
+                )
 
-        return JSONResponse(content={
-            "compliance_score": score,
-            "grade": "A" if score >= 0.95 else "B" if score >= 0.85 else "C" if score >= 0.75 else "D" if score >= 0.65 else "F",
-            "total_violations": len([v for v in guard.violation_log if not v["resolved"]]),
-            "violations_by_severity": violations_by_severity,
-            "violations_by_article": violations_by_article
-        })
+        return JSONResponse(
+            content={
+                "compliance_score": score,
+                "grade": (
+                    "A"
+                    if score >= 0.95
+                    else (
+                        "B"
+                        if score >= 0.85
+                        else "C" if score >= 0.75 else "D" if score >= 0.65 else "F"
+                    )
+                ),
+                "total_violations": len(
+                    [v for v in guard.violation_log if not v["resolved"]]
+                ),
+                "violations_by_severity": violations_by_severity,
+                "violations_by_article": violations_by_article,
+            }
+        )
     except Exception as e:
         logger.error(f"Error getting compliance score: {e}")
         raise HTTPException(status_code=500, detail=str(e))
@@ -513,7 +552,7 @@ async def get_compliance_score(guard: ConstitutionalGuard = Depends(get_constitu
 async def get_compliance_report(
     period_start: Optional[str] = Query(None, description="ISO format date"),
     period_end: Optional[str] = Query(None, description="ISO format date"),
-    guard: ConstitutionalGuard = Depends(get_constitutional_guard)
+    guard: ConstitutionalGuard = Depends(get_constitutional_guard),
 ):
     """
     Get comprehensive compliance report
@@ -527,12 +566,17 @@ async def get_compliance_report(
     """
     try:
         # Parse dates
-        start_date = datetime.fromisoformat(period_start) if period_start else datetime.now() - timedelta(days=30)
+        start_date = (
+            datetime.fromisoformat(period_start)
+            if period_start
+            else datetime.now() - timedelta(days=30)
+        )
         end_date = datetime.fromisoformat(period_end) if period_end else datetime.now()
 
         # Filter violations by date
         period_violations = [
-            v for v in guard.violation_log
+            v
+            for v in guard.violation_log
             if start_date <= datetime.fromisoformat(v["timestamp"]) <= end_date
         ]
 
@@ -541,7 +585,7 @@ async def get_compliance_report(
             "period": {
                 "start": start_date.isoformat(),
                 "end": end_date.isoformat(),
-                "days": (end_date - start_date).days
+                "days": (end_date - start_date).days,
             },
             "total_violations": len(period_violations),
             "resolved_violations": len([v for v in period_violations if v["resolved"]]),
@@ -549,7 +593,7 @@ async def get_compliance_report(
             "by_severity": {},
             "by_article": {},
             "by_ai_agent": {},
-            "compliance_score": guard.get_compliance_score()
+            "compliance_score": guard.get_compliance_score(),
         }
 
         # Aggregate statistics
@@ -593,13 +637,17 @@ async def health_check(guard: ConstitutionalGuard = Depends(get_constitutional_g
         Status of constitutional guard
     """
     try:
-        return JSONResponse(content={
-            "status": "healthy",
-            "constitution_loaded": bool(guard.constitution),
-            "version": guard.constitution.get("version") if guard.constitution else None,
-            "total_violations": len(guard.violation_log),
-            "compliance_score": guard.get_compliance_score()
-        })
+        return JSONResponse(
+            content={
+                "status": "healthy",
+                "constitution_loaded": bool(guard.constitution),
+                "version": (
+                    guard.constitution.get("version") if guard.constitution else None
+                ),
+                "total_violations": len(guard.violation_log),
+                "compliance_score": guard.get_compliance_score(),
+            }
+        )
     except Exception as e:
         logger.error(f"Health check failed: {e}")
         raise HTTPException(status_code=500, detail=str(e))

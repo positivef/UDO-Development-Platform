@@ -8,14 +8,14 @@ Verifies Q5 decision implementation:
 - Constraint validation
 """
 
-import pytest
 from uuid import uuid4
-from backend.app.services.kanban_project_service import KanbanProjectService
+
+import pytest
+
 from backend.app.models.kanban_task_project import (
-    MaxRelatedProjectsError,
-    NoPrimaryProjectError,
-    MultiplePrimaryProjectsError,
-)
+    MaxRelatedProjectsError, MultiplePrimaryProjectsError,
+    NoPrimaryProjectError)
+from backend.app.services.kanban_project_service import KanbanProjectService
 
 
 class TestPrimaryProjectManagement:

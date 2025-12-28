@@ -9,6 +9,7 @@ to the main.py file.
 import sys
 from pathlib import Path
 
+
 def add_time_tracking_router():
     """Add time tracking router to main.py"""
     main_py = Path(__file__).parent.parent / "main.py"

@@ -15,18 +15,20 @@ Date: 2025-11-17
 Version: 2.0.0 (Performance Upgrade)
 """
 
-import sys
-import os
+import json
 import logging
-from pathlib import Path
-from typing import Dict, List, Optional, Any, Tuple
-from dataclasses import dataclass, asdict, field
+import math
+import os
+import sys
+from copy import deepcopy
+from dataclasses import asdict, dataclass, field
 from datetime import datetime
 from enum import Enum
-from copy import deepcopy
-import json
+from pathlib import Path
+from typing import Any, Dict, List, Optional, Tuple
+
 import yaml
-import math
+
 from filelock import FileLock
 
 # Windows Unicode 인코딩 문제 근본 해결
@@ -78,11 +80,8 @@ UDO_CONFIG = _load_udo_config()
 
 # Import with graceful fallback
 try:
-    from adaptive_system_selector_v2 import (
-        AdaptiveSystemSelectorV2,
-        SystemType,
-        DevelopmentStage
-    )
+    from adaptive_system_selector_v2 import (AdaptiveSystemSelectorV2,
+                                             DevelopmentStage, SystemType)
     SELECTOR_AVAILABLE = True
 except Exception as selector_error:
     SELECTOR_AVAILABLE = False
@@ -110,7 +109,8 @@ except Exception as bridge_error:
 
 try:
     # 최신 v3 사용 (예측 모델링 포함)
-    from uncertainty_map_v3 import UncertaintyMapV3, UncertaintyVector, UncertaintyState
+    from uncertainty_map_v3 import (UncertaintyMapV3, UncertaintyState,
+                                    UncertaintyVector)
     UNCERTAINTY_AVAILABLE = True
     logger.info("Using UncertaintyMap v3.0 with predictive modeling")
 except ImportError:

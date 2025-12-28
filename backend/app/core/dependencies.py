@@ -5,12 +5,12 @@ FastAPI dependencies for service injection.
 """
 
 from typing import Optional
+
+from backend.async_database import AsyncDatabase, get_async_db
 from fastapi import Depends
 
-from ..services.time_tracking_service import TimeTrackingService
 from ..services.obsidian_service import ObsidianService
-from async_database import get_async_db, AsyncDatabase
-
+from ..services.time_tracking_service import TimeTrackingService
 
 # Global service instances (initialized at startup)
 _time_tracking_service: Optional[TimeTrackingService] = None
@@ -34,7 +34,7 @@ def get_obsidian_service() -> ObsidianService:
 
 def get_time_tracking_service(
     db: AsyncDatabase = Depends(get_async_db),
-    obsidian: ObsidianService = Depends(get_obsidian_service)
+    obsidian: ObsidianService = Depends(get_obsidian_service),
 ) -> TimeTrackingService:
     """
     Get TimeTrackingService instance
@@ -51,16 +51,12 @@ def get_time_tracking_service(
     # Create new instance if pool is available
     if db and db._initialized:
         pool = db.get_pool()
-        return TimeTrackingService(
-            pool=pool,
-            obsidian_service=obsidian
-        )
+        return TimeTrackingService(pool=pool, obsidian_service=obsidian)
 
     # Return cached instance or create mock instance
     if _time_tracking_service is None:
         _time_tracking_service = TimeTrackingService(
-            pool=None,
-            obsidian_service=obsidian
+            pool=None, obsidian_service=obsidian
         )
 
     return _time_tracking_service
@@ -80,13 +76,11 @@ def initialize_services(db: AsyncDatabase):
     if db and db._initialized:
         pool = db.get_pool()
         _time_tracking_service = TimeTrackingService(
-            pool=pool,
-            obsidian_service=_obsidian_service
+            pool=pool, obsidian_service=_obsidian_service
         )
     else:
         _time_tracking_service = TimeTrackingService(
-            pool=None,
-            obsidian_service=_obsidian_service
+            pool=None, obsidian_service=_obsidian_service
         )
 
 

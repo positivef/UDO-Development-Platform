@@ -114,6 +114,42 @@ if plan['decision'] == 'GO':
     result = udo.execute_plan(plan)
 ```
 
+## 🛠️ CLI Tool (UDO Command)
+
+**4-Tier Governance System** 관리를 위한 CLI 도구입니다.
+
+### 현재 Tier 상태 확인
+
+```bash
+.\udo.bat status
+```
+
+**출력 예시**:
+```
+🛡️  UDO Governance Status
+=========================
+Current Tier:  Tier 1: Experiment
+Description:   실험/학습
+Compliance:    100%
+
+🚀 Next Level: tier-2
+   Run 'udo upgrade-tier --to=tier-2' to upgrade.
+```
+
+### Tier 업그레이드
+
+```bash
+.\udo.bat upgrade-tier --to=tier-2
+```
+
+**기능**:
+- 자동으로 필요한 파일/폴더 생성
+- Tier 2: `config/schema.py`, `tests/__init__.py`
+- Tier 3: `src/domain`, `src/application`, `src/infrastructure` 등
+
+**자세한 내용**: [4-Tier Governance Guide](docs/governance/4-TIER-GOVERNANCE-GUIDE.md)
+
+
 ## 🚀 Development Server
 
 ### Recommended Workflow (New - 2025-12-22)

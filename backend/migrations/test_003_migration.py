@@ -3,15 +3,14 @@
 Test script for migration 003_phase_transitions.sql
 Verifies schema changes and data integrity
 """
-import sys
-import os
-from pathlib import Path
 import logging
+import os
+import sys
+from pathlib import Path
 
 # Configure logging
 logging.basicConfig(
-    level=logging.INFO,
-    format='%(asctime)s - %(levelname)s - %(message)s'
+    level=logging.INFO, format="%(asctime)s - %(levelname)s - %(message)s"
 )
 logger = logging.getLogger(__name__)
 
@@ -40,6 +39,7 @@ class MigrationTester:
 
         try:
             import psycopg2
+
             self.conn = psycopg2.connect(**self.db_config)
             logger.info(f"[OK] Connected to database: {self.db_config['database']}")
             return True
@@ -76,15 +76,17 @@ class MigrationTester:
 
         # Read and validate SQL
         try:
-            with open(migration_file, 'r', encoding='utf-8') as f:
+            with open(migration_file, "r", encoding="utf-8") as f:
                 migration_sql = f.read()
 
-            with open(rollback_file, 'r', encoding='utf-8') as f:
+            with open(rollback_file, "r", encoding="utf-8") as f:
                 rollback_sql = f.read()
 
             # Basic syntax checks
             assert "CREATE TABLE" in migration_sql, "Missing CREATE TABLE statement"
-            assert "phase_transitions" in migration_sql, "Missing phase_transitions table"
+            assert (
+                "phase_transitions" in migration_sql
+            ), "Missing phase_transitions table"
             assert "ALTER TABLE" in migration_sql, "Missing ALTER TABLE statement"
             assert "task_sessions" in migration_sql, "Missing task_sessions reference"
             assert "CREATE INDEX" in migration_sql, "Missing CREATE INDEX statements"
@@ -92,7 +94,9 @@ class MigrationTester:
             # Rollback checks
             assert "DROP TABLE" in rollback_sql, "Missing DROP TABLE in rollback"
             assert "DROP INDEX" in rollback_sql, "Missing DROP INDEX in rollback"
-            assert "phase_transitions" in rollback_sql, "Missing table reference in rollback"
+            assert (
+                "phase_transitions" in rollback_sql
+            ), "Missing table reference in rollback"
 
             logger.info("[OK] SQL syntax validation passed")
             return True
@@ -108,21 +112,25 @@ class MigrationTester:
         if self.mock_mode:
             logger.info("[OK] Mock mode - skipping database table check")
             logger.info("   Expected table: phase_transitions")
-            logger.info("   Expected columns: id, from_phase, to_phase, transition_time, duration_seconds, automated, metadata, project_id, created_at")
+            logger.info(
+                "   Expected columns: id, from_phase, to_phase, transition_time, duration_seconds, automated, metadata, project_id, created_at"
+            )
             return True
 
         try:
             cursor = self.conn.cursor()
 
             # Check table exists
-            cursor.execute("""
+            cursor.execute(
+                """
                 SELECT EXISTS (
                     SELECT 1
                     FROM information_schema.tables
                     WHERE table_schema = 'public'
                     AND table_name = 'phase_transitions'
                 )
-            """)
+            """
+            )
 
             table_exists = cursor.fetchone()[0]
 
@@ -133,19 +141,28 @@ class MigrationTester:
             logger.info("[OK] phase_transitions table exists")
 
             # Check columns
-            cursor.execute("""
+            cursor.execute(
+                """
                 SELECT column_name, data_type, is_nullable
                 FROM information_schema.columns
                 WHERE table_name = 'phase_transitions'
                 ORDER BY ordinal_position
-            """)
+            """
+            )
 
             columns = cursor.fetchall()
             column_names = [col[0] for col in columns]
 
             expected_columns = [
-                'id', 'from_phase', 'to_phase', 'transition_time',
-                'duration_seconds', 'automated', 'metadata', 'project_id', 'created_at'
+                "id",
+                "from_phase",
+                "to_phase",
+                "transition_time",
+                "duration_seconds",
+                "automated",
+                "metadata",
+                "project_id",
+                "created_at",
             ]
 
             for expected_col in expected_columns:
@@ -174,23 +191,25 @@ class MigrationTester:
             cursor = self.conn.cursor()
 
             # Check columns exist
-            cursor.execute("""
+            cursor.execute(
+                """
                 SELECT column_name, data_type
                 FROM information_schema.columns
                 WHERE table_name = 'task_sessions'
                 AND column_name IN ('phase_transition_id', 'previous_phase')
-            """)
+            """
+            )
 
             columns = cursor.fetchall()
             column_names = [col[0] for col in columns]
 
-            if 'phase_transition_id' in column_names:
+            if "phase_transition_id" in column_names:
                 logger.info("   [OK] Column: phase_transition_id")
             else:
                 logger.error("   [FAIL] Missing column: phase_transition_id")
                 return False
 
-            if 'previous_phase' in column_names:
+            if "previous_phase" in column_names:
                 logger.info("   [OK] Column: previous_phase")
             else:
                 logger.error("   [FAIL] Missing column: previous_phase")
@@ -209,12 +228,12 @@ class MigrationTester:
         if self.mock_mode:
             logger.info("[OK] Mock mode - skipping index check")
             expected_indexes = [
-                'idx_phase_transitions_time',
-                'idx_phase_transitions_project',
-                'idx_phase_transitions_to_phase',
-                'idx_phase_transitions_phases',
-                'idx_task_sessions_phase',
-                'idx_task_sessions_transition'
+                "idx_phase_transitions_time",
+                "idx_phase_transitions_project",
+                "idx_phase_transitions_to_phase",
+                "idx_phase_transitions_phases",
+                "idx_task_sessions_phase",
+                "idx_task_sessions_transition",
             ]
             for idx in expected_indexes:
                 logger.info(f"   Expected index: {idx}")
@@ -224,30 +243,34 @@ class MigrationTester:
             cursor = self.conn.cursor()
 
             # Check indexes exist
-            cursor.execute("""
+            cursor.execute(
+                """
                 SELECT indexname
                 FROM pg_indexes
                 WHERE tablename IN ('phase_transitions', 'task_sessions')
                 AND indexname LIKE 'idx_%'
                 ORDER BY indexname
-            """)
+            """
+            )
 
             indexes = [row[0] for row in cursor.fetchall()]
 
             expected_indexes = [
-                'idx_phase_transitions_time',
-                'idx_phase_transitions_project',
-                'idx_phase_transitions_to_phase',
-                'idx_phase_transitions_phases',
-                'idx_task_sessions_phase',
-                'idx_task_sessions_transition'
+                "idx_phase_transitions_time",
+                "idx_phase_transitions_project",
+                "idx_phase_transitions_to_phase",
+                "idx_phase_transitions_phases",
+                "idx_task_sessions_phase",
+                "idx_task_sessions_transition",
             ]
 
             for expected_idx in expected_indexes:
                 if expected_idx in indexes:
                     logger.info(f"   [OK] Index: {expected_idx}")
                 else:
-                    logger.warning(f"   [WARN]  Missing index: {expected_idx} (optional)")
+                    logger.warning(
+                        f"   [WARN]  Missing index: {expected_idx} (optional)"
+                    )
 
             return True
 
@@ -261,48 +284,61 @@ class MigrationTester:
 
         if self.mock_mode:
             logger.info("[OK] Mock mode - skipping data operations")
-            logger.info("   Would test: INSERT, SELECT, UPDATE, DELETE on phase_transitions")
+            logger.info(
+                "   Would test: INSERT, SELECT, UPDATE, DELETE on phase_transitions"
+            )
             return True
 
         try:
             cursor = self.conn.cursor()
 
             # Test INSERT
-            cursor.execute("""
+            cursor.execute(
+                """
                 INSERT INTO phase_transitions (from_phase, to_phase, duration_seconds, automated)
                 VALUES ('IDEATION', 'DESIGN', 3600, true)
                 RETURNING id
-            """)
+            """
+            )
 
             transition_id = cursor.fetchone()[0]
             logger.info(f"   [OK] INSERT: Created transition {transition_id}")
 
             # Test SELECT
-            cursor.execute("""
+            cursor.execute(
+                """
                 SELECT from_phase, to_phase, duration_seconds
                 FROM phase_transitions
                 WHERE id = %s
-            """, (transition_id,))
+            """,
+                (transition_id,),
+            )
 
             row = cursor.fetchone()
-            assert row[0] == 'IDEATION', "from_phase mismatch"
-            assert row[1] == 'DESIGN', "to_phase mismatch"
+            assert row[0] == "IDEATION", "from_phase mismatch"
+            assert row[1] == "DESIGN", "to_phase mismatch"
             assert row[2] == 3600, "duration_seconds mismatch"
             logger.info(f"   [OK] SELECT: Retrieved transition data")
 
             # Test UPDATE
-            cursor.execute("""
+            cursor.execute(
+                """
                 UPDATE phase_transitions
                 SET metadata = '{"test": true}'::jsonb
                 WHERE id = %s
-            """, (transition_id,))
+            """,
+                (transition_id,),
+            )
             logger.info(f"   [OK] UPDATE: Updated metadata")
 
             # Test DELETE
-            cursor.execute("""
+            cursor.execute(
+                """
                 DELETE FROM phase_transitions
                 WHERE id = %s
-            """, (transition_id,))
+            """,
+                (transition_id,),
+            )
             logger.info(f"   [OK] DELETE: Removed test transition")
 
             self.conn.commit()
@@ -315,9 +351,9 @@ class MigrationTester:
 
     def run_all_tests(self) -> bool:
         """Run all migration tests"""
-        logger.info("\n" + "="*60)
+        logger.info("\n" + "=" * 60)
         logger.info("MIGRATION 003 TEST SUITE")
-        logger.info("="*60)
+        logger.info("=" * 60)
 
         if not self.connect():
             return False
@@ -327,7 +363,7 @@ class MigrationTester:
             ("Table Structure", self.test_table_structure),
             ("task_sessions Columns", self.test_task_sessions_columns),
             ("Indexes", self.test_indexes),
-            ("Data Operations", self.test_data_operations)
+            ("Data Operations", self.test_data_operations),
         ]
 
         passed = 0
@@ -346,13 +382,13 @@ class MigrationTester:
         self.disconnect()
 
         # Summary
-        logger.info("\n" + "="*60)
+        logger.info("\n" + "=" * 60)
         logger.info("TEST SUMMARY")
-        logger.info("="*60)
+        logger.info("=" * 60)
         logger.info(f"Total tests: {len(tests)}")
         logger.info(f"Passed: {passed} [OK]")
         logger.info(f"Failed: {failed} [FAIL]")
-        logger.info("="*60 + "\n")
+        logger.info("=" * 60 + "\n")
 
         if failed == 0:
             logger.info("[OK] ALL TESTS PASSED!")
@@ -366,25 +402,33 @@ def main():
     """Main entry point"""
     import argparse
 
-    parser = argparse.ArgumentParser(description='Test migration 003')
-    parser.add_argument('--mock', action='store_true', default=True,
-                        help='Run in mock mode (no database required)')
-    parser.add_argument('--host', default='localhost', help='Database host')
-    parser.add_argument('--port', type=int, default=5432, help='Database port')
-    parser.add_argument('--database', default='udo_dev', help='Database name')
-    parser.add_argument('--user', default='postgres', help='Database user')
-    parser.add_argument('--password', default='', help='Database password')
+    parser = argparse.ArgumentParser(description="Test migration 003")
+    parser.add_argument(
+        "--mock",
+        action="store_true",
+        default=True,
+        help="Run in mock mode (no database required)",
+    )
+    parser.add_argument("--host", default="localhost", help="Database host")
+    parser.add_argument("--port", type=int, default=5432, help="Database port")
+    parser.add_argument("--database", default="udo_dev", help="Database name")
+    parser.add_argument("--user", default="postgres", help="Database user")
+    parser.add_argument("--password", default="", help="Database password")
 
     args = parser.parse_args()
 
     # Database configuration (only needed if not in mock mode)
-    db_config = None if args.mock else {
-        'host': args.host,
-        'port': args.port,
-        'database': args.database,
-        'user': args.user,
-        'password': args.password or os.getenv('DB_PASSWORD', 'postgres')
-    }
+    db_config = (
+        None
+        if args.mock
+        else {
+            "host": args.host,
+            "port": args.port,
+            "database": args.database,
+            "user": args.user,
+            "password": args.password or os.getenv("DB_PASSWORD", "postgres"),
+        }
+    )
 
     # Run tests
     tester = MigrationTester(db_config=db_config, mock_mode=args.mock)

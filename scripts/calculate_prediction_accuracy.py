@@ -23,15 +23,13 @@ from datetime import datetime
 def get_storage_dir() -> Path:
     """Get UDO storage directory"""
     import os
-    env_dir = os.environ.get('UDO_STORAGE_DIR') or os.environ.get('UDO_HOME')
-    base_dir = Path(env_dir).expanduser() if env_dir else Path.home() / '.udo'
+
+    env_dir = os.environ.get("UDO_STORAGE_DIR") or os.environ.get("UDO_HOME")
+    base_dir = Path(env_dir).expanduser() if env_dir else Path.home() / ".udo"
     return base_dir
 
 
-def calculate_level_accuracy(
-    predictions: List[Tuple[str, float]],
-    actuals: List[Tuple[str, float]]
-) -> float:
+def calculate_level_accuracy(predictions: List[Tuple[str, float]], actuals: List[Tuple[str, float]]) -> float:
     """
     Level accuracy based on Mean Absolute Percentage Error (MAPE)
 
@@ -72,10 +70,7 @@ def calculate_level_accuracy(
     return level_accuracy
 
 
-def calculate_trend_accuracy(
-    predictions: List[Tuple[str, str]],
-    actuals: List[Tuple[str, str]]
-) -> float:
+def calculate_trend_accuracy(predictions: List[Tuple[str, str]], actuals: List[Tuple[str, str]]) -> float:
     """
     Trend accuracy based on direction match percentage
 
@@ -104,10 +99,7 @@ def calculate_trend_accuracy(
     return trend_accuracy
 
 
-def calculate_state_accuracy(
-    predictions: List[Tuple[str, str]],
-    actuals: List[Tuple[str, str]]
-) -> float:
+def calculate_state_accuracy(predictions: List[Tuple[str, str]], actuals: List[Tuple[str, str]]) -> float:
     """
     State accuracy based on uncertainty state classification match
 
@@ -136,9 +128,7 @@ def calculate_state_accuracy(
     return state_accuracy
 
 
-def calculate_prediction_accuracy(
-    ground_truth_entries: List[Dict]
-) -> Dict[str, any]:
+def calculate_prediction_accuracy(ground_truth_entries: List[Dict]) -> Dict[str, any]:
     """
     Calculate overall prediction accuracy with weighted components
 
@@ -156,12 +146,8 @@ def calculate_prediction_accuracy(
     if not ground_truth_entries:
         return {
             "overall": 0.0,
-            "components": {
-                "level_accuracy": 0.0,
-                "trend_accuracy": 0.0,
-                "state_accuracy": 0.0
-            },
-            "sample_size": 0
+            "components": {"level_accuracy": 0.0, "trend_accuracy": 0.0, "state_accuracy": 0.0},
+            "sample_size": 0,
         }
 
     # Extract components
@@ -187,11 +173,7 @@ def calculate_prediction_accuracy(
     state_acc = calculate_state_accuracy(pred_states, actual_states)
 
     # Weighted composite (50% level, 30% trend, 20% state)
-    overall_accuracy = (
-        0.50 * level_acc +
-        0.30 * trend_acc +
-        0.20 * state_acc
-    )
+    overall_accuracy = 0.50 * level_acc + 0.30 * trend_acc + 0.20 * state_acc
 
     # Confidence breakdown
     confidence_counts = {"high": 0, "medium": 0, "low": 0}
@@ -201,17 +183,13 @@ def calculate_prediction_accuracy(
 
     return {
         "overall": overall_accuracy,
-        "components": {
-            "level_accuracy": level_acc,
-            "trend_accuracy": trend_acc,
-            "state_accuracy": state_acc
-        },
+        "components": {"level_accuracy": level_acc, "trend_accuracy": trend_acc, "state_accuracy": state_acc},
         "sample_size": len(ground_truth_entries),
         "confidence_breakdown": confidence_counts,
         "measurement_period": {
             "start": min(e["prediction_timestamp"] for e in ground_truth_entries),
-            "end": max(e["prediction_timestamp"] for e in ground_truth_entries)
-        }
+            "end": max(e["prediction_timestamp"] for e in ground_truth_entries),
+        },
     }
 
 
@@ -234,28 +212,29 @@ def analyze_errors(ground_truth_entries: List[Dict]) -> Dict[str, any]:
         pred_level = entry["predicted_global_level"]
         actual_level = entry["actual_global_level"]
         level_error = abs(pred_level - actual_level)
-        level_errors.append({
-            "timestamp": entry["prediction_timestamp"],
-            "predicted": pred_level,
-            "actual": actual_level,
-            "error": level_error
-        })
+        level_errors.append(
+            {"timestamp": entry["prediction_timestamp"], "predicted": pred_level, "actual": actual_level, "error": level_error}
+        )
 
         # Trend mismatches
         if entry["predicted_global_trend"] != entry["actual_global_trend"]:
-            trend_mismatches.append({
-                "timestamp": entry["prediction_timestamp"],
-                "predicted": entry["predicted_global_trend"],
-                "actual": entry["actual_global_trend"]
-            })
+            trend_mismatches.append(
+                {
+                    "timestamp": entry["prediction_timestamp"],
+                    "predicted": entry["predicted_global_trend"],
+                    "actual": entry["actual_global_trend"],
+                }
+            )
 
         # State mismatches
         if entry["predicted_global_state"] != entry["actual_global_state"]:
-            state_mismatches.append({
-                "timestamp": entry["prediction_timestamp"],
-                "predicted": entry["predicted_global_state"],
-                "actual": entry["actual_global_state"]
-            })
+            state_mismatches.append(
+                {
+                    "timestamp": entry["prediction_timestamp"],
+                    "predicted": entry["predicted_global_state"],
+                    "actual": entry["actual_global_state"],
+                }
+            )
 
     # Sort by error magnitude
     level_errors.sort(key=lambda x: x["error"], reverse=True)
@@ -265,7 +244,7 @@ def analyze_errors(ground_truth_entries: List[Dict]) -> Dict[str, any]:
         "trend_mismatches": len(trend_mismatches),
         "trend_mismatch_examples": trend_mismatches[:5],
         "state_mismatches": len(state_mismatches),
-        "state_mismatch_examples": state_mismatches[:5]
+        "state_mismatch_examples": state_mismatches[:5],
     }
 
 
@@ -342,30 +321,16 @@ def generate_report(accuracy_results: Dict, error_analysis: Dict) -> str:
 
 
 def main():
-    parser = argparse.ArgumentParser(
-        description="Calculate Prediction Accuracy from Ground Truth"
-    )
-    parser.add_argument(
-        "--samples",
-        type=int,
-        help="Calculate accuracy for first N samples"
-    )
-    parser.add_argument(
-        "--all",
-        action="store_true",
-        help="Calculate accuracy for all annotations"
-    )
-    parser.add_argument(
-        "--report",
-        action="store_true",
-        help="Generate detailed report"
-    )
+    parser = argparse.ArgumentParser(description="Calculate Prediction Accuracy from Ground Truth")
+    parser.add_argument("--samples", type=int, help="Calculate accuracy for first N samples")
+    parser.add_argument("--all", action="store_true", help="Calculate accuracy for all annotations")
+    parser.add_argument("--report", action="store_true", help="Generate detailed report")
     parser.add_argument(
         "--min-confidence",
         type=str,
         choices=["high", "medium", "low"],
         default="low",
-        help="Minimum annotator confidence to include (default: low = all)"
+        help="Minimum annotator confidence to include (default: low = all)",
     )
 
     args = parser.parse_args()
@@ -389,13 +354,12 @@ def main():
     min_conf_level = confidence_levels[args.min_confidence]
 
     filtered_entries = [
-        entry for entry in all_entries
-        if confidence_levels.get(entry.get("annotator_confidence", "low"), 1) >= min_conf_level
+        entry for entry in all_entries if confidence_levels.get(entry.get("annotator_confidence", "low"), 1) >= min_conf_level
     ]
 
     # Limit samples
     if args.samples:
-        entries = filtered_entries[:args.samples]
+        entries = filtered_entries[: args.samples]
     else:
         entries = filtered_entries
 
@@ -434,10 +398,7 @@ def main():
     # Save JSON results
     results_file = storage_dir / f"prediction_accuracy_{datetime.now():%Y%m%d_%H%M%S}.json"
     with open(results_file, "w", encoding="utf-8") as f:
-        json.dump({
-            "accuracy": accuracy_results,
-            "errors": error_analysis
-        }, f, indent=2)
+        json.dump({"accuracy": accuracy_results, "errors": error_analysis}, f, indent=2)
 
     print(f"\n[EMOJI] Results saved to: {results_file}")
 

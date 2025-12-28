@@ -14,18 +14,18 @@ Version: 1.0.0
 
 import logging
 import sys
+from datetime import UTC, datetime
 from pathlib import Path
-from datetime import datetime, UTC
-from typing import Optional, Dict, Any
+from typing import Any, Dict, Optional
 from uuid import UUID, uuid4
 
 # Add src to path for PhaseStateManager import
 src_dir = Path(__file__).parent.parent.parent.parent / "src"
 sys.path.insert(0, str(src_dir))
 
-from phase_state_manager import PhaseTransitionEvent, Phase
+from phase_state_manager import Phase, PhaseTransitionEvent
 
-from ..models.time_tracking import TaskType, AIModel
+from ..models.time_tracking import AIModel, TaskType
 
 logger = logging.getLogger(__name__)
 
@@ -46,12 +46,7 @@ class PhaseTransitionListener:
         >>> # Phase changes automatically trigger session management
     """
 
-    def __init__(
-        self,
-        pool,
-        time_tracking_service,
-        broadcast_func=None
-    ):
+    def __init__(self, pool, time_tracking_service, broadcast_func=None):
         """
         Initialize Phase Transition Listener
 
@@ -76,7 +71,7 @@ class PhaseTransitionListener:
         to_phase: Phase,
         transition_time: datetime,
         duration_seconds: Optional[int] = None,
-        metadata: Optional[Dict[str, Any]] = None
+        metadata: Optional[Dict[str, Any]] = None,
     ) -> UUID:
         """
         Handle phase transition event
@@ -108,17 +103,13 @@ class PhaseTransitionListener:
                     metadata={
                         "phase_transition": True,
                         "to_phase": to_phase.value,
-                        "automated": True
-                    }
+                        "automated": True,
+                    },
                 )
 
             # 2. Record transition in database
             transition_id = await self._record_transition(
-                from_phase,
-                to_phase,
-                transition_time,
-                duration_seconds,
-                metadata
+                from_phase, to_phase, transition_time, duration_seconds, metadata
             )
 
             logger.info(f"Recorded transition: {transition_id}")
@@ -135,8 +126,8 @@ class PhaseTransitionListener:
                     "phase_transition": True,
                     "from_phase": from_phase.value if from_phase else None,
                     "transition_id": str(transition_id),
-                    "automated": True
-                }
+                    "automated": True,
+                },
             )
 
             # Update current phase tracking
@@ -144,10 +135,7 @@ class PhaseTransitionListener:
 
             # 4. Broadcast real-time update to dashboard
             await self._broadcast_phase_change(
-                from_phase,
-                to_phase,
-                transition_id,
-                duration_seconds
+                from_phase, to_phase, transition_id, duration_seconds
             )
 
             logger.info(
@@ -167,7 +155,7 @@ class PhaseTransitionListener:
         to_phase: Phase,
         transition_time: datetime,
         duration_seconds: Optional[int],
-        metadata: Optional[Dict[str, Any]]
+        metadata: Optional[Dict[str, Any]],
     ) -> UUID:
         """
         Record phase transition in database
@@ -205,7 +193,7 @@ class PhaseTransitionListener:
                     transition_time,
                     duration_seconds,
                     True,  # automated = True
-                    metadata
+                    metadata,
                 )
 
             return transition_id
@@ -219,7 +207,7 @@ class PhaseTransitionListener:
         from_phase: Optional[Phase],
         to_phase: Phase,
         transition_id: UUID,
-        duration_seconds: Optional[int]
+        duration_seconds: Optional[int],
     ):
         """
         Broadcast phase change to dashboard via WebSocket
@@ -235,16 +223,18 @@ class PhaseTransitionListener:
             return
 
         try:
-            await self.broadcast({
-                "type": "phase_transition",
-                "data": {
-                    "from_phase": from_phase.value if from_phase else None,
-                    "to_phase": to_phase.value,
-                    "transition_id": str(transition_id),
-                    "duration_seconds": duration_seconds,
-                    "timestamp": datetime.now(UTC).isoformat()
+            await self.broadcast(
+                {
+                    "type": "phase_transition",
+                    "data": {
+                        "from_phase": from_phase.value if from_phase else None,
+                        "to_phase": to_phase.value,
+                        "transition_id": str(transition_id),
+                        "duration_seconds": duration_seconds,
+                        "timestamp": datetime.now(UTC).isoformat(),
+                    },
                 }
-            })
+            )
 
             logger.debug(f"Broadcasted phase change: {to_phase.value}")
 
@@ -278,7 +268,7 @@ class PhaseTransitionListener:
             try:
                 await self.time_tracking.stop_task(
                     session_id=self.current_session_id,
-                    metadata={"automated_shutdown": True}
+                    metadata={"automated_shutdown": True},
                 )
                 logger.info(f"Stopped active session: {self.current_session_id}")
             except Exception as e:
@@ -294,8 +284,10 @@ class PhaseTransitionListener:
             Dictionary with current session and phase info
         """
         return {
-            "current_session_id": str(self.current_session_id) if self.current_session_id else None,
-            "current_phase": self.current_phase.value if self.current_phase else None
+            "current_session_id": (
+                str(self.current_session_id) if self.current_session_id else None
+            ),
+            "current_phase": self.current_phase.value if self.current_phase else None,
         }
 
 
@@ -315,6 +307,7 @@ def create_listener_callback(listener: PhaseTransitionListener):
         >>> callback = create_listener_callback(listener)
         >>> phase_manager.register_listener(callback)
     """
+
     async def callback(event: PhaseTransitionEvent):
         """Handle phase transition event"""
         await listener.on_phase_transition(
@@ -322,7 +315,7 @@ def create_listener_callback(listener: PhaseTransitionListener):
             to_phase=event.to_phase,
             transition_time=event.transition_time,
             duration_seconds=event.duration_seconds,
-            metadata=event.metadata
+            metadata=event.metadata,
         )
 
     return callback

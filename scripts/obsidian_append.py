@@ -6,7 +6,7 @@ Usage (Windows PowerShell):
   python scripts\obsidian_append.py --vault "C:\Users\user\Documents\Obsidian Vault" --file tmp\obsidian_append.txt
 
 This script:
-- Creates the daily note under <vault>/[EMOJI]/YYYY-MM-DD.md if missing
+- Creates the daily note under <vault>/개발일지/YYYY-MM-DD.md if missing
 - Appends the given file content
 """
 
@@ -18,7 +18,7 @@ import sys
 
 def append_to_daily(vault_path: Path, content_path: Path) -> Path:
     vault_path = vault_path.resolve()
-    daily_dir = vault_path / "[EMOJI]"
+    daily_dir = vault_path / "개발일지"
     daily_dir.mkdir(parents=True, exist_ok=True)
 
     today = datetime.now().strftime("%Y-%m-%d")

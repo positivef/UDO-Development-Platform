@@ -5,25 +5,20 @@ FastAPI endpoints for time tracking and ROI measurement.
 """
 
 import logging
-from datetime import date, UTC
-from typing import Optional, List
+from datetime import UTC, date
+from typing import List, Optional
 from uuid import UUID
-from fastapi import APIRouter, HTTPException, Depends, Query
 
-from ..models.time_tracking import (
-    StartTrackingRequest,
-    StartTrackingResponse,
-    EndTrackingRequest,
-    EndTrackingResponse,
-    PauseTrackingResponse,
-    ResumeTrackingResponse,
-    TaskMetrics,
-    ROIReport,
-    WeeklyReport,
-    Bottleneck,
-)
-from ..services.time_tracking_service import TimeTrackingService
+from fastapi import APIRouter, Depends, HTTPException, Query
+
 from ..core.dependencies import get_time_tracking_service
+from ..models.time_tracking import (Bottleneck, EndTrackingRequest,
+                                    EndTrackingResponse, PauseTrackingResponse,
+                                    ResumeTrackingResponse, ROIReport,
+                                    StartTrackingRequest,
+                                    StartTrackingResponse, TaskMetrics,
+                                    WeeklyReport)
+from ..services.time_tracking_service import TimeTrackingService
 
 logger = logging.getLogger(__name__)
 
@@ -37,7 +32,7 @@ router = APIRouter(
 @router.post("/start", response_model=StartTrackingResponse)
 async def start_tracking(
     request: StartTrackingRequest,
-    service: TimeTrackingService = Depends(get_time_tracking_service)
+    service: TimeTrackingService = Depends(get_time_tracking_service),
 ):
     """
     Start tracking a task
@@ -65,7 +60,7 @@ async def start_tracking(
             phase=request.phase,
             ai_used=request.ai_used,
             metadata=request.metadata,
-            project_id=request.project_id
+            project_id=request.project_id,
         )
 
         baseline_seconds = service._get_baseline_seconds(request.task_type)
@@ -74,7 +69,7 @@ async def start_tracking(
             success=True,
             session_id=session_id,
             message=f"Started tracking task {request.task_id}",
-            baseline_seconds=baseline_seconds
+            baseline_seconds=baseline_seconds,
         )
 
     except Exception as e:
@@ -86,7 +81,7 @@ async def start_tracking(
 async def end_tracking(
     session_id: UUID,
     request: EndTrackingRequest,
-    service: TimeTrackingService = Depends(get_time_tracking_service)
+    service: TimeTrackingService = Depends(get_time_tracking_service),
 ):
     """
     End task tracking and calculate metrics
@@ -110,13 +105,13 @@ async def end_tracking(
             session_id=session_id,
             success=request.success,
             error_message=request.error_message,
-            metadata=request.metadata
+            metadata=request.metadata,
         )
 
         return EndTrackingResponse(
             success=True,
             metrics=metrics,
-            message=f"Task completed: {metrics.time_saved_hours:.2f}h saved ({metrics.efficiency_percentage:.1f}% efficiency)"
+            message=f"Task completed: {metrics.time_saved_hours:.2f}h saved ({metrics.efficiency_percentage:.1f}% efficiency)",
         )
 
     except ValueError as e:
@@ -128,8 +123,7 @@ async def end_tracking(
 
 @router.post("/pause/{session_id}", response_model=PauseTrackingResponse)
 async def pause_tracking(
-    session_id: UUID,
-    service: TimeTrackingService = Depends(get_time_tracking_service)
+    session_id: UUID, service: TimeTrackingService = Depends(get_time_tracking_service)
 ):
     """
     Pause task tracking
@@ -138,17 +132,18 @@ async def pause_tracking(
     The paused time will not count toward task duration.
     """
     try:
-        from datetime import datetime, UTC
+        from datetime import UTC, datetime
 
         success = await service.pause_task(session_id)
 
         if not success:
-            raise HTTPException(status_code=400, detail="Failed to pause task (not active or already paused)")
+            raise HTTPException(
+                status_code=400,
+                detail="Failed to pause task (not active or already paused)",
+            )
 
         return PauseTrackingResponse(
-            success=True,
-            message="Task tracking paused",
-            paused_at=datetime.now(UTC)
+            success=True, message="Task tracking paused", paused_at=datetime.now(UTC)
         )
 
     except HTTPException:
@@ -160,8 +155,7 @@ async def pause_tracking(
 
 @router.post("/resume/{session_id}", response_model=ResumeTrackingResponse)
 async def resume_tracking(
-    session_id: UUID,
-    service: TimeTrackingService = Depends(get_time_tracking_service)
+    session_id: UUID, service: TimeTrackingService = Depends(get_time_tracking_service)
 ):
     """
     Resume paused task tracking
@@ -170,17 +164,17 @@ async def resume_tracking(
     toward the task duration.
     """
     try:
-        from datetime import datetime, UTC
+        from datetime import UTC, datetime
 
         success = await service.resume_task(session_id)
 
         if not success:
-            raise HTTPException(status_code=400, detail="Failed to resume task (not paused)")
+            raise HTTPException(
+                status_code=400, detail="Failed to resume task (not paused)"
+            )
 
         return ResumeTrackingResponse(
-            success=True,
-            message="Task tracking resumed",
-            resumed_at=datetime.now(UTC)
+            success=True, message="Task tracking resumed", resumed_at=datetime.now(UTC)
         )
 
     except HTTPException:
@@ -192,8 +186,7 @@ async def resume_tracking(
 
 @router.get("/metrics/{task_id}", response_model=TaskMetrics)
 async def get_task_metrics(
-    task_id: str,
-    service: TimeTrackingService = Depends(get_time_tracking_service)
+    task_id: str, service: TimeTrackingService = Depends(get_time_tracking_service)
 ):
     """
     Get metrics for a specific task
@@ -204,7 +197,9 @@ async def get_task_metrics(
         metrics = await service.get_task_metrics(task_id)
 
         if metrics is None:
-            raise HTTPException(status_code=404, detail=f"No metrics found for task {task_id}")
+            raise HTTPException(
+                status_code=404, detail=f"No metrics found for task {task_id}"
+            )
 
         return metrics
 
@@ -220,7 +215,7 @@ async def get_roi(
     period: str = Query("weekly", regex="^(daily|weekly|monthly|annual)$"),
     start_date: Optional[date] = None,
     end_date: Optional[date] = None,
-    service: TimeTrackingService = Depends(get_time_tracking_service)
+    service: TimeTrackingService = Depends(get_time_tracking_service),
 ):
     """
     Get ROI report for specified period
@@ -245,9 +240,7 @@ async def get_roi(
     """
     try:
         roi_report = await service.calculate_roi(
-            period=period,
-            start_date=start_date,
-            end_date=end_date
+            period=period, start_date=start_date, end_date=end_date
         )
 
         return roi_report
@@ -261,7 +254,7 @@ async def get_roi(
 async def get_bottlenecks(
     start_date: Optional[date] = None,
     end_date: Optional[date] = None,
-    service: TimeTrackingService = Depends(get_time_tracking_service)
+    service: TimeTrackingService = Depends(get_time_tracking_service),
 ):
     """
     Get current bottlenecks
@@ -292,8 +285,7 @@ async def get_bottlenecks(
     """
     try:
         bottlenecks = await service.get_bottlenecks(
-            start_date=start_date,
-            end_date=end_date
+            start_date=start_date, end_date=end_date
         )
 
         return bottlenecks
@@ -305,7 +297,7 @@ async def get_bottlenecks(
 
 @router.get("/report/weekly", response_model=WeeklyReport)
 async def get_weekly_report(
-    service: TimeTrackingService = Depends(get_time_tracking_service)
+    service: TimeTrackingService = Depends(get_time_tracking_service),
 ):
     """
     Get weekly summary report
@@ -329,7 +321,7 @@ async def get_weekly_report(
 @router.get("/trends")
 async def get_trends(
     days: int = Query(30, ge=7, le=365),
-    service: TimeTrackingService = Depends(get_time_tracking_service)
+    service: TimeTrackingService = Depends(get_time_tracking_service),
 ):
     """
     Get productivity trends over time
@@ -358,7 +350,7 @@ async def get_trends(
     ```
     """
     try:
-        from datetime import timedelta, UTC
+        from datetime import UTC, timedelta
 
         end_date = date.today()
         start_date = end_date - timedelta(days=days)
@@ -369,7 +361,7 @@ async def get_trends(
         # Group by day
         daily_stats = {}
         for task in tasks:
-            task_date = task['start_time'].date()
+            task_date = task["start_time"].date()
             if task_date not in daily_stats:
                 daily_stats[task_date] = {
                     "date": task_date.isoformat(),
@@ -377,37 +369,55 @@ async def get_trends(
                     "tasks_completed": 0,
                     "time_saved_seconds": 0,
                     "duration_seconds": 0,
-                    "baseline_seconds": 0
+                    "baseline_seconds": 0,
                 }
 
             daily_stats[task_date]["tasks"].append(task)
             daily_stats[task_date]["tasks_completed"] += 1
-            daily_stats[task_date]["time_saved_seconds"] += task['time_saved_seconds']
-            daily_stats[task_date]["duration_seconds"] += task['duration_seconds']
-            daily_stats[task_date]["baseline_seconds"] += task['baseline_seconds']
+            daily_stats[task_date]["time_saved_seconds"] += task["time_saved_seconds"]
+            daily_stats[task_date]["duration_seconds"] += task["duration_seconds"]
+            daily_stats[task_date]["baseline_seconds"] += task["baseline_seconds"]
 
         # Calculate metrics for each day
         data_points = []
         for task_date, stats in sorted(daily_stats.items()):
             time_saved_hours = stats["time_saved_seconds"] / 3600
-            roi_percentage = (stats["time_saved_seconds"] / stats["duration_seconds"] * 100) if stats["duration_seconds"] > 0 else 0
-            efficiency_percentage = (stats["time_saved_seconds"] / stats["baseline_seconds"] * 100) if stats["baseline_seconds"] > 0 else 0
+            roi_percentage = (
+                (stats["time_saved_seconds"] / stats["duration_seconds"] * 100)
+                if stats["duration_seconds"] > 0
+                else 0
+            )
+            efficiency_percentage = (
+                (stats["time_saved_seconds"] / stats["baseline_seconds"] * 100)
+                if stats["baseline_seconds"] > 0
+                else 0
+            )
 
-            data_points.append({
-                "date": stats["date"],
-                "tasks_completed": stats["tasks_completed"],
-                "time_saved_hours": round(time_saved_hours, 2),
-                "roi_percentage": round(roi_percentage, 1),
-                "efficiency_percentage": round(efficiency_percentage, 1)
-            })
+            data_points.append(
+                {
+                    "date": stats["date"],
+                    "tasks_completed": stats["tasks_completed"],
+                    "time_saved_hours": round(time_saved_hours, 2),
+                    "roi_percentage": round(roi_percentage, 1),
+                    "efficiency_percentage": round(efficiency_percentage, 1),
+                }
+            )
 
         # Calculate overall trend
         if len(data_points) >= 2:
-            first_half = data_points[:len(data_points)//2]
-            second_half = data_points[len(data_points)//2:]
+            first_half = data_points[: len(data_points) // 2]
+            second_half = data_points[len(data_points) // 2 :]
 
-            avg_first = sum(d["time_saved_hours"] for d in first_half) / len(first_half) if first_half else 0
-            avg_second = sum(d["time_saved_hours"] for d in second_half) / len(second_half) if second_half else 0
+            avg_first = (
+                sum(d["time_saved_hours"] for d in first_half) / len(first_half)
+                if first_half
+                else 0
+            )
+            avg_second = (
+                sum(d["time_saved_hours"] for d in second_half) / len(second_half)
+                if second_half
+                else 0
+            )
 
             if avg_second > avg_first * 1.1:
                 overall_trend = "improving"
@@ -430,7 +440,7 @@ async def get_trends(
             "overall_trend": overall_trend,
             "avg_daily_time_saved": round(avg_daily_time_saved, 2),
             "total_time_saved_hours": round(total_time_saved, 2),
-            "total_tasks": sum(d["tasks_completed"] for d in data_points)
+            "total_tasks": sum(d["tasks_completed"] for d in data_points),
         }
 
     except Exception as e:
@@ -445,8 +455,4 @@ async def health_check():
 
     Returns the status of the time tracking service.
     """
-    return {
-        "status": "healthy",
-        "service": "time_tracking",
-        "version": "1.0.0"
-    }
+    return {"status": "healthy", "service": "time_tracking", "version": "1.0.0"}

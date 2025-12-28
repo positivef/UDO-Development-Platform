@@ -1,13 +1,8 @@
 """
-Obsidian Service (v2.0 - Multi-Project Support)
+Obsidian Service
 
 Integrates with Obsidian vault for knowledge management, auto-sync, and error resolution.
 Implements 3-Tier Error Resolution (Tier 1: Obsidian past solutions).
-
-v2.0 Features:
-- Cross-project knowledge search
-- Shared-Knowledge folder support
-- Multi-project context aggregation
 """
 
 import re
@@ -55,7 +50,7 @@ class ObsidianService:
             self.vault_available = True
 
         # Daily notes directory
-        self.daily_notes_dir = self.vault_path / "[EMOJI]" if self.vault_available else None
+        self.daily_notes_dir = self.vault_path / "개발일지" if self.vault_available else None
 
         # In-memory sync history (would be database in production)
         self.sync_history: List[Dict[str, Any]] = []
@@ -101,9 +96,9 @@ class ObsidianService:
         Multiple events within debounce_window (default 3s) are batched into a single note.
 
         Strategy:
-        - If 3s passed since last sync -> flush immediately
-        - Otherwise -> queue event and schedule flush after 3s
-        - Multiple events within window -> batched into one sync
+        - If 3s passed since last sync → flush immediately
+        - Otherwise → queue event and schedule flush after 3s
+        - Multiple events within window → batched into one sync
 
         Args:
             event_type: Type of event (phase_transition, error_resolution, task_completion, etc.)
@@ -345,7 +340,7 @@ class ObsidianService:
     def _generate_event_title(self, event_type: str, data: Dict[str, Any]) -> str:
         """Generate title for event"""
         event_titles = {
-            "phase_transition": f"Phase Transition: {data.get('from_phase', 'Unknown')} -> {data.get('to_phase', 'Unknown')}",
+            "phase_transition": f"Phase Transition: {data.get('from_phase', 'Unknown')} → {data.get('to_phase', 'Unknown')}",
             "error_resolution": f"Error Resolved: {data.get('error_type', 'Unknown Error')}",
             "task_completion": f"Task Completed: {data.get('task_title', 'Unknown Task')}",
             "architecture_decision": f"ADR: {data.get('decision_title', 'Architecture Decision')}",
@@ -869,362 +864,6 @@ class ObsidianService:
             "tokens_saved_estimate": tokens_saved_estimate,
             "pending_events": len(self.pending_events),
         }
-
-    # ========== NEW v2.0: Cross-Project Knowledge Methods ==========
-
-    def get_shared_knowledge_path(self) -> Optional[Path]:
-        """
-        Get path to Shared-Knowledge folder in vault.
-
-        Structure:
-        Vault/
-        [EMOJI] 3-Areas/
-        [EMOJI]   [EMOJI] UDO-Platform/           # Project A
-        [EMOJI]   [EMOJI] Another-Project/        # Project B
-        [EMOJI]   [EMOJI] Shared-Knowledge/       # Global Hub
-        [EMOJI]       [EMOJI] Errors/
-        [EMOJI]       [EMOJI] Patterns/
-        [EMOJI]       [EMOJI] Solutions/
-
-        Returns:
-            Path to Shared-Knowledge folder, or None if not available
-        """
-        if not self.vault_available:
-            return None
-
-        shared_path = self.vault_path / "3-Areas" / "Shared-Knowledge"
-        if shared_path.exists():
-            return shared_path
-
-        # Try to create if doesn't exist
-        try:
-            shared_path.mkdir(parents=True, exist_ok=True)
-            # Create subdirectories
-            (shared_path / "Errors").mkdir(exist_ok=True)
-            (shared_path / "Patterns").mkdir(exist_ok=True)
-            (shared_path / "Solutions").mkdir(exist_ok=True)
-            logger.info(f"Created Shared-Knowledge folder: {shared_path}")
-            return shared_path
-        except Exception as e:
-            logger.error(f"Failed to create Shared-Knowledge folder: {e}")
-            return None
-
-    def get_project_folders(self) -> List[str]:
-        """
-        Get list of project folders in vault.
-
-        Returns:
-            List of project folder names (e.g., ['UDO-Platform', 'Another-Project'])
-        """
-        if not self.vault_available:
-            return []
-
-        areas_path = self.vault_path / "3-Areas"
-        if not areas_path.exists():
-            return []
-
-        projects = []
-        for folder in areas_path.iterdir():
-            if folder.is_dir() and folder.name not in ["Shared-Knowledge", ".obsidian"]:
-                projects.append(folder.name)
-
-        return sorted(projects)
-
-    async def cross_project_search(
-        self,
-        query: str,
-        projects: Optional[List[str]] = None,
-        include_shared: bool = True,
-        max_results: int = 10
-    ) -> List[Dict[str, Any]]:
-        """
-        Search across multiple projects and shared knowledge.
-
-        This enables knowledge reuse across different projects.
-        Priority: Shared-Knowledge > Current Project > Other Projects
-
-        Args:
-            query: Search query
-            projects: List of project names to search (None = all projects)
-            include_shared: Include Shared-Knowledge folder in search
-            max_results: Maximum results to return
-
-        Returns:
-            List of search results with project context
-        """
-        if not self.vault_available:
-            logger.warning("Vault not available for cross-project search")
-            return []
-
-        results = []
-        query_lower = query.lower()
-
-        try:
-            # 1. Search Shared-Knowledge first (highest priority)
-            if include_shared:
-                shared_path = self.get_shared_knowledge_path()
-                if shared_path and shared_path.exists():
-                    shared_results = await self._search_folder(
-                        shared_path, query_lower, "Shared-Knowledge"
-                    )
-                    # Boost shared results
-                    for r in shared_results:
-                        r["relevance_score"] *= 1.5
-                        r["source_type"] = "shared"
-                    results.extend(shared_results)
-
-            # 2. Search project folders
-            target_projects = projects or self.get_project_folders()
-            areas_path = self.vault_path / "3-Areas"
-
-            for project_name in target_projects:
-                project_path = areas_path / project_name
-                if project_path.exists():
-                    project_results = await self._search_folder(
-                        project_path, query_lower, project_name
-                    )
-                    for r in project_results:
-                        r["source_type"] = "project"
-                    results.extend(project_results)
-
-            # 3. Sort by relevance and limit
-            results.sort(key=lambda x: x.get("relevance_score", 0), reverse=True)
-
-            logger.info(
-                f"Cross-project search for '{query}' found {len(results)} results "
-                f"across {len(target_projects)} projects"
-            )
-
-            return results[:max_results]
-
-        except Exception as e:
-            logger.error(f"Cross-project search failed: {e}", exc_info=True)
-            return []
-
-    async def _search_folder(
-        self,
-        folder_path: Path,
-        query_lower: str,
-        source_name: str
-    ) -> List[Dict[str, Any]]:
-        """
-        Search within a specific folder recursively.
-
-        Args:
-            folder_path: Path to search in
-            query_lower: Lowercase query string
-            source_name: Name of source (project or Shared-Knowledge)
-
-        Returns:
-            List of matching results
-        """
-        results = []
-
-        for md_file in folder_path.rglob("*.md"):
-            try:
-                content = md_file.read_text(encoding="utf-8")
-                content_lower = content.lower()
-
-                if query_lower in content_lower:
-                    # Calculate relevance
-                    match_count = content_lower.count(query_lower)
-
-                    # Bonus for title match
-                    title_bonus = 2.0 if query_lower in md_file.stem.lower() else 1.0
-
-                    # Extract excerpt
-                    match_pos = content_lower.find(query_lower)
-                    start = max(0, match_pos - 100)
-                    end = min(len(content), match_pos + len(query_lower) + 100)
-                    excerpt = content[start:end]
-
-                    # Parse frontmatter for metadata
-                    frontmatter = self._parse_frontmatter(content)
-
-                    results.append({
-                        "filepath": str(md_file.relative_to(self.vault_path)),
-                        "title": md_file.stem,
-                        "source": source_name,
-                        "date": frontmatter.get("date", ""),
-                        "tags": frontmatter.get("tags", ""),
-                        "excerpt": excerpt.strip(),
-                        "relevance_score": match_count * title_bonus,
-                    })
-
-            except Exception as e:
-                logger.debug(f"Error searching {md_file}: {e}")
-                continue
-
-        return results
-
-    async def save_to_shared_knowledge(
-        self,
-        category: str,
-        title: str,
-        content: str,
-        tags: Optional[List[str]] = None,
-        source_project: Optional[str] = None
-    ) -> bool:
-        """
-        Save knowledge to Shared-Knowledge folder for cross-project reuse.
-
-        Categories:
-        - Errors: Error patterns and solutions
-        - Patterns: Code patterns and best practices
-        - Solutions: General solutions and workarounds
-
-        Args:
-            category: Category (Errors, Patterns, Solutions)
-            title: Note title
-            content: Markdown content
-            tags: Optional tags for the note
-            source_project: Project where knowledge originated
-
-        Returns:
-            True if saved successfully
-        """
-        shared_path = self.get_shared_knowledge_path()
-        if not shared_path:
-            logger.warning("Shared-Knowledge folder not available")
-            return False
-
-        try:
-            # Ensure category folder exists
-            category_path = shared_path / category
-            category_path.mkdir(parents=True, exist_ok=True)
-
-            # Sanitize title for filename
-            safe_title = re.sub(r'[<>:"/\\|?*]', '-', title)
-            filename = f"{safe_title}.md"
-            filepath = category_path / filename
-
-            # Build markdown with frontmatter
-            now = datetime.now()
-            all_tags = list(set(["shared-knowledge", category.lower()] + (tags or [])))
-
-            markdown_lines = [
-                "---",
-                f"date: {now.strftime('%Y-%m-%d')}",
-                f"time: {now.strftime('%H:%M')}",
-                f"category: {category}",
-                f"source_project: {source_project or 'Unknown'}",
-                f"tags: [{', '.join(all_tags)}]",
-                "---",
-                "",
-                f"# {title}",
-                "",
-                content,
-                "",
-                "---",
-                f"*Added to Shared-Knowledge on {now.strftime('%Y-%m-%d %H:%M')}*",
-            ]
-
-            filepath.write_text("\n".join(markdown_lines), encoding="utf-8")
-            logger.info(f"Saved to Shared-Knowledge: {category}/{filename}")
-
-            return True
-
-        except Exception as e:
-            logger.error(f"Failed to save to Shared-Knowledge: {e}", exc_info=True)
-            return False
-
-    async def search_shared_errors(self, error_msg: str) -> Optional[Dict[str, Any]]:
-        """
-        Quick search for error solutions in Shared-Knowledge/Errors.
-
-        This is optimized for fast error resolution across all projects.
-
-        Args:
-            error_msg: Error message to search for
-
-        Returns:
-            Best matching solution or None
-        """
-        shared_path = self.get_shared_knowledge_path()
-        if not shared_path:
-            return None
-
-        errors_path = shared_path / "Errors"
-        if not errors_path.exists():
-            return None
-
-        try:
-            query_lower = error_msg.lower()
-            best_match = None
-            best_score = 0
-
-            for error_file in errors_path.glob("*.md"):
-                content = error_file.read_text(encoding="utf-8")
-                content_lower = content.lower()
-
-                if query_lower in content_lower:
-                    score = content_lower.count(query_lower)
-
-                    # Bonus for filename match
-                    if any(word in error_file.stem.lower() for word in query_lower.split()[:3]):
-                        score *= 1.5
-
-                    if score > best_score:
-                        best_score = score
-                        frontmatter = self._parse_frontmatter(content)
-
-                        # Extract solution section
-                        solution_match = re.search(
-                            r'## Solution\s*(.*?)(?=\n##|\Z)',
-                            content,
-                            re.DOTALL
-                        )
-
-                        best_match = {
-                            "filepath": str(error_file.relative_to(self.vault_path)),
-                            "title": error_file.stem,
-                            "source_project": frontmatter.get("source_project", ""),
-                            "solution": solution_match.group(1).strip() if solution_match else "",
-                            "relevance_score": score,
-                        }
-
-            if best_match:
-                logger.info(f"Found shared error solution: {best_match['title']}")
-
-            return best_match
-
-        except Exception as e:
-            logger.error(f"Shared error search failed: {e}", exc_info=True)
-            return None
-
-    def get_cross_project_statistics(self) -> Dict[str, Any]:
-        """
-        Get statistics about cross-project knowledge.
-
-        Returns:
-            Dict with cross-project stats
-        """
-        if not self.vault_available:
-            return {"available": False}
-
-        stats = {
-            "available": True,
-            "projects": self.get_project_folders(),
-            "project_count": len(self.get_project_folders()),
-            "shared_knowledge": {
-                "available": False,
-                "categories": {},
-            }
-        }
-
-        shared_path = self.get_shared_knowledge_path()
-        if shared_path and shared_path.exists():
-            stats["shared_knowledge"]["available"] = True
-
-            for category in ["Errors", "Patterns", "Solutions"]:
-                category_path = shared_path / category
-                if category_path.exists():
-                    count = len(list(category_path.glob("*.md")))
-                    stats["shared_knowledge"]["categories"][category] = count
-
-        return stats
-
-    # ========== END v2.0 Methods ==========
 
 
 # Create singleton instance

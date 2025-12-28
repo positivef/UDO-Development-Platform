@@ -1,7 +1,7 @@
 # UDO 개발 규칙 통합 문서 (Unified Rules)
 
-> **버전**: 1.0.0  
-> **최종 수정**: 2025-12-23  
+> **버전**: 1.0.0
+> **최종 수정**: 2025-12-23
 > **관련 설정 파일**: mypy.ini, eslint.config.mjs, .pre-commit-config.yaml
 
 ---
@@ -32,7 +32,7 @@ Layer 3: UDO로 생성한 모든 프로젝트에 자동 적용
 설정:
   line-length: 127
   target-version: py313
-  
+
 명령:
   black backend src scripts tests
 ```
@@ -44,7 +44,7 @@ Layer 3: UDO로 생성한 모든 프로젝트에 자동 적용
   max-line-length: 127
   max-complexity: 10
   select: E9,F63,F7,F82  # 커밋 시 (빠른 검사)
-  
+
 명령:
   flake8 backend src --show-source
 ```
@@ -60,7 +60,7 @@ Layer 3: UDO로 생성한 모든 프로젝트에 자동 적용
   warn_redundant_casts: true
   show_error_context: true
   show_column_numbers: true
-  
+
 명령:
   mypy src
 ```
@@ -78,13 +78,13 @@ Layer 3: UDO로 생성한 모든 프로젝트에 자동 적용
 def function_name(param: str) -> dict:
     """
     함수 설명 (한 줄)
-    
+
     Args:
         param: 파라미터 설명
-        
+
     Returns:
         반환값 설명
-        
+
     Raises:
         ValueError: 예외 상황 설명
     """
@@ -106,7 +106,7 @@ def function_name(param: str) -> dict:
   extends:
     - eslint-config-next/core-web-vitals
     - eslint-config-next/typescript
-  
+
 명령:
   npm run lint
 ```
@@ -119,7 +119,7 @@ def function_name(param: str) -> dict:
   module: esnext
   moduleResolution: bundler
   jsx: react-jsx
-  
+
 명령:
   npx tsc --noEmit
 ```

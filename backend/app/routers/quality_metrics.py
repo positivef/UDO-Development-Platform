@@ -4,12 +4,12 @@ Quality Metrics API Routes
 API endpoints for code quality metrics and test coverage
 """
 
-from fastapi import APIRouter, HTTPException, Query
-from typing import Optional
 import logging
+from typing import Optional
 
 from app.models.quality_metrics import QualityMetricsResponse
 from app.services.quality_service import quality_service
+from fastapi import APIRouter, HTTPException, Query
 
 logger = logging.getLogger(__name__)
 
@@ -30,12 +30,11 @@ router = APIRouter(prefix="/api/quality-metrics", tags=["Quality Metrics"])
     - Overall weighted quality score
 
     **Note**: This endpoint runs analysis tools which may take 5-30 seconds.
-    """
+    """,
 )
 async def get_quality_metrics(
     project_id: Optional[str] = Query(
-        None,
-        description="Project ID (reserved for multi-project support)"
+        None, description="Project ID (reserved for multi-project support)"
     )
 ) -> QualityMetricsResponse:
     """
@@ -53,22 +52,23 @@ async def get_quality_metrics(
         # Get all metrics
         metrics = quality_service.get_all_metrics()
 
-        logger.info(f"Quality metrics collected. Overall score: {metrics['overall_score']}")
+        logger.info(
+            f"Quality metrics collected. Overall score: {metrics['overall_score']}"
+        )
 
         return QualityMetricsResponse(**metrics)
 
     except Exception as e:
         logger.error(f"Error collecting quality metrics: {e}", exc_info=True)
         raise HTTPException(
-            status_code=500,
-            detail=f"Failed to collect quality metrics: {str(e)}"
+            status_code=500, detail=f"Failed to collect quality metrics: {str(e)}"
         )
 
 
 @router.get(
     "/pylint",
     summary="Get Pylint metrics only",
-    description="Run Pylint analysis on Python code and return metrics"
+    description="Run Pylint analysis on Python code and return metrics",
 )
 async def get_pylint_metrics():
     """Get Pylint metrics for Python code"""
@@ -78,15 +78,14 @@ async def get_pylint_metrics():
     except Exception as e:
         logger.error(f"Error getting Pylint metrics: {e}")
         raise HTTPException(
-            status_code=500,
-            detail=f"Failed to get Pylint metrics: {str(e)}"
+            status_code=500, detail=f"Failed to get Pylint metrics: {str(e)}"
         )
 
 
 @router.get(
     "/eslint",
     summary="Get ESLint metrics only",
-    description="Run ESLint analysis on TypeScript/JavaScript code and return metrics"
+    description="Run ESLint analysis on TypeScript/JavaScript code and return metrics",
 )
 async def get_eslint_metrics():
     """Get ESLint metrics for TypeScript/JavaScript code"""
@@ -96,15 +95,14 @@ async def get_eslint_metrics():
     except Exception as e:
         logger.error(f"Error getting ESLint metrics: {e}")
         raise HTTPException(
-            status_code=500,
-            detail=f"Failed to get ESLint metrics: {str(e)}"
+            status_code=500, detail=f"Failed to get ESLint metrics: {str(e)}"
         )
 
 
 @router.get(
     "/coverage",
     summary="Get test coverage metrics only",
-    description="Run pytest with coverage and return metrics"
+    description="Run pytest with coverage and return metrics",
 )
 async def get_coverage_metrics():
     """Get test coverage metrics"""
@@ -114,8 +112,7 @@ async def get_coverage_metrics():
     except Exception as e:
         logger.error(f"Error getting coverage metrics: {e}")
         raise HTTPException(
-            status_code=500,
-            detail=f"Failed to get coverage metrics: {str(e)}"
+            status_code=500, detail=f"Failed to get coverage metrics: {str(e)}"
         )
 
 
@@ -123,7 +120,7 @@ async def get_coverage_metrics():
     "/refresh",
     response_model=QualityMetricsResponse,
     summary="Refresh quality metrics",
-    description="Force refresh of all quality metrics (same as GET but explicit about refresh)"
+    description="Force refresh of all quality metrics (same as GET but explicit about refresh)",
 )
 async def refresh_quality_metrics() -> QualityMetricsResponse:
     """
@@ -139,6 +136,5 @@ async def refresh_quality_metrics() -> QualityMetricsResponse:
     except Exception as e:
         logger.error(f"Error refreshing quality metrics: {e}", exc_info=True)
         raise HTTPException(
-            status_code=500,
-            detail=f"Failed to refresh quality metrics: {str(e)}"
+            status_code=500, detail=f"Failed to refresh quality metrics: {str(e)}"
         )

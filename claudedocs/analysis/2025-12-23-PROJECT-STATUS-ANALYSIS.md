@@ -14,7 +14,7 @@ obsidian_path: "3-Areas/UDO/Analysis/"
 
 # 프로젝트 진행 현황 분석 보고서
 
-> **분석 일시**: 2025-12-23 13:37 KST  
+> **분석 일시**: 2025-12-23 13:37 KST
 > **프로젝트**: UDO Development Platform v3.0
 
 ---

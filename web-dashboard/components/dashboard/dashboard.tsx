@@ -31,6 +31,7 @@ import { SystemStatus } from "./system-status"
 import { PhaseProgress } from "./phase-progress"
 import { AICollaboration } from "./ai-collaboration"
 import { ControlPanel } from "./control-panel"
+import { ProjectTierStatus } from "./project-tier-status"
 
 // Lazy load heavy chart components
 const UncertaintyMap = lazy(() => import("./uncertainty-map").then(m => ({ default: m.UncertaintyMap })))
@@ -430,6 +431,7 @@ export function Dashboard() {
       <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
         {/* Left Column */}
         <div className="space-y-6">
+          <ProjectTierStatus />
           <SystemStatus status={status?.report?.status || {}} />
           <PhaseProgress
             currentPhase={metrics?.current_phase || "ideation"}

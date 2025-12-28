@@ -20,7 +20,7 @@ from phase_state_manager import (
     PhaseTransitionEvent,
     Phase,
     get_global_phase_manager,
-    reset_global_phase_manager
+    reset_global_phase_manager,
 )
 
 
@@ -46,10 +46,7 @@ class TestPhaseTransitionEvent:
     def test_event_creation(self):
         """Test creating a phase transition event"""
         event = PhaseTransitionEvent(
-            from_phase=Phase.IDEATION,
-            to_phase=Phase.DESIGN,
-            transition_time=datetime.utcnow(),
-            duration_seconds=3600
+            from_phase=Phase.IDEATION, to_phase=Phase.DESIGN, transition_time=datetime.utcnow(), duration_seconds=3600
         )
 
         assert event.from_phase == Phase.IDEATION
@@ -65,7 +62,7 @@ class TestPhaseTransitionEvent:
             to_phase=Phase.DESIGN,
             transition_time=transition_time,
             duration_seconds=3600,
-            metadata={"reason": "requirements complete"}
+            metadata={"reason": "requirements complete"},
         )
 
         event_dict = event.to_dict()
@@ -79,10 +76,7 @@ class TestPhaseTransitionEvent:
     def test_event_first_phase(self):
         """Test event for first phase (no from_phase)"""
         event = PhaseTransitionEvent(
-            from_phase=None,
-            to_phase=Phase.IDEATION,
-            transition_time=datetime.utcnow(),
-            duration_seconds=None
+            from_phase=None, to_phase=Phase.IDEATION, transition_time=datetime.utcnow(), duration_seconds=None
         )
 
         assert event.from_phase is None
@@ -323,11 +317,7 @@ class TestPhaseStateManager:
 
     def test_phase_metadata(self):
         """Test setting phase with metadata"""
-        metadata = {
-            "reason": "requirements complete",
-            "confidence": 0.85,
-            "reviewer": "team-lead"
-        }
+        metadata = {"reason": "requirements complete", "confidence": 0.85, "reviewer": "team-lead"}
 
         self.manager.set_phase(Phase.DESIGN, metadata=metadata)
 

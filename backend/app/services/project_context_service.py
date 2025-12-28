@@ -4,10 +4,11 @@ Project Context Service
 Service layer for managing project contexts and seamless project switching.
 """
 
-import logging
 import json
-from typing import Dict, List, Optional, Any
+import logging
+from typing import Any, Dict, List, Optional
 from uuid import UUID
+
 import asyncpg
 
 logger = logging.getLogger(__name__)
@@ -39,7 +40,7 @@ class ProjectContextService:
         ml_models: Optional[Dict[str, Any]] = None,
         recent_executions: Optional[List[Dict[str, Any]]] = None,
         ai_preferences: Optional[Dict[str, Any]] = None,
-        editor_state: Optional[Dict[str, Any]] = None
+        editor_state: Optional[Dict[str, Any]] = None,
     ) -> Dict[str, Any]:
         """
         Save project context to database.
@@ -55,7 +56,7 @@ class ProjectContextService:
                     "ml_models": ml_models or {},
                     "recent_executions": recent_executions or [],
                     "ai_preferences": ai_preferences or {},
-                    "editor_state": editor_state or {}
+                    "editor_state": editor_state or {},
                 }
 
                 # UPSERT query
@@ -84,7 +85,7 @@ class ProjectContextService:
                     json.dumps(context_data["ml_models"]),
                     json.dumps(context_data["recent_executions"]),
                     json.dumps(context_data["ai_preferences"]),
-                    json.dumps(context_data["editor_state"])
+                    json.dumps(context_data["editor_state"]),
                 )
 
                 logger.info(f"[OK] Saved context for project {project_id}")
@@ -121,8 +122,13 @@ class ProjectContextService:
                     # Parse JSONB fields back to dicts
                     context = dict(result)
                     # Parse each JSONB field if it's a string
-                    for field in ["udo_state", "ml_models", "recent_executions",
-                                  "ai_preferences", "editor_state"]:
+                    for field in [
+                        "udo_state",
+                        "ml_models",
+                        "recent_executions",
+                        "ai_preferences",
+                        "editor_state",
+                    ]:
                         if isinstance(context[field], str):
                             context[field] = json.loads(context[field])
                     return context
@@ -155,9 +161,7 @@ class ProjectContextService:
     # ============================================================
 
     async def switch_project(
-        self,
-        target_project_id: UUID,
-        auto_save_current: bool = True
+        self, target_project_id: UUID, auto_save_current: bool = True
     ) -> Dict[str, Any]:
         """
         Switch to a different project with context auto-loading.
@@ -184,9 +188,13 @@ class ProjectContextService:
                     try:
                         # Note: This would need current context data passed in
                         # For now, we just log the intention
-                        logger.info(f"[EMOJI] Auto-save requested for project {previous_project_id}")
+                        logger.info(
+                            f"[EMOJI] Auto-save requested for project {previous_project_id}"
+                        )
                     except Exception as e:
-                        logger.warning(f"[WARN] Failed to auto-save current context: {e}")
+                        logger.warning(
+                            f"[WARN] Failed to auto-save current context: {e}"
+                        )
 
                 # 3. Load target project context
                 context = await self.load_context(target_project_id)
@@ -200,7 +208,7 @@ class ProjectContextService:
                     "project_name": project["name"],
                     "context_loaded": context is not None,
                     "context": context,
-                    "message": f"Successfully switched to project '{project['name']}'"
+                    "message": f"Successfully switched to project '{project['name']}'",
                 }
 
         except ValueError as e:
@@ -215,10 +223,7 @@ class ProjectContextService:
     # ============================================================
 
     async def list_projects(
-        self,
-        include_archived: bool = False,
-        limit: int = 50,
-        offset: int = 0
+        self, include_archived: bool = False, limit: int = 50, offset: int = 0
     ) -> Dict[str, Any]:
         """
         List all projects with context availability status.
@@ -258,7 +263,7 @@ class ProjectContextService:
                 return {
                     "projects": [dict(p) for p in projects],
                     "total": total,
-                    "current_project_id": self.current_project_id
+                    "current_project_id": self.current_project_id,
                 }
 
         except Exception as e:
@@ -293,10 +298,7 @@ class ProjectContextService:
     # ============================================================
 
     async def update_execution_history(
-        self,
-        project_id: UUID,
-        execution: Dict[str, Any],
-        max_history: int = 10
+        self, project_id: UUID, execution: Dict[str, Any], max_history: int = 10
     ) -> None:
         """
         Add execution to recent_executions (FIFO, max 10).
@@ -322,7 +324,7 @@ class ProjectContextService:
                     ml_models=context.get("ml_models"),
                     recent_executions=recent,
                     ai_preferences=context.get("ai_preferences"),
-                    editor_state=context.get("editor_state")
+                    editor_state=context.get("editor_state"),
                 )
 
                 logger.info(f"[OK] Updated execution history for project {project_id}")
@@ -334,9 +336,7 @@ class ProjectContextService:
             raise
 
     async def merge_context(
-        self,
-        project_id: UUID,
-        partial_context: Dict[str, Any]
+        self, project_id: UUID, partial_context: Dict[str, Any]
     ) -> Dict[str, Any]:
         """
         Merge partial context update with existing context.
@@ -355,16 +355,26 @@ class ProjectContextService:
                     ml_models=partial_context.get("ml_models"),
                     recent_executions=partial_context.get("recent_executions"),
                     ai_preferences=partial_context.get("ai_preferences"),
-                    editor_state=partial_context.get("editor_state")
+                    editor_state=partial_context.get("editor_state"),
                 )
 
             # Merge with existing
             merged = {
-                "udo_state": partial_context.get("udo_state", existing.get("udo_state")),
-                "ml_models": partial_context.get("ml_models", existing.get("ml_models")),
-                "recent_executions": partial_context.get("recent_executions", existing.get("recent_executions")),
-                "ai_preferences": partial_context.get("ai_preferences", existing.get("ai_preferences")),
-                "editor_state": partial_context.get("editor_state", existing.get("editor_state"))
+                "udo_state": partial_context.get(
+                    "udo_state", existing.get("udo_state")
+                ),
+                "ml_models": partial_context.get(
+                    "ml_models", existing.get("ml_models")
+                ),
+                "recent_executions": partial_context.get(
+                    "recent_executions", existing.get("recent_executions")
+                ),
+                "ai_preferences": partial_context.get(
+                    "ai_preferences", existing.get("ai_preferences")
+                ),
+                "editor_state": partial_context.get(
+                    "editor_state", existing.get("editor_state")
+                ),
             }
 
             return await self.save_context(project_id=project_id, **merged)
@@ -415,36 +425,60 @@ _mock_service_instance: Optional[Any] = None
 def get_project_context_service() -> Optional[Any]:
     """Get the global project context service instance (ProjectContextService or MockProjectService)"""
     import os
+
     global _mock_service_instance
 
     if _use_mock_service:
         # CRITICAL FIX: Disable caching in development mode for hot reload
-        is_development = os.getenv("ENV", "production") == "development"
+        # Check both ENV and ENVIRONMENT for development mode
+        env = os.getenv("ENV", os.getenv("ENVIRONMENT", "production"))
+        is_development = env == "development"
 
-        if is_development:
-            # Always create new instance in development
+        if is_development or _mock_service_instance is None:
+            # Always create new instance in development or if not initialized
             try:
-                from app.services.mock_project_service import MockProjectService
-                logger.debug("[EMOJI] Development mode: Creating fresh MockProjectService instance")
-                return MockProjectService()
+                from app.services.mock_project_service import \
+                    MockProjectService
+
+                if is_development:
+                    logger.debug(
+                        "[EMOJI] Development mode: Creating fresh MockProjectService instance"
+                    )
+                else:
+                    logger.info(
+                        "[EMOJI] Initializing MockProjectService (fallback/startup)"
+                    )
+                
+                # Create and cache if needed
+                instance = MockProjectService()
+                if not is_development:
+                    _mock_service_instance = instance
+                    
+                return instance
             except ImportError as e:
                 logger.error(f"Failed to import MockProjectService: {e}")
                 return None
         else:
             # Production: Use caching for performance
             if _mock_service_instance:
-                logger.debug(f"Returning cached mock service instance: {type(_mock_service_instance)}")
+                logger.debug(
+                    f"Returning cached mock service instance: {type(_mock_service_instance)}"
+                )
                 return _mock_service_instance
             # If not cached, create and cache it
             try:
-                from app.services.mock_project_service import MockProjectService
+                from app.services.mock_project_service import \
+                    MockProjectService
+
                 _mock_service_instance = MockProjectService()
                 logger.info("[OK] MockProjectService instance created and cached")
                 return _mock_service_instance
             except ImportError as e:
                 logger.error(f"Failed to import MockProjectService: {e}")
                 return None
-    logger.debug(f"Returning database service: {type(_project_context_service) if _project_context_service else 'None'}")
+    logger.debug(
+        f"Returning database service: {type(_project_context_service) if _project_context_service else 'None'}"
+    )
     return _project_context_service
 
 
@@ -463,6 +497,7 @@ def enable_mock_service():
     # Create mock service instance immediately
     try:
         from app.services.mock_project_service import MockProjectService
+
         _mock_service_instance = MockProjectService()
         logger.info("[OK] MockProjectService instance initialized")
     except Exception as e:

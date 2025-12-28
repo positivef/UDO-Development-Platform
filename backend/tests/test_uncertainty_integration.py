@@ -1,8 +1,10 @@
 """Test Uncertainty-Time Tracking Integration"""
-import pytest
-import sys
+
 import os
+import sys
 from pathlib import Path
+
+import pytest
 from fastapi.testclient import TestClient
 
 # Add parent directory to path for src module
@@ -20,8 +22,8 @@ test_uncertainty_map = UncertaintyMapV3(project_name="test-project")
 @pytest.fixture
 def client():
     """Create test client with dependency override"""
-    from main import app
     from app.routers.uncertainty import get_uncertainty_map
+    from main import app
 
     def get_test_uncertainty_map():
         return test_uncertainty_map
@@ -55,11 +57,9 @@ def test_track_with_uncertainty(client):
             "has_code": True,
             "validation_score": 0.7,
             "team_size": 3,
-            "timeline_weeks": 8
+            "timeline_weeks": 8,
         },
-        "metadata": {
-            "test": "uncertainty_integration"
-        }
+        "metadata": {"test": "uncertainty_integration"},
     }
 
     response = client.post("/api/uncertainty/track-with-uncertainty", json=payload)
@@ -69,7 +69,9 @@ def test_track_with_uncertainty(client):
     print(f"Response: {response.text}")
 
     # Check status code
-    assert response.status_code == 200, f"Expected 200, got {response.status_code}: {response.text}"
+    assert (
+        response.status_code == 200
+    ), f"Expected 200, got {response.status_code}: {response.text}"
 
     # Check response structure
     data = response.json()
@@ -94,12 +96,11 @@ def test_adjusted_baseline(client):
         "has_code": True,
         "validation_score": 0.7,
         "team_size": 3,
-        "timeline_weeks": 8
+        "timeline_weeks": 8,
     }
 
     response = client.post(
-        "/api/uncertainty/adjusted-baseline/implementation/implementation",
-        json=payload
+        "/api/uncertainty/adjusted-baseline/implementation/implementation", json=payload
     )
 
     # Print response for debugging
@@ -107,7 +108,9 @@ def test_adjusted_baseline(client):
     print(f"Response: {response.text}")
 
     # Check status code
-    assert response.status_code == 200, f"Expected 200, got {response.status_code}: {response.text}"
+    assert (
+        response.status_code == 200
+    ), f"Expected 200, got {response.status_code}: {response.text}"
 
     # Check response structure
     data = response.json()

@@ -5,16 +5,16 @@ AI Collaboration Connector - 실제 AI 서비스 연동
 Codex MCP, Claude, Gemini 통합
 """
 
-import sys
-import os
-import json
 import asyncio
-from typing import Dict, List, Optional, Any, Tuple
-from dataclasses import dataclass, asdict
+import json
+import logging
+import os
+import subprocess
+import sys
+from dataclasses import asdict, dataclass
 from datetime import datetime
 from enum import Enum
-import subprocess
-import logging
+from typing import Any, Dict, List, Optional, Tuple
 
 # Windows Unicode 인코딩 문제 해결
 if sys.platform == 'win32':

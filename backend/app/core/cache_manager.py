@@ -10,8 +10,8 @@ Features:
 
 import sys
 from collections import OrderedDict
-from typing import Any, Optional
 from threading import Lock
+from typing import Any, Optional
 
 
 class CacheManager:
@@ -163,7 +163,9 @@ class CacheManager:
     @property
     def utilization(self) -> float:
         """Cache utilization as percentage (0.0 to 1.0)."""
-        return self._current_size / self.max_size_bytes if self.max_size_bytes > 0 else 0.0
+        return (
+            self._current_size / self.max_size_bytes if self.max_size_bytes > 0 else 0.0
+        )
 
     def get_statistics(self) -> dict[str, Any]:
         """

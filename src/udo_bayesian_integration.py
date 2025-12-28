@@ -1,15 +1,15 @@
 """
-UDO v2 + Bayesian Learning [EMOJI] [EMOJI]
+UDO v2 + Bayesian Learning 통합 모듈
 ===================================
 
-UDO v2 Orchestrator[EMOJI] Adaptive Bayesian Learning[EMOJI] [EMOJI]
-[EMOJI] [EMOJI] [EMOJI] [EMOJI] [EMOJI] [EMOJI] [EMOJI].
+UDO v2 Orchestrator에 Adaptive Bayesian Learning을 통합하여
+실시간 학습 및 적응형 의사결정을 가능하게 합니다.
 
-[EMOJI] [EMOJI]:
-1. Phase[EMOJI] Bayesian Confidence [EMOJI]
-2. [EMOJI] Threshold [EMOJI] [EMOJI]
-3. [EMOJI] [EMOJI] [EMOJI]
-4. [EMOJI] [EMOJI] [EMOJI]
+핵심 기능:
+1. Phase별 Bayesian Confidence 적용
+2. 의사결정 Threshold 동적 조정
+3. 프로젝트 결과 학습
+4. 편향 자동 보정
 """
 
 import logging
@@ -25,10 +25,10 @@ logger = logging.getLogger(__name__)
 
 class UDOBayesianIntegration:
     """
-    UDO v2 Orchestrator[EMOJI] Bayesian Learning System [EMOJI]
+    UDO v2 Orchestrator와 Bayesian Learning System 통합
 
-    [EMOJI] [EMOJI] UDO v2[EMOJI] [EMOJI] [EMOJI] [EMOJI] Bayesian confidence[EMOJI]
-    [EMOJI], [EMOJI] [EMOJI] [EMOJI] [EMOJI].
+    이 클래스는 UDO v2의 의사결정 로직에 학습된 Bayesian confidence를
+    반영하고, 프로젝트 결과로부터 자동으로 학습합니다.
     """
 
     def __init__(self, project_name: str, storage_dir: Optional[Path] = None):
@@ -36,8 +36,8 @@ class UDOBayesianIntegration:
         Initialize Bayesian integration
 
         Args:
-            project_name: [EMOJI] [EMOJI]
-            storage_dir: [EMOJI] [EMOJI] [EMOJI] [EMOJI]
+            project_name: 프로젝트 이름
+            storage_dir: 학습 데이터 저장 디렉토리
         """
         self.project_name = project_name
         self.bayesian = AdaptiveBayesianUncertainty(
@@ -45,7 +45,7 @@ class UDOBayesianIntegration:
             storage_dir=storage_dir or Path.home() / '.udo' / 'bayesian'
         )
 
-        # Phase[EMOJI] [EMOJI] threshold (UDO v2[EMOJI] [EMOJI])
+        # Phase별 기본 threshold (UDO v2에서 가져옴)
         self.BASE_THRESHOLDS = {
             "ideation": 0.60,
             "design": 0.65,
@@ -54,7 +54,7 @@ class UDOBayesianIntegration:
             "testing": 0.70
         }
 
-        # [EMOJI] [EMOJI]
+        # 통합 메트릭
         self.integration_metrics = {
             "decisions_influenced": 0,
             "threshold_adjustments": 0,
@@ -66,52 +66,52 @@ class UDOBayesianIntegration:
 
     def get_adaptive_threshold(self, phase: str, base_confidence: float) -> Tuple[float, Dict[str, Any]]:
         """
-        Phase[EMOJI] [EMOJI] threshold [EMOJI]
+        Phase별 적응형 threshold 계산
 
-        Bayesian [EMOJI] [EMOJI] [EMOJI] [EMOJI] threshold[EMOJI] [EMOJI].
+        Bayesian 학습 결과를 반영하여 동적으로 threshold를 조정합니다.
 
         Args:
-            phase: [EMOJI] [EMOJI] (ideation, design, mvp, implementation, testing)
-            base_confidence: UDO v2[EMOJI] [EMOJI] [EMOJI] confidence
+            phase: 개발 단계 (ideation, design, mvp, implementation, testing)
+            base_confidence: UDO v2에서 계산한 기본 confidence
 
         Returns:
             (adjusted_threshold, metadata) tuple
-            - adjusted_threshold: Bayesian [EMOJI] [EMOJI] threshold
-            - metadata: [EMOJI] [EMOJI] [EMOJI] [EMOJI]
+            - adjusted_threshold: Bayesian 보정이 적용된 threshold
+            - metadata: 조정 내역 및 설명
         """
         base_threshold = self.BASE_THRESHOLDS.get(phase, 0.65)
 
-        # Bayesian [EMOJI] Phase[EMOJI] [EMOJI] [EMOJI]
+        # Bayesian 시스템에서 Phase별 성과 가져오기
         phase_performance = self.bayesian.get_performance_report()
 
-        # [EMOJI] [EMOJI] [EMOJI] [EMOJI]
+        # 편향 보정 팩터 계산
         bias_profile = phase_performance.get('bias_profile', {})
         bias_type = bias_profile.get('type', 'unbiased')
 
-        # [EMOJI] [EMOJI] threshold [EMOJI]
+        # 편향에 따른 threshold 조정
         bias_adjustment = 0.0
         if bias_type == 'optimistic':
-            # [EMOJI] [EMOJI] -> threshold [EMOJI]
+            # 과도하게 낙관적 → threshold 상향
             bias_adjustment = +0.05
         elif bias_type == 'highly_optimistic':
             bias_adjustment = +0.10
         elif bias_type == 'pessimistic':
-            # [EMOJI] [EMOJI] -> threshold [EMOJI]
+            # 과도하게 비관적 → threshold 하향
             bias_adjustment = -0.05
         elif bias_type == 'highly_pessimistic':
             bias_adjustment = -0.10
 
-        # [EMOJI] confidence[EMOJI] [EMOJI]
-        # base_confidence[EMOJI] [EMOJI] [EMOJI] [EMOJI] [EMOJI] threshold [EMOJI]
-        confidence_factor = (base_confidence - 0.5) * 0.1  # -0.05 ~ +0.05 [EMOJI]
+        # 학습된 confidence를 반영
+        # base_confidence가 높고 과거 성공률이 높으면 threshold 완화
+        confidence_factor = (base_confidence - 0.5) * 0.1  # -0.05 ~ +0.05 범위
 
-        # [EMOJI] [EMOJI] threshold
+        # 최종 조정된 threshold
         adjusted_threshold = base_threshold + bias_adjustment + confidence_factor
 
-        # [EMOJI] [EMOJI] [EMOJI] [EMOJI] (0.4 ~ 0.9)
+        # 안전 범위 내로 제한 (0.4 ~ 0.9)
         adjusted_threshold = max(0.4, min(0.9, adjusted_threshold))
 
-        # [EMOJI] [EMOJI] [EMOJI]
+        # 조정이 발생했는지 추적
         if abs(adjusted_threshold - base_threshold) > 0.01:
             self.integration_metrics["threshold_adjustments"] += 1
 
@@ -127,7 +127,7 @@ class UDOBayesianIntegration:
             "reason": self._explain_adjustment(bias_type, bias_adjustment, confidence_factor)
         }
 
-        logger.info(f"[EMOJI] Phase '{phase}' threshold: {base_threshold:.2f} -> {adjusted_threshold:.2f} "
+        logger.info(f"📊 Phase '{phase}' threshold: {base_threshold:.2f} → {adjusted_threshold:.2f} "
                    f"(bias: {bias_type}, adj: {bias_adjustment:+.2f})")
 
         return adjusted_threshold, metadata
@@ -137,20 +137,20 @@ class UDOBayesianIntegration:
                            base_confidence: float,
                            uncertainties: Dict[str, float]) -> Dict[str, Any]:
         """
-        UDO v2[EMOJI] GO/NO_GO [EMOJI] Bayesian [EMOJI] [EMOJI]
+        UDO v2의 GO/NO_GO 의사결정을 Bayesian 학습으로 강화
 
         Args:
-            phase: [EMOJI] [EMOJI]
-            base_confidence: UDO v2[EMOJI] [EMOJI] [EMOJI] confidence
-            uncertainties: [EMOJI] [EMOJI]
+            phase: 개발 단계
+            base_confidence: UDO v2에서 계산한 기본 confidence
+            uncertainties: 불확실성 벡터
 
         Returns:
-            [EMOJI] [EMOJI] [EMOJI]
+            향상된 의사결정 정보
         """
-        # [EMOJI] threshold [EMOJI]
+        # 적응형 threshold 계산
         adjusted_threshold, threshold_meta = self.get_adaptive_threshold(phase, base_confidence)
 
-        # UncertaintyVector [EMOJI]
+        # UncertaintyVector 생성
         uncertainty_vector = UncertaintyVector(
             technical=uncertainties.get('technical', 0.5),
             market=uncertainties.get('market', 0.5),
@@ -159,21 +159,21 @@ class UDOBayesianIntegration:
             quality=uncertainties.get('quality', 0.5)
         )
 
-        # Bayesian [EMOJI] [EMOJI]
+        # Bayesian 예측 수행
         bayesian_prediction = self.bayesian.predict_uncertainty(
             current_vector=uncertainty_vector,
             phase=phase,
-            horizon_hours=168  # 1[EMOJI] [EMOJI]
+            horizon_hours=168  # 1주일 예측
         )
 
-        # [EMOJI] [EMOJI] confidence [EMOJI]
-        # UDO v2 confidence + Bayesian confidence[EMOJI] [EMOJI] [EMOJI]
+        # 최종 의사결정 confidence 계산
+        # UDO v2 confidence + Bayesian confidence의 가중 평균
         bayesian_confidence = bayesian_prediction.get('confidence', 0.5)
 
         # 70% UDO, 30% Bayesian
         final_confidence = 0.7 * base_confidence + 0.3 * bayesian_confidence
 
-        # [EMOJI]
+        # 의사결정
         if final_confidence >= adjusted_threshold:
             decision = "GO"
             confidence_gap = final_confidence - adjusted_threshold
@@ -209,7 +209,7 @@ class UDOBayesianIntegration:
             "explanation": self._explain_decision(decision, final_confidence, adjusted_threshold, threshold_meta)
         }
 
-        logger.info(f"[EMOJI] Decision for '{phase}': {decision} (confidence: {final_confidence:.2%})")
+        logger.info(f"🎯 Decision for '{phase}': {decision} (confidence: {final_confidence:.2%})")
 
         return result
 
@@ -220,16 +220,16 @@ class UDOBayesianIntegration:
                                    actual_success: bool,
                                    actual_uncertainties: Optional[Dict[str, float]] = None):
         """
-        [EMOJI] [EMOJI] [EMOJI]
+        프로젝트 결과로부터 학습
 
         Args:
-            phase: [EMOJI] [EMOJI]
-            predicted_confidence: [EMOJI] confidence
-            predicted_uncertainties: [EMOJI] [EMOJI]
-            actual_success: [EMOJI] [EMOJI] [EMOJI]
-            actual_uncertainties: [EMOJI] [EMOJI] [EMOJI] ([EMOJI])
+            phase: 개발 단계
+            predicted_confidence: 예측했던 confidence
+            predicted_uncertainties: 예측했던 불확실성
+            actual_success: 실제 성공 여부
+            actual_uncertainties: 실제 관측된 불확실성 (선택)
         """
-        # [EMOJI] [EMOJI] UncertaintyVector[EMOJI] [EMOJI]
+        # 실제 결과를 UncertaintyVector로 변환
         if actual_uncertainties:
             actual_vector = UncertaintyVector(
                 technical=actual_uncertainties.get('technical', 0.5),
@@ -239,7 +239,7 @@ class UDOBayesianIntegration:
                 quality=actual_uncertainties.get('quality', 0.5)
             )
         else:
-            # [EMOJI]/[EMOJI] [EMOJI] [EMOJI]
+            # 성공/실패 기반으로 추정
             base_value = 0.3 if actual_success else 0.7
             actual_vector = UncertaintyVector(
                 technical=base_value,
@@ -249,7 +249,7 @@ class UDOBayesianIntegration:
                 quality=base_value
             )
 
-        # Bayesian [EMOJI] [EMOJI] [EMOJI] [EMOJI]
+        # Bayesian 시스템이 예측을 먼저 생성
         predicted_vector = UncertaintyVector(
             technical=predicted_uncertainties.get('technical', 0.5),
             market=predicted_uncertainties.get('market', 0.5),
@@ -264,7 +264,7 @@ class UDOBayesianIntegration:
             horizon_hours=0
         )
 
-        # Bayesian [EMOJI] [EMOJI]
+        # Bayesian 시스템 업데이트
         self.bayesian.update_with_observation(
             phase=phase,
             predicted=prediction,
@@ -274,18 +274,18 @@ class UDOBayesianIntegration:
 
         self.integration_metrics["learning_events"] += 1
 
-        # [EMOJI] [EMOJI]
+        # 상태 저장
         self.bayesian.save_state()
 
-        logger.info(f"[EMOJI] Learned from {phase} outcome: success={actual_success}, "
+        logger.info(f"📈 Learned from {phase} outcome: success={actual_success}, "
                    f"predicted_confidence={predicted_confidence:.2%}")
 
     def get_integration_report(self) -> Dict[str, Any]:
         """
-        [EMOJI] [EMOJI] [EMOJI] [EMOJI]
+        통합 성과 리포트 생성
 
         Returns:
-            [EMOJI] [EMOJI] [EMOJI] Bayesian [EMOJI] [EMOJI]
+            통합 메트릭 및 Bayesian 성능 리포트
         """
         bayesian_report = self.bayesian.get_performance_report()
 
@@ -303,40 +303,40 @@ class UDOBayesianIntegration:
         }
 
     def _explain_adjustment(self, bias_type: str, bias_adj: float, conf_factor: float) -> str:
-        """Threshold [EMOJI] [EMOJI] [EMOJI]"""
+        """Threshold 조정 사유 설명"""
         reasons = []
 
         if bias_type != 'unbiased':
             if 'optimistic' in bias_type:
-                reasons.append(f"[EMOJI] [EMOJI] [EMOJI] [EMOJI] [EMOJI] -> threshold [EMOJI] ({bias_adj:+.2f})")
+                reasons.append(f"과거 과도한 낙관 패턴 감지 → threshold 상향 ({bias_adj:+.2f})")
             else:
-                reasons.append(f"[EMOJI] [EMOJI] [EMOJI] [EMOJI] [EMOJI] -> threshold [EMOJI] ({bias_adj:+.2f})")
+                reasons.append(f"과거 과도한 비관 패턴 감지 → threshold 하향 ({bias_adj:+.2f})")
 
         if abs(conf_factor) > 0.01:
             if conf_factor > 0:
-                reasons.append(f"[EMOJI] [EMOJI] confidence -> threshold [EMOJI] ({conf_factor:+.2f})")
+                reasons.append(f"높은 기본 confidence → threshold 완화 ({conf_factor:+.2f})")
             else:
-                reasons.append(f"[EMOJI] [EMOJI] confidence -> threshold [EMOJI] ({conf_factor:+.2f})")
+                reasons.append(f"낮은 기본 confidence → threshold 강화 ({conf_factor:+.2f})")
 
         if not reasons:
-            return "[EMOJI] [EMOJI] ([EMOJI] threshold [EMOJI])"
+            return "조정 없음 (표준 threshold 적용)"
 
         return " | ".join(reasons)
 
     def _explain_decision(self, decision: str, confidence: float,
                          threshold: float, threshold_meta: Dict) -> str:
-        """[EMOJI] [EMOJI] [EMOJI]"""
+        """의사결정 사유 설명"""
         gap = confidence - threshold
 
         explanations = {
-            "GO": f"[OK] GO: Confidence ({confidence:.2%}) > Threshold ({threshold:.2%}), Gap: {gap:+.2%}",
-            "GO_WITH_CHECKPOINTS": f"[WARN] GO_WITH_CHECKPOINTS: Confidence ({confidence:.2%}) ≥ 80% Threshold, Gap: {gap:+.2%}",
-            "NO_GO": f"[FAIL] NO_GO: Confidence ({confidence:.2%}) < Threshold ({threshold:.2%}), Gap: {gap:-.2%}"
+            "GO": f"✅ GO: Confidence ({confidence:.2%}) > Threshold ({threshold:.2%}), Gap: {gap:+.2%}",
+            "GO_WITH_CHECKPOINTS": f"⚠️ GO_WITH_CHECKPOINTS: Confidence ({confidence:.2%}) ≥ 80% Threshold, Gap: {gap:+.2%}",
+            "NO_GO": f"❌ NO_GO: Confidence ({confidence:.2%}) < Threshold ({threshold:.2%}), Gap: {gap:-.2%}"
         }
 
         base_explanation = explanations.get(decision, "Unknown decision")
 
-        # Threshold [EMOJI] [EMOJI] [EMOJI]
+        # Threshold 조정 사유 추가
         if threshold_meta.get('bias_type') != 'unbiased':
             base_explanation += f" | Bias: {threshold_meta['bias_type']}"
 
@@ -344,18 +344,18 @@ class UDOBayesianIntegration:
 
 
 def demo_integration():
-    """[EMOJI] [EMOJI] [EMOJI]"""
+    """통합 시스템 데모"""
     print("\n" + "=" * 60)
     print("UDO V2 + BAYESIAN LEARNING INTEGRATION DEMO")
     print("=" * 60)
 
-    # [EMOJI] [EMOJI] [EMOJI]
+    # 통합 시스템 초기화
     integration = UDOBayesianIntegration(project_name="Demo-Project")
 
-    # [EMOJI]: Implementation Phase [EMOJI]
-    print("\n[EMOJI] Scenario: Implementation Phase Decision")
+    # 시나리오: Implementation Phase 의사결정
+    print("\n📊 Scenario: Implementation Phase Decision")
 
-    # UDO v2[EMOJI] [EMOJI] [EMOJI] [EMOJI]
+    # UDO v2에서 계산한 기본 값들
     base_confidence = 0.72
     uncertainties = {
         "technical": 0.4,
@@ -365,27 +365,27 @@ def demo_integration():
         "quality": 0.4
     }
 
-    # [EMOJI] [EMOJI]
+    # 강화된 의사결정
     decision = integration.enhance_go_decision(
         phase="implementation",
         base_confidence=base_confidence,
         uncertainties=uncertainties
     )
 
-    print(f"\n[EMOJI] Decision: {decision['decision']}")
+    print(f"\n🎯 Decision: {decision['decision']}")
     print(f"   Final Confidence: {decision['final_confidence']:.2%}")
     print(f"   Threshold: {decision['threshold']['adjusted']:.2%}")
     print(f"   Explanation: {decision['explanation']}")
 
-    # Bayesian [EMOJI]
+    # Bayesian 인사이트
     insights = decision['bayesian_insights']
     print(f"\n🧠 Bayesian Insights:")
     print(f"   Predicted Uncertainty: {insights['predicted_uncertainty']:.2%}")
     print(f"   Trend: {insights['trend']}")
     print(f"   Quantum State: {insights['quantum_state']}")
 
-    # [EMOJI] [EMOJI] [EMOJI]
-    print("\n[EMOJI] Learning from Outcome...")
+    # 프로젝트 결과로부터 학습
+    print("\n📈 Learning from Outcome...")
     integration.learn_from_project_outcome(
         phase="implementation",
         predicted_confidence=base_confidence,
@@ -400,8 +400,8 @@ def demo_integration():
         }
     )
 
-    # [EMOJI] [EMOJI]
-    print("\n[EMOJI] Integration Report:")
+    # 통합 리포트
+    print("\n📊 Integration Report:")
     report = integration.get_integration_report()
     print(f"   Decisions Influenced: {report['summary']['total_decisions']}")
     print(f"   Threshold Adjustments: {report['summary']['threshold_adjustments']}")
@@ -409,7 +409,7 @@ def demo_integration():
     print(f"   Learning Events: {report['summary']['learning_events']}")
 
     print("\n" + "=" * 60)
-    print("[OK] INTEGRATION DEMO COMPLETE")
+    print("✅ INTEGRATION DEMO COMPLETE")
     print("=" * 60)
 
 

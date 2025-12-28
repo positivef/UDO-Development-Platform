@@ -186,7 +186,7 @@ jobs:
 """
 Router Registry - 롤백 가능한 라우터 등록 시스템
 
-목표 연계: 
+목표 연계:
   - 확장성: 신규 라우터 추가 5분 이내
   - 안정성: 3-Tier Rollback
 
@@ -281,13 +281,13 @@ from pydantic_settings import BaseSettings
 class Settings(BaseSettings):
     # CORS
     allowed_origins: List[str] = ["http://localhost:3000"]
-    
+
     # Logging
     log_level: str = "INFO"
-    
+
     # Database
     database_url: str = "sqlite:///./udo.db"
-    
+
     # Feature Flags
     use_router_registry: bool = True
     kanban_enabled: bool = True
@@ -365,7 +365,7 @@ AI Collaboration Bridge - The Team
   - Claude: Creative (설계 대안)
   - Codex: Implementation (코드 생성)
   - Gemini: Validation (검증)
-  
+
 현재 구현:
   - ✅ Claude 연동
   - ⚠️ Codex 부분 연동

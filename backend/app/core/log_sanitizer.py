@@ -21,11 +21,10 @@ Usage:
     logger.info(f"Processing request for {email}")  # Email masked automatically
 """
 
-import re
 import logging
-from typing import Optional, List
+import re
 from functools import wraps
-
+from typing import List, Optional
 
 # =============================================================================
 # Sensitive Data Patterns
@@ -33,52 +32,68 @@ from functools import wraps
 
 SENSITIVE_PATTERNS = [
     # Passwords (various formats)
-    (r'(?i)(password|passwd|pwd|pass)\s*[=:]\s*[\'"]?([^\s\'"&]+)', r'\1=***REDACTED***'),
-    (r'(?i)(password|passwd|pwd|pass)\s*[\'"]?\s*:\s*[\'"]?([^\s\'"}\]]+)', r'\1: ***REDACTED***'),
-
+    (
+        r'(?i)(password|passwd|pwd|pass)\s*[=:]\s*[\'"]?([^\s\'"&]+)',
+        r"\1=***REDACTED***",
+    ),
+    (
+        r'(?i)(password|passwd|pwd|pass)\s*[\'"]?\s*:\s*[\'"]?([^\s\'"}\]]+)',
+        r"\1: ***REDACTED***",
+    ),
     # API keys and secrets
-    (r'(?i)(api[_-]?key|apikey|secret[_-]?key|auth[_-]?token|access[_-]?token)\s*[=:]\s*[\'"]?([A-Za-z0-9_\-\.]{16,})[\'"]?', r'\1=***REDACTED***'),
-
+    (
+        r'(?i)(api[_-]?key|apikey|secret[_-]?key|auth[_-]?token|access[_-]?token)\s*[=:]\s*[\'"]?([A-Za-z0-9_\-\.]{16,})[\'"]?',
+        r"\1=***REDACTED***",
+    ),
     # JWT tokens (Bearer tokens)
-    (r'(?i)(bearer\s+)([A-Za-z0-9_\-\.]+\.[A-Za-z0-9_\-\.]+\.[A-Za-z0-9_\-\.]+)', r'\1***JWT_REDACTED***'),
-
+    (
+        r"(?i)(bearer\s+)([A-Za-z0-9_\-\.]+\.[A-Za-z0-9_\-\.]+\.[A-Za-z0-9_\-\.]+)",
+        r"\1***JWT_REDACTED***",
+    ),
     # Generic JWT pattern (eyJ...)
-    (r'\beyJ[A-Za-z0-9_-]+\.eyJ[A-Za-z0-9_-]+\.[A-Za-z0-9_-]+\b', '***JWT_REDACTED***'),
-
+    (r"\beyJ[A-Za-z0-9_-]+\.eyJ[A-Za-z0-9_-]+\.[A-Za-z0-9_-]+\b", "***JWT_REDACTED***"),
     # Authorization headers
-    (r'(?i)(authorization)\s*[=:]\s*[\'"]?([^\s\'"]+)', r'\1=***REDACTED***'),
-
+    (r'(?i)(authorization)\s*[=:]\s*[\'"]?([^\s\'"]+)', r"\1=***REDACTED***"),
     # Credit card numbers (basic patterns)
-    (r'\b(?:4[0-9]{12}(?:[0-9]{3})?|5[1-5][0-9]{14}|3[47][0-9]{13}|6(?:011|5[0-9]{2})[0-9]{12})\b', '***CC_REDACTED***'),
-
+    (
+        r"\b(?:4[0-9]{12}(?:[0-9]{3})?|5[1-5][0-9]{14}|3[47][0-9]{13}|6(?:011|5[0-9]{2})[0-9]{12})\b",
+        "***CC_REDACTED***",
+    ),
     # Social Security Numbers (US format)
-    (r'\b\d{3}-\d{2}-\d{4}\b', '***SSN_REDACTED***'),
-
+    (r"\b\d{3}-\d{2}-\d{4}\b", "***SSN_REDACTED***"),
     # Session IDs and cookies
-    (r'(?i)(session[_-]?id|sessionid|sid)\s*[=:]\s*[\'"]?([A-Za-z0-9_\-]{16,})', r'\1=***REDACTED***'),
-
+    (
+        r'(?i)(session[_-]?id|sessionid|sid)\s*[=:]\s*[\'"]?([A-Za-z0-9_\-]{16,})',
+        r"\1=***REDACTED***",
+    ),
     # Database connection strings with passwords
-    (r'(?i)(postgres|mysql|mongodb|redis)://[^:]+:([^@]+)@', r'\1://***:***REDACTED***@'),
-
+    (
+        r"(?i)(postgres|mysql|mongodb|redis)://[^:]+:([^@]+)@",
+        r"\1://***:***REDACTED***@",
+    ),
     # AWS credentials
-    (r'(?i)(aws[_-]?access[_-]?key[_-]?id|aws[_-]?secret[_-]?access[_-]?key)\s*[=:]\s*[\'"]?([A-Za-z0-9/+=]{16,})', r'\1=***REDACTED***'),
-
+    (
+        r'(?i)(aws[_-]?access[_-]?key[_-]?id|aws[_-]?secret[_-]?access[_-]?key)\s*[=:]\s*[\'"]?([A-Za-z0-9/+=]{16,})',
+        r"\1=***REDACTED***",
+    ),
     # Private keys (partial detection)
-    (r'-----BEGIN [A-Z]+ PRIVATE KEY-----.*?-----END [A-Z]+ PRIVATE KEY-----', '***PRIVATE_KEY_REDACTED***'),
-
+    (
+        r"-----BEGIN [A-Z]+ PRIVATE KEY-----.*?-----END [A-Z]+ PRIVATE KEY-----",
+        "***PRIVATE_KEY_REDACTED***",
+    ),
     # Hash values that might be password hashes (bcrypt, pbkdf2)
-    (r'\$2[ayb]\$[0-9]{2}\$[A-Za-z0-9./]{53}', '***HASH_REDACTED***'),
-    (r'pbkdf2\$[A-Fa-f0-9]+\$[A-Fa-f0-9]+', '***HASH_REDACTED***'),
+    (r"\$2[ayb]\$[0-9]{2}\$[A-Za-z0-9./]{53}", "***HASH_REDACTED***"),
+    (r"pbkdf2\$[A-Fa-f0-9]+\$[A-Fa-f0-9]+", "***HASH_REDACTED***"),
 ]
 
 # Optional: Email masking (can be enabled per use case)
-EMAIL_PATTERN = (r'\b[A-Za-z0-9._%+-]+@[A-Za-z0-9.-]+\.[A-Z|a-z]{2,}\b', '***EMAIL***')
+EMAIL_PATTERN = (r"\b[A-Za-z0-9._%+-]+@[A-Za-z0-9.-]+\.[A-Z|a-z]{2,}\b", "***EMAIL***")
 
 
 def sanitize_log_message(
     message: str,
     mask_emails: bool = False,
-    additional_patterns: Optional[List[tuple]] = None
+    additional_patterns: Optional[List[tuple]] = None,
 ) -> str:
     """
     Sanitize a log message by removing/masking sensitive information.
@@ -154,9 +169,15 @@ def sanitize_dict(data: dict, mask_emails: bool = False) -> dict:
             sanitized[key] = sanitize_dict(value, mask_emails=mask_emails)
         elif isinstance(value, list):
             sanitized[key] = [
-                sanitize_log_message(v, mask_emails=mask_emails) if isinstance(v, str)
-                else sanitize_dict(v, mask_emails=mask_emails) if isinstance(v, dict)
-                else v
+                (
+                    sanitize_log_message(v, mask_emails=mask_emails)
+                    if isinstance(v, str)
+                    else (
+                        sanitize_dict(v, mask_emails=mask_emails)
+                        if isinstance(v, dict)
+                        else v
+                    )
+                )
                 for v in value
             ]
         else:
@@ -167,6 +188,7 @@ def sanitize_dict(data: dict, mask_emails: bool = False) -> dict:
 # =============================================================================
 # Secure Logger Class
 # =============================================================================
+
 
 class SecureLogger:
     """
@@ -183,7 +205,7 @@ class SecureLogger:
         self,
         name: str,
         mask_emails: bool = False,
-        additional_patterns: Optional[List[tuple]] = None
+        additional_patterns: Optional[List[tuple]] = None,
     ):
         """
         Initialize SecureLogger.
@@ -202,7 +224,7 @@ class SecureLogger:
         return sanitize_log_message(
             msg,
             mask_emails=self._mask_emails,
-            additional_patterns=self._additional_patterns
+            additional_patterns=self._additional_patterns,
         )
 
     def debug(self, msg: str, *args, **kwargs):
@@ -234,6 +256,7 @@ class SecureLogger:
 # Decorator for Secure Logging in Functions
 # =============================================================================
 
+
 def secure_log_args(func):
     """
     Decorator that sanitizes function arguments before logging.
@@ -244,17 +267,20 @@ def secure_log_args(func):
             logger.info(f"Auth attempt for {email}")  # Email logged safely
             # password is never logged due to sanitization
     """
+
     @wraps(func)
     def wrapper(*args, **kwargs):
         # Sanitize keyword arguments for any logging
         sanitized_kwargs = sanitize_dict(kwargs)
         return func(*args, **kwargs)
+
     return wrapper
 
 
 # =============================================================================
 # Production Configuration Helper
 # =============================================================================
+
 
 def configure_production_logging():
     """
@@ -272,15 +298,15 @@ def configure_production_logging():
         # Production: WARNING and above only
         logging.basicConfig(
             level=logging.WARNING,
-            format='%(asctime)s - %(name)s - %(levelname)s - %(message)s',
-            datefmt='%Y-%m-%d %H:%M:%S'
+            format="%(asctime)s - %(name)s - %(levelname)s - %(message)s",
+            datefmt="%Y-%m-%d %H:%M:%S",
         )
     else:
         # Development: DEBUG with more details
         logging.basicConfig(
             level=logging.DEBUG,
-            format='%(asctime)s - %(name)s - %(levelname)s - [%(filename)s:%(lineno)d] - %(message)s',
-            datefmt='%Y-%m-%d %H:%M:%S'
+            format="%(asctime)s - %(name)s - %(levelname)s - [%(filename)s:%(lineno)d] - %(message)s",
+            datefmt="%Y-%m-%d %H:%M:%S",
         )
 
 
@@ -289,11 +315,11 @@ def configure_production_logging():
 # =============================================================================
 
 __all__ = [
-    'sanitize_log_message',
-    'sanitize_exception',
-    'sanitize_dict',
-    'SecureLogger',
-    'secure_log_args',
-    'configure_production_logging',
-    'SENSITIVE_PATTERNS',
+    "sanitize_log_message",
+    "sanitize_exception",
+    "sanitize_dict",
+    "SecureLogger",
+    "secure_log_args",
+    "configure_production_logging",
+    "SENSITIVE_PATTERNS",
 ]

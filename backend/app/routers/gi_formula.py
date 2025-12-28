@@ -39,7 +39,7 @@ router = APIRouter(prefix="/api/v1/gi-formula", tags=["GI Formula"])
     - Sequential MCP integration for structured reasoning
     - Automatic bias detection and mitigation
     - Obsidian knowledge base integration
-    - 3-tier caching (Memory -> Redis -> SQLite)
+    - 3-tier caching (Memory → Redis → SQLite)
 
     **Use Cases**:
     - Problem solving and decision making
@@ -97,7 +97,7 @@ async def generate_insight(
             },
             "total_duration_ms": 28500,
             "created_at": "2025-11-20T14:30:00",
-            "obsidian_path": "[EMOJI]/2025-11-20/GI-Insight-API-Performance.md"
+            "obsidian_path": "개발일지/2025-11-20/GI-Insight-API-Performance.md"
         }
         ```
     """

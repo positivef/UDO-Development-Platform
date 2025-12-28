@@ -188,4 +188,3 @@
 - File: `web-dashboard/app/kanban/dependencies/page.tsx`
 - Estimated: 4-6시간
 - Scope: Read-only visualization (editing in Week 7)
-

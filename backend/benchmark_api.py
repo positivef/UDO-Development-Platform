@@ -1,7 +1,7 @@
 #!/usr/bin/env python3
 """API Performance Benchmark"""
-import sys
 import os
+import sys
 import time
 from pathlib import Path
 
@@ -17,6 +17,7 @@ print("=" * 60)
 print("\n1. Import Performance:")
 start = time.time()
 from integrated_udo_system import IntegratedUDOSystem
+
 import_time = time.time() - start
 print(f"   Import time: {import_time:.3f}s")
 
@@ -37,15 +38,15 @@ for i in range(5):
 
 # Test 4: Individual component reports
 print("\n4. Component Report Performance:")
-if udo_system.components.get('ai_connector'):
+if udo_system.components.get("ai_connector"):
     start = time.time()
-    ai_report = udo_system.components['ai_connector'].get_status_report()
+    ai_report = udo_system.components["ai_connector"].get_status_report()
     ai_time = time.time() - start
     print(f"   AI Connector report: {ai_time:.3f}s")
 
-if udo_system.components.get('ml_system'):
+if udo_system.components.get("ml_system"):
     start = time.time()
-    ml_report = udo_system.components['ml_system'].get_model_report()
+    ml_report = udo_system.components["ml_system"].get_model_report()
     ml_time = time.time() - start
     print(f"   ML System report: {ml_time:.3f}s")
 

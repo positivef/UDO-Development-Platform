@@ -10,8 +10,8 @@ from pathlib import Path
 # Add backend to path
 sys.path.insert(0, str(Path(__file__).parent.parent))
 
-from app.services.quality_service import QualityMetricsService
 from app.models.quality_metrics import QualityMetricsResponse
+from app.services.quality_service import QualityMetricsService
 
 
 def test_quality_service_initialization():
@@ -48,11 +48,15 @@ def test_get_all_metrics():
     assert "typescript" in metrics["code_quality"], "Should have TypeScript metrics"
 
     # Verify score ranges
-    assert 0.0 <= metrics["overall_score"] <= 10.0, "Overall score should be between 0-10"
+    assert (
+        0.0 <= metrics["overall_score"] <= 10.0
+    ), "Overall score should be between 0-10"
 
     print(f"[PASS] Overall Quality Score: {metrics['overall_score']:.2f}/10")
     print(f"  - Python (Pylint): {metrics['code_quality']['python']['score']:.2f}/10")
-    print(f"  - TypeScript (ESLint): {metrics['code_quality']['typescript']['score']:.2f}/10")
+    print(
+        f"  - TypeScript (ESLint): {metrics['code_quality']['typescript']['score']:.2f}/10"
+    )
     print(f"  - Test Coverage: {metrics['test_metrics']['coverage_percentage']:.2f}%")
 
 
@@ -120,7 +124,9 @@ def test_coverage_metrics():
 
     # If pytest is installed, verify ranges
     if "error" not in metrics:
-        assert 0.0 <= metrics["coverage_percentage"] <= 100.0, "Coverage should be 0-100%"
+        assert (
+            0.0 <= metrics["coverage_percentage"] <= 100.0
+        ), "Coverage should be 0-100%"
         assert 0.0 <= metrics["success_rate"] <= 100.0, "Success rate should be 0-100%"
         print(f"[PASS] Test Coverage: {metrics['coverage_percentage']:.2f}%")
         print(f"  - Tests Passed: {metrics['tests_passed']}/{metrics['tests_total']}")
@@ -155,9 +161,9 @@ def test_pydantic_model():
 
 def run_all_tests():
     """Run all quality metrics tests"""
-    print("\n" + "="*60)
+    print("\n" + "=" * 60)
     print("[TEST] Quality Metrics API Integration Tests")
-    print("="*60)
+    print("=" * 60)
 
     tests = [
         ("Service Initialization", test_quality_service_initialization),
@@ -182,11 +188,11 @@ def run_all_tests():
             print(f"\n[ERROR] {test_name}: {e}")
             failed += 1
 
-    print("\n" + "="*60)
+    print("\n" + "=" * 60)
     print(f"[SUMMARY] Tests Passed: {passed}/{len(tests)}")
     if failed > 0:
         print(f"[SUMMARY] Tests Failed: {failed}/{len(tests)}")
-    print("="*60)
+    print("=" * 60)
 
     if failed == 0:
         print("\n[SUCCESS] All tests passed successfully!\n")

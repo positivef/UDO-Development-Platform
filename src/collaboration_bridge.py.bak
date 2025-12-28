@@ -458,9 +458,9 @@ class ThreeAICollaborationBridge:
 
         prompt = self._create_role_prompt(task, role, context)
         result = self.codex.execute(prompt, asdict(context))
-        
+
         issues, suggestions = self._parse_output(result.get("content", ""))
-        
+
         return AIResponse(
             ai_name="codex",
             role=role,

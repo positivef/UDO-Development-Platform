@@ -6,7 +6,7 @@ Provides mock data for project-related operations when PostgreSQL is not running
 
 import logging
 from datetime import datetime, timedelta
-from typing import Optional, List, Dict, Any
+from typing import Any, Dict, List, Optional
 from uuid import UUID, uuid4
 
 logger = logging.getLogger(__name__)
@@ -30,7 +30,7 @@ class MockProjectService:
                 "created_at": (datetime.now() - timedelta(days=7)).isoformat(),
                 "archived": False,
                 "tags": ["MDO", "Standard Level", "Development"],
-                "framework": "FastAPI + Next.js"
+                "framework": "FastAPI + Next.js",
             },
             {
                 "id": str(uuid4()),
@@ -44,7 +44,7 @@ class MockProjectService:
                 "created_at": (datetime.now() - timedelta(days=14)).isoformat(),
                 "archived": False,
                 "tags": ["Web", "E-Commerce", "React"],
-                "framework": "React + Node.js"
+                "framework": "React + Node.js",
             },
             {
                 "id": str(uuid4()),
@@ -58,36 +58,40 @@ class MockProjectService:
                 "created_at": (datetime.now() - timedelta(days=30)).isoformat(),
                 "archived": False,
                 "tags": ["Mobile", "Finance", "Security"],
-                "framework": "React Native"
-            }
+                "framework": "React Native",
+            },
         ]
 
         # Current active project (first one)
         self.current_project = self.mock_projects[0]
 
-        logger.info("[OK] MockProjectService initialized with sample data (with current_phase)")
+        logger.info(
+            "[OK] MockProjectService initialized with sample data (with current_phase)"
+        )
 
     async def list_projects(
-        self,
-        include_archived: bool = False,
-        limit: int = 50,
-        offset: int = 0
+        self, include_archived: bool = False, limit: int = 50, offset: int = 0
     ) -> Dict[str, Any]:
         """Return mock list of projects"""
 
         # Filter projects
         filtered_projects = [
-            p for p in self.mock_projects
+            p
+            for p in self.mock_projects
             if include_archived or not p.get("archived", False)
         ]
 
         # Apply pagination
-        paginated = filtered_projects[offset:offset + limit]
+        paginated = filtered_projects[offset : offset + limit]
 
         return {
             "projects": paginated,
-            "total": len(filtered_projects),  # Changed from total_count to match expected format
-            "current_project_id": self.current_project.get("id") if self.current_project else None
+            "total": len(
+                filtered_projects
+            ),  # Changed from total_count to match expected format
+            "current_project_id": (
+                self.current_project.get("id") if self.current_project else None
+            ),
         }
 
     async def get_current_project(self) -> Optional[Dict[str, Any]]:
@@ -101,14 +105,16 @@ class MockProjectService:
         ml_models: Optional[Dict] = None,
         recent_executions: Optional[List] = None,
         ai_preferences: Optional[Dict] = None,
-        editor_state: Optional[Dict] = None
+        editor_state: Optional[Dict] = None,
     ) -> Dict[str, Any]:
         """Mock save context - just returns success"""
 
         logger.info(f"[EMOJI] Mock: Saving context for project {project_id}")
 
         # Find project
-        project = next((p for p in self.mock_projects if p["id"] == str(project_id)), None)
+        project = next(
+            (p for p in self.mock_projects if p["id"] == str(project_id)), None
+        )
 
         if not project:
             # Create new project
@@ -122,7 +128,7 @@ class MockProjectService:
                 "created_at": datetime.now().isoformat(),
                 "archived": False,
                 "tags": [],
-                "framework": "Unknown"
+                "framework": "Unknown",
             }
             self.mock_projects.append(project)
 
@@ -136,11 +142,13 @@ class MockProjectService:
             "project_id": str(project_id),
             "udo_state": udo_state or {},
             "ml_models": ml_models or {},
-            "recent_executions": recent_executions[:10] if recent_executions else [],  # FIFO limit
+            "recent_executions": (
+                recent_executions[:10] if recent_executions else []
+            ),  # FIFO limit
             "ai_preferences": ai_preferences or {},
             "editor_state": editor_state or {},
             "saved_at": datetime.now().isoformat(),
-            "loaded_at": None
+            "loaded_at": None,
         }
 
     async def load_context(self, project_id: UUID) -> Optional[Dict[str, Any]]:
@@ -149,7 +157,9 @@ class MockProjectService:
         logger.info(f"[EMOJI] Mock: Loading context for project {project_id}")
 
         # Find project
-        project = next((p for p in self.mock_projects if p["id"] == str(project_id)), None)
+        project = next(
+            (p for p in self.mock_projects if p["id"] == str(project_id)), None
+        )
 
         if not project:
             return None
@@ -162,23 +172,17 @@ class MockProjectService:
                 "current_phase": "development",
                 "confidence_level": 0.75,
                 "quantum_state": "Deterministic",
-                "decision": "GO"
+                "decision": "GO",
             },
             "ml_models": {
                 "active_models": ["random_forest", "neural_network"],
-                "accuracy": 0.85
+                "accuracy": 0.85,
             },
             "recent_executions": [],
-            "ai_preferences": {
-                "preferred_model": "claude",
-                "temperature": 0.7
-            },
-            "editor_state": {
-                "open_files": [],
-                "cursor_positions": {}
-            },
+            "ai_preferences": {"preferred_model": "claude", "temperature": 0.7},
+            "editor_state": {"open_files": [], "cursor_positions": {}},
             "saved_at": datetime.now().isoformat(),
-            "loaded_at": datetime.now().isoformat()
+            "loaded_at": datetime.now().isoformat(),
         }
 
     async def delete_context(self, project_id: UUID) -> bool:
@@ -187,7 +191,9 @@ class MockProjectService:
         logger.info(f"[EMOJI] Mock: Deleting context for project {project_id}")
 
         # Find project
-        project = next((p for p in self.mock_projects if p["id"] == str(project_id)), None)
+        project = next(
+            (p for p in self.mock_projects if p["id"] == str(project_id)), None
+        )
 
         if project:
             project["has_context"] = False
@@ -196,19 +202,18 @@ class MockProjectService:
         return False
 
     async def switch_project(
-        self,
-        target_project_id: UUID,
-        auto_save_current: bool = True
+        self, target_project_id: UUID, auto_save_current: bool = True
     ) -> Dict[str, Any]:
         """Mock project switch"""
 
-        logger.error(f"[EMOJI] ENTERING MODIFIED switch_project METHOD [EMOJI] target={target_project_id}")
+        logger.error(
+            f"[EMOJI] ENTERING MODIFIED switch_project METHOD [EMOJI] target={target_project_id}"
+        )
         logger.info(f"[EMOJI] Mock: Switching to project {target_project_id}")
 
         # Find target project
         target_project = next(
-            (p for p in self.mock_projects if p["id"] == str(target_project_id)),
-            None
+            (p for p in self.mock_projects if p["id"] == str(target_project_id)), None
         )
 
         if not target_project:
@@ -226,32 +231,33 @@ class MockProjectService:
         context = await self.load_context(target_project_id)
 
         result = {
-            "previous_project_id": self.current_project.get("id") if self.current_project else None,
+            "previous_project_id": (
+                self.current_project.get("id") if self.current_project else None
+            ),
             "new_project_id": str(target_project_id),
             "context_loaded": context is not None,
             "context": context,
-            "message": f"Switched to project {target_project.get('name', 'Unknown')}"
+            "message": f"Switched to project {target_project.get('name', 'Unknown')}",
         }
 
-        logger.info(f"[DEBUG] MockProjectService.switch_project returning: {list(result.keys())}")
+        logger.info(
+            f"[DEBUG] MockProjectService.switch_project returning: {list(result.keys())}"
+        )
 
         return result
 
     async def update_execution_history(
-        self,
-        project_id: UUID,
-        execution: Dict[str, Any],
-        max_history: int = 10
+        self, project_id: UUID, execution: Dict[str, Any], max_history: int = 10
     ) -> None:
         """Mock update execution history"""
-        logger.info(f"[EMOJI] Mock: Updating execution history for project {project_id}")
+        logger.info(
+            f"[EMOJI] Mock: Updating execution history for project {project_id}"
+        )
         # In mock mode, just log the update
         return
 
     async def merge_context(
-        self,
-        project_id: UUID,
-        partial_context: Dict[str, Any]
+        self, project_id: UUID, partial_context: Dict[str, Any]
     ) -> Dict[str, Any]:
         """Mock merge context update with existing context"""
         logger.info(f"[EMOJI] Mock: Merging context for project {project_id}")
@@ -265,7 +271,7 @@ class MockProjectService:
             "ai_preferences": partial_context.get("ai_preferences", {}),
             "editor_state": partial_context.get("editor_state", {}),
             "saved_at": datetime.now().isoformat(),
-            "loaded_at": None
+            "loaded_at": None,
         }
 
     async def initialize_default_project(self) -> Optional[UUID]:

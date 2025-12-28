@@ -12,17 +12,12 @@ Business logic:
 
 from typing import List, Optional
 from uuid import UUID
-from backend.app.models.kanban_task_project import (
-    TaskProject,
-    TaskProjectAssignment,
-    TaskProjectSummary,
-    SetPrimaryProjectRequest,
-    AddRelatedProjectRequest,
-    RemoveRelatedProjectRequest,
-    MaxRelatedProjectsError,
-    NoPrimaryProjectError,
-    MultiplePrimaryProjectsError,
-)
+
+from app.models.kanban_task_project import (
+    AddRelatedProjectRequest, MaxRelatedProjectsError,
+    MultiplePrimaryProjectsError, NoPrimaryProjectError,
+    RemoveRelatedProjectRequest, SetPrimaryProjectRequest, TaskProject,
+    TaskProjectAssignment, TaskProjectSummary)
 
 
 class KanbanProjectService:
@@ -46,11 +41,7 @@ class KanbanProjectService:
         # In-memory storage for testing (will be replaced by DB)
         self._mock_projects: dict[UUID, List[TaskProject]] = {}
 
-    async def set_primary_project(
-        self,
-        task_id: UUID,
-        project_id: UUID
-    ) -> TaskProject:
+    async def set_primary_project(self, task_id: UUID, project_id: UUID) -> TaskProject:
         """
         Set primary project for a task (atomic operation).
 
@@ -80,9 +71,7 @@ class KanbanProjectService:
 
         # Step 3: Set new primary
         task_project = TaskProject(
-            task_id=task_id,
-            project_id=project_id,
-            is_primary=True
+            task_id=task_id, project_id=project_id, is_primary=True
         )
 
         if self.db:
@@ -104,11 +93,7 @@ class KanbanProjectService:
 
         return task_project
 
-    async def add_related_project(
-        self,
-        task_id: UUID,
-        project_id: UUID
-    ) -> TaskProject:
+    async def add_related_project(self, task_id: UUID, project_id: UUID) -> TaskProject:
         """
         Add related project to task.
 
@@ -139,9 +124,7 @@ class KanbanProjectService:
 
         # Add as related
         task_project = TaskProject(
-            task_id=task_id,
-            project_id=project_id,
-            is_primary=False
+            task_id=task_id, project_id=project_id, is_primary=False
         )
 
         if self.db:
@@ -155,11 +138,7 @@ class KanbanProjectService:
 
         return task_project
 
-    async def remove_related_project(
-        self,
-        task_id: UUID,
-        project_id: UUID
-    ) -> bool:
+    async def remove_related_project(self, task_id: UUID, project_id: UUID) -> bool:
         """
         Remove related project from task.
 
@@ -190,7 +169,8 @@ class KanbanProjectService:
             if task_id in self._mock_projects:
                 original_length = len(self._mock_projects[task_id])
                 self._mock_projects[task_id] = [
-                    p for p in self._mock_projects[task_id]
+                    p
+                    for p in self._mock_projects[task_id]
                     if not (p.project_id == project_id and not p.is_primary)
                 ]
                 # Return True only if something was actually removed
@@ -212,9 +192,7 @@ class KanbanProjectService:
         related = await self._get_related_projects(task_id)
 
         return TaskProjectSummary(
-            task_id=task_id,
-            primary_project=primary,
-            related_projects=related
+            task_id=task_id, primary_project=primary, related_projects=related
         )
 
     async def validate_constraints(self, task_id: UUID) -> dict:
@@ -245,11 +223,7 @@ class KanbanProjectService:
         if len(project_ids) != len(set(project_ids)):
             errors.append("Duplicate project IDs detected")
 
-        return {
-            "valid": len(errors) == 0,
-            "errors": errors,
-            "task_id": str(task_id)
-        }
+        return {"valid": len(errors) == 0, "errors": errors, "task_id": str(task_id)}
 
     # ============================================================
     # Private Helper Methods
@@ -299,8 +273,7 @@ class KanbanProjectService:
             # Mock implementation
             if task_id in self._mock_projects:
                 self._mock_projects[task_id] = [
-                    p for p in self._mock_projects[task_id]
-                    if not p.is_primary
+                    p for p in self._mock_projects[task_id] if not p.is_primary
                 ]
 
     async def _validate_single_primary(self, task_id: UUID) -> None:

@@ -11,30 +11,25 @@ Test Categories:
 5. Archive Operations (5 tests)
 """
 
+from datetime import datetime
+from uuid import uuid4
+
 import pytest
 import pytest_asyncio
-from uuid import uuid4
-from datetime import datetime
 
-from backend.app.models.kanban_task import (
-    Task,
-    TaskCreate,
-    TaskUpdate,
-    TaskStatus,
-    TaskPriority,
-    PhaseName,
-    PhaseChangeRequest,
-    StatusChangeRequest,
-    PriorityChangeRequest,
-    CompletenessUpdateRequest,
-    ArchiveRequest,
-)
+from backend.app.models.kanban_task import (ArchiveRequest,
+                                            CompletenessUpdateRequest,
+                                            PhaseChangeRequest, PhaseName,
+                                            PriorityChangeRequest,
+                                            StatusChangeRequest, Task,
+                                            TaskCreate, TaskPriority,
+                                            TaskStatus, TaskUpdate)
 from backend.app.services.kanban_task_service import kanban_task_service
-
 
 # ============================================================================
 # Test Fixtures
 # ============================================================================
+
 
 @pytest.fixture(autouse=True, scope="function")
 def reset_task_service():
@@ -77,6 +72,7 @@ async def created_task(sample_task_data):
 # ============================================================================
 # 1. CRUD Operations (25 tests)
 # ============================================================================
+
 
 class TestTaskCRUD:
     """Test CRUD operations for Tasks API"""
@@ -156,11 +152,7 @@ class TestTaskCRUD:
     async def test_list_tasks_default_pagination(self, created_task):
         """Test list tasks with default pagination (50 per page)"""
         result = await kanban_task_service.list_tasks(
-            filters=None,
-            page=1,
-            per_page=50,
-            sort_by="created_at",
-            sort_desc=True
+            filters=None, page=1, per_page=50, sort_by="created_at", sort_desc=True
         )
 
         assert result is not None
@@ -262,8 +254,7 @@ class TestTaskCRUD:
 
         # Sort by priority descending
         result = await kanban_task_service.list_tasks(
-            sort_by="priority",
-            sort_desc=True
+            sort_by="priority", sort_desc=True
         )
 
         # First task should have highest priority
@@ -288,8 +279,7 @@ class TestTaskCRUD:
         )
 
         updated_task = await kanban_task_service.update_task(
-            created_task.task_id,
-            update_data
+            created_task.task_id, update_data
         )
 
         assert updated_task.title == "Updated Title"
@@ -304,8 +294,7 @@ class TestTaskCRUD:
         update_data = TaskUpdate(title="New Title Only")
 
         updated_task = await kanban_task_service.update_task(
-            created_task.task_id,
-            update_data
+            created_task.task_id, update_data
         )
 
         # Updated field
@@ -330,8 +319,7 @@ class TestTaskCRUD:
         update_data = TaskUpdate(completeness=100)
 
         updated_task = await kanban_task_service.update_task(
-            created_task.task_id,
-            update_data
+            created_task.task_id, update_data
         )
 
         assert updated_task.completeness == 100
@@ -347,6 +335,7 @@ class TestTaskCRUD:
 
         # Task should not be retrievable
         from backend.app.models.kanban_task import TaskNotFoundError
+
         with pytest.raises(TaskNotFoundError):
             await kanban_task_service.get_task(created_task.task_id)
 
@@ -363,6 +352,7 @@ class TestTaskCRUD:
 # 2. Phase Operations (5 tests)
 # ============================================================================
 
+
 class TestPhaseOperations:
     """Test phase operations (Q1: Task within Phase)"""
 
@@ -373,12 +363,11 @@ class TestPhaseOperations:
         phase_request = PhaseChangeRequest(
             new_phase_id=new_phase_id,
             new_phase_name=PhaseName.DESIGN,
-            reason="Moving to design phase"
+            reason="Moving to design phase",
         )
 
         updated_task = await kanban_task_service.change_phase(
-            created_task.task_id,
-            phase_request
+            created_task.task_id, phase_request
         )
 
         assert updated_task.phase_id == new_phase_id
@@ -398,13 +387,11 @@ class TestPhaseOperations:
 
         for phase in phases:
             phase_request = PhaseChangeRequest(
-                new_phase_id=uuid4(),
-                new_phase_name=phase
+                new_phase_id=uuid4(), new_phase_name=phase
             )
 
             updated_task = await kanban_task_service.change_phase(
-                created_task.task_id,
-                phase_request
+                created_task.task_id, phase_request
             )
 
             assert updated_task.phase_name == phase
@@ -415,12 +402,11 @@ class TestPhaseOperations:
         phase_request = PhaseChangeRequest(
             new_phase_id=uuid4(),
             new_phase_name=PhaseName.IMPLEMENTATION,
-            reason="Requirements completed, starting implementation"
+            reason="Requirements completed, starting implementation",
         )
 
         updated_task = await kanban_task_service.change_phase(
-            created_task.task_id,
-            phase_request
+            created_task.task_id, phase_request
         )
 
         assert updated_task.phase_name == PhaseName.IMPLEMENTATION
@@ -431,8 +417,7 @@ class TestPhaseOperations:
         from backend.app.models.kanban_task import TaskNotFoundError
 
         phase_request = PhaseChangeRequest(
-            new_phase_id=uuid4(),
-            new_phase_name=PhaseName.DESIGN
+            new_phase_id=uuid4(), new_phase_name=PhaseName.DESIGN
         )
 
         with pytest.raises(TaskNotFoundError):
@@ -444,15 +429,13 @@ class TestPhaseOperations:
         from pydantic import ValidationError
 
         with pytest.raises(ValidationError):
-            PhaseChangeRequest(
-                new_phase_id=uuid4(),
-                new_phase_name="invalid_phase"
-            )
+            PhaseChangeRequest(new_phase_id=uuid4(), new_phase_name="invalid_phase")
 
 
 # ============================================================================
 # 3. Status & Priority Operations (15 tests)
 # ============================================================================
+
 
 class TestStatusPriorityOperations:
     """Test status and priority operations"""
@@ -461,13 +444,11 @@ class TestStatusPriorityOperations:
     async def test_change_status_success(self, created_task):
         """Test successful status change"""
         status_request = StatusChangeRequest(
-            new_status=TaskStatus.IN_PROGRESS,
-            reason="Starting work on this task"
+            new_status=TaskStatus.IN_PROGRESS, reason="Starting work on this task"
         )
 
         updated_task = await kanban_task_service.change_status(
-            created_task.task_id,
-            status_request
+            created_task.task_id, status_request
         )
 
         assert updated_task.status == TaskStatus.IN_PROGRESS
@@ -478,8 +459,7 @@ class TestStatusPriorityOperations:
         status_request = StatusChangeRequest(new_status=TaskStatus.COMPLETED)
 
         updated_task = await kanban_task_service.change_status(
-            created_task.task_id,
-            status_request
+            created_task.task_id, status_request
         )
 
         assert updated_task.status == TaskStatus.COMPLETED
@@ -489,13 +469,11 @@ class TestStatusPriorityOperations:
     async def test_change_status_to_blocked(self, created_task):
         """Test status change to BLOCKED"""
         status_request = StatusChangeRequest(
-            new_status=TaskStatus.BLOCKED,
-            reason="Waiting for dependency"
+            new_status=TaskStatus.BLOCKED, reason="Waiting for dependency"
         )
 
         updated_task = await kanban_task_service.change_status(
-            created_task.task_id,
-            status_request
+            created_task.task_id, status_request
         )
 
         assert updated_task.status == TaskStatus.BLOCKED
@@ -514,13 +492,11 @@ class TestStatusPriorityOperations:
     async def test_change_priority_success(self, created_task):
         """Test successful priority change"""
         priority_request = PriorityChangeRequest(
-            new_priority=TaskPriority.CRITICAL,
-            reason="Urgent client request"
+            new_priority=TaskPriority.CRITICAL, reason="Urgent client request"
         )
 
         updated_task = await kanban_task_service.change_priority(
-            created_task.task_id,
-            priority_request
+            created_task.task_id, priority_request
         )
 
         assert updated_task.priority == TaskPriority.CRITICAL
@@ -539,8 +515,7 @@ class TestStatusPriorityOperations:
             priority_request = PriorityChangeRequest(new_priority=priority)
 
             updated_task = await kanban_task_service.change_priority(
-                created_task.task_id,
-                priority_request
+                created_task.task_id, priority_request
             )
 
             assert updated_task.priority == priority
@@ -559,13 +534,11 @@ class TestStatusPriorityOperations:
     async def test_update_completeness_success(self, created_task):
         """Test successful completeness update"""
         completeness_request = CompletenessUpdateRequest(
-            completeness=50,
-            updated_by="test_user"
+            completeness=50, updated_by="test_user"
         )
 
         updated_task = await kanban_task_service.update_completeness(
-            created_task.task_id,
-            completeness_request
+            created_task.task_id, completeness_request
         )
 
         assert updated_task.completeness == 50
@@ -574,13 +547,11 @@ class TestStatusPriorityOperations:
     async def test_update_completeness_to_100(self, created_task):
         """Test completeness update to 100% marks as COMPLETED"""
         completeness_request = CompletenessUpdateRequest(
-            completeness=100,
-            updated_by="test_user"
+            completeness=100, updated_by="test_user"
         )
 
         updated_task = await kanban_task_service.update_completeness(
-            created_task.task_id,
-            completeness_request
+            created_task.task_id, completeness_request
         )
 
         assert updated_task.completeness == 100
@@ -592,23 +563,19 @@ class TestStatusPriorityOperations:
         """Test completeness with boundary values (0, 100)"""
         # Test 0%
         completeness_request = CompletenessUpdateRequest(
-            completeness=0,
-            updated_by="test_user"
+            completeness=0, updated_by="test_user"
         )
         updated_task = await kanban_task_service.update_completeness(
-            created_task.task_id,
-            completeness_request
+            created_task.task_id, completeness_request
         )
         assert updated_task.completeness == 0
 
         # Test 100%
         completeness_request = CompletenessUpdateRequest(
-            completeness=100,
-            updated_by="test_user"
+            completeness=100, updated_by="test_user"
         )
         updated_task = await kanban_task_service.update_completeness(
-            created_task.task_id,
-            completeness_request
+            created_task.task_id, completeness_request
         )
         assert updated_task.completeness == 100
 
@@ -618,8 +585,7 @@ class TestStatusPriorityOperations:
         from backend.app.models.kanban_task import TaskNotFoundError
 
         completeness_request = CompletenessUpdateRequest(
-            completeness=50,
-            updated_by="test_user"
+            completeness=50, updated_by="test_user"
         )
 
         with pytest.raises(TaskNotFoundError):
@@ -629,6 +595,7 @@ class TestStatusPriorityOperations:
 # ============================================================================
 # 4. Quality Gates (10 tests) - Q3
 # ============================================================================
+
 
 class TestQualityGates:
     """Test quality gate operations (Q3: Hybrid completion)"""
@@ -665,8 +632,7 @@ class TestQualityGates:
 
         # Should have constitutional compliance check
         constitutional_check = next(
-            (c for c in result.checks if "Constitutional" in c.check_name),
-            None
+            (c for c in result.checks if "Constitutional" in c.check_name), None
         )
         assert constitutional_check is not None
 
@@ -723,6 +689,7 @@ class TestQualityGates:
 # 5. Archive Operations (5 tests) - Q6
 # ============================================================================
 
+
 class TestArchiveOperations:
     """Test archive operations (Q6: Done-End + AI -> Obsidian)"""
 
@@ -732,12 +699,11 @@ class TestArchiveOperations:
         archive_request = ArchiveRequest(
             archived_by="test_user",
             generate_ai_summary=True,
-            reason="Task completed successfully"
+            reason="Task completed successfully",
         )
 
         archive = await kanban_task_service.archive_task(
-            created_task.task_id,
-            archive_request
+            created_task.task_id, archive_request
         )
 
         assert archive is not None
@@ -749,13 +715,11 @@ class TestArchiveOperations:
     async def test_archive_task_with_ai_summary(self, created_task):
         """Test archive with AI summary generation (Q6)"""
         archive_request = ArchiveRequest(
-            archived_by="test_user",
-            generate_ai_summary=True
+            archived_by="test_user", generate_ai_summary=True
         )
 
         archive = await kanban_task_service.archive_task(
-            created_task.task_id,
-            archive_request
+            created_task.task_id, archive_request
         )
 
         # AI summary should be generated
@@ -766,13 +730,11 @@ class TestArchiveOperations:
     async def test_archive_task_without_ai_summary(self, created_task):
         """Test archive without AI summary"""
         archive_request = ArchiveRequest(
-            archived_by="test_user",
-            generate_ai_summary=False
+            archived_by="test_user", generate_ai_summary=False
         )
 
         archive = await kanban_task_service.archive_task(
-            created_task.task_id,
-            archive_request
+            created_task.task_id, archive_request
         )
 
         # AI summary should be None
@@ -783,10 +745,7 @@ class TestArchiveOperations:
         """Test archive updates task status to DONE_END"""
         archive_request = ArchiveRequest(archived_by="test_user")
 
-        await kanban_task_service.archive_task(
-            created_task.task_id,
-            archive_request
-        )
+        await kanban_task_service.archive_task(created_task.task_id, archive_request)
 
         # Task status should be updated
         updated_task = await kanban_task_service.get_task(created_task.task_id)

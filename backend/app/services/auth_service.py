@@ -1,7 +1,7 @@
 """
 Authentication Service
 
-[EMOJI] [EMOJI] [EMOJI] [EMOJI] [EMOJI].
+사용자 인증 및 관리 서비스입니다.
 """
 
 from typing import Optional, Dict, Any
@@ -15,23 +15,23 @@ logger = logging.getLogger(__name__)
 
 class AuthService:
     """
-    [EMOJI] [EMOJI]
+    인증 서비스
 
-    [EMOJI] [EMOJI] [EMOJI] [EMOJI],
-    [EMOJI] [EMOJI] [EMOJI] Mock [EMOJI] [EMOJI].
+    실제 환경에서는 데이터베이스와 연동하지만,
+    현재는 메모리 기반 Mock 구현을 사용합니다.
     """
 
     def __init__(self):
-        """AuthService [EMOJI]"""
-        # Mock user storage ([EMOJI] [EMOJI] [EMOJI] [EMOJI])
+        """AuthService 초기화"""
+        # Mock user storage (실제 환경에서는 데이터베이스 사용)
         self.users: Dict[str, Dict[str, Any]] = {}
         self.user_id_counter = 1
 
-        # [EMOJI] [EMOJI] [EMOJI] [EMOJI]
+        # 테스트용 기본 사용자 추가
         self._create_default_users()
 
     def _create_default_users(self):
-        """[EMOJI] [EMOJI] [EMOJI] [EMOJI] (4 roles)"""
+        """테스트용 기본 사용자 생성 (4 roles)"""
         from ..core.security import UserRole
 
         # 1. Admin user (full access)
@@ -100,33 +100,33 @@ class AuthService:
         full_name: Optional[str] = None
     ) -> Optional[Dict[str, Any]]:
         """
-        [EMOJI] [EMOJI] [EMOJI]
+        새로운 사용자 생성
 
         Args:
-            email: [EMOJI] [EMOJI]
-            password: [EMOJI] ([EMOJI])
-            username: [EMOJI]
-            full_name: [EMOJI] [EMOJI] ([EMOJI])
+            email: 사용자 이메일
+            password: 비밀번호 (평문)
+            username: 사용자명
+            full_name: 전체 이름 (선택)
 
         Returns:
-            [EMOJI] [EMOJI] [EMOJI] [EMOJI] None ([EMOJI] [EMOJI])
+            생성된 사용자 정보 또는 None (중복인 경우)
         """
         try:
-            # [EMOJI] [EMOJI] [EMOJI]
+            # 이메일 중복 확인
             if email.lower() in self.users:
                 logger.warning(f"User already exists: {email}")
                 return None
 
-            # [EMOJI] [EMOJI] [EMOJI]
+            # 사용자명 중복 확인
             for user in self.users.values():
                 if user["username"].lower() == username.lower():
                     logger.warning(f"Username already taken: {username}")
                     return None
 
-            # [EMOJI] [EMOJI]
+            # 비밀번호 해싱
             password_hash = PasswordHasher.hash_password(password)
 
-            # [EMOJI] [EMOJI] [EMOJI] ([EMOJI] role: developer)
+            # 새 사용자 생성 (기본 role: developer)
             from ..core.security import UserRole
 
             new_user = {
@@ -140,13 +140,13 @@ class AuthService:
                 "role": UserRole.DEVELOPER  # Default role for new users
             }
 
-            # [EMOJI]
+            # 저장
             self.users[email.lower()] = new_user
             self.user_id_counter += 1
 
             logger.info(f"New user created: {email}")
 
-            # [EMOJI] [EMOJI] [EMOJI] [EMOJI] [EMOJI]
+            # 비밀번호 해시 제거 후 반환
             user_data = new_user.copy()
             del user_data["password_hash"]
             return user_data
@@ -162,35 +162,35 @@ class AuthService:
         password: str
     ) -> Optional[Dict[str, Any]]:
         """
-        [EMOJI] [EMOJI]
+        사용자 인증
 
         Args:
-            email: [EMOJI] [EMOJI]
-            password: [EMOJI] ([EMOJI])
+            email: 사용자 이메일
+            password: 비밀번호 (평문)
 
         Returns:
-            [EMOJI] [EMOJI] [EMOJI] [EMOJI] None
+            인증된 사용자 정보 또는 None
         """
         try:
-            # [EMOJI] [EMOJI]
+            # 사용자 조회
             user = self.users.get(email.lower())
             if not user:
                 logger.warning(f"User not found: {email}")
                 return None
 
-            # [EMOJI] [EMOJI] [EMOJI]
+            # 비활성 사용자 체크
             if not user.get("is_active", True):
                 logger.warning(f"Inactive user attempted login: {email}")
                 return None
 
-            # [EMOJI] [EMOJI]
+            # 비밀번호 검증
             if not PasswordHasher.verify_password(password, user["password_hash"]):
                 logger.warning(f"Invalid password for user: {email}")
                 return None
 
             logger.info(f"User authenticated: {email}")
 
-            # [EMOJI] [EMOJI] [EMOJI] [EMOJI] [EMOJI]
+            # 비밀번호 해시 제거 후 반환
             user_data = user.copy()
             del user_data["password_hash"]
             return user_data
@@ -202,20 +202,20 @@ class AuthService:
 
     async def get_user(self, email: str) -> Optional[Dict[str, Any]]:
         """
-        [EMOJI] [EMOJI] [EMOJI]
+        사용자 정보 조회
 
         Args:
-            email: [EMOJI] [EMOJI]
+            email: 사용자 이메일
 
         Returns:
-            [EMOJI] [EMOJI] [EMOJI] None
+            사용자 정보 또는 None
         """
         try:
             user = self.users.get(email.lower())
             if not user:
                 return None
 
-            # [EMOJI] [EMOJI] [EMOJI] [EMOJI] [EMOJI]
+            # 비밀번호 해시 제거 후 반환
             user_data = user.copy()
             del user_data["password_hash"]
             return user_data
@@ -231,38 +231,38 @@ class AuthService:
         update_data: Dict[str, Any]
     ) -> Optional[Dict[str, Any]]:
         """
-        [EMOJI] [EMOJI] [EMOJI]
+        사용자 정보 업데이트
 
         Args:
-            email: [EMOJI] [EMOJI]
-            update_data: [EMOJI] [EMOJI]
+            email: 사용자 이메일
+            update_data: 업데이트할 데이터
 
         Returns:
-            [EMOJI] [EMOJI] [EMOJI] [EMOJI] None
+            업데이트된 사용자 정보 또는 None
         """
         try:
             user = self.users.get(email.lower())
             if not user:
                 return None
 
-            # [EMOJI] [EMOJI] [EMOJI] [EMOJI]
+            # 업데이트 가능한 필드만 처리
             allowed_fields = ["full_name", "is_active", "role"]
             for field in allowed_fields:
                 if field in update_data:
                     user[field] = update_data[field]
 
-            # [EMOJI] [EMOJI] [EMOJI]
+            # 비밀번호 변경 처리
             if "password" in update_data:
                 user["password_hash"] = PasswordHasher.hash_password(
                     update_data["password"]
                 )
 
-            # [EMOJI] [EMOJI] [EMOJI]
+            # 업데이트 시간 기록
             user["updated_at"] = datetime.now(UTC).isoformat()
 
             logger.info(f"User updated: {email}")
 
-            # [EMOJI] [EMOJI] [EMOJI] [EMOJI] [EMOJI]
+            # 비밀번호 해시 제거 후 반환
             user_data = user.copy()
             del user_data["password_hash"]
             return user_data
@@ -274,13 +274,13 @@ class AuthService:
 
     async def delete_user(self, email: str) -> bool:
         """
-        [EMOJI] [EMOJI]
+        사용자 삭제
 
         Args:
-            email: [EMOJI] [EMOJI]
+            email: 사용자 이메일
 
         Returns:
-            [EMOJI] [EMOJI] [EMOJI]
+            삭제 성공 여부
         """
         try:
             if email.lower() in self.users:
@@ -300,30 +300,30 @@ class AuthService:
         offset: int = 0
     ) -> Dict[str, Any]:
         """
-        [EMOJI] [EMOJI] [EMOJI]
+        사용자 목록 조회
 
         Args:
-            limit: [EMOJI] [EMOJI]
-            offset: [EMOJI] [EMOJI]
+            limit: 조회할 개수
+            offset: 시작 위치
 
         Returns:
-            [EMOJI] [EMOJI] [EMOJI]
+            사용자 목록과 메타데이터
         """
         try:
-            # [EMOJI] [EMOJI] [EMOJI] ([EMOJI] [EMOJI] [EMOJI])
+            # 전체 사용자 목록 (비밀번호 해시 제외)
             all_users = []
             for user in self.users.values():
                 user_data = user.copy()
                 del user_data["password_hash"]
                 all_users.append(user_data)
 
-            # [EMOJI] ([EMOJI] [EMOJI] [EMOJI])
+            # 정렬 (생성일 기준 내림차순)
             all_users.sort(
                 key=lambda x: x.get("created_at", ""),
                 reverse=True
             )
 
-            # [EMOJI]
+            # 페이지네이션
             total = len(all_users)
             users = all_users[offset:offset + limit]
 
@@ -345,11 +345,11 @@ class AuthService:
             }
 
     def get_user_count(self) -> int:
-        """[EMOJI] [EMOJI] [EMOJI] [EMOJI]"""
+        """전체 사용자 수 반환"""
         return len(self.users)
 
     def clear_all_users(self):
-        """[EMOJI] [EMOJI] [EMOJI] ([EMOJI])"""
+        """모든 사용자 삭제 (테스트용)"""
         self.users.clear()
         self.user_id_counter = 1
         logger.warning("All users cleared!")

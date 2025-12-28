@@ -5,26 +5,23 @@ Week 3 Day 4-5: Archive View + AI Summarization.
 Tests Q6: Done-End archive with GPT-4o summarization and Obsidian sync.
 """
 
+from datetime import UTC, datetime
+from uuid import uuid4
+
 import pytest
 import pytest_asyncio
-from uuid import uuid4
-from datetime import datetime, UTC
 
+from backend.app.models.kanban_archive import (AISummary, ArchiveFilters,
+                                               ArchiveTaskRequest,
+                                               ArchiveTaskResponse, ROIMetrics,
+                                               TaskNotArchivableError)
+from backend.app.models.kanban_task import PhaseName, Task, TaskStatus
 from backend.app.services.kanban_archive_service import kanban_archive_service
-from backend.app.models.kanban_archive import (
-    ArchiveTaskRequest,
-    ArchiveTaskResponse,
-    AISummary,
-    ROIMetrics,
-    ArchiveFilters,
-    TaskNotArchivableError,
-)
-from backend.app.models.kanban_task import Task, TaskStatus, PhaseName
-
 
 # ============================================================================
 # Fixtures
 # ============================================================================
+
 
 @pytest.fixture
 def sample_completed_task():
@@ -65,7 +62,10 @@ async def archived_task(sample_completed_task, test_user):
     """Pre-archived task for testing retrieval"""
     # Manually add to task service storage for testing
     from backend.app.services.kanban_task_service import kanban_task_service
-    kanban_task_service._mock_tasks[sample_completed_task.task_id] = sample_completed_task
+
+    kanban_task_service._mock_tasks[sample_completed_task.task_id] = (
+        sample_completed_task
+    )
 
     request = ArchiveTaskRequest(
         task_id=sample_completed_task.task_id,
@@ -82,6 +82,7 @@ async def archived_task(sample_completed_task, test_user):
 # Test Archive Operations
 # ============================================================================
 
+
 class TestArchiveTask:
     """Test task archiving with AI summarization"""
 
@@ -89,8 +90,12 @@ class TestArchiveTask:
     async def test_archive_task_success(self, sample_completed_task, test_user):
         """Test successful task archiving"""
         # Add task to service storage
-        from backend.app.services.kanban_task_service import kanban_task_service
-        kanban_task_service._mock_tasks[sample_completed_task.task_id] = sample_completed_task
+        from backend.app.services.kanban_task_service import \
+            kanban_task_service
+
+        kanban_task_service._mock_tasks[sample_completed_task.task_id] = (
+            sample_completed_task
+        )
 
         request = ArchiveTaskRequest(
             task_id=sample_completed_task.task_id,
@@ -125,7 +130,9 @@ class TestArchiveTask:
         )
 
         # Add to service storage
-        from backend.app.services.kanban_task_service import kanban_task_service
+        from backend.app.services.kanban_task_service import \
+            kanban_task_service
+
         kanban_task_service._mock_tasks[pending_task.task_id] = pending_task
 
         request = ArchiveTaskRequest(
@@ -156,6 +163,7 @@ class TestArchiveTask:
 # Test AI Summarization
 # ============================================================================
 
+
 class TestAISummarization:
     """Test AI summary generation with mock mode"""
 
@@ -163,8 +171,12 @@ class TestAISummarization:
     async def test_ai_summary_mock_mode(self, sample_completed_task, test_user):
         """Test AI summary generation in mock mode"""
         # Add task to service storage
-        from backend.app.services.kanban_task_service import kanban_task_service
-        kanban_task_service._mock_tasks[sample_completed_task.task_id] = sample_completed_task
+        from backend.app.services.kanban_task_service import \
+            kanban_task_service
+
+        kanban_task_service._mock_tasks[sample_completed_task.task_id] = (
+            sample_completed_task
+        )
 
         # Archive should be in mock mode (no OPENAI_API_KEY)
         assert kanban_archive_service.mock_mode is True
@@ -194,7 +206,7 @@ class TestAISummarization:
             PhaseName.DESIGN,
             PhaseName.MVP,
             PhaseName.IMPLEMENTATION,
-            PhaseName.TESTING
+            PhaseName.TESTING,
         ]
 
         for phase in phases:
@@ -213,7 +225,9 @@ class TestAISummarization:
             )
 
             # Add to service storage
-            from backend.app.services.kanban_task_service import kanban_task_service
+            from backend.app.services.kanban_task_service import \
+                kanban_task_service
+
             kanban_task_service._mock_tasks[task.task_id] = task
 
             request = ArchiveTaskRequest(
@@ -233,6 +247,7 @@ class TestAISummarization:
 # Test ROI Metrics
 # ============================================================================
 
+
 class TestROIMetrics:
     """Test ROI metrics calculation"""
 
@@ -240,8 +255,12 @@ class TestROIMetrics:
     async def test_roi_metrics_calculation(self, sample_completed_task, test_user):
         """Test ROI metrics are calculated correctly"""
         # Add task to service storage
-        from backend.app.services.kanban_task_service import kanban_task_service
-        kanban_task_service._mock_tasks[sample_completed_task.task_id] = sample_completed_task
+        from backend.app.services.kanban_task_service import \
+            kanban_task_service
+
+        kanban_task_service._mock_tasks[sample_completed_task.task_id] = (
+            sample_completed_task
+        )
 
         request = ArchiveTaskRequest(
             task_id=sample_completed_task.task_id,
@@ -281,7 +300,9 @@ class TestROIMetrics:
         )
 
         # Add to service storage
-        from backend.app.services.kanban_task_service import kanban_task_service
+        from backend.app.services.kanban_task_service import \
+            kanban_task_service
+
         kanban_task_service._mock_tasks[task.task_id] = task
 
         request = ArchiveTaskRequest(
@@ -299,6 +320,7 @@ class TestROIMetrics:
 # ============================================================================
 # Test Archive List & Filtering
 # ============================================================================
+
 
 class TestArchiveList:
     """Test archive list retrieval and filtering"""
@@ -345,7 +367,9 @@ class TestArchiveList:
             )
 
             # Add and archive
-            from backend.app.services.kanban_task_service import kanban_task_service
+            from backend.app.services.kanban_task_service import \
+                kanban_task_service
+
             kanban_task_service._mock_tasks[task.task_id] = task
 
             await kanban_archive_service.archive_task(
@@ -358,7 +382,9 @@ class TestArchiveList:
 
         # Filter by DESIGN phase
         filters = ArchiveFilters(phase=PhaseName.DESIGN)
-        response = await kanban_archive_service.get_archive_list(filters=filters, page=1, per_page=20)
+        response = await kanban_archive_service.get_archive_list(
+            filters=filters, page=1, per_page=20
+        )
 
         # All results should be DESIGN phase
         for archive in response.data:
@@ -384,7 +410,9 @@ class TestArchiveList:
                 completed_at=datetime.now(UTC),
             )
 
-            from backend.app.services.kanban_task_service import kanban_task_service
+            from backend.app.services.kanban_task_service import \
+                kanban_task_service
+
             kanban_task_service._mock_tasks[task.task_id] = task
             task_ids.append(task.task_id)
 
@@ -397,12 +425,16 @@ class TestArchiveList:
             )
 
         # Get first page (2 items per page)
-        response_page1 = await kanban_archive_service.get_archive_list(page=1, per_page=2)
+        response_page1 = await kanban_archive_service.get_archive_list(
+            page=1, per_page=2
+        )
         assert len(response_page1.data) == 2
         assert response_page1.has_next is True
 
         # Get second page
-        response_page2 = await kanban_archive_service.get_archive_list(page=2, per_page=2)
+        response_page2 = await kanban_archive_service.get_archive_list(
+            page=2, per_page=2
+        )
         assert len(response_page2.data) == 2
         assert response_page2.has_prev is True
 
@@ -411,14 +443,19 @@ class TestArchiveList:
 # Test Obsidian Sync
 # ============================================================================
 
+
 class TestObsidianSync:
     """Test Obsidian knowledge extraction"""
 
     @pytest.mark.asyncio
     async def test_obsidian_sync_disabled(self, sample_completed_task, test_user):
         """Test archiving without Obsidian sync"""
-        from backend.app.services.kanban_task_service import kanban_task_service
-        kanban_task_service._mock_tasks[sample_completed_task.task_id] = sample_completed_task
+        from backend.app.services.kanban_task_service import \
+            kanban_task_service
+
+        kanban_task_service._mock_tasks[sample_completed_task.task_id] = (
+            sample_completed_task
+        )
 
         request = ArchiveTaskRequest(
             task_id=sample_completed_task.task_id,
@@ -445,7 +482,7 @@ class TestObsidianSync:
             technical_insights=["Insight 1"],
             tags=["test", "implementation"],
             created_at=sample_completed_task.created_at,
-            archived_at=datetime.now(UTC)
+            archived_at=datetime.now(UTC),
         )
 
         roi = ROIMetrics(
@@ -474,6 +511,7 @@ class TestObsidianSync:
 # ============================================================================
 # Test Edge Cases
 # ============================================================================
+
 
 class TestEdgeCases:
     """Test edge cases and error handling"""
@@ -511,7 +549,9 @@ class TestEdgeCases:
                 completed_at=datetime.now(UTC),
             )
 
-            from backend.app.services.kanban_task_service import kanban_task_service
+            from backend.app.services.kanban_task_service import \
+                kanban_task_service
+
             kanban_task_service._mock_tasks[task.task_id] = task
 
             await kanban_archive_service.archive_task(

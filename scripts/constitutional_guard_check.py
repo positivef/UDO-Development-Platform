@@ -44,13 +44,8 @@ class ConstitutionalPreCommitHook:
     def get_staged_files(self) -> List[str]:
         """Get list of staged files"""
         try:
-            result = subprocess.run(
-                ["git", "diff", "--cached", "--name-only"],
-                capture_output=True,
-                text=True,
-                check=True
-            )
-            return [f.strip() for f in result.stdout.split('\n') if f.strip()]
+            result = subprocess.run(["git", "diff", "--cached", "--name-only"], capture_output=True, text=True, check=True)
+            return [f.strip() for f in result.stdout.split("\n") if f.strip()]
         except subprocess.CalledProcessError as e:
             print(f"[FAIL] Error getting staged files: {e}")
             return []
@@ -58,12 +53,7 @@ class ConstitutionalPreCommitHook:
     def get_staged_diff(self) -> str:
         """Get diff of staged changes"""
         try:
-            result = subprocess.run(
-                ["git", "diff", "--cached"],
-                capture_output=True,
-                text=True,
-                check=True
-            )
+            result = subprocess.run(["git", "diff", "--cached"], capture_output=True, text=True, check=True)
             return result.stdout
         except subprocess.CalledProcessError as e:
             print(f"[FAIL] Error getting diff: {e}")
@@ -83,11 +73,7 @@ class ConstitutionalPreCommitHook:
                     continue
 
                 # Check if file is new
-                result = subprocess.run(
-                    ["git", "ls-files", "--error-unmatch", file],
-                    capture_output=True,
-                    text=True
-                )
+                result = subprocess.run(["git", "ls-files", "--error-unmatch", file], capture_output=True, text=True)
                 if result.returncode != 0:
                     added += 1
                 else:
@@ -101,7 +87,7 @@ class ConstitutionalPreCommitHook:
         """Get commit message from COMMIT_EDITMSG"""
         commit_msg_file = Path(".git/COMMIT_EDITMSG")
         if commit_msg_file.exists():
-            return commit_msg_file.read_text(encoding='utf-8').strip()
+            return commit_msg_file.read_text(encoding="utf-8").strip()
         return ""
 
     async def check_p1_design_review(self, staged_files: List[str]) -> bool:
@@ -112,9 +98,9 @@ class ConstitutionalPreCommitHook:
         """
         # Exemptions (from P1 constitution)
         exemptions = [
-            lambda f: f.endswith('.md'),  # Documentation
-            lambda f: any(word in f.lower() for word in ['test', 'spec']),  # Tests
-            lambda f: f.endswith('.json') or f.endswith('.yaml'),  # Config
+            lambda f: f.endswith(".md"),  # Documentation
+            lambda f: any(word in f.lower() for word in ["test", "spec"]),  # Tests
+            lambda f: f.endswith(".json") or f.endswith(".yaml"),  # Config
         ]
 
         # Check if any non-exempt files are being changed
@@ -128,10 +114,7 @@ class ConstitutionalPreCommitHook:
             return True
 
         # Check for design review document
-        design_docs = [
-            f for f in staged_files
-            if 'design' in f.lower() and f.endswith('.md')
-        ]
+        design_docs = [f for f in staged_files if "design" in f.lower() and f.endswith(".md")]
 
         if len(significant_files) >= 3 and not design_docs:
             self.violations.append(
@@ -150,22 +133,18 @@ class ConstitutionalPreCommitHook:
 
         Run linting and type checking on staged files
         """
-        has_python = any(f.endswith('.py') for f in staged_files)
-        has_typescript = any(f.endswith(('.ts', '.tsx')) for f in staged_files)
+        has_python = any(f.endswith(".py") for f in staged_files)
+        has_typescript = any(f.endswith((".ts", ".tsx")) for f in staged_files)
 
         quality_passed = True
 
         # Python quality checks
         if has_python:
-            python_files = [f for f in staged_files if f.endswith('.py')]
+            python_files = [f for f in staged_files if f.endswith(".py")]
 
             # Pylint check
             try:
-                result = subprocess.run(
-                    ["python", "-m", "pylint"] + python_files,
-                    capture_output=True,
-                    text=True
-                )
+                result = subprocess.run(["python", "-m", "pylint"] + python_files, capture_output=True, text=True)
                 if result.returncode != 0:
                     # Check for critical issues
                     if "E:" in result.stdout or "F:" in result.stdout:
@@ -176,42 +155,29 @@ class ConstitutionalPreCommitHook:
                         )
                         quality_passed = False
                     else:
-                        self.warnings.append(
-                            "P7 WARNING: Python code quality warnings (non-critical)"
-                        )
+                        self.warnings.append("P7 WARNING: Python code quality warnings (non-critical)")
             except FileNotFoundError:
                 self.warnings.append("P7 WARNING: pylint not installed, skipping Python checks")
 
             # Type checking with mypy
             try:
-                result = subprocess.run(
-                    ["python", "-m", "mypy"] + python_files,
-                    capture_output=True,
-                    text=True
-                )
+                result = subprocess.run(["python", "-m", "mypy"] + python_files, capture_output=True, text=True)
                 if result.returncode != 0 and "error:" in result.stdout.lower():
-                    self.warnings.append(
-                        "P7 WARNING: Type checking issues detected (mypy)"
-                    )
+                    self.warnings.append("P7 WARNING: Type checking issues detected (mypy)")
             except FileNotFoundError:
                 pass  # mypy is optional
 
         # TypeScript quality checks
         if has_typescript:
-            ts_files = [f for f in staged_files if f.endswith(('.ts', '.tsx'))]
+            ts_files = [f for f in staged_files if f.endswith((".ts", ".tsx"))]
 
             # ESLint check
             try:
                 result = subprocess.run(
-                    ["npx", "eslint"] + ts_files,
-                    capture_output=True,
-                    text=True,
-                    cwd=project_root / "web-dashboard"
+                    ["npx", "eslint"] + ts_files, capture_output=True, text=True, cwd=project_root / "web-dashboard"
                 )
                 if result.returncode != 0:
-                    self.warnings.append(
-                        "P7 WARNING: TypeScript linting issues (ESLint)"
-                    )
+                    self.warnings.append("P7 WARNING: TypeScript linting issues (ESLint)")
             except (FileNotFoundError, subprocess.CalledProcessError):
                 pass  # ESLint might not be available
 
@@ -238,16 +204,16 @@ class ConstitutionalPreCommitHook:
         for pattern, message in security_patterns:
             if pattern in diff.lower():
                 # Check if it's in added lines (starts with +)
-                for line in diff.split('\n'):
-                    if line.startswith('+') and pattern in line.lower():
+                for line in diff.split("\n"):
+                    if line.startswith("+") and pattern in line.lower():
                         security_issues.append(f"{message}: {line[:80]}")
                         break
 
         if security_issues:
             self.violations.append(
-                "P8 SECURITY VIOLATION: Potential security issues detected\n" +
-                "\n".join(f"   - {issue}" for issue in security_issues) +
-                "\n   Review and remove sensitive data before committing"
+                "P8 SECURITY VIOLATION: Potential security issues detected\n"
+                + "\n".join(f"   - {issue}" for issue in security_issues)
+                + "\n   Review and remove sensitive data before committing"
             )
             return False
 

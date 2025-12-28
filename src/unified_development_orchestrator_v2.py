@@ -29,13 +29,13 @@ import yaml
 import math
 from filelock import FileLock
 
-# Windows Unicode [EMOJI] [EMOJI] [EMOJI] [EMOJI]
+# Windows Unicode 인코딩 문제 근본 해결
 if sys.platform == 'win32':
     if hasattr(sys.stdout, 'reconfigure'):
         sys.stdout.reconfigure(encoding='utf-8')
         sys.stderr.reconfigure(encoding='utf-8')
 
-# [EMOJI] [EMOJI]
+# 경로 설정
 script_dir = Path(__file__).parent
 sys.path.append(str(script_dir))
 github_root = script_dir.parent.parent.parent
@@ -109,7 +109,7 @@ except Exception as bridge_error:
     logger.warning("ThreeAICollaborationBridge import failed: %s", bridge_error)
 
 try:
-    # [EMOJI] v3 [EMOJI] ([EMOJI] [EMOJI] [EMOJI])
+    # 최신 v3 사용 (예측 모델링 포함)
     from uncertainty_map_v3 import UncertaintyMapV3, UncertaintyVector, UncertaintyState
     UNCERTAINTY_AVAILABLE = True
     logger.info("Using UncertaintyMap v3.0 with predictive modeling")
@@ -117,7 +117,7 @@ except ImportError:
     try:
         # v2 fallback
         from uncertainty_map_generator_v2 import UncertaintyMapGeneratorV2
-        UncertaintyMapV3 = UncertaintyMapGeneratorV2  # [EMOJI]
+        UncertaintyMapV3 = UncertaintyMapGeneratorV2  # 호환성
         UNCERTAINTY_AVAILABLE = True
         logger.warning("Using UncertaintyMap v2 (fallback)")
     except Exception:
@@ -134,7 +134,7 @@ except Exception as e:
 
 @dataclass
 class ProjectContext:
-    """[EMOJI] [EMOJI] [EMOJI]"""
+    """프로젝트 전체 컨텍스트"""
     project_name: str
     goal: str
     team_size: int
@@ -150,33 +150,33 @@ class ProjectContext:
 
 @dataclass
 class PhaseMetrics:
-    """Phase[EMOJI] [EMOJI] [EMOJI]"""
+    """Phase별 평가 메트릭"""
     phase: str
     relevant_metrics: List[str]
-    required_confidence: float  # Phase[EMOJI] [EMOJI] [EMOJI]
+    required_confidence: float  # Phase별 최소 신뢰도
     evaluation_criteria: Dict[str, float]
     weight_distribution: Dict[str, float]
 
 
 @dataclass
 class UncertaintyTracking:
-    """[EMOJI] [EMOJI] [EMOJI]"""
+    """실제 불확실성 추적"""
     known_knowns: Dict[str, float] = field(default_factory=dict)
     known_unknowns: Dict[str, float] = field(default_factory=dict)
-    unknown_unknowns: float = 0.3  # [EMOJI]
+    unknown_unknowns: float = 0.3  # 기본값
     emergent_patterns: List[Dict] = field(default_factory=list)
     confidence_history: List[float] = field(default_factory=list)
 
 
 class UnifiedDevelopmentOrchestratorV2:
     """
-    UDO v2 - [EMOJI] [EMOJI] [EMOJI] [EMOJI] [EMOJI]
+    UDO v2 - 성능과 정확도가 대폭 개선된 버전
 
-    [EMOJI] [EMOJI]:
-    1. Phase-Aware [EMOJI]
-    2. Bayesian [EMOJI] [EMOJI]
-    3. [EMOJI] [EMOJI] [EMOJI]
-    4. [EMOJI] [EMOJI] [EMOJI]
+    핵심 개선:
+    1. Phase-Aware 평가
+    2. Bayesian 신뢰도 계산
+    3. 실제 불확실성 추적
+    4. 학습 시스템 활성화
     """
 
     def __init__(self, project_context: ProjectContext):
@@ -191,12 +191,12 @@ class UnifiedDevelopmentOrchestratorV2:
         self.storage_dir = DEFAULT_STORAGE_DIR
         self.learning_data_path = _resolve_storage_file('udo_learning_data.json', self.storage_dir)
 
-        # [EMOJI] [EMOJI]
+        # 컴포넌트 초기화
         self.selector = AdaptiveSystemSelectorV2() if SELECTOR_AVAILABLE else None
         self.ai_bridge = ThreeAICollaborationBridge() if AI_BRIDGE_AVAILABLE else None
         self.bayesian_integration = UDOBayesianIntegration(project_context.project_name) if BAYESIAN_AVAILABLE else None
 
-        # Uncertainty Map v3 [EMOJI] ([EMOJI] [EMOJI] [EMOJI])
+        # Uncertainty Map v3 초기화 (예측 모델링 포함)
         if UNCERTAINTY_AVAILABLE:
             try:
                 # v3 requires project_name parameter
@@ -213,10 +213,10 @@ class UnifiedDevelopmentOrchestratorV2:
         else:
             self.uncertainty = None
 
-        # Phase-Aware [EMOJI] [EMOJI]
+        # Phase-Aware 메트릭 초기화
         self.phase_metrics = self._init_phase_metrics()
 
-        # [EMOJI] [EMOJI]
+        # 학습 데이터
         self.learning_data = self._load_learning_data(self.learning_data_path)
 
         logger.info("UDO v2 initialized for project %s", project_context.project_name)
@@ -224,12 +224,12 @@ class UnifiedDevelopmentOrchestratorV2:
         logger.info("Mode: Phase-Aware + Bayesian + Active Learning")
 
     def _init_phase_metrics(self) -> Dict[str, PhaseMetrics]:
-        """Phase[EMOJI] [EMOJI] [EMOJI] [EMOJI]"""
+        """Phase별 평가 메트릭 정의"""
         return {
             "ideation": PhaseMetrics(
                 phase="ideation",
                 relevant_metrics=["market_potential", "feasibility", "innovation"],
-                required_confidence=0.6,  # [EMOJI] [EMOJI] [EMOJI]
+                required_confidence=0.6,  # 낮은 요구 신뢰도
                 evaluation_criteria={
                     "market_size": 0.3,
                     "competition": 0.2,
@@ -291,7 +291,7 @@ class UnifiedDevelopmentOrchestratorV2:
         }
 
     def _load_learning_data(self, path: Optional[Path] = None) -> Dict:
-        """[EMOJI] [EMOJI] [EMOJI] ([EMOJI] [EMOJI])"""
+        """학습 데이터 로드 (실제 구현)"""
         learning_file = path or _resolve_storage_file('udo_learning_data.json', self.storage_dir)
         if learning_file.exists():
             lock = FileLock(str(learning_file) + '.lock')
@@ -306,7 +306,7 @@ class UnifiedDevelopmentOrchestratorV2:
         }
 
     def _save_learning_data(self, path: Optional[Path] = None) -> Path:
-        """[EMOJI] [EMOJI] [EMOJI]"""
+        """학습 데이터 저장"""
         learning_file = path or self.learning_data_path
         lock = FileLock(str(learning_file) + '.lock')
         with lock:
@@ -321,22 +321,22 @@ class UnifiedDevelopmentOrchestratorV2:
         context: Dict
     ) -> float:
         """
-        Phase-Aware [EMOJI] [EMOJI]
+        Phase-Aware 신뢰도 계산
 
-        [EMOJI] [EMOJI]: Phase[EMOJI] [EMOJI] [EMOJI] [EMOJI]
+        핵심 개선: Phase별로 다른 기준 적용
         """
         phase_metric = self.phase_metrics.get(phase)
         if not phase_metric:
             return raw_confidence
 
-        # Phase[EMOJI] [EMOJI] [EMOJI]
+        # Phase별 가중치 적용
         weighted_confidence = 0.0
         weights = phase_metric.weight_distribution
 
-        # Phase-specific [EMOJI]
+        # Phase-specific 조정
         if phase == "ideation":
-            # Ideation[EMOJI] [EMOJI] [EMOJI] [EMOJI] [EMOJI] [EMOJI]
-            base_confidence = 0.7  # [EMOJI] [EMOJI] [EMOJI]
+            # Ideation은 코드가 없어도 높은 신뢰도 가능
+            base_confidence = 0.7  # 기본 신뢰도 높게
             market_factor = context.get('market_validation', 0.5)
             feasibility_factor = context.get('technical_feasibility', 0.8)
 
@@ -347,7 +347,7 @@ class UnifiedDevelopmentOrchestratorV2:
             )
 
         elif phase == "design":
-            # Design[EMOJI] [EMOJI] [EMOJI] [EMOJI]
+            # Design은 아키텍처 품질 중심
             base_confidence = 0.65
             arch_quality = context.get('architecture_quality', 0.6)
             pattern_match = context.get('pattern_adherence', 0.7)
@@ -359,7 +359,7 @@ class UnifiedDevelopmentOrchestratorV2:
             )
 
         elif phase == "mvp":
-            # MVP[EMOJI] [EMOJI] [EMOJI] [EMOJI] [EMOJI]
+            # MVP는 속도와 핵심 기능 균형
             base_confidence = raw_confidence
             speed_factor = min(1.0, context.get('development_speed', 0.8))
             feature_coverage = context.get('core_feature_coverage', 0.7)
@@ -370,23 +370,23 @@ class UnifiedDevelopmentOrchestratorV2:
                 feature_coverage * 0.3
             )
 
-        else:  # implementation, testing [EMOJI]
-            # [EMOJI] [EMOJI] [EMOJI]
+        else:  # implementation, testing 등
+            # 기존 메트릭 기반
             weighted_confidence = raw_confidence
 
-        # Bayesian [EMOJI] ([EMOJI] [EMOJI] [EMOJI])
+        # Bayesian 업데이트 (과거 성공률 반영)
         phase_history = self.learning_data.get('phase_performance', {}).get(phase, {})
         if phase_history:
             success_rate = phase_history.get('success_rate', 0.5)
             # Bayesian update: P(success|evidence) = P(evidence|success) * P(success) / P(evidence)
             prior = success_rate
             likelihood = weighted_confidence
-            evidence = 0.5  # [EMOJI] [EMOJI]
+            evidence = 0.5  # 정규화 상수
 
             bayesian_confidence = (likelihood * prior) / evidence
             weighted_confidence = 0.7 * weighted_confidence + 0.3 * bayesian_confidence
 
-        # [EMOJI] [EMOJI] [EMOJI]
+        # 신뢰도 범위 제한
         return max(0.1, min(0.95, weighted_confidence))
 
     def calculate_weighted_confidence(
@@ -396,9 +396,9 @@ class UnifiedDevelopmentOrchestratorV2:
         phase: str
     ) -> float:
         """
-        [EMOJI] [EMOJI] [EMOJI] [EMOJI] ([EMOJI] [EMOJI])
+        가중 평균 신뢰도 계산 (곱셈 대신)
 
-        [EMOJI]: [EMOJI] [EMOJI] [EMOJI] [EMOJI] [EMOJI]
+        개선: 곱셈으로 인한 급격한 하락 방지
         """
         phase_weight_config = self.config.get('phase_weights', {})
         default_weights = phase_weight_config.get('default', {
@@ -417,14 +417,14 @@ class UnifiedDevelopmentOrchestratorV2:
             self.config.get('phase_bonus', {}).get('default', 0.5)
         )
 
-        # [EMOJI] [EMOJI] [EMOJI]
+        # 가중 평균 계산
         weighted_confidence = (
             system_confidence * system_weight +
             uncertainty_confidence * uncertainty_weight +
             phase_bonus * bonus_weight
         )
 
-        # [EMOJI] [EMOJI] (Phase[EMOJI])
+        # 최소값 보장 (Phase별)
         phase_metric = self.phase_metrics.get(phase)
         if phase_metric and hasattr(phase_metric, 'required_confidence'):
             min_confidence = phase_metric.required_confidence
@@ -434,24 +434,24 @@ class UnifiedDevelopmentOrchestratorV2:
         return max(min_confidence, weighted_confidence)
 
     def track_uncertainty(self, context: Dict, decision: Dict):
-        """[EMOJI] [EMOJI] [EMOJI] [EMOJI] [EMOJI] (v3 [EMOJI])"""
+        """실제 불확실성 추적 및 업데이트 (v3 통합)"""
 
-        # Known Knowns [EMOJI]
+        # Known Knowns 업데이트
         if context.get('files'):
             self.uncertainty_tracker.known_knowns['code_exists'] = 1.0
         if context.get('test_coverage'):
             self.uncertainty_tracker.known_knowns['test_coverage'] = context['test_coverage']
 
-        # Known Unknowns [EMOJI]
+        # Known Unknowns 업데이트
         if not context.get('market_validation'):
             self.uncertainty_tracker.known_unknowns['market'] = 0.5
         if not context.get('user_feedback'):
             self.uncertainty_tracker.known_unknowns['user_needs'] = 0.6
 
-        # Unknown Unknowns [EMOJI] ([EMOJI] [EMOJI])
+        # Unknown Unknowns 감소 (시간에 따라)
         self.uncertainty_tracker.unknown_unknowns *= 0.95
 
-        # Emergent Patterns [EMOJI]
+        # Emergent Patterns 감지
         if len(self.uncertainty_tracker.confidence_history) > 5:
             recent = self.uncertainty_tracker.confidence_history[-5:]
             if all(c > 0.7 for c in recent):
@@ -460,14 +460,14 @@ class UnifiedDevelopmentOrchestratorV2:
                     'timestamp': datetime.now().isoformat()
                 })
 
-        # [EMOJI] [EMOJI] [EMOJI]
+        # 신뢰도 히스토리 추가
         self.uncertainty_tracker.confidence_history.append(
             decision.get('confidence', 0.5)
         )
 
-        # v3 [EMOJI]: [EMOJI] [EMOJI]
+        # v3 기능: 예측 모델링
         if self.uncertainty and hasattr(self.uncertainty, 'add_observation'):
-            # UncertaintyVector [EMOJI]
+            # UncertaintyVector 생성
             vector = UncertaintyVector(
                 technical=1.0 - self.uncertainty_tracker.known_knowns.get('code_exists', 0.0),
                 market=self.uncertainty_tracker.known_unknowns.get('market', 0.5),
@@ -476,14 +476,14 @@ class UnifiedDevelopmentOrchestratorV2:
                 quality=1.0 - context.get('test_coverage', 0.0)
             )
 
-            # [EMOJI] [EMOJI] ([EMOJI])
+            # 관찰 추가 (학습)
             self.uncertainty.add_observation(
                 phase=self.context.current_phase,
                 vector=vector,
                 outcome=decision.get('confidence', 0.5) > 0.6
             )
 
-            # [EMOJI] [EMOJI]
+            # 예측 생성
             prediction = self.uncertainty.predict_evolution(
                 vector,
                 self.context.current_phase,
@@ -495,7 +495,7 @@ class UnifiedDevelopmentOrchestratorV2:
                 future_uncertainty = prediction.predict_future(24)
                 logger.info("24h forecast: %.1f%%", future_uncertainty * 100)
 
-                # [EMOJI] [EMOJI] [EMOJI] [EMOJI]
+                # 자동 완화 전략 생성
                 state = self.uncertainty.classify_state(vector.magnitude())
                 mitigations = self.uncertainty.generate_mitigations(vector, state)
 
@@ -506,7 +506,7 @@ class UnifiedDevelopmentOrchestratorV2:
 
     def start_development_cycle(self, user_request: str) -> Dict:
         """
-        [EMOJI] [EMOJI] [EMOJI] - Phase-Aware
+        개선된 개발 사이클 - Phase-Aware
         """
         if not isinstance(user_request, str) or not user_request.strip():
             raise ValueError("user_request must be a non-empty string")
@@ -519,7 +519,7 @@ class UnifiedDevelopmentOrchestratorV2:
         logger.info("Request: %s...", user_request[:100])
         logger.info("Current phase: %s", self.context.current_phase)
 
-        # Phase [EMOJI] [EMOJI]
+        # Phase 컨텍스트 생성
         phase_context = {
             'phase': self.context.current_phase,
             'team_size': self.context.team_size,
@@ -528,27 +528,27 @@ class UnifiedDevelopmentOrchestratorV2:
             'request': user_request
         }
 
-        # Step 1: Phase-Aware [EMOJI] [EMOJI]
+        # Step 1: Phase-Aware 시스템 선택
         system_recommendation = self._select_optimal_system_v2(
             user_request,
             phase_context
         )
 
-        # Step 2: [EMOJI] [EMOJI] [EMOJI]
+        # Step 2: 개선된 불확실성 평가
         uncertainty_assessment = self._assess_uncertainties_v2(
             user_request,
             system_recommendation,
             phase_context
         )
 
-        # Step 3: Phase[EMOJI] AI [EMOJI] [EMOJI]
+        # Step 3: Phase별 AI 협업 패턴
         ai_collaboration = self._determine_ai_collaboration_v2(
             phase_context,
             system_recommendation,
             uncertainty_assessment
         )
 
-        # Step 4: [EMOJI] Go/No-Go [EMOJI]
+        # Step 4: 개선된 Go/No-Go 결정
         go_decision = self._make_go_decision_v2(
             system_recommendation,
             uncertainty_assessment,
@@ -556,7 +556,7 @@ class UnifiedDevelopmentOrchestratorV2:
             phase_context
         )
 
-        # Step 5: [EMOJI] [EMOJI]
+        # Step 5: 실행 계획
         execution_plan = self._create_execution_plan_v2(
             system_recommendation,
             ai_collaboration,
@@ -564,10 +564,10 @@ class UnifiedDevelopmentOrchestratorV2:
             phase_context
         )
 
-        # [EMOJI] [EMOJI]
+        # 불확실성 추적
         self.track_uncertainty(phase_context, execution_plan)
 
-        # [EMOJI] [EMOJI] [EMOJI]
+        # 학습 데이터 업데이트
         self.learning_data['phase_performance'].setdefault(
             self.context.current_phase, {}
         )
@@ -575,11 +575,11 @@ class UnifiedDevelopmentOrchestratorV2:
         return execution_plan
 
     def _select_optimal_system_v2(self, request: str, context: Dict) -> Dict:
-        """Phase-Aware [EMOJI] [EMOJI]"""
+        """Phase-Aware 시스템 선택"""
 
         phase = context['phase']
 
-        # Phase[EMOJI] [EMOJI] [EMOJI] [EMOJI]
+        # Phase별 기본 시스템 추천
         phase_defaults = {
             "ideation": SystemType.CREATIVE_THINKING,
             "design": SystemType.CREATIVE_THINKING,
@@ -589,7 +589,7 @@ class UnifiedDevelopmentOrchestratorV2:
         }
 
         if self.selector:
-            # [EMOJI] Selector [EMOJI]
+            # 실제 Selector 사용
             analysis_context = self.selector.analyze_request(
                 request,
                 team_size=context['team_size'],
@@ -597,7 +597,7 @@ class UnifiedDevelopmentOrchestratorV2:
             )
             recommendation = self.selector.recommend_system(analysis_context)
 
-            # Phase-aware [EMOJI]
+            # Phase-aware 조정
             base_confidence = recommendation.confidence
             phase_confidence = self.calculate_phase_aware_confidence(
                 phase, base_confidence, context
@@ -613,7 +613,7 @@ class UnifiedDevelopmentOrchestratorV2:
             # Fallback with phase awareness
             default_system = phase_defaults.get(phase, SystemType.ENHANCED)
 
-            # Phase[EMOJI] [EMOJI] [EMOJI]
+            # Phase별 기본 신뢰도
             phase_base_confidence = {
                 "ideation": 0.75,
                 "design": 0.7,
@@ -635,11 +635,11 @@ class UnifiedDevelopmentOrchestratorV2:
         system_rec: Dict,
         context: Dict
     ) -> Dict:
-        """[EMOJI] [EMOJI] [EMOJI]"""
+        """개선된 불확실성 평가"""
 
         phase = context['phase']
 
-        # Phase[EMOJI] [EMOJI] [EMOJI]
+        # Phase별 불확실성 요소
         phase_uncertainties = {
             "ideation": ["market_fit", "technical_feasibility", "competition"],
             "design": ["architecture_risk", "scalability", "integration"],
@@ -650,19 +650,19 @@ class UnifiedDevelopmentOrchestratorV2:
 
         uncertainties = phase_uncertainties.get(phase, [])
 
-        # [EMOJI] [EMOJI] [EMOJI]
-        uncertainty_level = 0.3  # [EMOJI]
+        # 불확실성 수준 계산
+        uncertainty_level = 0.3  # 기본값
 
-        # Phase[EMOJI] [EMOJI]
+        # Phase별 조정
         if phase == "ideation":
-            # [EMOJI] [EMOJI] [EMOJI] [EMOJI] [EMOJI]
+            # 초기 단계는 불확실성이 높아도 정상
             uncertainty_level = 0.5
-            confidence = 0.7  # [EMOJI] [EMOJI] [EMOJI]
+            confidence = 0.7  # 높은 기본 신뢰도
         elif phase == "design":
             uncertainty_level = 0.4
             confidence = 0.65
         else:
-            # [EMOJI] [EMOJI] [EMOJI] [EMOJI] [EMOJI] [EMOJI]
+            # 구현 단계는 더 정확한 평가 필요
             if context.get('files'):
                 uncertainty_level = 0.2
                 confidence = 0.8
@@ -689,17 +689,17 @@ class UnifiedDevelopmentOrchestratorV2:
         system_rec: Dict,
         uncertainty: Dict
     ) -> Dict:
-        """Phase[EMOJI] AI [EMOJI] [EMOJI]"""
+        """Phase별 AI 협업 패턴"""
 
         phase = context['phase']
 
-        # Phase[EMOJI] [EMOJI] [EMOJI]
+        # Phase별 최적 패턴
         phase_patterns = {
-            "ideation": "creative_exploration",  # Gemini [EMOJI]
-            "design": "architecture_review",      # Claude [EMOJI] + Codex [EMOJI]
-            "mvp": "rapid_implementation",        # Claude [EMOJI]
-            "implementation": "full_collaboration", # 3-AI [EMOJI]
-            "testing": "verification_focus"       # Codex [EMOJI]
+            "ideation": "creative_exploration",  # Gemini 주도
+            "design": "architecture_review",      # Claude 주도 + Codex 검증
+            "mvp": "rapid_implementation",        # Claude 구현
+            "implementation": "full_collaboration", # 3-AI 협업
+            "testing": "verification_focus"       # Codex 주도
         }
 
         pattern = phase_patterns.get(phase, "balanced")
@@ -711,7 +711,7 @@ class UnifiedDevelopmentOrchestratorV2:
 
         return {
             "pattern": pattern,
-            "ais": ["claude"],  # [EMOJI]
+            "ais": ["claude"],  # 기본
             "phase_optimized": True
         }
 
@@ -722,11 +722,11 @@ class UnifiedDevelopmentOrchestratorV2:
         ai_collab: Dict,
         context: Dict
     ) -> Dict:
-        """[EMOJI] Go/No-Go [EMOJI]"""
+        """개선된 Go/No-Go 결정"""
 
         phase = context['phase']
 
-        # [EMOJI] [EMOJI] [EMOJI] [EMOJI] ([EMOJI] [EMOJI])
+        # 가중 평균 신뢰도 계산 (곱셈 대신)
         confidence = self.calculate_weighted_confidence(
             system_rec['confidence'],
             uncertainty['overall_confidence'],
@@ -746,7 +746,7 @@ class UnifiedDevelopmentOrchestratorV2:
             except Exception as e:
                 logger.warning("Bayesian threshold adjustment failed: %s", e)
 
-        # [EMOJI]
+        # 의사결정
         if confidence > threshold + 0.15:
             decision = "GO"
             approach = "CONFIDENT"
@@ -775,11 +775,11 @@ class UnifiedDevelopmentOrchestratorV2:
         }
 
     def execute_plan(self, plan: Dict) -> Dict:
-        """[EMOJI] [EMOJI] [EMOJI]"""
+        """실행 계획 실행"""
         if plan['decision'] in ["NEED_MORE_INFO", "NO_GO"]:
             return {
                 "status": "BLOCKED",
-                "reason": "[EMOJI] [EMOJI] [EMOJI] [EMOJI]",
+                "reason": "더 많은 정보 필요",
                 "recommendation": plan.get('approach', 'RESEARCH')
             }
 
@@ -787,18 +787,18 @@ class UnifiedDevelopmentOrchestratorV2:
         logger.info("Execution starting (v2)")
         logger.info("%s", "=" * 60)
 
-        # [EMOJI] [EMOJI] ([EMOJI] [EMOJI] [EMOJI] AI [EMOJI] [EMOJI])
+        # 성공 시뮬레이션 (실제 구현 시 AI 협업 실행)
         return {
             "status": "COMPLETED",
-            "message": f"{plan['system'].get('system', 'default')} [EMOJI] [EMOJI]",
+            "message": f"{plan['system'].get('system', 'default')} 시스템으로 진행",
             "execution_time": 0,
             "confidence": plan['confidence']
         }
 
     def record_outcome(self, plan: Dict, execution_result: Dict, user_feedback: Optional[str] = None):
-        """[EMOJI] [EMOJI] [EMOJI] [EMOJI]"""
+        """결과 기록 및 학습"""
         try:
-            # [EMOJI] [EMOJI] [EMOJI]
+            # 학습 데이터 업데이트
             phase = self.context.current_phase
             success = execution_result.get('status') == 'COMPLETED'
 
@@ -812,10 +812,10 @@ class UnifiedDevelopmentOrchestratorV2:
                     'success_rate': 0.0
                 }
 
-            # dictionary[EMOJI] [EMOJI]
+            # dictionary인지 확인
             phase_perf = self.learning_data['phase_performance'][phase]
             if not isinstance(phase_perf, dict):
-                # [EMOJI] [EMOJI] [EMOJI] [EMOJI]
+                # 잘못된 데이터가 있으면 재초기화
                 self.learning_data['phase_performance'][phase] = {
                     'total': 0,
                     'success': 0,
@@ -828,7 +828,7 @@ class UnifiedDevelopmentOrchestratorV2:
                 phase_perf['success'] = phase_perf.get('success', 0) + 1
             phase_perf['success_rate'] = phase_perf['success'] / phase_perf['total']
 
-            # [EMOJI] [EMOJI] [EMOJI]
+            # 학습 데이터 저장
             self._save_learning_data()
 
             logger.info("Result recorded (Phase: %s, Success: %s)", phase, success)
@@ -836,7 +836,7 @@ class UnifiedDevelopmentOrchestratorV2:
             logger.warning("Result recording failed but continuing: %s", e)
 
     def save_state(self, path: Optional[Path] = None) -> Path:
-        """[EMOJI] [EMOJI]"""
+        """상태 저장"""
         state = {
             "project_context": asdict(self.context),
             "current_phase": self.context.current_phase,
@@ -864,7 +864,7 @@ class UnifiedDevelopmentOrchestratorV2:
         go_decision: Dict,
         context: Dict
     ) -> Dict:
-        """[EMOJI] [EMOJI] [EMOJI]"""
+        """개선된 실행 계획"""
 
         plan = {
             "version": "2.0",
@@ -888,34 +888,34 @@ class UnifiedDevelopmentOrchestratorV2:
         return plan
 
 
-# [EMOJI] [EMOJI] [EMOJI] [EMOJI]
+# 하위 호환성을 위한 별칭
 UnifiedDevelopmentOrchestrator = UnifiedDevelopmentOrchestratorV2
 
 
 def main():
-    """[EMOJI] [EMOJI]"""
+    """테스트 실행"""
     logging.basicConfig(level=logging.INFO)
     logger.info("%s", "=" * 80)
     logger.info("UDO v2.0 test - Phase-Aware System")
     logger.info("%s", "=" * 80)
 
-    # Ideation phase [EMOJI]
+    # Ideation phase 테스트
     project = ProjectContext(
         project_name="2025-Revenue-App",
-        goal="[EMOJI] [EMOJI] [EMOJI] [EMOJI]",
+        goal="수익형 앱 아이디어 발굴",
         team_size=5,
         timeline_weeks=12,
         budget=50000,
         tech_stack=["Next.js", "Flutter", "Supabase"],
-        constraints=["3[EMOJI] [EMOJI] [EMOJI]"],
+        constraints=["3개월 내 출시"],
         success_metrics=["DAU 1000+"],
         current_phase="ideation",
-        files=[]  # Ideation[EMOJI] [EMOJI] [EMOJI]
+        files=[]  # Ideation은 파일 없음
     )
 
     udo = UnifiedDevelopmentOrchestratorV2(project)
 
-    request = "2025[EMOJI] [EMOJI] [EMOJI] [EMOJI] [EMOJI] [EMOJI]"
+    request = "2025년 한국 시장 수익형 앱 아이디어"
     plan = udo.start_development_cycle(request)
 
     logger.info("%s", "\n" + "=" * 80)

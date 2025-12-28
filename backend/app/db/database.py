@@ -3,19 +3,19 @@ Database connection management
 Supports both PostgreSQL (primary) and SQLite (shadow) databases
 """
 
+import logging
 import os
+from typing import Generator
+
 from sqlalchemy import create_engine
 from sqlalchemy.ext.declarative import declarative_base
 from sqlalchemy.orm import sessionmaker
-from typing import Generator
-import logging
 
 logger = logging.getLogger(__name__)
 
 # Database URLs
 DATABASE_URL = os.getenv(
-    "DATABASE_URL",
-    "postgresql://udo_dev:dev_password_123@localhost:5432/udo_v3"
+    "DATABASE_URL", "postgresql://udo_dev:dev_password_123@localhost:5432/udo_v3"
 )
 SQLITE_URL = "sqlite:///./data/udo_shadow.db"
 
@@ -25,14 +25,12 @@ engine = create_engine(
     pool_pre_ping=True,
     pool_size=20,  # Antigravity recommended: 20 for 15-20 concurrent requests
     max_overflow=10,
-    echo=False
+    echo=False,
 )
 
 # SQLite engine (shadow)
 sqlite_engine = create_engine(
-    SQLITE_URL,
-    connect_args={"check_same_thread": False},
-    echo=False
+    SQLITE_URL, connect_args={"check_same_thread": False}, echo=False
 )
 
 # Session makers

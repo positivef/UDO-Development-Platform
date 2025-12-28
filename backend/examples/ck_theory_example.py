@@ -11,8 +11,8 @@ from pathlib import Path
 # Add parent directory to path
 sys.path.insert(0, str(Path(__file__).parent.parent))
 
-from app.services.ck_theory_service import CKTheoryService
 from app.models.ck_theory import CKTheoryRequest, DesignFeedback
+from app.services.ck_theory_service import CKTheoryService
 
 
 async def main():
@@ -32,21 +32,25 @@ async def main():
             "budget": "2 weeks",
             "team_size": 2,
             "security_requirement": "high",
-            "complexity": "medium"
+            "complexity": "medium",
         },
-        project="UDO-Development-Platform"
+        project="UDO-Development-Platform",
     )
 
     result1 = await service.generate_design(request1)
 
     print(f"\n[OK] Design ID: {result1.id}")
-    print(f"⏱  Duration: {result1.total_duration_ms}ms ({result1.total_duration_ms / 1000:.1f}s)")
+    print(
+        f"⏱  Duration: {result1.total_duration_ms}ms ({result1.total_duration_ms / 1000:.1f}s)"
+    )
 
     # Show alternatives
     print(f"\n[EMOJI] Design Alternatives:")
     for alt in result1.alternatives:
         print(f"\n  Alternative {alt.id}: {alt.title}")
-        print(f"  RICE Score: {alt.rice.score:.2f} (R:{alt.rice.reach} I:{alt.rice.impact} C:{alt.rice.confidence} E:{alt.rice.effort})")
+        print(
+            f"  RICE Score: {alt.rice.score:.2f} (R:{alt.rice.reach} I:{alt.rice.impact} C:{alt.rice.confidence} E:{alt.rice.effort})"
+        )
         print(f"  Description: {alt.description[:100]}...")
         print(f"  Timeline: {alt.estimated_timeline}")
         print(f"  Pros: {', '.join(alt.pros[:2])}...")
@@ -75,9 +79,9 @@ async def main():
         constraints={
             "timeline": "1 week",
             "performance_requirement": "high",
-            "complexity": "low"
+            "complexity": "low",
         },
-        project="UDO-Development-Platform"
+        project="UDO-Development-Platform",
     )
 
     result2 = await service.generate_design(request2)
@@ -105,7 +109,7 @@ async def main():
         rating=5,
         comments="Excellent balance of security and flexibility. Easy to implement.",
         selected_alternative="A",
-        outcome="success"
+        outcome="success",
     )
 
     success = await service.add_feedback(result1.id, feedback)

@@ -5,41 +5,38 @@ Week 3 Day 4-5: Archive View + AI Summarization.
 Implements Q6: Done-End archive with GPT-4o summarization and Obsidian knowledge extraction.
 """
 
+import logging
 import os
 import time
-import logging
-from datetime import datetime, UTC
-from typing import List, Optional, Dict
+from datetime import UTC, datetime
+from typing import Dict, List, Optional
 from uuid import UUID
 
 # OpenAI client for GPT-4o summarization
 try:
     from openai import AsyncOpenAI
+
     OPENAI_AVAILABLE = True
 except ImportError:
     OPENAI_AVAILABLE = False
     logging.warning("OpenAI package not available, using mock mode")
 
-from backend.app.models.kanban_task import Task, TaskStatus
-from backend.app.models.kanban_archive import (
-    AISummary,
-    AISummaryRequest,
-    AISummaryConfidence,
-    ROIMetrics,
-    ArchiveTaskRequest,
-    ArchiveTaskResponse,
-    ArchivedTaskWithMetrics,
-    ArchiveListResponse,
-    ObsidianKnowledgeEntry,
-    ObsidianSyncStatus,
-    TaskNotArchivableError,
-    AISummaryGenerationError,
-    ObsidianSyncError,
-    ROIStatistics,
-    ArchiveFilters,
-)
-from backend.app.services.kanban_task_service import kanban_task_service
-from backend.app.services.obsidian_service import ObsidianService
+from app.models.kanban_archive import (AISummary, AISummaryConfidence,
+                                               AISummaryGenerationError,
+                                               AISummaryRequest,
+                                               ArchivedTaskWithMetrics,
+                                               ArchiveFilters,
+                                               ArchiveListResponse,
+                                               ArchiveTaskRequest,
+                                               ArchiveTaskResponse,
+                                               ObsidianKnowledgeEntry,
+                                               ObsidianSyncError,
+                                               ObsidianSyncStatus, ROIMetrics,
+                                               ROIStatistics,
+                                               TaskNotArchivableError)
+from app.models.kanban_task import Task, TaskStatus
+from app.services.kanban_task_service import kanban_task_service
+from app.services.obsidian_service import ObsidianService
 
 logger = logging.getLogger(__name__)
 
@@ -61,7 +58,9 @@ class KanbanArchiveService:
         # OpenAI client for GPT-4o
         api_key = os.getenv("OPENAI_API_KEY")
         if not api_key or not OPENAI_AVAILABLE:
-            logger.warning("OPENAI_API_KEY not set or OpenAI not available, using mock mode")
+            logger.warning(
+                "OPENAI_API_KEY not set or OpenAI not available, using mock mode"
+            )
             self.openai_client = None
             self.mock_mode = True
         else:
@@ -74,10 +73,7 @@ class KanbanArchiveService:
         # In-memory archive storage (TODO: Replace with database)
         self.archives: Dict[UUID, ArchivedTaskWithMetrics] = {}
 
-    async def archive_task(
-        self,
-        request: ArchiveTaskRequest
-    ) -> ArchiveTaskResponse:
+    async def archive_task(self, request: ArchiveTaskRequest) -> ArchiveTaskResponse:
         """
         Archive a completed task with AI summarization and Obsidian sync.
 
@@ -103,7 +99,9 @@ class KanbanArchiveService:
                 summary_start = time.time()
                 ai_summary = await self._generate_ai_summary(task)
                 summary_time_ms = (time.time() - summary_start) * 1000
-                logger.info(f"AI summary generated for task {task.task_id} in {summary_time_ms:.2f}ms")
+                logger.info(
+                    f"AI summary generated for task {task.task_id} in {summary_time_ms:.2f}ms"
+                )
             except Exception as e:
                 logger.error(f"Failed to generate AI summary: {e}")
                 # Continue without summary
@@ -117,11 +115,15 @@ class KanbanArchiveService:
         obsidian_error = None
         if request.sync_to_obsidian and ai_summary:
             try:
-                sync_status = await self._sync_to_obsidian(task, ai_summary, roi_metrics)
+                sync_status = await self._sync_to_obsidian(
+                    task, ai_summary, roi_metrics
+                )
                 obsidian_synced = sync_status.synced
                 obsidian_note_path = sync_status.obsidian_note_path
                 obsidian_error = sync_status.sync_error
-                logger.info(f"Task {task.task_id} synced to Obsidian: {obsidian_note_path}")
+                logger.info(
+                    f"Task {task.task_id} synced to Obsidian: {obsidian_note_path}"
+                )
             except Exception as e:
                 logger.error(f"Failed to sync to Obsidian: {e}")
                 obsidian_error = str(e)
@@ -170,15 +172,12 @@ class KanbanArchiveService:
         if task.status not in [TaskStatus.COMPLETED, TaskStatus.DONE_END]:
             raise TaskNotArchivableError(
                 task_id,
-                f"Task must be COMPLETED before archiving (current: {task.status})"
+                f"Task must be COMPLETED before archiving (current: {task.status})",
             )
 
         # Check if already archived
         if task_id in self.archives:
-            raise TaskNotArchivableError(
-                task_id,
-                "Task already archived"
-            )
+            raise TaskNotArchivableError(task_id, "Task already archived")
 
         return task
 
@@ -222,17 +221,18 @@ Generate a comprehensive summary with key learnings, technical insights, and rec
                 model="gpt-4o",
                 messages=[
                     {"role": "system", "content": system_prompt},
-                    {"role": "user", "content": user_prompt}
+                    {"role": "user", "content": user_prompt},
                 ],
                 temperature=0.7,
                 max_tokens=1500,
-                response_format={"type": "json_object"}
+                response_format={"type": "json_object"},
             )
 
             generation_time_ms = (time.time() - start_time) * 1000
 
             # Parse response
             import json
+
             content = json.loads(response.choices[0].message.content)
 
             return AISummary(
@@ -248,7 +248,7 @@ Generate a comprehensive summary with key learnings, technical insights, and rec
                     "prompt": response.usage.prompt_tokens,
                     "completion": response.usage.completion_tokens,
                     "total": response.usage.total_tokens,
-                }
+                },
             )
 
         except Exception as e:
@@ -261,28 +261,28 @@ Generate a comprehensive summary with key learnings, technical insights, and rec
             "ideation": [
                 "Explored multiple solution approaches",
                 "Identified key user pain points",
-                "Validated assumptions with research"
+                "Validated assumptions with research",
             ],
             "design": [
                 "Created comprehensive system architecture",
                 "Defined clear API contracts",
-                "Considered scalability from the start"
+                "Considered scalability from the start",
             ],
             "mvp": [
                 "Delivered minimal viable functionality",
                 "Validated core assumptions quickly",
-                "Set foundation for future iterations"
+                "Set foundation for future iterations",
             ],
             "implementation": [
                 "Implemented robust error handling",
                 "Applied SOLID principles",
-                "Maintained high code quality"
+                "Maintained high code quality",
             ],
             "testing": [
                 "Achieved comprehensive test coverage",
                 "Validated edge cases thoroughly",
-                "Ensured production readiness"
-            ]
+                "Ensured production readiness",
+            ],
         }
 
         phase_key = task.phase_name.lower()
@@ -291,18 +291,20 @@ Generate a comprehensive summary with key learnings, technical insights, and rec
         return AISummary(
             task_id=task.task_id,
             summary=f"Completed '{task.title}' in {task.phase_name} phase. "
-                   f"Task accomplished its objectives with {task.priority} priority. "
-                   f"Estimated {task.estimated_hours}h, actually took {task.actual_hours}h.",
+            f"Task accomplished its objectives with {task.priority} priority. "
+            f"Estimated {task.estimated_hours}h, actually took {task.actual_hours}h.",
             key_learnings=insights[:2],
-            technical_insights=insights[2:3] if len(insights) > 2 else ["Applied best practices"],
+            technical_insights=(
+                insights[2:3] if len(insights) > 2 else ["Applied best practices"]
+            ),
             recommendations=[
                 f"Consider similar approach for future {task.phase_name} tasks",
-                "Document learnings for team knowledge base"
+                "Document learnings for team knowledge base",
             ],
             confidence=AISummaryConfidence.HIGH,
             model_used="mock",
             generation_time_ms=10.0,
-            token_usage=None
+            token_usage=None,
         )
 
     def _calculate_roi_metrics(self, task: Task) -> ROIMetrics:
@@ -314,13 +316,13 @@ Generate a comprehensive summary with key learnings, technical insights, and rec
         efficiency = (estimated / actual * 100) if actual > 0 else 100.0
 
         # Quality metrics
-        quality_score = getattr(task, 'quality_score', 80)
-        constitutional_compliant = getattr(task, 'constitutional_compliant', True)
-        violated_articles = getattr(task, 'violated_articles', [])
+        quality_score = getattr(task, "quality_score", 80)
+        constitutional_compliant = getattr(task, "constitutional_compliant", True)
+        violated_articles = getattr(task, "violated_articles", [])
 
         # AI metrics
-        ai_suggested = getattr(task, 'ai_suggested', False)
-        ai_confidence = getattr(task, 'ai_confidence', None)
+        ai_suggested = getattr(task, "ai_suggested", False)
+        ai_confidence = getattr(task, "ai_confidence", None)
 
         return ROIMetrics(
             task_id=task.task_id,
@@ -339,10 +341,7 @@ Generate a comprehensive summary with key learnings, technical insights, and rec
         )
 
     async def _sync_to_obsidian(
-        self,
-        task: Task,
-        ai_summary: AISummary,
-        roi_metrics: ROIMetrics
+        self, task: Task, ai_summary: AISummary, roi_metrics: ROIMetrics
     ) -> ObsidianSyncStatus:
         """
         Sync archived task knowledge to Obsidian vault (Q6).
@@ -351,7 +350,7 @@ Generate a comprehensive summary with key learnings, technical insights, and rec
             return ObsidianSyncStatus(
                 task_id=task.task_id,
                 synced=False,
-                sync_error="Obsidian vault not available"
+                sync_error="Obsidian vault not available",
             )
 
         try:
@@ -367,18 +366,20 @@ Generate a comprehensive summary with key learnings, technical insights, and rec
                     task.phase_name,
                     task.priority,
                     "kanban-archived",
-                    f"efficiency-{int(roi_metrics.efficiency_percentage)}"
+                    f"efficiency-{int(roi_metrics.efficiency_percentage)}",
                 ],
                 related_tasks=[],  # TODO: Link related tasks
                 created_at=task.created_at,
-                archived_at=datetime.now(UTC)
+                archived_at=datetime.now(UTC),
             )
 
             # Generate Obsidian note content
             note_content = self._generate_obsidian_note(entry, roi_metrics)
 
             # Save to Obsidian vault
-            note_filename = f"{datetime.now(UTC).strftime('%Y-%m-%d')}_task_{task.task_id}.md"
+            note_filename = (
+                f"{datetime.now(UTC).strftime('%Y-%m-%d')}_task_{task.task_id}.md"
+            )
             note_path = self.obsidian_service.daily_notes_dir / note_filename
 
             # Write note to file
@@ -392,22 +393,17 @@ Generate a comprehensive summary with key learnings, technical insights, and rec
                 synced=True,
                 obsidian_note_path=str(note_path),
                 sync_timestamp=datetime.now(UTC),
-                retry_count=0
+                retry_count=0,
             )
 
         except Exception as e:
             logger.error(f"Failed to sync to Obsidian: {e}")
             return ObsidianSyncStatus(
-                task_id=task.task_id,
-                synced=False,
-                sync_error=str(e),
-                retry_count=1
+                task_id=task.task_id, synced=False, sync_error=str(e), retry_count=1
             )
 
     def _generate_obsidian_note(
-        self,
-        entry: ObsidianKnowledgeEntry,
-        roi_metrics: ROIMetrics
+        self, entry: ObsidianKnowledgeEntry, roi_metrics: ROIMetrics
     ) -> str:
         """Generate Obsidian markdown note content"""
         tags_str = " ".join([f"#{tag}" for tag in entry.tags])
@@ -464,7 +460,7 @@ Generate a comprehensive summary with key learnings, technical insights, and rec
         self,
         filters: Optional[ArchiveFilters] = None,
         page: int = 1,
-        per_page: int = 20
+        per_page: int = 20,
     ) -> ArchiveListResponse:
         """
         Get paginated list of archived tasks with filtering.
@@ -486,13 +482,23 @@ Generate a comprehensive summary with key learnings, technical insights, and rec
             if filters.archived_by:
                 filtered = [a for a in filtered if a.archived_by == filters.archived_by]
             if filters.ai_suggested is not None:
-                filtered = [a for a in filtered if a.roi_metrics and
-                           a.roi_metrics.ai_suggested == filters.ai_suggested]
+                filtered = [
+                    a
+                    for a in filtered
+                    if a.roi_metrics
+                    and a.roi_metrics.ai_suggested == filters.ai_suggested
+                ]
             if filters.obsidian_synced is not None:
-                filtered = [a for a in filtered if a.obsidian_synced == filters.obsidian_synced]
+                filtered = [
+                    a for a in filtered if a.obsidian_synced == filters.obsidian_synced
+                ]
             if filters.min_quality_score:
-                filtered = [a for a in filtered if a.roi_metrics and
-                           a.roi_metrics.quality_score >= filters.min_quality_score]
+                filtered = [
+                    a
+                    for a in filtered
+                    if a.roi_metrics
+                    and a.roi_metrics.quality_score >= filters.min_quality_score
+                ]
 
         # Pagination
         total = len(filtered)
@@ -512,12 +518,11 @@ Generate a comprehensive summary with key learnings, technical insights, and rec
             total_pages=total_pages,
             has_next=page < total_pages,
             has_prev=page > 1,
-            roi_statistics=roi_stats
+            roi_statistics=roi_stats,
         )
 
     def _calculate_roi_statistics(
-        self,
-        archives: List[ArchivedTaskWithMetrics]
+        self, archives: List[ArchivedTaskWithMetrics]
     ) -> ROIStatistics:
         """Calculate aggregated ROI statistics"""
         if not archives:
@@ -533,21 +538,39 @@ Generate a comprehensive summary with key learnings, technical insights, and rec
                 constitutional_compliant_tasks=0,
                 constitutional_compliance_rate=0.0,
                 period_start=datetime.now(UTC),
-                period_end=datetime.now(UTC)
+                period_end=datetime.now(UTC),
             )
 
-        total_estimated = sum(a.roi_metrics.estimated_hours for a in archives if a.roi_metrics)
-        total_actual = sum(a.roi_metrics.actual_hours for a in archives if a.roi_metrics)
-        total_saved = sum(a.roi_metrics.time_saved_hours for a in archives if a.roi_metrics)
-        avg_efficiency = sum(a.roi_metrics.efficiency_percentage for a in archives if a.roi_metrics) / len(archives)
-        avg_quality = sum(a.roi_metrics.quality_score for a in archives if a.roi_metrics) / len(archives)
+        total_estimated = sum(
+            a.roi_metrics.estimated_hours for a in archives if a.roi_metrics
+        )
+        total_actual = sum(
+            a.roi_metrics.actual_hours for a in archives if a.roi_metrics
+        )
+        total_saved = sum(
+            a.roi_metrics.time_saved_hours for a in archives if a.roi_metrics
+        )
+        avg_efficiency = sum(
+            a.roi_metrics.efficiency_percentage for a in archives if a.roi_metrics
+        ) / len(archives)
+        avg_quality = sum(
+            a.roi_metrics.quality_score for a in archives if a.roi_metrics
+        ) / len(archives)
 
         phase_breakdown = {}
         for archive in archives:
-            phase_breakdown[archive.phase_name] = phase_breakdown.get(archive.phase_name, 0) + 1
+            phase_breakdown[archive.phase_name] = (
+                phase_breakdown.get(archive.phase_name, 0) + 1
+            )
 
-        ai_suggested = sum(1 for a in archives if a.roi_metrics and a.roi_metrics.ai_suggested)
-        compliant = sum(1 for a in archives if a.roi_metrics and a.roi_metrics.constitutional_compliance)
+        ai_suggested = sum(
+            1 for a in archives if a.roi_metrics and a.roi_metrics.ai_suggested
+        )
+        compliant = sum(
+            1
+            for a in archives
+            if a.roi_metrics and a.roi_metrics.constitutional_compliance
+        )
 
         archived_dates = [a.archived_at for a in archives]
         period_start = min(archived_dates)
@@ -565,7 +588,7 @@ Generate a comprehensive summary with key learnings, technical insights, and rec
             constitutional_compliant_tasks=compliant,
             constitutional_compliance_rate=compliant / len(archives) * 100,
             period_start=period_start,
-            period_end=period_end
+            period_end=period_end,
         )
 
 

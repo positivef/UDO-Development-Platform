@@ -1,0 +1,92 @@
+default_stages: [pre-commit]
+fail_fast: false
+
+repos:
+  # ============================================
+  # Quick Hooks (커밋 시 실행 - 목표: 3초 이내)
+  # ============================================
+  
+  # Python 포맷팅 (Black)
+  - repo: https://github.com/psf/black
+    rev: 24.3.0
+    hooks:
+      - id: black
+        language_version: python3.13
+        args: ['--line-length=127']
+        files: ^(backend|src|scripts|tests)/.*\.py$
+
+  # Python 린트 (Flake8) - 빠른 검사만
+  - repo: https://github.com/pycqa/flake8
+    rev: 7.0.0
+    hooks:
+      - id: flake8
+        args: ['--max-line-length=127', '--select=E9,F63,F7,F82']
+        files: ^(backend|src|scripts|tests)/.*\.py$
+
+  # Trailing whitespace / EOF 수정
+  - repo: https://github.com/pre-commit/pre-commit-hooks
+    rev: v4.5.0
+    hooks:
+      - id: trailing-whitespace
+      - id: end-of-file-fixer
+      - id: check-yaml
+      - id: check-json
+
+  # ============================================
+  # Push Hooks (푸시 시 실행 - 더 철저한 검사)
+  # ============================================
+  
+  # 시스템 규칙 검증 (Push 시에만)
+  - repo: local
+    hooks:
+      - id: validate-system-rules
+        name: Validate System Rules
+        entry: python scripts/validate_system_rules.py
+        language: system
+        pass_filenames: false
+        stages: [pre-push]
+
+  - repo: local
+    hooks:
+      - id: validate-documentation-consistency
+        name: Validate Documentation Consistency
+        entry: python scripts/validate_documentation_consistency.py
+        language: system
+        pass_filenames: false
+        stages: [pre-commit, pre-push]
+
+  # Full Flake8 검사 (Push 시에만)
+  - repo: https://github.com/pycqa/flake8
+    rev: 7.0.0
+    hooks:
+      - id: flake8
+        name: flake8-full
+        args: ['--max-line-length=127', '--max-complexity=10']
+        files: ^(backend|src|scripts|tests)/.*\.py$
+        stages: [pre-push]
+
+# ============================================
+# 유연성 옵션
+# ============================================
+# 
+# 긴급 시 훅 스킵:
+#   git commit --no-verify
+#
+# 특정 파일 제외:
+#   # .pre-commit-config.yaml에 exclude 추가
+#   exclude: '^(docs/|data/)'
+#
+# 설치:
+#   pip install pre-commit
+#   pre-commit install
+#   pre-commit install --hook-type pre-push
+
+  # Korean Text Preservation Check (CRITICAL - 한글 텍스트 보호)
+  - repo: local
+    hooks:
+      - id: check-korean-preservation
+        name: Check Korean Text Preservation
+        entry: python scripts/check_korean_preservation.py
+        language: system
+        pass_filenames: false
+        files: ^(backend|src|scripts|tests)/.*\.py$

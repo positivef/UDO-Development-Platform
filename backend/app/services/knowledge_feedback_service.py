@@ -15,17 +15,16 @@ Benchmarking:
 - GitHub Copilot: 26-40% acceptance rate
 """
 
-from sqlalchemy.orm import Session
-from sqlalchemy import func, desc
-from typing import List, Optional, Dict
-from datetime import datetime, timezone, timedelta
+from datetime import datetime, timedelta, timezone
+from typing import Dict, List, Optional
 from uuid import uuid4
 
-from backend.app.db.models.knowledge import (
-    KnowledgeFeedback,
-    KnowledgeDocumentScore,
-    KnowledgeSearchStats
-)
+from sqlalchemy import desc, func
+from sqlalchemy.orm import Session
+
+from app.db.models.knowledge import (KnowledgeDocumentScore,
+                                             KnowledgeFeedback,
+                                             KnowledgeSearchStats)
 
 
 class KnowledgeFeedbackService:
@@ -52,7 +51,7 @@ class KnowledgeFeedbackService:
         reason: Optional[str] = None,
         session_id: Optional[str] = None,
         implicit_accept: Optional[bool] = None,
-        user_id: Optional[str] = None
+        user_id: Optional[str] = None,
     ) -> KnowledgeFeedback:
         """
         Create new feedback entry
@@ -78,7 +77,7 @@ class KnowledgeFeedbackService:
             session_id=session_id,
             implicit_accept=implicit_accept,
             user_id=user_id,
-            created_at=datetime.now(timezone.utc)
+            created_at=datetime.now(timezone.utc),
         )
 
         self.db.add(feedback)
@@ -89,16 +88,18 @@ class KnowledgeFeedbackService:
         self._update_document_score(
             document_id=document_id,
             is_helpful=is_helpful,
-            implicit_accept=implicit_accept
+            implicit_accept=implicit_accept,
         )
 
         return feedback
 
     def get_feedback_by_id(self, feedback_id: str) -> Optional[KnowledgeFeedback]:
         """Get feedback entry by ID"""
-        return self.db.query(KnowledgeFeedback).filter(
-            KnowledgeFeedback.id == feedback_id
-        ).first()
+        return (
+            self.db.query(KnowledgeFeedback)
+            .filter(KnowledgeFeedback.id == feedback_id)
+            .first()
+        )
 
     def delete_feedback(self, feedback_id: str) -> bool:
         """
@@ -124,15 +125,14 @@ class KnowledgeFeedbackService:
 
     def get_document_score(self, document_id: str) -> Optional[KnowledgeDocumentScore]:
         """Get document usefulness score"""
-        return self.db.query(KnowledgeDocumentScore).filter(
-            KnowledgeDocumentScore.document_id == document_id
-        ).first()
+        return (
+            self.db.query(KnowledgeDocumentScore)
+            .filter(KnowledgeDocumentScore.document_id == document_id)
+            .first()
+        )
 
     def _update_document_score(
-        self,
-        document_id: str,
-        is_helpful: bool,
-        implicit_accept: Optional[bool]
+        self, document_id: str, is_helpful: bool, implicit_accept: Optional[bool]
     ):
         """
         Update document usefulness score
@@ -155,7 +155,7 @@ class KnowledgeFeedbackService:
                 unhelpful_count=0,
                 acceptance_rate=0.0,
                 first_search=datetime.now(timezone.utc),
-                last_updated=datetime.now(timezone.utc)
+                last_updated=datetime.now(timezone.utc),
             )
             self.db.add(doc_score)
 
@@ -180,14 +180,15 @@ class KnowledgeFeedbackService:
 
         # Update running average score
         doc_score.usefulness_score = (
-            (doc_score.usefulness_score * (doc_score.total_searches - 1) + score_delta)
-            / doc_score.total_searches
-        )
+            doc_score.usefulness_score * (doc_score.total_searches - 1) + score_delta
+        ) / doc_score.total_searches
 
         # Update acceptance rate
         doc_score.acceptance_rate = (
-            doc_score.helpful_count / doc_score.total_searches * 100
-        ) if doc_score.total_searches > 0 else 0.0
+            (doc_score.helpful_count / doc_score.total_searches * 100)
+            if doc_score.total_searches > 0
+            else 0.0
+        )
 
         doc_score.last_updated = datetime.now(timezone.utc)
 
@@ -251,26 +252,38 @@ class KnowledgeFeedbackService:
 
         # Acceptance rate (implicit + explicit positive)
         accept_count = feedback_query.filter(
-            (KnowledgeFeedback.is_helpful == True) |
-            (KnowledgeFeedback.implicit_accept == True)
+            (KnowledgeFeedback.is_helpful == True)
+            | (KnowledgeFeedback.implicit_accept == True)
         ).count()
 
-        search_accuracy = (helpful_count / total_feedback * 100) if total_feedback > 0 else 0.0
-        acceptance_rate = (accept_count / total_feedback * 100) if total_feedback > 0 else 0.0
-        false_positive_rate = (unhelpful_count / total_feedback * 100) if total_feedback > 0 else 0.0
+        search_accuracy = (
+            (helpful_count / total_feedback * 100) if total_feedback > 0 else 0.0
+        )
+        acceptance_rate = (
+            (accept_count / total_feedback * 100) if total_feedback > 0 else 0.0
+        )
+        false_positive_rate = (
+            (unhelpful_count / total_feedback * 100) if total_feedback > 0 else 0.0
+        )
 
         # Top documents (usefulness score >= 3.0)
-        top_docs = self.db.query(KnowledgeDocumentScore).filter(
-            KnowledgeDocumentScore.usefulness_score >= 3.0
-        ).order_by(
-            desc(KnowledgeDocumentScore.usefulness_score)
-        ).limit(10).all()
+        top_docs = (
+            self.db.query(KnowledgeDocumentScore)
+            .filter(KnowledgeDocumentScore.usefulness_score >= 3.0)
+            .order_by(desc(KnowledgeDocumentScore.usefulness_score))
+            .limit(10)
+            .all()
+        )
 
         # Low quality documents (usefulness score < 2.0, searches >= 3)
-        low_quality = self.db.query(KnowledgeDocumentScore.document_id).filter(
-            KnowledgeDocumentScore.usefulness_score < 2.0,
-            KnowledgeDocumentScore.total_searches >= 3
-        ).all()
+        low_quality = (
+            self.db.query(KnowledgeDocumentScore.document_id)
+            .filter(
+                KnowledgeDocumentScore.usefulness_score < 2.0,
+                KnowledgeDocumentScore.total_searches >= 3,
+            )
+            .all()
+        )
 
         low_quality_ids = [doc[0] for doc in low_quality]
 
@@ -305,36 +318,48 @@ class KnowledgeFeedbackService:
         suggestions = []
 
         # Low quality documents
-        low_quality_docs = self.db.query(KnowledgeDocumentScore).filter(
-            KnowledgeDocumentScore.usefulness_score < 2.0,
-            KnowledgeDocumentScore.total_searches >= 3
-        ).all()
+        low_quality_docs = (
+            self.db.query(KnowledgeDocumentScore)
+            .filter(
+                KnowledgeDocumentScore.usefulness_score < 2.0,
+                KnowledgeDocumentScore.total_searches >= 3,
+            )
+            .all()
+        )
 
         for doc_score in low_quality_docs:
-            suggestions.append({
-                "type": "low_quality",
-                "document_id": doc_score.document_id,
-                "score": doc_score.usefulness_score,
-                "recommendation": "Consider rewriting or archiving this document",
-                "priority": "high" if doc_score.usefulness_score < 1.0 else "medium",
-            })
+            suggestions.append(
+                {
+                    "type": "low_quality",
+                    "document_id": doc_score.document_id,
+                    "score": doc_score.usefulness_score,
+                    "recommendation": "Consider rewriting or archiving this document",
+                    "priority": (
+                        "high" if doc_score.usefulness_score < 1.0 else "medium"
+                    ),
+                }
+            )
 
         # Overall false positive check
         total_feedback = self.db.query(KnowledgeFeedback).count()
         if total_feedback > 0:
-            unhelpful_count = self.db.query(KnowledgeFeedback).filter(
-                KnowledgeFeedback.is_helpful == False
-            ).count()
+            unhelpful_count = (
+                self.db.query(KnowledgeFeedback)
+                .filter(KnowledgeFeedback.is_helpful == False)
+                .count()
+            )
 
             fp_rate = unhelpful_count / total_feedback
 
             if fp_rate > 0.20:  # >20%
-                suggestions.append({
-                    "type": "high_false_positive",
-                    "false_positive_rate": round(fp_rate * 100, 1),
-                    "recommendation": "Review search keywords and frontmatter tags",
-                    "priority": "high",
-                })
+                suggestions.append(
+                    {
+                        "type": "high_false_positive",
+                        "false_positive_rate": round(fp_rate * 100, 1),
+                        "recommendation": "Review search keywords and frontmatter tags",
+                        "priority": "high",
+                    }
+                )
 
         return suggestions
 
@@ -350,7 +375,7 @@ class KnowledgeFeedbackService:
         tier2_hits: int,
         tier3_hits: int,
         total_results: int,
-        session_id: Optional[str] = None
+        session_id: Optional[str] = None,
     ) -> KnowledgeSearchStats:
         """
         Create search statistics entry
@@ -376,7 +401,7 @@ class KnowledgeFeedbackService:
             tier3_hits=tier3_hits,
             total_results=total_results,
             session_id=session_id,
-            created_at=datetime.now(timezone.utc)
+            created_at=datetime.now(timezone.utc),
         )
 
         self.db.add(stats)
@@ -415,29 +440,25 @@ class KnowledgeFeedbackService:
             }
 
         # Aggregate metrics
-        avg_time = self.db.query(
-            func.avg(KnowledgeSearchStats.search_time_ms)
-        ).filter(
-            KnowledgeSearchStats.created_at >= period_start
-        ).scalar() or 0.0
+        avg_time = (
+            self.db.query(func.avg(KnowledgeSearchStats.search_time_ms))
+            .filter(KnowledgeSearchStats.created_at >= period_start)
+            .scalar()
+            or 0.0
+        )
 
-        tier1_hits = stats_query.filter(
-            KnowledgeSearchStats.tier1_hits > 0
-        ).count()
+        tier1_hits = stats_query.filter(KnowledgeSearchStats.tier1_hits > 0).count()
 
-        tier2_hits = stats_query.filter(
-            KnowledgeSearchStats.tier2_hits > 0
-        ).count()
+        tier2_hits = stats_query.filter(KnowledgeSearchStats.tier2_hits > 0).count()
 
-        tier3_hits = stats_query.filter(
-            KnowledgeSearchStats.tier3_hits > 0
-        ).count()
+        tier3_hits = stats_query.filter(KnowledgeSearchStats.tier3_hits > 0).count()
 
-        avg_results = self.db.query(
-            func.avg(KnowledgeSearchStats.total_results)
-        ).filter(
-            KnowledgeSearchStats.created_at >= period_start
-        ).scalar() or 0.0
+        avg_results = (
+            self.db.query(func.avg(KnowledgeSearchStats.total_results))
+            .filter(KnowledgeSearchStats.created_at >= period_start)
+            .scalar()
+            or 0.0
+        )
 
         return {
             "total_searches": total_searches,

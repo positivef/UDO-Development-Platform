@@ -2,15 +2,17 @@
 Git Integration Service
 Provides Git repository interaction and version history extraction
 """
-import subprocess
+
+import logging
 import os
 import re
-from pathlib import Path
-from typing import List, Optional, Dict, Any, Tuple
+import subprocess
 from datetime import datetime
-import logging
+from pathlib import Path
+from typing import Any, Dict, List, Optional, Tuple
 
-from ..models.version_history import VersionCommit, VersionHistory, VersionComparison
+from ..models.version_history import (VersionCommit, VersionComparison,
+                                      VersionHistory)
 
 logger = logging.getLogger(__name__)
 
@@ -51,7 +53,7 @@ class GitService:
                 cwd=str(self.repo_path),
                 capture_output=True,
                 text=True,
-                encoding="utf-8"
+                encoding="utf-8",
             )
             return result.stdout.strip(), result.stderr.strip(), result.returncode
         except Exception as e:
@@ -96,7 +98,7 @@ class GitService:
         author: Optional[str] = None,
         since: Optional[datetime] = None,
         until: Optional[datetime] = None,
-        search: Optional[str] = None
+        search: Optional[str] = None,
     ) -> List[VersionCommit]:
         """
         Get commit history
@@ -120,7 +122,7 @@ class GitService:
             f"--skip={skip}",
             "--format=%H|%h|%an|%ae|%ai|%s|%b",
             "--numstat",
-            "--no-merges"
+            "--no-merges",
         ]
 
         if branch:
@@ -220,7 +222,7 @@ class GitService:
                         date=commit_date,
                         message=message,
                         tags=tags,
-                        branches=branches
+                        branches=branches,
                     )
 
             elif current_commit and "\t" in line:
@@ -242,7 +244,9 @@ class GitService:
                         # Track lines
                         try:
                             lines_added += int(added_str) if added_str != "-" else 0
-                            lines_deleted += int(deleted_str) if deleted_str != "-" else 0
+                            lines_deleted += (
+                                int(deleted_str) if deleted_str != "-" else 0
+                            )
                         except ValueError:
                             pass
 
@@ -257,9 +261,9 @@ class GitService:
 
     def get_commit_tags(self, commit_hash: str) -> List[str]:
         """Get tags pointing to a commit"""
-        stdout, _, returncode = self._run_git_command([
-            "tag", "--points-at", commit_hash
-        ])
+        stdout, _, returncode = self._run_git_command(
+            ["tag", "--points-at", commit_hash]
+        )
 
         if returncode != 0:
             return []
@@ -269,9 +273,9 @@ class GitService:
 
     def get_commit_branches(self, commit_hash: str) -> List[str]:
         """Get branches containing a commit"""
-        stdout, _, returncode = self._run_git_command([
-            "branch", "--contains", commit_hash, "--format=%(refname:short)"
-        ])
+        stdout, _, returncode = self._run_git_command(
+            ["branch", "--contains", commit_hash, "--format=%(refname:short)"]
+        )
 
         if returncode != 0:
             return []
@@ -280,10 +284,7 @@ class GitService:
         return branches
 
     def get_version_history(
-        self,
-        branch: Optional[str] = None,
-        limit: int = 50,
-        skip: int = 0
+        self, branch: Optional[str] = None, limit: int = 50, skip: int = 0
     ) -> VersionHistory:
         """
         Get complete version history
@@ -299,11 +300,7 @@ class GitService:
         current_branch = branch or self.get_current_branch()
         total_commits = self.get_commit_count(current_branch)
 
-        commits = self.get_commits(
-            branch=current_branch,
-            limit=limit,
-            skip=skip
-        )
+        commits = self.get_commits(branch=current_branch, limit=limit, skip=skip)
 
         # Calculate statistics
         unique_authors = set()
@@ -327,14 +324,10 @@ class GitService:
             commits=commits,
             total_contributors=len(unique_authors),
             first_commit_date=first_commit_date,
-            last_commit_date=last_commit_date
+            last_commit_date=last_commit_date,
         )
 
-    def compare_commits(
-        self,
-        from_commit: str,
-        to_commit: str
-    ) -> VersionComparison:
+    def compare_commits(self, from_commit: str, to_commit: str) -> VersionComparison:
         """
         Compare two commits
 
@@ -346,16 +339,13 @@ class GitService:
             VersionComparison object
         """
         # Get diff stats
-        stdout, _, returncode = self._run_git_command([
-            "diff", "--numstat", from_commit, to_commit
-        ])
+        stdout, _, returncode = self._run_git_command(
+            ["diff", "--numstat", from_commit, to_commit]
+        )
 
         if returncode != 0:
             logger.error(f"Failed to compare commits")
-            return VersionComparison(
-                from_commit=from_commit,
-                to_commit=to_commit
-            )
+            return VersionComparison(from_commit=from_commit, to_commit=to_commit)
 
         # Parse diff stats
         files_changed = []
@@ -386,11 +376,14 @@ class GitService:
                     pass
 
         # Get commits in between
-        stdout, _, returncode = self._run_git_command([
-            "log", f"{from_commit}..{to_commit}",
-            "--format=%H|%h|%an|%ae|%ai|%s",
-            "--no-merges"
-        ])
+        stdout, _, returncode = self._run_git_command(
+            [
+                "log",
+                f"{from_commit}..{to_commit}",
+                "--format=%H|%h|%an|%ae|%ai|%s",
+                "--no-merges",
+            ]
+        )
 
         commits_between = []
         if returncode == 0:
@@ -404,5 +397,5 @@ class GitService:
             files_deleted=files_deleted,
             total_lines_added=total_lines_added,
             total_lines_deleted=total_lines_deleted,
-            commits_between=commits_between
+            commits_between=commits_between,
         )

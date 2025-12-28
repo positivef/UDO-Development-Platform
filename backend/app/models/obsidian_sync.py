@@ -31,7 +31,7 @@ class ObsidianSyncRecord(BaseModel):
             "example": {
                 "id": "550e8400-e29b-41d4-a716-446655440000",
                 "event_type": "phase_transition",
-                "filepath": "[EMOJI]/2025-11-20/Phase-Transition-Design-Implementation.md",
+                "filepath": "개발일지/2025-11-20/Phase-Transition-Design-Implementation.md",
                 "content_preview": "Phase transition from design to implementation...",
                 "synced_at": "2025-11-20T14:30:00",
                 "success": True,
@@ -64,7 +64,7 @@ class ObsidianSyncResponse(BaseModel):
                 "sync_record": {
                     "id": "550e8400-e29b-41d4-a716-446655440000",
                     "event_type": "phase_transition",
-                    "filepath": "[EMOJI]/2025-11-20/Phase-Transition.md",
+                    "filepath": "개발일지/2025-11-20/Phase-Transition.md",
                     "synced_at": "2025-11-20T14:30:00",
                     "success": True
                 },
@@ -91,7 +91,7 @@ class ObsidianSearchResult(BaseModel):
     class Config:
         json_schema_extra = {
             "example": {
-                "filepath": "[EMOJI]/2025-11-19/Error-Resolved-ModuleNotFound.md",
+                "filepath": "개발일지/2025-11-19/Error-Resolved-ModuleNotFound.md",
                 "title": "Error Resolved: ModuleNotFound",
                 "date": "2025-11-19",
                 "event_type": "error_resolution",
@@ -114,7 +114,7 @@ class ObsidianSearchResponse(BaseModel):
                 "query": "ModuleNotFoundError",
                 "results": [
                     {
-                        "filepath": "[EMOJI]/2025-11-19/Error-Resolved-ModuleNotFound.md",
+                        "filepath": "개발일지/2025-11-19/Error-Resolved-ModuleNotFound.md",
                         "title": "Error Resolved: ModuleNotFound",
                         "date": "2025-11-19",
                         "event_type": "error_resolution",
@@ -139,7 +139,7 @@ class ObsidianRecentNotesResponse(BaseModel):
             "example": {
                 "notes": [
                     {
-                        "filepath": "[EMOJI]/2025-11-20/Phase-Transition.md",
+                        "filepath": "개발일지/2025-11-20/Phase-Transition.md",
                         "title": "Phase Transition",
                         "date": "2025-11-20",
                         "time": "14:30",

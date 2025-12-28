@@ -33,6 +33,7 @@ logger = logging.getLogger(__name__)
 @dataclass
 class CheckpointResult:
     """Result of a checkpoint validation"""
+
     success: bool
     timestamp: datetime
     checks: Dict[str, bool] = field(default_factory=dict)
@@ -60,7 +61,7 @@ class SessionCheckpoint:
         self.required_components = {
             "auto_3tier_wrapper": "scripts.auto_3tier_wrapper",
             "unified_error_resolver": "scripts.unified_error_resolver",
-            "obsidian_auto_search": "scripts.auto_obsidian_context"
+            "obsidian_auto_search": "scripts.auto_obsidian_context",
         }
 
         # Statistics tracking
@@ -69,7 +70,7 @@ class SessionCheckpoint:
             "automation_checks": 0,
             "warnings_issued": 0,
             "checkpoints_passed": 0,
-            "checkpoints_failed": 0
+            "checkpoints_failed": 0,
         }
 
     def session_start(self) -> CheckpointResult:
@@ -95,14 +96,12 @@ class SessionCheckpoint:
         self.session_start_time = datetime.now()
         self.last_checkpoint_time = datetime.now()
 
-        result = CheckpointResult(
-            success=True,
-            timestamp=self.session_start_time
-        )
+        result = CheckpointResult(success=True, timestamp=self.session_start_time)
 
         # Check 1: Auto3TierWrapper
         try:
             from scripts.auto_3tier_wrapper import get_wrapper
+
             wrapper = get_wrapper()
 
             result.checks["auto_3tier_wrapper_available"] = True
@@ -136,6 +135,7 @@ class SessionCheckpoint:
         # Check 2: UnifiedErrorResolver
         try:
             from scripts.unified_error_resolver import UnifiedErrorResolver
+
             resolver = UnifiedErrorResolver()
 
             result.checks["unified_error_resolver_available"] = True
@@ -150,6 +150,7 @@ class SessionCheckpoint:
         # Check 3: Obsidian auto-search (optional, just warn)
         try:
             from scripts.auto_obsidian_context import AutoObsidianContext
+
             auto_ctx = AutoObsidianContext()
 
             result.checks["obsidian_auto_search_available"] = True
@@ -179,8 +180,7 @@ class SessionCheckpoint:
             logger.error("[FAIL] SESSION START: Critical systems missing!")
             logger.error("=" * 60)
             raise RuntimeError(
-                f"Session start failed: {len(result.errors)} critical errors. "
-                f"Fix issues before proceeding."
+                f"Session start failed: {len(result.errors)} critical errors. " f"Fix issues before proceeding."
             )
 
         return result
@@ -212,14 +212,12 @@ class SessionCheckpoint:
 
         self.last_checkpoint_time = now
 
-        result = CheckpointResult(
-            success=True,
-            timestamp=now
-        )
+        result = CheckpointResult(success=True, timestamp=now)
 
         # Get statistics from Auto3TierWrapper
         try:
             from scripts.auto_3tier_wrapper import get_wrapper
+
             wrapper = get_wrapper()
             stats = wrapper.get_statistics()
 
@@ -287,14 +285,12 @@ class SessionCheckpoint:
         now = datetime.now()
         session_duration = (now - self.session_start_time).seconds / 60 if self.session_start_time else 0
 
-        result = CheckpointResult(
-            success=True,
-            timestamp=now
-        )
+        result = CheckpointResult(success=True, timestamp=now)
 
         # Get final statistics
         try:
             from scripts.auto_3tier_wrapper import get_wrapper
+
             wrapper = get_wrapper()
             stats = wrapper.get_statistics()
 
@@ -390,7 +386,7 @@ class SessionCheckpoint:
         return {
             **self.session_stats,
             "session_start": self.session_start_time.isoformat() if self.session_start_time else None,
-            "last_checkpoint": self.last_checkpoint_time.isoformat() if self.last_checkpoint_time else None
+            "last_checkpoint": self.last_checkpoint_time.isoformat() if self.last_checkpoint_time else None,
         }
 
 
@@ -413,10 +409,7 @@ session_checkpoint = get_checkpoint()
 
 if __name__ == "__main__":
     # Self-test
-    logging.basicConfig(
-        level=logging.INFO,
-        format="%(asctime)s - %(name)s - %(levelname)s - %(message)s"
-    )
+    logging.basicConfig(level=logging.INFO, format="%(asctime)s - %(name)s - %(levelname)s - %(message)s")
 
     print("\n" + "=" * 60)
     print("Testing SessionCheckpoint System")

@@ -46,16 +46,15 @@ def test_predict_negative_hours_raises(fresh_uncertainty):
 
 
 def test_predict_boundary_hours(fresh_uncertainty):
-    """Zero hours ahead should return the current state without error.
-    """
+    """Zero hours ahead should return the current state without error."""
     result = fresh_uncertainty.predict(hours_ahead=0)
     assert isinstance(result, dict)
     # Ensure the result structure is the same as a normal call
     for area, pred in result.items():
         assert pred is not None
 
+
 # Additional sanity check: ensure the function runs quickly (< 0.5 s)
 def test_predict_performance(fresh_uncertainty, benchmark):
-    """Benchmark the prediction speed – it should stay under half a second.
-    """
+    """Benchmark the prediction speed – it should stay under half a second."""
     benchmark(fresh_uncertainty.predict, hours_ahead=6)

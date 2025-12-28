@@ -7,18 +7,15 @@ with <5ms fast mode and 10-20ms full mode performance.
 Based on Beta-Binomial conjugacy for efficient posterior updates.
 """
 
-import math
-from functools import lru_cache
-from typing import Dict, List, Tuple, Optional
-from datetime import datetime, timedelta
 import logging
+import math
+from datetime import datetime, timedelta
+from functools import lru_cache
+from typing import Dict, List, Optional, Tuple
 
-from app.models.uncertainty import (
-    UncertaintyStateEnum,
-    BayesianConfidenceRequest,
-    BayesianConfidenceResponse,
-    BayesianMetadata
-)
+from app.models.uncertainty import (BayesianConfidenceRequest,
+                                    BayesianConfidenceResponse,
+                                    BayesianMetadata, UncertaintyStateEnum)
 
 logger = logging.getLogger(__name__)
 
@@ -30,40 +27,21 @@ logger = logging.getLogger(__name__)
 PHASE_PRIORS = {
     "ideation": {
         "alpha": 4.0,  # Prior successes
-        "beta": 6.0,   # Prior failures
+        "beta": 6.0,  # Prior failures
         "mean": 0.40,  # Expected confidence
-        "variance": 0.022
+        "variance": 0.022,
     },
-    "design": {
-        "alpha": 5.5,
-        "beta": 4.5,
-        "mean": 0.55,
-        "variance": 0.023
-    },
-    "mvp": {
-        "alpha": 6.5,
-        "beta": 3.5,
-        "mean": 0.65,
-        "variance": 0.021
-    },
-    "implementation": {
-        "alpha": 7.0,
-        "beta": 3.0,
-        "mean": 0.70,
-        "variance": 0.019
-    },
-    "testing": {
-        "alpha": 8.0,
-        "beta": 2.0,
-        "mean": 0.80,
-        "variance": 0.015
-    }
+    "design": {"alpha": 5.5, "beta": 4.5, "mean": 0.55, "variance": 0.023},
+    "mvp": {"alpha": 6.5, "beta": 3.5, "mean": 0.65, "variance": 0.021},
+    "implementation": {"alpha": 7.0, "beta": 3.0, "mean": 0.70, "variance": 0.019},
+    "testing": {"alpha": 8.0, "beta": 2.0, "mean": 0.80, "variance": 0.015},
 }
 
 
 # ============================================================================
 # Core Bayesian Scoring Class with Optimization
 # ============================================================================
+
 
 class OptimizedBayesianScorer:
     """
@@ -89,7 +67,9 @@ class OptimizedBayesianScorer:
     def _init_cache(self):
         """Initialize LRU cache for performance optimization"""
         # Cache is implemented via @lru_cache decorator on methods
-        logger.info(f"[OK] Bayesian scorer initialized with cache_size={self.cache_size}")
+        logger.info(
+            f"[OK] Bayesian scorer initialized with cache_size={self.cache_size}"
+        )
 
     @lru_cache(maxsize=128)
     def _beta_mean(self, alpha: float, beta: float) -> float:
@@ -103,10 +83,7 @@ class OptimizedBayesianScorer:
         return (alpha * beta) / (n * n * (n + 1))
 
     def _beta_credible_interval(
-        self,
-        alpha: float,
-        beta: float,
-        confidence_level: float = 0.95
+        self, alpha: float, beta: float, confidence_level: float = 0.95
     ) -> Tuple[float, float]:
         """
         Calculate credible interval using normal approximation.
@@ -135,9 +112,7 @@ class OptimizedBayesianScorer:
         return (lower, upper)
 
     def calculate_likelihood(
-        self,
-        context: dict,
-        historical_outcomes: List[bool]
+        self, context: dict, historical_outcomes: List[bool]
     ) -> float:
         """
         Calculate likelihood from evidence.
@@ -198,7 +173,7 @@ class OptimizedBayesianScorer:
         prior_alpha: float,
         prior_beta: float,
         likelihood: float,
-        evidence_strength: int = 10
+        evidence_strength: int = 10,
     ) -> Tuple[float, float]:
         """
         Calculate posterior Beta parameters using Bayesian update.
@@ -223,9 +198,7 @@ class OptimizedBayesianScorer:
         return (posterior_alpha, posterior_beta)
 
     def calculate_uncertainty_vector(
-        self,
-        context: dict,
-        confidence_score: float
+        self, context: dict, confidence_score: float
     ) -> Dict[str, float]:
         """
         Calculate multi-dimensional uncertainty vector.
@@ -241,7 +214,11 @@ class OptimizedBayesianScorer:
         base_uncertainty = 1 - confidence_score
 
         # Dimension-specific calculations
-        technical = base_uncertainty * 1.2 if not context.get("has_code", False) else base_uncertainty * 0.8
+        technical = (
+            base_uncertainty * 1.2
+            if not context.get("has_code", False)
+            else base_uncertainty * 0.8
+        )
 
         market = base_uncertainty * (1 - context.get("validation_score", 0.5))
 
@@ -259,7 +236,7 @@ class OptimizedBayesianScorer:
             "market": max(0.0, min(1.0, market)),
             "resource": max(0.0, min(1.0, resource)),
             "timeline": max(0.0, min(1.0, timeline)),
-            "quality": max(0.0, min(1.0, quality))
+            "quality": max(0.0, min(1.0, quality)),
         }
 
         # Calculate magnitude (L2 norm)
@@ -277,6 +254,7 @@ class OptimizedBayesianScorer:
 # ============================================================================
 # High-Level API Functions
 # ============================================================================
+
 
 def classify_uncertainty_state(magnitude: float) -> UncertaintyStateEnum:
     """
@@ -351,7 +329,7 @@ def _generate_recommendations(
     state: UncertaintyStateEnum,
     risk_level: str,
     dominant_dimension: str,
-    confidence_score: float
+    confidence_score: float,
 ) -> List[str]:
     """
     Generate actionable recommendations based on analysis.
@@ -369,23 +347,35 @@ def _generate_recommendations(
 
     # State-specific recommendations
     if state == UncertaintyStateEnum.DETERMINISTIC:
-        recommendations.append("[EMOJI] High confidence - proceed with standard monitoring")
+        recommendations.append(
+            "[EMOJI] High confidence - proceed with standard monitoring"
+        )
         recommendations.append("[EMOJI] Document assumptions for future reference")
 
     elif state == UncertaintyStateEnum.PROBABILISTIC:
-        recommendations.append("[EMOJI] Good confidence - proceed with standard checkpoints")
+        recommendations.append(
+            "[EMOJI] Good confidence - proceed with standard checkpoints"
+        )
         recommendations.append("[EMOJI] Document assumptions and validate periodically")
         recommendations.append(f"[EMOJI] Focus on {dominant_dimension} dimension")
 
     elif state == UncertaintyStateEnum.QUANTUM:
-        recommendations.append("[WARN] Moderate uncertainty - increase checkpoint frequency")
-        recommendations.append("[EMOJI] Deep dive into {dominant_dimension} uncertainty")
+        recommendations.append(
+            "[WARN] Moderate uncertainty - increase checkpoint frequency"
+        )
+        recommendations.append(
+            "[EMOJI] Deep dive into {dominant_dimension} uncertainty"
+        )
         recommendations.append("[EMOJI] Gather more data before major decisions")
-        recommendations.append("[EMOJI] Consider iterative approach with validation gates")
+        recommendations.append(
+            "[EMOJI] Consider iterative approach with validation gates"
+        )
 
     elif state == UncertaintyStateEnum.CHAOTIC:
         recommendations.append("[EMOJI] High uncertainty - proceed with caution")
-        recommendations.append("[EMOJI] CRITICAL: Address {dominant_dimension} immediately")
+        recommendations.append(
+            "[EMOJI] CRITICAL: Address {dominant_dimension} immediately"
+        )
         recommendations.append("[EMOJI] Spike/prototype to reduce uncertainty")
         recommendations.append("[EMOJI] Seek expert consultation")
         recommendations.append("[EMOJI] Break into smaller, validated increments")
@@ -419,7 +409,7 @@ def _generate_recommendations(
 
 
 def calculate_bayesian_confidence(
-    request: BayesianConfidenceRequest
+    request: BayesianConfidenceRequest,
 ) -> BayesianConfidenceResponse:
     """
     Main entry point for Bayesian confidence calculation.
@@ -448,17 +438,18 @@ def calculate_bayesian_confidence(
 
     # Calculate likelihood from evidence
     likelihood = scorer.calculate_likelihood(
-        context=request.context,
-        historical_outcomes=request.historical_outcomes
+        context=request.context, historical_outcomes=request.historical_outcomes
     )
 
     # Calculate posterior (Bayesian update)
-    evidence_strength = len(request.historical_outcomes) if request.historical_outcomes else 10
+    evidence_strength = (
+        len(request.historical_outcomes) if request.historical_outcomes else 10
+    )
     posterior_alpha, posterior_beta = scorer.calculate_posterior(
         prior_alpha=prior_alpha,
         prior_beta=prior_beta,
         likelihood=likelihood,
-        evidence_strength=evidence_strength
+        evidence_strength=evidence_strength,
     )
 
     # Calculate confidence score (posterior mean)
@@ -466,8 +457,7 @@ def calculate_bayesian_confidence(
 
     # Calculate uncertainty vector
     uncertainty_vector = scorer.calculate_uncertainty_vector(
-        context=request.context,
-        confidence_score=confidence_score
+        context=request.context, confidence_score=confidence_score
     )
 
     magnitude = uncertainty_vector["magnitude"]
@@ -481,7 +471,10 @@ def calculate_bayesian_confidence(
     monitoring_level = _calculate_monitoring_level(risk_level, state)
 
     # Generate decision
-    if state in [UncertaintyStateEnum.DETERMINISTIC, UncertaintyStateEnum.PROBABILISTIC]:
+    if state in [
+        UncertaintyStateEnum.DETERMINISTIC,
+        UncertaintyStateEnum.PROBABILISTIC,
+    ]:
         decision = "GO"
     elif state == UncertaintyStateEnum.QUANTUM:
         decision = "GO_WITH_CHECKPOINTS"
@@ -493,7 +486,7 @@ def calculate_bayesian_confidence(
         state=state,
         risk_level=risk_level,
         dominant_dimension=dominant_dimension,
-        confidence_score=confidence_score
+        confidence_score=confidence_score,
     )
 
     # Calculate credible intervals
@@ -507,11 +500,13 @@ def calculate_bayesian_confidence(
         effective_sample_size = None
     else:
         # Full Bayesian with credible intervals
-        ci_lower, ci_upper = scorer._beta_credible_interval(posterior_alpha, posterior_beta)
+        ci_lower, ci_upper = scorer._beta_credible_interval(
+            posterior_alpha, posterior_beta
+        )
         mode = "full"
         posterior_mean_value = confidence_score
         variance = scorer._beta_variance(posterior_alpha, posterior_beta)
-        confidence_precision = 1 / variance if variance > 0 else float('inf')
+        confidence_precision = 1 / variance if variance > 0 else float("inf")
         effective_sample_size = int(posterior_alpha + posterior_beta)
 
     # Build metadata
@@ -527,7 +522,7 @@ def calculate_bayesian_confidence(
         confidence_precision=confidence_precision,
         risk_level=risk_level,
         monitoring_level=monitoring_level,
-        dominant_dimension=dominant_dimension
+        dominant_dimension=dominant_dimension,
     )
 
     # Log performance
@@ -541,7 +536,7 @@ def calculate_bayesian_confidence(
         decision=decision,
         metadata=metadata,
         recommendations=recommendations,
-        timestamp=datetime.now()
+        timestamp=datetime.now(),
     )
 
     return response

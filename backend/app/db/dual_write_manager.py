@@ -6,11 +6,12 @@ Implements migration strategy from PRD_UNIFIED_ENHANCED Section 3.
 import asyncio
 import json
 import logging
-from typing import Any, Dict, Optional, List, Tuple
-from datetime import datetime, UTC
+from datetime import UTC, datetime
+from typing import Any, Dict, List, Optional, Tuple
+
 import asyncpg
-from redis import Redis
 import numpy as np
+from redis import Redis
 
 logger = logging.getLogger(__name__)
 
@@ -28,18 +29,11 @@ class DualWriteManager:
 
         # Migration state tracking
         self.shadow_mode = True  # Start in shadow mode (Redis primary)
-        self.write_stats = {
-            "postgres": {"success": 0, "failure": 0},
-            "redis": {"success": 0, "failure": 0}
-        }
+        self.write_stats = {"postgres": {"success": 0, "failure": 0}, "redis": {"success": 0, "failure": 0}}
 
         # Consistency verification
         self.consistency_checks = []
-        self.promotion_criteria = {
-            "min_writes": 100,
-            "success_rate": 0.95,
-            "consistency_rate": 0.99
-        }
+        self.promotion_criteria = {"min_writes": 100, "success_rate": 0.95, "consistency_rate": 0.99}
 
     async def initialize(self):
         """Initialize database connections with retry logic"""
@@ -49,20 +43,13 @@ class DualWriteManager:
         for attempt in range(max_retries):
             try:
                 self.postgres_pool = await asyncpg.create_pool(
-                    self.postgres_url,
-                    min_size=5,
-                    max_size=20,
-                    timeout=10,
-                    command_timeout=10
+                    self.postgres_url, min_size=5, max_size=20, timeout=10, command_timeout=10
                 )
                 logger.info("PostgreSQL connection pool initialized")
                 return
             except Exception as e:
                 if attempt < max_retries - 1:
-                    logger.warning(
-                        f"Failed to connect to PostgreSQL (attempt {attempt + 1}/{max_retries})",
-                        error=str(e)
-                    )
+                    logger.warning(f"Failed to connect to PostgreSQL (attempt {attempt + 1}/{max_retries})", error=str(e))
                     await asyncio.sleep(retry_delay)
                     retry_delay *= 2
                 else:
@@ -75,9 +62,7 @@ class DualWriteManager:
             await self.postgres_pool.close()
         self.redis.close()
 
-    async def write_project_context(self,
-                                   project_id: str,
-                                   data: Dict[str, Any]) -> Tuple[bool, str]:
+    async def write_project_context(self, project_id: str, data: Dict[str, Any]) -> Tuple[bool, str]:
         """
         Dual-write to both PostgreSQL and Redis.
         Returns (success, primary_source).
@@ -85,8 +70,11 @@ class DualWriteManager:
         # Prepare write tasks
         write_tasks = [
             self._write_to_redis(project_id, data),
-            self._write_to_postgres(project_id, data) if not self.shadow_mode else
-            self._shadow_write_to_postgres(project_id, data)
+            (
+                self._write_to_postgres(project_id, data)
+                if not self.shadow_mode
+                else self._shadow_write_to_postgres(project_id, data)
+            ),
         ]
 
         # Execute writes in parallel
@@ -133,14 +121,13 @@ class DualWriteManager:
             else:
                 return False, "none"
 
-    async def _write_to_postgres(self,
-                                project_id: str,
-                                data: Dict[str, Any]) -> bool:
+    async def _write_to_postgres(self, project_id: str, data: Dict[str, Any]) -> bool:
         """Write to PostgreSQL (primary mode)"""
         try:
             async with self.postgres_pool.acquire() as conn:
                 # Insert or update project context
-                await conn.execute("""
+                await conn.execute(
+                    """
                     INSERT INTO project_contexts
                     (project_id, file_path, content_chunk, metadata, created_at)
                     VALUES ($1, $2, $3, $4, $5)
@@ -149,31 +136,36 @@ class DualWriteManager:
                         content_chunk = EXCLUDED.content_chunk,
                         metadata = EXCLUDED.metadata,
                         created_at = EXCLUDED.created_at
-                """, project_id,
-                    data.get('file_path', ''),
-                    data.get('content', ''),
-                    json.dumps(data.get('metadata', {})),
-                    datetime.now(UTC))
+                """,
+                    project_id,
+                    data.get("file_path", ""),
+                    data.get("content", ""),
+                    json.dumps(data.get("metadata", {})),
+                    datetime.now(UTC),
+                )
 
                 # If embedding is provided, update it separately
-                if 'embedding' in data:
-                    embedding = data['embedding']
+                if "embedding" in data:
+                    embedding = data["embedding"]
                     if isinstance(embedding, list):
                         # Convert to pgvector format
-                        await conn.execute("""
+                        await conn.execute(
+                            """
                             UPDATE project_contexts
                             SET embedding = $1::vector
                             WHERE project_id = $2 AND file_path = $3
-                        """, embedding, project_id, data.get('file_path', ''))
+                        """,
+                            embedding,
+                            project_id,
+                            data.get("file_path", ""),
+                        )
 
             return True
         except Exception as e:
             logger.error(f"PostgreSQL write error: {e}", exc_info=True)
             return False
 
-    async def _shadow_write_to_postgres(self,
-                                       project_id: str,
-                                       data: Dict[str, Any]) -> bool:
+    async def _shadow_write_to_postgres(self, project_id: str, data: Dict[str, Any]) -> bool:
         """Shadow write to PostgreSQL (testing mode)"""
         try:
             # Same as primary write but with additional logging
@@ -186,16 +178,14 @@ class DualWriteManager:
             logger.debug(f"Shadow write failed (non-critical): {e}")
             return False
 
-    async def _write_to_redis(self,
-                             project_id: str,
-                             data: Dict[str, Any]) -> bool:
+    async def _write_to_redis(self, project_id: str, data: Dict[str, Any]) -> bool:
         """Write to Redis (current system)"""
         try:
             # Create Redis key
             key = f"project:{project_id}:context"
 
             # Store as hash with file_path as field
-            file_path = data.get('file_path', 'default')
+            file_path = data.get("file_path", "default")
             self.redis.hset(key, file_path, json.dumps(data))
 
             # Set expiry for cache (1 hour)
@@ -206,9 +196,7 @@ class DualWriteManager:
             logger.error(f"Redis write error: {e}", exc_info=True)
             return False
 
-    async def read_project_context(self,
-                                  project_id: str,
-                                  file_path: Optional[str] = None) -> Optional[Dict[str, Any]]:
+    async def read_project_context(self, project_id: str, file_path: Optional[str] = None) -> Optional[Dict[str, Any]]:
         """
         Read from appropriate source based on migration state.
         Implements fallback strategy from PRD.
@@ -228,43 +216,46 @@ class DualWriteManager:
 
         return data
 
-    async def _read_from_postgres(self,
-                                 project_id: str,
-                                 file_path: Optional[str] = None) -> Optional[Dict[str, Any]]:
+    async def _read_from_postgres(self, project_id: str, file_path: Optional[str] = None) -> Optional[Dict[str, Any]]:
         """Read from PostgreSQL"""
         try:
             async with self.postgres_pool.acquire() as conn:
                 if file_path:
-                    row = await conn.fetchrow("""
+                    row = await conn.fetchrow(
+                        """
                         SELECT file_path, content_chunk, metadata, embedding
                         FROM project_contexts
                         WHERE project_id = $1 AND file_path = $2
-                    """, project_id, file_path)
+                    """,
+                        project_id,
+                        file_path,
+                    )
                 else:
-                    rows = await conn.fetch("""
+                    rows = await conn.fetch(
+                        """
                         SELECT file_path, content_chunk, metadata, embedding
                         FROM project_contexts
                         WHERE project_id = $1
                         ORDER BY created_at DESC
                         LIMIT 10
-                    """, project_id)
+                    """,
+                        project_id,
+                    )
                     if rows:
                         return [dict(row) for row in rows]
                     return None
 
                 if row:
                     result = dict(row)
-                    if result.get('metadata'):
-                        result['metadata'] = json.loads(result['metadata'])
+                    if result.get("metadata"):
+                        result["metadata"] = json.loads(result["metadata"])
                     return result
 
         except Exception as e:
             logger.error(f"PostgreSQL read error: {e}")
         return None
 
-    async def _read_from_redis(self,
-                              project_id: str,
-                              file_path: Optional[str] = None) -> Optional[Dict[str, Any]]:
+    async def _read_from_redis(self, project_id: str, file_path: Optional[str] = None) -> Optional[Dict[str, Any]]:
         """Read from Redis"""
         try:
             key = f"project:{project_id}:context"
@@ -289,27 +280,18 @@ class DualWriteManager:
         """
         try:
             # Read from both sources
-            postgres_data = await self._read_from_postgres(
-                project_id,
-                data.get('file_path')
-            )
-            redis_data = await self._read_from_redis(
-                project_id,
-                data.get('file_path')
-            )
+            postgres_data = await self._read_from_postgres(project_id, data.get("file_path"))
+            redis_data = await self._read_from_redis(project_id, data.get("file_path"))
 
             # Compare core fields
             if postgres_data and redis_data:
-                consistent = (
-                    postgres_data.get('content_chunk') == redis_data.get('content') and
-                    postgres_data.get('file_path') == redis_data.get('file_path')
-                )
+                consistent = postgres_data.get("content_chunk") == redis_data.get("content") and postgres_data.get(
+                    "file_path"
+                ) == redis_data.get("file_path")
 
-                self.consistency_checks.append({
-                    'timestamp': datetime.now(UTC),
-                    'consistent': consistent,
-                    'project_id': project_id
-                })
+                self.consistency_checks.append(
+                    {"timestamp": datetime.now(UTC), "consistent": consistent, "project_id": project_id}
+                )
 
                 # Keep only last 100 checks
                 if len(self.consistency_checks) > 100:
@@ -317,9 +299,7 @@ class DualWriteManager:
 
                 if not consistent:
                     logger.warning(
-                        f"Consistency check failed for {project_id}",
-                        postgres_data=postgres_data,
-                        redis_data=redis_data
+                        f"Consistency check failed for {project_id}", postgres_data=postgres_data, redis_data=redis_data
                     )
 
         except Exception as e:
@@ -327,13 +307,9 @@ class DualWriteManager:
 
     def _should_check_promotion(self) -> bool:
         """Determine if we should check promotion criteria"""
-        total_writes = (
-            self.write_stats["postgres"]["success"] +
-            self.write_stats["postgres"]["failure"]
-        )
+        total_writes = self.write_stats["postgres"]["success"] + self.write_stats["postgres"]["failure"]
         # Check every 10 writes after minimum threshold
-        return total_writes >= self.promotion_criteria["min_writes"] and \
-               total_writes % 10 == 0
+        return total_writes >= self.promotion_criteria["min_writes"] and total_writes % 10 == 0
 
     async def _check_promotion_criteria(self) -> bool:
         """
@@ -341,10 +317,7 @@ class DualWriteManager:
         Based on success rate and consistency metrics.
         """
         # Calculate PostgreSQL success rate
-        pg_total = (
-            self.write_stats["postgres"]["success"] +
-            self.write_stats["postgres"]["failure"]
-        )
+        pg_total = self.write_stats["postgres"]["success"] + self.write_stats["postgres"]["failure"]
 
         if pg_total < self.promotion_criteria["min_writes"]:
             return False
@@ -354,21 +327,16 @@ class DualWriteManager:
         # Calculate consistency rate
         if len(self.consistency_checks) >= 20:
             recent_checks = self.consistency_checks[-20:]
-            consistency_rate = sum(
-                1 for check in recent_checks if check['consistent']
-            ) / len(recent_checks)
+            consistency_rate = sum(1 for check in recent_checks if check["consistent"]) / len(recent_checks)
         else:
             consistency_rate = 0
 
-        logger.info(
-            f"Promotion check - Success: {pg_success_rate:.2%}, "
-            f"Consistency: {consistency_rate:.2%}"
-        )
+        logger.info(f"Promotion check - Success: {pg_success_rate:.2%}, " f"Consistency: {consistency_rate:.2%}")
 
         # Check all criteria
         return (
-            pg_success_rate >= self.promotion_criteria["success_rate"] and
-            consistency_rate >= self.promotion_criteria["consistency_rate"]
+            pg_success_rate >= self.promotion_criteria["success_rate"]
+            and consistency_rate >= self.promotion_criteria["consistency_rate"]
         )
 
     async def _promote_postgres_to_primary(self):
@@ -381,21 +349,14 @@ class DualWriteManager:
         # Final consistency check
         final_check = await self._run_full_consistency_check()
 
-        if final_check['success_rate'] < 0.99:
-            logger.warning(
-                f"Promotion aborted - final consistency check failed "
-                f"({final_check['success_rate']:.2%})"
-            )
+        if final_check["success_rate"] < 0.99:
+            logger.warning(f"Promotion aborted - final consistency check failed " f"({final_check['success_rate']:.2%})")
             return
 
         # Switch mode
         self.shadow_mode = False
 
-        logger.info(
-            "[EMOJI] PostgreSQL promoted to PRIMARY data store!",
-            stats=self.write_stats,
-            consistency=final_check
-        )
+        logger.info("[EMOJI] PostgreSQL promoted to PRIMARY data store!", stats=self.write_stats, consistency=final_check)
 
         # TODO: Send notification to team
         # TODO: Update monitoring dashboard
@@ -405,32 +366,23 @@ class DualWriteManager:
         """Run comprehensive consistency check before promotion"""
         # This would check a sample of all data
         # Simplified for this implementation
-        return {
-            'success_rate': 0.99,
-            'records_checked': 100,
-            'discrepancies': []
-        }
+        return {"success_rate": 0.99, "records_checked": 100, "discrepancies": []}
 
     def get_migration_status(self) -> Dict[str, Any]:
         """Get current migration status for monitoring"""
-        total_writes = (
-            self.write_stats["postgres"]["success"] +
-            self.write_stats["postgres"]["failure"]
-        )
+        total_writes = self.write_stats["postgres"]["success"] + self.write_stats["postgres"]["failure"]
 
         pg_success_rate = 0
         if total_writes > 0:
             pg_success_rate = self.write_stats["postgres"]["success"] / total_writes
 
         return {
-            'mode': 'shadow' if self.shadow_mode else 'primary',
-            'postgres_primary': not self.shadow_mode,
-            'statistics': self.write_stats,
-            'total_writes': total_writes,
-            'postgres_success_rate': pg_success_rate,
-            'recent_consistency': len([
-                c for c in self.consistency_checks[-10:]
-                if c['consistent']
-            ]) / max(len(self.consistency_checks[-10:]), 1),
-            'ready_for_promotion': pg_success_rate >= self.promotion_criteria["success_rate"]
+            "mode": "shadow" if self.shadow_mode else "primary",
+            "postgres_primary": not self.shadow_mode,
+            "statistics": self.write_stats,
+            "total_writes": total_writes,
+            "postgres_success_rate": pg_success_rate,
+            "recent_consistency": len([c for c in self.consistency_checks[-10:] if c["consistent"]])
+            / max(len(self.consistency_checks[-10:]), 1),
+            "ready_for_promotion": pg_success_rate >= self.promotion_criteria["success_rate"],
         }

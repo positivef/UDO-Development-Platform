@@ -1,8 +1,8 @@
 #!/usr/bin/env python3
 # -*- coding: utf-8 -*-
 """
-UDO v2 + Uncertainty Map v3 [EMOJI] [EMOJI]
-[EMOJI] Phase[EMOJI] [EMOJI] [EMOJI] [EMOJI]
+UDO v2 + Uncertainty Map v3 통합 테스트
+모든 Phase에 대한 종합 테스트
 """
 
 import sys
@@ -11,14 +11,14 @@ from pathlib import Path
 from datetime import datetime
 import json
 
-# Windows Unicode [EMOJI] [EMOJI] [EMOJI] [EMOJI]
+# Windows Unicode 인코딩 문제 근본 해결
 if sys.platform == 'win32':
     os.environ['PYTHONIOENCODING'] = 'utf-8'
     if hasattr(sys.stdout, 'reconfigure'):
         sys.stdout.reconfigure(encoding='utf-8')
         sys.stderr.reconfigure(encoding='utf-8')
 
-# [EMOJI] [EMOJI]
+# 경로 추가
 sys.path.append(str(Path(__file__).parent))
 sys.path.append(str(Path(__file__).parent.parent.parent / "obsidian-vibe-coding-docs" / "scripts"))
 
@@ -28,48 +28,48 @@ from unified_development_orchestrator_v2 import (
 )
 
 def print_section(title: str, char: str = "="):
-    """[EMOJI] [EMOJI] [EMOJI]"""
+    """섹션 구분 출력"""
     line = char * 80
     print(f"\n{line}")
     print(f"  {title}")
     print(line)
 
 def run_phase_test(udo, phase_name: str, request: str, expected_files: list = None):
-    """[EMOJI] Phase [EMOJI]"""
+    """특정 Phase 테스트"""
     print_section(f"PHASE TEST: {phase_name.upper()}", "=")
 
-    # Phase [EMOJI]
+    # Phase 업데이트
     udo.context.current_phase = phase_name
     if expected_files:
         udo.context.files = expected_files
 
-    print(f"[EMOJI] Phase: {phase_name}")
-    print(f"[EMOJI] Request: {request[:100]}...")
-    print(f"[EMOJI] Files: {len(udo.context.files)} files")
+    print(f"📌 Phase: {phase_name}")
+    print(f"📝 Request: {request[:100]}...")
+    print(f"📂 Files: {len(udo.context.files)} files")
 
-    # [EMOJI] [EMOJI] [EMOJI]
+    # 개발 사이클 실행
     plan = udo.start_development_cycle(request)
 
-    # [EMOJI] [EMOJI]
-    print(f"\n[EMOJI] Results:")
+    # 결과 출력
+    print(f"\n📊 Results:")
     print(f"  Decision: {plan.get('decision', 'UNKNOWN')}")
     print(f"  Confidence: {plan.get('confidence', 0):.1%}")
     print(f"  System: {plan.get('system', {}).get('system', 'N/A')}")
 
-    # [EMOJI] [EMOJI] [EMOJI]
+    # 불확실성 예측 확인
     if hasattr(udo.uncertainty, 'predictions'):
-        print(f"\n[EMOJI] Uncertainty Predictions:")
+        print(f"\n📈 Uncertainty Predictions:")
         for key, pred_model in udo.uncertainty.predictions.items():
             if hasattr(pred_model, 'trend'):
                 print(f"  {key}: {pred_model.trend} trend")
 
-    # [EMOJI] (GO [EMOJI] [EMOJI])
+    # 실행 (GO 결정인 경우)
     if plan['decision'] in ['GO', 'GO_WITH_CHECKPOINTS']:
         result = udo.execute_plan(plan)
         udo.record_outcome(plan, result)
-        print(f"\n[OK] Execution: {result.get('status', 'UNKNOWN')}")
+        print(f"\n✅ Execution: {result.get('status', 'UNKNOWN')}")
     else:
-        print(f"\n[WARN] No execution: {plan['decision']}")
+        print(f"\n⚠️ No execution: {plan['decision']}")
 
     return plan
 
@@ -77,15 +77,15 @@ def main():
     print_section("UDO v2 + UNCERTAINTY MAP v3 INTEGRATION TEST", "=")
     print("Testing all phases with predictive uncertainty modeling\n")
 
-    # [EMOJI] [EMOJI] [EMOJI]
+    # 프로젝트 컨텍스트 생성
     project = ProjectContext(
         project_name="AI-SaaS-Platform",
-        goal="AI [EMOJI] SaaS [EMOJI] [EMOJI]",
+        goal="AI 기반 SaaS 플랫폼 개발",
         team_size=5,
         timeline_weeks=16,
         budget=100000,
         tech_stack=["Next.js 15", "FastAPI", "PostgreSQL", "Redis"],
-        constraints=["4[EMOJI] [EMOJI] [EMOJI]", "[EMOJI] [EMOJI] [EMOJI]"],
+        constraints=["4개월 내 출시", "클라우드 비용 최적화"],
         success_metrics=["MAU 5000+", "MRR $5,000+", "Churn < 5%"],
         current_phase="ideation",
         files=[],
@@ -96,22 +96,22 @@ def main():
         }
     )
 
-    # UDO [EMOJI]
-    print("[EMOJI] Initializing UDO v2 with Uncertainty Map v3...")
+    # UDO 초기화
+    print("🚀 Initializing UDO v2 with Uncertainty Map v3...")
     udo = UnifiedDevelopmentOrchestrator(project)
 
     # Phase 1: Ideation
     phase1_result = run_phase_test(
         udo,
         "ideation",
-        "AI [EMOJI] [EMOJI] [EMOJI] [EMOJI] SaaS [EMOJI] [EMOJI] [EMOJI]"
+        "AI 기반 코드 리뷰 자동화 SaaS 플랫폼 아이디어 검증"
     )
 
     # Phase 2: Design
     phase2_result = run_phase_test(
         udo,
         "design",
-        "[EMOJI] [EMOJI] [EMOJI] with API Gateway, Auth Service, Review Service",
+        "마이크로서비스 아키텍처 설계 with API Gateway, Auth Service, Review Service",
         expected_files=["docs/architecture.md", "docs/api_spec.yaml"]
     )
 
@@ -119,7 +119,7 @@ def main():
     phase3_result = run_phase_test(
         udo,
         "mvp",
-        "[EMOJI] [EMOJI] MVP [EMOJI]: GitHub [EMOJI], [EMOJI] [EMOJI] [EMOJI], [EMOJI]",
+        "핵심 기능 MVP 구현: GitHub 연동, 기본 리뷰 엔진, 대시보드",
         expected_files=[
             "src/api/github.py",
             "src/api/review.py",
@@ -131,7 +131,7 @@ def main():
     phase4_result = run_phase_test(
         udo,
         "implementation",
-        "[EMOJI] [EMOJI] [EMOJI] with ML [EMOJI] [EMOJI], [EMOJI] [EMOJI], [EMOJI] [EMOJI] [EMOJI]",
+        "전체 기능 구현 with ML 모델 통합, 실시간 알림, 팀 협업 기능",
         expected_files=[
             "src/api/github.py",
             "src/api/review.py",
@@ -145,7 +145,7 @@ def main():
     phase5_result = run_phase_test(
         udo,
         "testing",
-        "[EMOJI] [EMOJI]: [EMOJI] [EMOJI], [EMOJI] [EMOJI], [EMOJI] [EMOJI], [EMOJI] [EMOJI]",
+        "종합 테스트: 단위 테스트, 통합 테스트, 부하 테스트, 보안 테스트",
         expected_files=[
             "tests/unit/",
             "tests/integration/",
@@ -155,33 +155,33 @@ def main():
         ]
     )
 
-    # [EMOJI] [EMOJI]
+    # 최종 리포트
     print_section("FINAL REPORT", "=")
 
-    # [EMOJI] [EMOJI] [EMOJI]
+    # 학습 데이터 분석
     if udo.learning_data:
-        print("\n[EMOJI] Learning Data:")
+        print("\n📚 Learning Data:")
         for phase, perf in udo.learning_data.get('phase_performance', {}).items():
             success_rate = perf.get('success_rate', 0)
             total = perf.get('total', 0)
             print(f"  {phase}: {success_rate:.1%} success ({total} attempts)")
 
-    # [EMOJI] [EMOJI] [EMOJI]
+    # 불확실성 진화 분석
     if hasattr(udo, 'uncertainty_tracker'):
-        print("\n[EMOJI] Uncertainty Evolution:")
+        print("\n📉 Uncertainty Evolution:")
         history = udo.uncertainty_tracker.confidence_history
         if history:
             print(f"  Initial confidence: {history[0]:.1%}")
             print(f"  Final confidence: {history[-1]:.1%}")
             print(f"  Average confidence: {sum(history)/len(history):.1%}")
-            print(f"  Trend: {'Improving ^' if history[-1] > history[0] else 'Declining v'}")
+            print(f"  Trend: {'Improving ↑' if history[-1] > history[0] else 'Declining ↓'}")
 
-    # [EMOJI] [EMOJI]
+    # 상태 저장
     state_file = Path(__file__).parent / "udo_v3_test_state.json"
     udo.save_state(state_file)
-    print(f"\n[EMOJI] State saved to: {state_file}")
+    print(f"\n💾 State saved to: {state_file}")
 
-    # [EMOJI] [EMOJI]
+    # 성공 메트릭
     print_section("SUCCESS METRICS", "=")
 
     phases = ["ideation", "design", "mvp", "implementation", "testing"]
@@ -190,16 +190,16 @@ def main():
     go_decisions = sum(1 for r in results if r.get('decision') == 'GO')
     avg_confidence = sum(r.get('confidence', 0) for r in results) / len(results)
 
-    print(f"[OK] GO Decisions: {go_decisions}/{len(phases)} ({go_decisions/len(phases)*100:.0f}%)")
-    print(f"[EMOJI] Average Confidence: {avg_confidence:.1%}")
-    print(f"[EMOJI] Success Rate: {(go_decisions/len(phases) * avg_confidence):.1%}")
+    print(f"✅ GO Decisions: {go_decisions}/{len(phases)} ({go_decisions/len(phases)*100:.0f}%)")
+    print(f"📊 Average Confidence: {avg_confidence:.1%}")
+    print(f"🎯 Success Rate: {(go_decisions/len(phases) * avg_confidence):.1%}")
 
     if avg_confidence > 0.7 and go_decisions >= 4:
-        print("\n[EMOJI] TEST PASSED: System is production-ready!")
+        print("\n🏆 TEST PASSED: System is production-ready!")
     elif avg_confidence > 0.5 and go_decisions >= 3:
-        print("\n[OK] TEST PASSED: System is functional with room for improvement")
+        print("\n✅ TEST PASSED: System is functional with room for improvement")
     else:
-        print("\n[WARN] TEST NEEDS WORK: System requires further optimization")
+        print("\n⚠️ TEST NEEDS WORK: System requires further optimization")
 
     print("\n" + "=" * 80)
     print("Test completed successfully!")

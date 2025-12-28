@@ -12,7 +12,7 @@ import tempfile
 import shutil
 
 # Add parent directory to path
-sys.path.insert(0, str(Path(__file__).parent.parent / 'src'))
+sys.path.insert(0, str(Path(__file__).parent.parent / "src"))
 
 from udo_bayesian_integration import UDOBayesianIntegration
 
@@ -23,10 +23,7 @@ class TestUDOBayesianIntegration(unittest.TestCase):
     def setUp(self):
         """Set up test environment"""
         self.temp_dir = tempfile.mkdtemp()
-        self.integration = UDOBayesianIntegration(
-            project_name="Test-Project",
-            storage_dir=Path(self.temp_dir)
-        )
+        self.integration = UDOBayesianIntegration(project_name="Test-Project", storage_dir=Path(self.temp_dir))
 
     def tearDown(self):
         """Clean up test environment"""
@@ -56,18 +53,10 @@ class TestUDOBayesianIntegration(unittest.TestCase):
 
     def test_go_decision_enhancement(self):
         """Test GO/NO_GO decision enhancement"""
-        uncertainties = {
-            "technical": 0.4,
-            "market": 0.3,
-            "resource": 0.5,
-            "timeline": 0.6,
-            "quality": 0.4
-        }
+        uncertainties = {"technical": 0.4, "market": 0.3, "resource": 0.5, "timeline": 0.6, "quality": 0.4}
 
         decision = self.integration.enhance_go_decision(
-            phase="implementation",
-            base_confidence=0.75,
-            uncertainties=uncertainties
+            phase="implementation", base_confidence=0.75, uncertainties=uncertainties
         )
 
         # Decision should have required fields
@@ -85,21 +74,12 @@ class TestUDOBayesianIntegration(unittest.TestCase):
         self.integration.learn_from_project_outcome(
             phase="design",
             predicted_confidence=0.70,
-            predicted_uncertainties={
-                "technical": 0.5,
-                "market": 0.4,
-                "resource": 0.5,
-                "timeline": 0.6,
-                "quality": 0.5
-            },
-            actual_success=True
+            predicted_uncertainties={"technical": 0.5, "market": 0.4, "resource": 0.5, "timeline": 0.6, "quality": 0.5},
+            actual_success=True,
         )
 
         # Learning events should increase
-        self.assertGreater(
-            self.integration.integration_metrics["learning_events"],
-            initial_metrics["learning_events"]
-        )
+        self.assertGreater(self.integration.integration_metrics["learning_events"], initial_metrics["learning_events"])
 
     def test_bias_correction(self):
         """Test bias detection and correction"""
@@ -108,21 +88,9 @@ class TestUDOBayesianIntegration(unittest.TestCase):
             self.integration.learn_from_project_outcome(
                 phase="mvp",
                 predicted_confidence=0.80,  # High predicted
-                predicted_uncertainties={
-                    "technical": 0.3,
-                    "market": 0.3,
-                    "resource": 0.4,
-                    "timeline": 0.4,
-                    "quality": 0.3
-                },
+                predicted_uncertainties={"technical": 0.3, "market": 0.3, "resource": 0.4, "timeline": 0.4, "quality": 0.3},
                 actual_success=False,  # But actually failed
-                actual_uncertainties={
-                    "technical": 0.7,
-                    "market": 0.8,
-                    "resource": 0.7,
-                    "timeline": 0.8,
-                    "quality": 0.7
-                }
+                actual_uncertainties={"technical": 0.7, "market": 0.8, "resource": 0.7, "timeline": 0.8, "quality": 0.7},
             )
 
         # After multiple failures, bias should be detected
@@ -139,13 +107,7 @@ class TestUDOBayesianIntegration(unittest.TestCase):
         decision = self.integration.enhance_go_decision(
             phase=phase,
             base_confidence=0.75,
-            uncertainties={
-                "technical": 0.3,
-                "market": 0.3,
-                "resource": 0.4,
-                "timeline": 0.4,
-                "quality": 0.3
-            }
+            uncertainties={"technical": 0.3, "market": 0.3, "resource": 0.4, "timeline": 0.4, "quality": 0.3},
         )
 
         # The decision should have been made with a threshold
@@ -159,26 +121,14 @@ class TestUDOBayesianIntegration(unittest.TestCase):
             decision = self.integration.enhance_go_decision(
                 phase="implementation",
                 base_confidence=0.70 + i * 0.05,
-                uncertainties={
-                    "technical": 0.4,
-                    "market": 0.4,
-                    "resource": 0.5,
-                    "timeline": 0.5,
-                    "quality": 0.4
-                }
+                uncertainties={"technical": 0.4, "market": 0.4, "resource": 0.5, "timeline": 0.5, "quality": 0.4},
             )
 
             self.integration.learn_from_project_outcome(
                 phase="implementation",
                 predicted_confidence=0.70 + i * 0.05,
-                predicted_uncertainties={
-                    "technical": 0.4,
-                    "market": 0.4,
-                    "resource": 0.5,
-                    "timeline": 0.5,
-                    "quality": 0.4
-                },
-                actual_success=(i % 2 == 0)
+                predicted_uncertainties={"technical": 0.4, "market": 0.4, "resource": 0.5, "timeline": 0.5, "quality": 0.4},
+                actual_success=(i % 2 == 0),
             )
 
         # Get report
@@ -200,13 +150,7 @@ class TestUDOBayesianIntegration(unittest.TestCase):
         decision = self.integration.enhance_go_decision(
             phase="design",
             base_confidence=base_confidence,
-            uncertainties={
-                "technical": 0.3,
-                "market": 0.3,
-                "resource": 0.4,
-                "timeline": 0.4,
-                "quality": 0.3
-            }
+            uncertainties={"technical": 0.3, "market": 0.3, "resource": 0.4, "timeline": 0.4, "quality": 0.3},
         )
 
         # Final confidence should be a blend
@@ -230,10 +174,7 @@ class TestIntegrationScenarios(unittest.TestCase):
         """Test a complete project lifecycle with learning"""
         temp_dir = tempfile.mkdtemp()
         try:
-            integration = UDOBayesianIntegration(
-                project_name="Lifecycle-Project",
-                storage_dir=Path(temp_dir)
-            )
+            integration = UDOBayesianIntegration(project_name="Lifecycle-Project", storage_dir=Path(temp_dir))
 
             phases = ["ideation", "design", "mvp", "implementation", "testing"]
             phase_confidences = [0.65, 0.70, 0.68, 0.75, 0.72]
@@ -244,13 +185,7 @@ class TestIntegrationScenarios(unittest.TestCase):
                 decision = integration.enhance_go_decision(
                     phase=phase,
                     base_confidence=confidence,
-                    uncertainties={
-                        "technical": 0.4,
-                        "market": 0.4,
-                        "resource": 0.5,
-                        "timeline": 0.5,
-                        "quality": 0.4
-                    }
+                    uncertainties={"technical": 0.4, "market": 0.4, "resource": 0.5, "timeline": 0.5, "quality": 0.4},
                 )
 
                 # Learn from outcome
@@ -262,9 +197,9 @@ class TestIntegrationScenarios(unittest.TestCase):
                         "market": 0.4,
                         "resource": 0.5,
                         "timeline": 0.5,
-                        "quality": 0.4
+                        "quality": 0.4,
                     },
-                    actual_success=success
+                    actual_success=success,
                 )
 
             # After full lifecycle, should have learned from all phases

@@ -8,25 +8,18 @@ Provides real-time communication between multiple terminal sessions:
 - Collaborative editing events
 """
 
-import json
 import asyncio
+import json
 import logging
-from typing import Dict, Set, Optional, Any
 from datetime import datetime
+from typing import Any, Dict, Optional, Set
 from uuid import UUID
 
-from fastapi import (
-    APIRouter,
-    WebSocket,
-    WebSocketDisconnect,
-    Depends,
-    Query,
-    status
-)
-from starlette.websockets import WebSocketState
-
+from app.services.redis_client import RedisKeys, get_redis_client
 from app.services.session_manager import SessionManager, get_session_manager
-from app.services.redis_client import get_redis_client, RedisKeys
+from fastapi import (APIRouter, Depends, Query, WebSocket, WebSocketDisconnect,
+                     status)
+from starlette.websockets import WebSocketState
 
 logger = logging.getLogger(__name__)
 
@@ -47,10 +40,7 @@ class ConnectionManager:
         self._lock = asyncio.Lock()
 
     async def connect(
-        self,
-        websocket: WebSocket,
-        session_id: str,
-        project_id: Optional[str] = None
+        self, websocket: WebSocket, session_id: str, project_id: Optional[str] = None
     ):
         """Accept and register new WebSocket connection"""
         await websocket.accept()
@@ -78,9 +68,7 @@ class ConnectionManager:
         logger.info(f"WebSocket disconnected: session={session_id}")
 
     async def send_personal_message(
-        self,
-        message: Dict[str, Any],
-        session_id: str
+        self, message: Dict[str, Any], session_id: str
     ) -> bool:
         """Send message to specific session"""
         websocket = self.active_connections.get(session_id)
@@ -98,7 +86,7 @@ class ConnectionManager:
         self,
         message: Dict[str, Any],
         project_id: str,
-        exclude_session: Optional[str] = None
+        exclude_session: Optional[str] = None,
     ):
         """Broadcast message to all sessions in a project"""
         sessions = self.project_sessions.get(project_id, set()).copy()
@@ -108,9 +96,7 @@ class ConnectionManager:
                 await self.send_personal_message(message, session_id)
 
     async def broadcast_to_all(
-        self,
-        message: Dict[str, Any],
-        exclude_session: Optional[str] = None
+        self, message: Dict[str, Any], exclude_session: Optional[str] = None
     ):
         """Broadcast message to all connected sessions"""
         sessions = list(self.active_connections.keys())
@@ -127,8 +113,7 @@ connection_manager = ConnectionManager()
 # Root WebSocket endpoint (for simple client connections)
 @router.websocket("")
 async def websocket_root(
-    websocket: WebSocket,
-    session_manager: SessionManager = Depends(get_session_manager)
+    websocket: WebSocket, session_manager: SessionManager = Depends(get_session_manager)
 ):
     """
     Root WebSocket endpoint for dashboard connections
@@ -151,11 +136,13 @@ async def websocket_root(
             logger.warning(f"Redis not available for WebSocket: {e}")
 
         # Send initial connection success
-        await websocket.send_json({
-            "type": "connection_established",
-            "session_id": session_id,
-            "timestamp": datetime.now().isoformat()
-        })
+        await websocket.send_json(
+            {
+                "type": "connection_established",
+                "session_id": session_id,
+                "timestamp": datetime.now().isoformat(),
+            }
+        )
 
         # Handle incoming messages
         try:
@@ -164,10 +151,9 @@ async def websocket_root(
 
                 # Simple echo back for heartbeat/ping
                 if data.get("type") == "ping":
-                    await websocket.send_json({
-                        "type": "pong",
-                        "timestamp": datetime.now().isoformat()
-                    })
+                    await websocket.send_json(
+                        {"type": "pong", "timestamp": datetime.now().isoformat()}
+                    )
         except WebSocketDisconnect:
             pass
         except Exception as e:
@@ -186,7 +172,7 @@ async def websocket_endpoint(
     websocket: WebSocket,
     session_id: str = Query(..., description="Session ID"),
     project_id: Optional[str] = Query(None, description="Project ID"),
-    session_manager: SessionManager = Depends(get_session_manager)
+    session_manager: SessionManager = Depends(get_session_manager),
 ):
     """
     WebSocket endpoint for session synchronization
@@ -206,7 +192,9 @@ async def websocket_endpoint(
         try:
             redis_client = await get_redis_client()
         except Exception as e:
-            logger.warning("Redis unavailable for WebSocket session %s: %s", session_id, e)
+            logger.warning(
+                "Redis unavailable for WebSocket session %s: %s", session_id, e
+            )
             redis_client = None
 
         if redis_client:
@@ -214,7 +202,7 @@ async def websocket_endpoint(
             channels = [
                 RedisKeys.CHANNEL_SESSION,
                 RedisKeys.CHANNEL_CONFLICTS,
-                RedisKeys.CHANNEL_BROADCAST
+                RedisKeys.CHANNEL_BROADCAST,
             ]
 
             if project_id:
@@ -223,12 +211,14 @@ async def websocket_endpoint(
             pubsub = await redis_client.subscribe(channels)
 
         # Send initial connection success
-        await websocket.send_json({
-            "type": "connection_established",
-            "session_id": session_id,
-            "project_id": project_id,
-            "timestamp": datetime.now().isoformat()
-        })
+        await websocket.send_json(
+            {
+                "type": "connection_established",
+                "session_id": session_id,
+                "project_id": project_id,
+                "timestamp": datetime.now().isoformat(),
+            }
+        )
 
         # Notify other sessions about new connection
         await connection_manager.broadcast_to_project(
@@ -236,10 +226,10 @@ async def websocket_endpoint(
                 "type": "session_connected",
                 "session_id": session_id,
                 "project_id": project_id,
-                "timestamp": datetime.now().isoformat()
+                "timestamp": datetime.now().isoformat(),
             },
             project_id,
-            exclude_session=session_id
+            exclude_session=session_id,
         )
 
         # Start tasks for handling messages
@@ -251,10 +241,7 @@ async def websocket_endpoint(
                 while True:
                     data = await websocket.receive_json()
                     await process_websocket_message(
-                        data,
-                        session_id,
-                        project_id,
-                        session_manager
+                        data, session_id, project_id, session_manager
                     )
             except WebSocketDisconnect:
                 pass
@@ -282,10 +269,9 @@ async def websocket_endpoint(
             try:
                 while True:
                     await asyncio.sleep(30)
-                    await websocket.send_json({
-                        "type": "heartbeat",
-                        "timestamp": datetime.now().isoformat()
-                    })
+                    await websocket.send_json(
+                        {"type": "heartbeat", "timestamp": datetime.now().isoformat()}
+                    )
 
                     # Update session heartbeat in Redis
                     if redis_client:
@@ -297,14 +283,11 @@ async def websocket_endpoint(
         tasks = [
             asyncio.create_task(handle_websocket_messages()),
             asyncio.create_task(handle_redis_messages()),
-            asyncio.create_task(send_heartbeat())
+            asyncio.create_task(send_heartbeat()),
         ]
 
         # Wait for any task to complete (usually disconnect)
-        done, pending = await asyncio.wait(
-            tasks,
-            return_when=asyncio.FIRST_COMPLETED
-        )
+        done, pending = await asyncio.wait(tasks, return_when=asyncio.FIRST_COMPLETED)
 
         # Cancel remaining tasks
         for task in pending:
@@ -324,9 +307,9 @@ async def websocket_endpoint(
                     "type": "session_disconnected",
                     "session_id": session_id,
                     "project_id": project_id,
-                    "timestamp": datetime.now().isoformat()
+                    "timestamp": datetime.now().isoformat(),
                 },
-                project_id
+                project_id,
             )
 
         # Cleanup Redis subscriptions
@@ -338,7 +321,7 @@ async def process_websocket_message(
     data: Dict[str, Any],
     session_id: str,
     project_id: Optional[str],
-    session_manager: SessionManager
+    session_manager: SessionManager,
 ):
     """
     Process incoming WebSocket messages from clients
@@ -353,9 +336,7 @@ async def process_websocket_message(
 
         # Try to acquire lock
         lock = await session_manager.acquire_lock(
-            session_id=session_id,
-            resource_id=resource_id,
-            lock_type=lock_type
+            session_id=session_id, resource_id=resource_id, lock_type=lock_type
         )
 
         if lock:
@@ -367,8 +348,8 @@ async def process_websocket_message(
                     "session_id": session_id,
                     "resource_id": resource_id,
                     "lock_type": lock_type,
-                    "timestamp": datetime.now().isoformat()
-                }
+                    "timestamp": datetime.now().isoformat(),
+                },
             )
         else:
             # Get lock holder info
@@ -378,9 +359,9 @@ async def process_websocket_message(
                     "type": "lock_denied",
                     "resource_id": resource_id,
                     "holder": holder,
-                    "timestamp": datetime.now().isoformat()
+                    "timestamp": datetime.now().isoformat(),
                 },
-                session_id
+                session_id,
             )
 
     elif message_type == "lock_release":
@@ -388,8 +369,7 @@ async def process_websocket_message(
         resource_id = data.get("resource_id")
 
         success = await session_manager.release_lock(
-            session_id=session_id,
-            resource_id=resource_id
+            session_id=session_id, resource_id=resource_id
         )
 
         if success:
@@ -400,8 +380,8 @@ async def process_websocket_message(
                     "type": "lock_released",
                     "session_id": session_id,
                     "resource_id": resource_id,
-                    "timestamp": datetime.now().isoformat()
-                }
+                    "timestamp": datetime.now().isoformat(),
+                },
             )
 
     elif message_type == "file_change":
@@ -416,8 +396,8 @@ async def process_websocket_message(
                 "session_id": session_id,
                 "file_path": file_path,
                 "change_type": change_type,
-                "timestamp": datetime.now().isoformat()
-            }
+                "timestamp": datetime.now().isoformat(),
+            },
         )
 
     elif message_type == "cursor_position":
@@ -433,10 +413,10 @@ async def process_websocket_message(
                 "file_path": file_path,
                 "line": line,
                 "column": column,
-                "timestamp": datetime.now().isoformat()
+                "timestamp": datetime.now().isoformat(),
             },
             project_id,
-            exclude_session=session_id
+            exclude_session=session_id,
         )
 
     elif message_type == "conflict_detected":
@@ -447,7 +427,7 @@ async def process_websocket_message(
             "resource_id": data.get("resource_id"),
             "conflict_type": data.get("conflict_type"),
             "details": data.get("details"),
-            "timestamp": datetime.now().isoformat()
+            "timestamp": datetime.now().isoformat(),
         }
 
         # Register conflict in Redis
@@ -468,8 +448,8 @@ async def process_websocket_message(
                 "conflict_id": conflict_id,
                 "resolution": resolution,
                 "resolved_by": session_id,
-                "timestamp": datetime.now().isoformat()
-            }
+                "timestamp": datetime.now().isoformat(),
+            },
         )
 
     elif message_type == "broadcast":
@@ -478,17 +458,17 @@ async def process_websocket_message(
             {
                 **data.get("payload", {}),
                 "from_session": session_id,
-                "timestamp": datetime.now().isoformat()
+                "timestamp": datetime.now().isoformat(),
             },
             project_id,
-            exclude_session=session_id
+            exclude_session=session_id,
         )
 
 
 @router.get("/sessions/active")
 async def get_active_sessions(
     project_id: Optional[str] = Query(None, description="Filter by project"),
-    session_manager: SessionManager = Depends(get_session_manager)
+    session_manager: SessionManager = Depends(get_session_manager),
 ):
     """Get list of active sessions"""
     redis_client = await get_redis_client()
@@ -516,15 +496,10 @@ async def get_active_sessions(
 
 @router.get("/conflicts/{project_id}")
 async def get_conflicts(
-    project_id: str,
-    session_manager: SessionManager = Depends(get_session_manager)
+    project_id: str, session_manager: SessionManager = Depends(get_session_manager)
 ):
     """Get all conflicts for a project"""
     redis_client = await get_redis_client()
     conflicts = await redis_client.get_project_conflicts(project_id)
 
-    return {
-        "project_id": project_id,
-        "conflicts": conflicts,
-        "count": len(conflicts)
-    }
+    return {"project_id": project_id, "conflicts": conflicts, "count": len(conflicts)}

@@ -11,8 +11,8 @@ from pathlib import Path
 # Add parent directory to path
 sys.path.insert(0, str(Path(__file__).parent.parent))
 
-from app.services.gi_formula_service import GIFormulaService
 from app.models.gi_formula import GIFormulaRequest
+from app.services.gi_formula_service import GIFormulaService
 
 
 async def main():
@@ -32,15 +32,17 @@ async def main():
             "current_latency": "200ms",
             "target_latency": "100ms",
             "bottleneck": "database queries",
-            "tech_stack": "FastAPI + PostgreSQL"
+            "tech_stack": "FastAPI + PostgreSQL",
         },
-        project="UDO-Development-Platform"
+        project="UDO-Development-Platform",
     )
 
     result1 = await service.generate_insight(request1)
 
     print(f"\n[OK] Insight ID: {result1.id}")
-    print(f"⏱  Duration: {result1.total_duration_ms}ms ({result1.total_duration_ms / 1000:.1f}s)")
+    print(
+        f"⏱  Duration: {result1.total_duration_ms}ms ({result1.total_duration_ms / 1000:.1f}s)"
+    )
     print(f"[EMOJI] Confidence: {result1.bias_check.confidence_score:.2%}")
     print(f"\n[EMOJI] Final Insight:")
     print(f"{result1.final_insight[:200]}...")
@@ -48,12 +50,18 @@ async def main():
     # Show stage breakdown
     print(f"\n[EMOJI] Stage Breakdown:")
     for stage_name, stage_result in result1.stages.items():
-        print(f"  {stage_name:15s}: {stage_result.duration_ms:>6}ms - {stage_result.content[:50]}...")
+        print(
+            f"  {stage_name:15s}: {stage_result.duration_ms:>6}ms - {stage_result.content[:50]}..."
+        )
 
     # Show bias check results
     if result1.bias_check.biases_detected:
-        print(f"\n[WARN]  Biases Detected: {', '.join(result1.bias_check.biases_detected)}")
-        print(f"[EMOJI]  Mitigation: {', '.join(result1.bias_check.mitigation_strategies)}")
+        print(
+            f"\n[WARN]  Biases Detected: {', '.join(result1.bias_check.biases_detected)}"
+        )
+        print(
+            f"[EMOJI]  Mitigation: {', '.join(result1.bias_check.mitigation_strategies)}"
+        )
     else:
         print(f"\n[OK] No biases detected")
 
@@ -71,9 +79,9 @@ async def main():
             "team_size": 5,
             "timeline": "3 months",
             "scalability_needs": "medium",
-            "current_architecture": "monolithic"
+            "current_architecture": "monolithic",
         },
-        project="UDO-Development-Platform"
+        project="UDO-Development-Platform",
     )
 
     result2 = await service.generate_insight(request2)

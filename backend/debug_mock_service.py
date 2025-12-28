@@ -1,8 +1,8 @@
 #!/usr/bin/env python3
 """Debug mock service initialization"""
 
-import sys
 import os
+import sys
 
 # Add backend directory to path
 sys.path.insert(0, os.path.dirname(__file__))
@@ -14,7 +14,9 @@ print("=" * 60)
 # Test 1: Import enable_mock_service
 print("\n1. Importing enable_mock_service...")
 try:
-    from app.services.project_context_service import enable_mock_service, get_project_context_service
+    from app.services.project_context_service import (
+        enable_mock_service, get_project_context_service)
+
     print("   SUCCESS: Functions imported")
 except ImportError as e:
     print(f"   FAILED: Import error - {e}")
@@ -44,12 +46,18 @@ try:
 except Exception as e:
     print(f"   FAILED: Error getting service - {e}")
     import traceback
+
     traceback.print_exc()
     sys.exit(1)
 
 # Test 4: Check service methods
 print("\n4. Checking service methods...")
-required_methods = ['list_projects', 'get_current_project', 'save_context', 'load_context']
+required_methods = [
+    "list_projects",
+    "get_current_project",
+    "save_context",
+    "load_context",
+]
 for method in required_methods:
     if hasattr(service, method):
         print(f"   [EMOJI] Has method: {method}")
@@ -60,6 +68,7 @@ for method in required_methods:
 print("\n5. Checking global variables...")
 try:
     from app.services import project_context_service as pcs_module
+
     print(f"   _use_mock_service: {pcs_module._use_mock_service}")
     print(f"   _mock_service_instance: {pcs_module._mock_service_instance}")
     print(f"   _project_context_service: {pcs_module._project_context_service}")

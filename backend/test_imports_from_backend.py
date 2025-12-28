@@ -13,7 +13,9 @@ print(f"[DEBUG] sys.path[1]: {sys.path[1]}")
 
 # Test imports exactly as they appear in main.py
 try:
-    from app.services.phase_transition_listener import PhaseTransitionListener, create_listener_callback
+    from app.services.phase_transition_listener import (
+        PhaseTransitionListener, create_listener_callback)
+
     print("[OK] PhaseTransitionListener imported")
 except Exception as e:
     print(f"[FAIL] PhaseTransitionListener: {e}")
@@ -21,6 +23,7 @@ except Exception as e:
 
 try:
     from phase_state_manager import PhaseStateManager
+
     print("[OK] PhaseStateManager imported")
 except Exception as e:
     print(f"[FAIL] PhaseStateManager: {e}")
@@ -28,6 +31,7 @@ except Exception as e:
 
 try:
     from app.services.time_tracking_service import TimeTrackingService
+
     print("[OK] TimeTrackingService imported")
 except Exception as e:
     print(f"[FAIL] TimeTrackingService: {e}")

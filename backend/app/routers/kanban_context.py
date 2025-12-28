@@ -6,22 +6,21 @@ Implements Q4 (Double-click auto-load, single-click popup)
 """
 
 from uuid import UUID
-from fastapi import APIRouter, Depends, HTTPException, status, UploadFile, File
+
+from fastapi import APIRouter, Depends, File, HTTPException, UploadFile, status
 from fastapi.responses import JSONResponse
 
-from backend.app.core.security import require_role, UserRole, get_current_user
-from backend.app.services.kanban_context_service import kanban_context_service
-from backend.app.models.kanban_context import (
-    ContextMetadata,
-    TaskContext,
-    ContextUploadRequest,
-    ContextLoadRequest,
-    ContextUploadResponse,
-    ContextLoadResponse,
-    ContextNotFoundError,
-    ContextSizeLimitExceeded,
-    InvalidContextFiles,
-)
+from app.core.security import UserRole, get_current_user, require_role
+from app.models.kanban_context import (ContextLoadRequest,
+                                               ContextLoadResponse,
+                                               ContextMetadata,
+                                               ContextNotFoundError,
+                                               ContextSizeLimitExceeded,
+                                               ContextUploadRequest,
+                                               ContextUploadResponse,
+                                               InvalidContextFiles,
+                                               TaskContext)
+from app.services.kanban_context_service import kanban_context_service
 
 router = APIRouter(prefix="/api/kanban/context", tags=["Kanban Context"])
 
@@ -30,9 +29,11 @@ router = APIRouter(prefix="/api/kanban/context", tags=["Kanban Context"])
 # Error Response Helper
 # ============================================================================
 
+
 def error_response(code: str, message: str, status_code: int, details: dict = None):
     """Standard error response format"""
-    from datetime import datetime, UTC
+    from datetime import UTC, datetime
+
     return JSONResponse(
         status_code=status_code,
         content={
@@ -40,9 +41,9 @@ def error_response(code: str, message: str, status_code: int, details: dict = No
                 "code": code,
                 "message": message,
                 "details": details or {},
-                "timestamp": datetime.now(UTC).isoformat() + "Z"
+                "timestamp": datetime.now(UTC).isoformat() + "Z",
             }
-        }
+        },
     )
 
 
@@ -50,16 +51,16 @@ def error_response(code: str, message: str, status_code: int, details: dict = No
 # Context Operations (3 endpoints)
 # ============================================================================
 
+
 @router.get(
     "/{task_id}",
     response_model=ContextMetadata,
     dependencies=[Depends(require_role(UserRole.VIEWER))],
     summary="Get context metadata",
-    description="Get context metadata without full files list (Q4: Context info)"
+    description="Get context metadata without full files list (Q4: Context info)",
 )
 async def get_context_metadata(
-    task_id: UUID,
-    current_user: dict = Depends(get_current_user)
+    task_id: UUID, current_user: dict = Depends(get_current_user)
 ):
     """
     Get context metadata for task.
@@ -76,7 +77,7 @@ async def get_context_metadata(
                 code="CONTEXT_NOT_FOUND",
                 message=f"No context found for task {task_id}",
                 status_code=status.HTTP_404_NOT_FOUND,
-                details={"task_id": str(task_id)}
+                details={"task_id": str(task_id)},
             )
 
         return metadata
@@ -85,7 +86,7 @@ async def get_context_metadata(
         return error_response(
             code="GET_CONTEXT_FAILED",
             message=f"Failed to get context metadata: {str(e)}",
-            status_code=status.HTTP_500_INTERNAL_SERVER_ERROR
+            status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
         )
 
 
@@ -95,12 +96,12 @@ async def get_context_metadata(
     status_code=status.HTTP_201_CREATED,
     dependencies=[Depends(require_role(UserRole.DEVELOPER))],
     summary="Upload context as ZIP",
-    description="Upload context files as ZIP (<50MB limit)"
+    description="Upload context files as ZIP (<50MB limit)",
 )
 async def upload_context(
     task_id: UUID,
     upload_request: ContextUploadRequest,
-    current_user: dict = Depends(get_current_user)
+    current_user: dict = Depends(get_current_user),
 ):
     """
     Upload context for task as ZIP file.
@@ -127,7 +128,7 @@ async def upload_context(
             code="CONTEXT_SIZE_LIMIT_EXCEEDED",
             message=str(e),
             status_code=status.HTTP_413_REQUEST_ENTITY_TOO_LARGE,
-            details={"task_id": str(task_id), "limit_bytes": 52428800}
+            details={"task_id": str(task_id), "limit_bytes": 52428800},
         )
 
     except InvalidContextFiles as e:
@@ -135,14 +136,14 @@ async def upload_context(
             code="INVALID_CONTEXT_FILES",
             message=str(e),
             status_code=status.HTTP_400_BAD_REQUEST,
-            details={"task_id": str(task_id)}
+            details={"task_id": str(task_id)},
         )
 
     except Exception as e:
         return error_response(
             code="UPLOAD_CONTEXT_FAILED",
             message=f"Failed to upload context: {str(e)}",
-            status_code=status.HTTP_500_INTERNAL_SERVER_ERROR
+            status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
         )
 
 
@@ -151,12 +152,12 @@ async def upload_context(
     response_model=ContextLoadResponse,
     dependencies=[Depends(require_role(UserRole.DEVELOPER))],
     summary="Track context load (Q4 double-click)",
-    description="Track context load event (Q4: load_count, avg_load_time_ms)"
+    description="Track context load event (Q4: load_count, avg_load_time_ms)",
 )
 async def track_context_load(
     task_id: UUID,
     load_request: ContextLoadRequest,
-    current_user: dict = Depends(get_current_user)
+    current_user: dict = Depends(get_current_user),
 ):
     """
     Track context load event (Q4: Double-click auto-load tracking).
@@ -182,14 +183,14 @@ async def track_context_load(
             code="CONTEXT_NOT_FOUND",
             message=str(e),
             status_code=status.HTTP_404_NOT_FOUND,
-            details={"task_id": str(task_id)}
+            details={"task_id": str(task_id)},
         )
 
     except Exception as e:
         return error_response(
             code="TRACK_LOAD_FAILED",
             message=f"Failed to track context load: {str(e)}",
-            status_code=status.HTTP_500_INTERNAL_SERVER_ERROR
+            status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
         )
 
 
@@ -197,16 +198,16 @@ async def track_context_load(
 # Additional Endpoint: Get Full Context (with files list)
 # ============================================================================
 
+
 @router.get(
     "/{task_id}/full",
     response_model=TaskContext,
     dependencies=[Depends(require_role(UserRole.DEVELOPER))],
     summary="Get full context with files list",
-    description="Get complete context including all file paths (developer+ only)"
+    description="Get complete context including all file paths (developer+ only)",
 )
 async def get_context_full(
-    task_id: UUID,
-    current_user: dict = Depends(get_current_user)
+    task_id: UUID, current_user: dict = Depends(get_current_user)
 ):
     """
     Get full context including files array.
@@ -223,7 +224,7 @@ async def get_context_full(
                 code="CONTEXT_NOT_FOUND",
                 message=f"No context found for task {task_id}",
                 status_code=status.HTTP_404_NOT_FOUND,
-                details={"task_id": str(task_id)}
+                details={"task_id": str(task_id)},
             )
 
         return context
@@ -232,7 +233,7 @@ async def get_context_full(
         return error_response(
             code="GET_FULL_CONTEXT_FAILED",
             message=f"Failed to get full context: {str(e)}",
-            status_code=status.HTTP_500_INTERNAL_SERVER_ERROR
+            status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
         )
 
 
@@ -240,18 +241,19 @@ async def get_context_full(
 # File Upload Endpoint (Week 6 Day 5: FormData support)
 # ============================================================================
 
+
 @router.post(
     "/{task_id}/upload",
     response_model=ContextUploadResponse,
     status_code=status.HTTP_201_CREATED,
     dependencies=[Depends(require_role(UserRole.DEVELOPER))],
     summary="Upload context ZIP file (FormData)",
-    description="Upload context as ZIP file using multipart/form-data (<50MB limit)"
+    description="Upload context as ZIP file using multipart/form-data (<50MB limit)",
 )
 async def upload_context_file(
     task_id: UUID,
     file: UploadFile = File(..., description="ZIP file containing context (max 50MB)"),
-    current_user: dict = Depends(get_current_user)
+    current_user: dict = Depends(get_current_user),
 ):
     """
     Upload context ZIP file using FormData (Week 6 Day 5).
@@ -272,7 +274,7 @@ async def upload_context_file(
     6. Return ZIP URL and metadata
     """
     # Validate file type
-    if not file.filename.endswith('.zip') and file.content_type != 'application/zip':
+    if not file.filename.endswith(".zip") and file.content_type != "application/zip":
         return error_response(
             code="INVALID_FILE_TYPE",
             message="Only ZIP files are allowed",
@@ -280,8 +282,8 @@ async def upload_context_file(
             details={
                 "task_id": str(task_id),
                 "filename": file.filename,
-                "content_type": file.content_type
-            }
+                "content_type": file.content_type,
+            },
         )
 
     try:
@@ -299,8 +301,8 @@ async def upload_context_file(
                 details={
                     "task_id": str(task_id),
                     "file_size_bytes": file_size,
-                    "limit_bytes": MAX_SIZE
-                }
+                    "limit_bytes": MAX_SIZE,
+                },
             )
 
         # Process ZIP file through service
@@ -314,7 +316,7 @@ async def upload_context_file(
             code="CONTEXT_SIZE_LIMIT_EXCEEDED",
             message=str(e),
             status_code=status.HTTP_413_REQUEST_ENTITY_TOO_LARGE,
-            details={"task_id": str(task_id), "limit_bytes": 52428800}
+            details={"task_id": str(task_id), "limit_bytes": 52428800},
         )
 
     except InvalidContextFiles as e:
@@ -322,14 +324,14 @@ async def upload_context_file(
             code="INVALID_CONTEXT_FILES",
             message=str(e),
             status_code=status.HTTP_400_BAD_REQUEST,
-            details={"task_id": str(task_id)}
+            details={"task_id": str(task_id)},
         )
 
     except Exception as e:
         return error_response(
             code="UPLOAD_CONTEXT_FILE_FAILED",
             message=f"Failed to upload context file: {str(e)}",
-            status_code=status.HTTP_500_INTERNAL_SERVER_ERROR
+            status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
         )
     finally:
         await file.close()

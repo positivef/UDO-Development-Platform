@@ -3,13 +3,14 @@
 Database Migration Runner
 Executes SQL migration files in order
 """
-import sys
+import logging
 import os
+import sys
+from datetime import datetime
 from pathlib import Path
+
 import psycopg2
 from psycopg2 import sql
-from datetime import datetime
-import logging
 
 # Configure logging
 logging.basicConfig(

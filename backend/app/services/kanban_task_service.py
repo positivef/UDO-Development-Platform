@@ -7,10 +7,10 @@ Follows Q1-Q8 decisions from KANBAN_INTEGRATION_STRATEGY.md.
 Week 8 Day 2: Added MockKanbanTaskService for testing without database.
 """
 
-from typing import List, Optional, Dict
-from uuid import UUID, uuid4
-from datetime import datetime, UTC
 import logging
+from datetime import UTC, datetime, timezone
+from typing import Dict, List, Optional
+from uuid import UUID, uuid4
 
 # Optional asyncpg import (not needed for Mock mode)
 try:
@@ -18,26 +18,17 @@ try:
 except ImportError:
     asyncpg = None
 
-from backend.app.models.kanban_task import (
-    Task,
-    TaskCreate,
-    TaskUpdate,
-    TaskStatus,
-    TaskPriority,
-    TaskFilters,
-    PaginationMeta,
-    TaskListResponse,
-    PhaseChangeRequest,
-    StatusChangeRequest,
-    PriorityChangeRequest,
-    CompletenessUpdateRequest,
-    QualityGateResult,
-    QualityGateCheck,
-    ArchiveRequest,
-    TaskArchive,
-    TaskNotFoundError,
-    PhaseName,
-)
+from app.models.kanban_task import (ArchiveRequest,
+                                            CompletenessUpdateRequest,
+                                            PaginationMeta, PhaseChangeRequest,
+                                            PhaseName, PriorityChangeRequest,
+                                            QualityGateCheck,
+                                            QualityGateResult,
+                                            StatusChangeRequest, Task,
+                                            TaskArchive, TaskCreate,
+                                            TaskFilters, TaskListResponse,
+                                            TaskNotFoundError, TaskPriority,
+                                            TaskStatus, TaskUpdate)
 
 logger = logging.getLogger(__name__)
 
@@ -99,13 +90,13 @@ class KanbanTaskService:
                 task_data.description,
                 task_data.phase_id,
                 task_data.phase_name,
-                task_data.status if task_data.status else 'pending',
-                task_data.priority if task_data.priority else 'medium',
+                task_data.status if task_data.status else "pending",
+                task_data.priority if task_data.priority else "medium",
                 task_data.completeness,
                 task_data.estimated_hours,
                 task_data.actual_hours,
                 task_data.ai_suggested,
-                task_data.ai_confidence
+                task_data.ai_confidence,
             )
 
             task = Task(**dict(row))
@@ -182,12 +173,20 @@ class KanbanTaskService:
 
                 if filters.status:
                     where_clauses.append(f"status = ${param_count}")
-                    params.append(filters.status.value if hasattr(filters.status, 'value') else filters.status)
+                    params.append(
+                        filters.status.value
+                        if hasattr(filters.status, "value")
+                        else filters.status
+                    )
                     param_count += 1
 
                 if filters.priority:
                     where_clauses.append(f"priority = ${param_count}")
-                    params.append(filters.priority.value if hasattr(filters.priority, 'value') else filters.priority)
+                    params.append(
+                        filters.priority.value
+                        if hasattr(filters.priority, "value")
+                        else filters.priority
+                    )
                     param_count += 1
 
                 if filters.min_completeness is not None:
@@ -212,14 +211,18 @@ class KanbanTaskService:
 
             where_sql = "WHERE " + " AND ".join(where_clauses) if where_clauses else ""
 
-            # Build ORDER BY clause
+            # P0-4: Build ORDER BY clause with whitelist validation
+            # Note: sort_by is already validated by TaskSortField.validate() in router
+            # This mapping provides an additional safety layer and documentation
             sort_mapping = {
                 "created_at": "created_at",
                 "updated_at": "updated_at",
                 "priority": "priority",
-                "completeness": "completeness"
+                "completeness": "completeness",
             }
+            # Use validated sort_by from whitelist (already checked in router)
             sort_column = sort_mapping.get(sort_by, "created_at")
+            # Direction is strictly controlled (not from user input)
             sort_direction = "DESC" if sort_desc else "ASC"
 
             # Count total
@@ -259,14 +262,12 @@ class KanbanTaskService:
                 has_prev=page > 1,
             )
 
-            logger.info(f"Listed {len(tasks)}/{total} tasks (page {page}/{total_pages})")
+            logger.info(
+                f"Listed {len(tasks)}/{total} tasks (page {page}/{total_pages})"
+            )
             return TaskListResponse(data=tasks, pagination=pagination)
 
-    async def update_task(
-        self,
-        task_id: UUID,
-        task_update: TaskUpdate
-    ) -> Task:
+    async def update_task(self, task_id: UUID, task_update: TaskUpdate) -> Task:
         """
         Update task in database.
 
@@ -301,7 +302,11 @@ class KanbanTaskService:
 
             if task_update.status is not None:
                 set_clauses.append(f"status = ${param_count}")
-                params.append(task_update.status.value if hasattr(task_update.status, 'value') else task_update.status)
+                params.append(
+                    task_update.status.value
+                    if hasattr(task_update.status, "value")
+                    else task_update.status
+                )
                 param_count += 1
 
                 # Set completed_at if status is COMPLETED
@@ -312,7 +317,11 @@ class KanbanTaskService:
 
             if task_update.priority is not None:
                 set_clauses.append(f"priority = ${param_count}")
-                params.append(task_update.priority.value if hasattr(task_update.priority, 'value') else task_update.priority)
+                params.append(
+                    task_update.priority.value
+                    if hasattr(task_update.priority, "value")
+                    else task_update.priority
+                )
                 param_count += 1
 
             if task_update.completeness is not None:
@@ -323,7 +332,7 @@ class KanbanTaskService:
                 # Auto-mark as completed if 100%
                 if task_update.completeness == 100:
                     set_clauses.append(f"status = ${param_count}")
-                    params.append('completed')
+                    params.append("completed")
                     param_count += 1
                     set_clauses.append(f"completed_at = ${param_count}")
                     params.append(datetime.now(UTC))
@@ -403,9 +412,7 @@ class KanbanTaskService:
     # ========================================================================
 
     async def change_phase(
-        self,
-        task_id: UUID,
-        phase_request: PhaseChangeRequest
+        self, task_id: UUID, phase_request: PhaseChangeRequest
     ) -> Task:
         """
         Move task to different phase.
@@ -441,14 +448,16 @@ class KanbanTaskService:
                 phase_request.new_phase_id,
                 phase_request.new_phase_name,
                 datetime.now(UTC),
-                task_id
+                task_id,
             )
 
             if not row:
                 raise TaskNotFoundError(task_id)
 
             task = Task(**dict(row))
-            logger.info(f"Moved task {task_id} to phase: {phase_request.new_phase_name}")
+            logger.info(
+                f"Moved task {task_id} to phase: {phase_request.new_phase_name}"
+            )
             return task
 
     # ========================================================================
@@ -456,9 +465,7 @@ class KanbanTaskService:
     # ========================================================================
 
     async def change_status(
-        self,
-        task_id: UUID,
-        status_request: StatusChangeRequest
+        self, task_id: UUID, status_request: StatusChangeRequest
     ) -> Task:
         """
         Change task status.
@@ -492,9 +499,9 @@ class KanbanTaskService:
                 """
                 row = await conn.fetchrow(
                     query,
-                    status_request.new_status.value,
-                    datetime.now(UTC),
-                    task_id
+                    status_request.new_status,
+                    datetime.now(UTC).replace(tzinfo=None),
+                    task_id,
                 )
             else:
                 query = """
@@ -515,22 +522,27 @@ class KanbanTaskService:
                 """
                 row = await conn.fetchrow(
                     query,
-                    status_request.new_status.value,
-                    datetime.now(UTC),
-                    task_id
+                    status_request.new_status,
+                    datetime.now(UTC).replace(tzinfo=None),
+                    task_id,
                 )
 
             if not row:
                 raise TaskNotFoundError(task_id)
 
-            task = Task(**dict(row))
-            logger.info(f"Changed task {task_id} status to: {status_request.new_status}")
+            # Convert None to empty list for violated_articles (Pydantic validation)
+            task_data = dict(row)
+            if task_data.get("violated_articles") is None:
+                task_data["violated_articles"] = []
+
+            task = Task(**task_data)
+            logger.info(
+                f"Changed task {task_id} status to: {status_request.new_status}"
+            )
             return task
 
     async def change_priority(
-        self,
-        task_id: UUID,
-        priority_request: PriorityChangeRequest
+        self, task_id: UUID, priority_request: PriorityChangeRequest
     ) -> Task:
         """
         Change task priority.
@@ -561,23 +573,20 @@ class KanbanTaskService:
             """
 
             row = await conn.fetchrow(
-                query,
-                priority_request.new_priority.value,
-                datetime.now(UTC),
-                task_id
+                query, priority_request.new_priority.value, datetime.now(UTC), task_id
             )
 
             if not row:
                 raise TaskNotFoundError(task_id)
 
             task = Task(**dict(row))
-            logger.info(f"Changed task {task_id} priority to: {priority_request.new_priority}")
+            logger.info(
+                f"Changed task {task_id} priority to: {priority_request.new_priority}"
+            )
             return task
 
     async def update_completeness(
-        self,
-        task_id: UUID,
-        completeness_request: CompletenessUpdateRequest
+        self, task_id: UUID, completeness_request: CompletenessUpdateRequest
     ) -> Task:
         """
         Update task completeness percentage.
@@ -613,10 +622,7 @@ class KanbanTaskService:
                         created_at, updated_at, completed_at, archived_at
                 """
                 row = await conn.fetchrow(
-                    query,
-                    completeness_request.completeness,
-                    datetime.now(UTC),
-                    task_id
+                    query, completeness_request.completeness, datetime.now(UTC), task_id
                 )
             else:
                 query = """
@@ -636,17 +642,16 @@ class KanbanTaskService:
                         created_at, updated_at, completed_at, archived_at
                 """
                 row = await conn.fetchrow(
-                    query,
-                    completeness_request.completeness,
-                    datetime.now(UTC),
-                    task_id
+                    query, completeness_request.completeness, datetime.now(UTC), task_id
                 )
 
             if not row:
                 raise TaskNotFoundError(task_id)
 
             task = Task(**dict(row))
-            logger.info(f"Updated task {task_id} completeness to: {completeness_request.completeness}%")
+            logger.info(
+                f"Updated task {task_id} completeness to: {completeness_request.completeness}%"
+            )
             return task
 
     # ========================================================================
@@ -673,19 +678,19 @@ class KanbanTaskService:
                 check_name="Constitutional Compliance",
                 passed=True,
                 message="All constitutional articles satisfied",
-                article=None
+                article=None,
             ),
             QualityGateCheck(
                 check_name="Code Quality",
                 passed=True,
                 message="Code quality score: 85/100",
-                article=None
+                article=None,
             ),
             QualityGateCheck(
                 check_name="Test Coverage",
                 passed=True,
                 message="Test coverage: 80%",
-                article=None
+                article=None,
             ),
         ]
 
@@ -714,7 +719,7 @@ class KanbanTaskService:
                 len(violated_articles) == 0,
                 violated_articles,
                 datetime.now(UTC),
-                task_id
+                task_id,
             )
 
         execution_time = (datetime.now(UTC) - start_time).total_seconds() * 1000
@@ -768,9 +773,7 @@ class KanbanTaskService:
     # ========================================================================
 
     async def archive_task(
-        self,
-        task_id: UUID,
-        archive_request: ArchiveRequest
+        self, task_id: UUID, archive_request: ArchiveRequest
     ) -> TaskArchive:
         """
         Archive task to Done-End (Q6: Done-End + AI -> Obsidian).
@@ -825,6 +828,7 @@ class KanbanTaskService:
 # ============================================================================
 # Mock Service for Testing
 # ============================================================================
+
 
 class MockKanbanTaskService:
     """
@@ -971,23 +975,63 @@ class MockKanbanTaskService:
             if filters.phase:
                 tasks = [t for t in tasks if t.phase_name == filters.phase]
             if filters.status:
-                status_val = filters.status.value if hasattr(filters.status, 'value') else filters.status
-                tasks = [t for t in tasks if t.status == status_val or (hasattr(t.status, 'value') and t.status.value == status_val)]
+                status_val = (
+                    filters.status.value
+                    if hasattr(filters.status, "value")
+                    else filters.status
+                )
+                tasks = [
+                    t
+                    for t in tasks
+                    if t.status == status_val
+                    or (hasattr(t.status, "value") and t.status.value == status_val)
+                ]
             if filters.priority:
-                priority_val = filters.priority.value if hasattr(filters.priority, 'value') else filters.priority
-                tasks = [t for t in tasks if t.priority == priority_val or (hasattr(t.priority, 'value') and t.priority.value == priority_val)]
+                priority_val = (
+                    filters.priority.value
+                    if hasattr(filters.priority, "value")
+                    else filters.priority
+                )
+                tasks = [
+                    t
+                    for t in tasks
+                    if t.priority == priority_val
+                    or (
+                        hasattr(t.priority, "value")
+                        and t.priority.value == priority_val
+                    )
+                ]
             if filters.min_completeness is not None:
-                tasks = [t for t in tasks if (t.completeness or 0) >= filters.min_completeness]
+                tasks = [
+                    t
+                    for t in tasks
+                    if (t.completeness or 0) >= filters.min_completeness
+                ]
             if filters.max_completeness is not None:
-                tasks = [t for t in tasks if (t.completeness or 0) <= filters.max_completeness]
+                tasks = [
+                    t
+                    for t in tasks
+                    if (t.completeness or 0) <= filters.max_completeness
+                ]
             if filters.ai_suggested is not None:
                 tasks = [t for t in tasks if t.ai_suggested == filters.ai_suggested]
             if filters.quality_gate_passed is not None:
-                tasks = [t for t in tasks if t.quality_gate_passed == filters.quality_gate_passed]
+                tasks = [
+                    t
+                    for t in tasks
+                    if t.quality_gate_passed == filters.quality_gate_passed
+                ]
 
         # Sort
-        sort_key = sort_by if sort_by in ["created_at", "updated_at", "priority", "completeness"] else "created_at"
-        tasks.sort(key=lambda t: getattr(t, sort_key) or datetime.min.replace(tzinfo=UTC), reverse=sort_desc)
+        sort_key = (
+            sort_by
+            if sort_by in ["created_at", "updated_at", "priority", "completeness"]
+            else "created_at"
+        )
+        tasks.sort(
+            key=lambda t: getattr(t, sort_key) or datetime.min.replace(tzinfo=UTC),
+            reverse=sort_desc,
+        )
 
         # Paginate
         total = len(tasks)
@@ -1052,7 +1096,9 @@ class MockKanbanTaskService:
     # Phase Operations
     # ========================================================================
 
-    async def change_phase(self, task_id: UUID, phase_request: PhaseChangeRequest) -> Task:
+    async def change_phase(
+        self, task_id: UUID, phase_request: PhaseChangeRequest
+    ) -> Task:
         """Move task to different phase."""
         if task_id not in self._mock_tasks:
             raise TaskNotFoundError(task_id)
@@ -1061,14 +1107,18 @@ class MockKanbanTaskService:
         task.phase_id = phase_request.new_phase_id
         task.phase_name = phase_request.new_phase_name
         task.updated_at = datetime.now(UTC)
-        logger.info(f"[Mock] Moved task {task_id} to phase: {phase_request.new_phase_name}")
+        logger.info(
+            f"[Mock] Moved task {task_id} to phase: {phase_request.new_phase_name}"
+        )
         return task
 
     # ========================================================================
     # Status & Priority Operations
     # ========================================================================
 
-    async def change_status(self, task_id: UUID, status_request: StatusChangeRequest) -> Task:
+    async def change_status(
+        self, task_id: UUID, status_request: StatusChangeRequest
+    ) -> Task:
         """Change task status."""
         if task_id not in self._mock_tasks:
             raise TaskNotFoundError(task_id)
@@ -1078,10 +1128,14 @@ class MockKanbanTaskService:
         task.updated_at = datetime.now(UTC)
         if status_request.new_status == TaskStatus.COMPLETED:
             task.completed_at = datetime.now(UTC)
-        logger.info(f"[Mock] Changed task {task_id} status to: {status_request.new_status}")
+        logger.info(
+            f"[Mock] Changed task {task_id} status to: {status_request.new_status}"
+        )
         return task
 
-    async def change_priority(self, task_id: UUID, priority_request: PriorityChangeRequest) -> Task:
+    async def change_priority(
+        self, task_id: UUID, priority_request: PriorityChangeRequest
+    ) -> Task:
         """Change task priority."""
         if task_id not in self._mock_tasks:
             raise TaskNotFoundError(task_id)
@@ -1089,10 +1143,14 @@ class MockKanbanTaskService:
         task = self._mock_tasks[task_id]
         task.priority = priority_request.new_priority
         task.updated_at = datetime.now(UTC)
-        logger.info(f"[Mock] Changed task {task_id} priority to: {priority_request.new_priority}")
+        logger.info(
+            f"[Mock] Changed task {task_id} priority to: {priority_request.new_priority}"
+        )
         return task
 
-    async def update_completeness(self, task_id: UUID, completeness_request: CompletenessUpdateRequest) -> Task:
+    async def update_completeness(
+        self, task_id: UUID, completeness_request: CompletenessUpdateRequest
+    ) -> Task:
         """Update task completeness percentage."""
         if task_id not in self._mock_tasks:
             raise TaskNotFoundError(task_id)
@@ -1103,7 +1161,9 @@ class MockKanbanTaskService:
         if completeness_request.completeness == 100:
             task.status = TaskStatus.COMPLETED
             task.completed_at = datetime.now(UTC)
-        logger.info(f"[Mock] Updated task {task_id} completeness to: {completeness_request.completeness}%")
+        logger.info(
+            f"[Mock] Updated task {task_id} completeness to: {completeness_request.completeness}%"
+        )
         return task
 
     # ========================================================================
@@ -1122,19 +1182,19 @@ class MockKanbanTaskService:
                 check_name="Constitutional Compliance",
                 passed=True,
                 message="All constitutional articles satisfied",
-                article=None
+                article=None,
             ),
             QualityGateCheck(
                 check_name="Code Quality",
                 passed=True,
                 message="Code quality score: 85/100",
-                article=None
+                article=None,
             ),
             QualityGateCheck(
                 check_name="Test Coverage",
                 passed=True,
                 message="Test coverage: 80%",
-                article=None
+                article=None,
             ),
         ]
 
@@ -1163,7 +1223,9 @@ class MockKanbanTaskService:
             execution_time_ms=execution_time,
         )
 
-        logger.info(f"[Mock] Quality gate for task {task_id}: {'PASSED' if quality_gate_passed else 'FAILED'}")
+        logger.info(
+            f"[Mock] Quality gate for task {task_id}: {'PASSED' if quality_gate_passed else 'FAILED'}"
+        )
         return result
 
     async def get_quality_gates(self, task_id: UUID) -> QualityGateResult:
@@ -1185,7 +1247,9 @@ class MockKanbanTaskService:
     # Archive Operations (Q6)
     # ========================================================================
 
-    async def archive_task(self, task_id: UUID, archive_request: ArchiveRequest) -> TaskArchive:
+    async def archive_task(
+        self, task_id: UUID, archive_request: ArchiveRequest
+    ) -> TaskArchive:
         """Archive task to Done-End."""
         task = await self.get_task(task_id)
 
@@ -1227,6 +1291,7 @@ kanban_task_service = MockKanbanTaskService()
 # Dependency Injection
 # ============================================================================
 
+
 def get_kanban_task_service() -> "KanbanTaskService":
     """
     Dependency function for FastAPI routes.
@@ -1245,6 +1310,8 @@ def get_kanban_task_service() -> "KanbanTaskService":
 
     db_pool = async_db.get_pool()
     if db_pool is None:
-        raise RuntimeError("Database pool not initialized. Ensure startup_event has run.")
+        raise RuntimeError(
+            "Database pool not initialized. Ensure startup_event has run."
+        )
 
     return KanbanTaskService(db_pool=db_pool)

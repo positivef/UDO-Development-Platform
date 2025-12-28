@@ -5,7 +5,7 @@ Provides runtime feature flag management for Tier 1 rollback strategy.
 Allows instant disable of features without deployment (<10 seconds).
 
 Usage:
-    from backend.app.core.feature_flags import is_feature_enabled, feature_flags_manager
+    from app.core.feature_flags import is_feature_enabled, feature_flags_manager
 
     if is_feature_enabled("kanban_ai_suggest"):
         # AI suggestion logic
@@ -74,14 +74,14 @@ class FeatureFlagsManager:
 
     # Production-safe defaults (conservative start)
     DEFAULT_FLAGS: dict[str, bool] = {
-        FeatureFlag.KANBAN_BOARD.value: True,           # Core functionality
-        FeatureFlag.KANBAN_AI_SUGGEST.value: False,     # Enable after validation
-        FeatureFlag.KANBAN_ARCHIVE.value: True,         # Core functionality
-        FeatureFlag.KANBAN_DEPENDENCIES.value: True,    # Core functionality
+        FeatureFlag.KANBAN_BOARD.value: True,  # Core functionality
+        FeatureFlag.KANBAN_AI_SUGGEST.value: False,  # Enable after validation
+        FeatureFlag.KANBAN_ARCHIVE.value: True,  # Core functionality
+        FeatureFlag.KANBAN_DEPENDENCIES.value: True,  # Core functionality
         FeatureFlag.KANBAN_MULTI_PROJECT.value: False,  # Enable after testing
         FeatureFlag.KANBAN_OBSIDIAN_SYNC.value: False,  # Enable after Obsidian setup
-        FeatureFlag.KANBAN_QUALITY_GATES.value: True,   # Core functionality
-        FeatureFlag.KANBAN_TIME_TRACKING.value: True,   # Core functionality
+        FeatureFlag.KANBAN_QUALITY_GATES.value: True,  # Core functionality
+        FeatureFlag.KANBAN_TIME_TRACKING.value: True,  # Core functionality
     }
 
     def __init__(self) -> None:
@@ -108,7 +108,9 @@ class FeatureFlagsManager:
 
             if env_value is not None:
                 value = env_value.lower() in ("true", "1", "yes", "on")
-                logger.info("Flag '%s' overridden by env %s=%s", flag_name, env_key, value)
+                logger.info(
+                    "Flag '%s' overridden by env %s=%s", flag_name, env_key, value
+                )
             else:
                 value = default_value
 
@@ -116,7 +118,7 @@ class FeatureFlagsManager:
                 enabled=value,
                 last_changed=now,
                 changed_by="system",
-                reason="Initial configuration"
+                reason="Initial configuration",
             )
 
     def is_enabled(self, flag: str | FeatureFlag) -> bool:
@@ -143,7 +145,7 @@ class FeatureFlagsManager:
         flag: str | FeatureFlag,
         enabled: bool,
         changed_by: Optional[str] = None,
-        reason: Optional[str] = None
+        reason: Optional[str] = None,
     ) -> bool:
         """
         Set a feature flag value.
@@ -175,10 +177,7 @@ class FeatureFlagsManager:
 
             # Update flag state
             self._flags[flag_name] = FeatureFlagState(
-                enabled=enabled,
-                last_changed=now,
-                changed_by=changed_by,
-                reason=reason
+                enabled=enabled, last_changed=now, changed_by=changed_by, reason=reason
             )
 
             # Record change event
@@ -188,7 +187,7 @@ class FeatureFlagsManager:
                 new_value=enabled,
                 changed_at=now,
                 changed_by=changed_by,
-                reason=reason
+                reason=reason,
             )
             self._record_change(event)
 
@@ -197,7 +196,11 @@ class FeatureFlagsManager:
 
             logger.warning(
                 "Feature flag '%s' changed: %s -> %s (by: %s, reason: %s)",
-                flag_name, old_value, enabled, changed_by, reason
+                flag_name,
+                old_value,
+                enabled,
+                changed_by,
+                reason,
             )
 
             return True
@@ -206,7 +209,7 @@ class FeatureFlagsManager:
         self,
         flag: str | FeatureFlag,
         changed_by: Optional[str] = None,
-        reason: Optional[str] = None
+        reason: Optional[str] = None,
     ) -> bool:
         """
         Toggle a feature flag.
@@ -239,7 +242,7 @@ class FeatureFlagsManager:
                     "enabled": state.enabled,
                     "last_changed": state.last_changed.isoformat(),
                     "changed_by": state.changed_by,
-                    "reason": state.reason
+                    "reason": state.reason,
                 }
                 for name, state in self._flags.items()
             }
@@ -263,14 +266,13 @@ class FeatureFlagsManager:
                     "new_value": e.new_value,
                     "changed_at": e.changed_at.isoformat(),
                     "changed_by": e.changed_by,
-                    "reason": e.reason
+                    "reason": e.reason,
                 }
                 for e in events
             ]
 
     def register_callback(
-        self,
-        callback: Callable[[FeatureFlagChangeEvent], None]
+        self, callback: Callable[[FeatureFlagChangeEvent], None]
     ) -> None:
         """
         Register a callback for flag change events.
@@ -295,7 +297,7 @@ class FeatureFlagsManager:
                     flag_name,
                     default_value,
                     changed_by=changed_by,
-                    reason="Reset to defaults"
+                    reason="Reset to defaults",
                 )
             logger.warning("All feature flags reset to defaults by %s", changed_by)
 
@@ -309,10 +311,7 @@ class FeatureFlagsManager:
         with self._lock:
             for flag_name in self._flags:
                 self.set_flag(
-                    flag_name,
-                    True,
-                    changed_by=changed_by,
-                    reason="Enable all flags"
+                    flag_name, True, changed_by=changed_by, reason="Enable all flags"
                 )
             logger.warning("All feature flags enabled by %s", changed_by)
 
@@ -329,7 +328,7 @@ class FeatureFlagsManager:
                     flag_name,
                     False,
                     changed_by=changed_by,
-                    reason="Emergency disable all"
+                    reason="Emergency disable all",
                 )
             logger.warning("All feature flags DISABLED by %s (emergency)", changed_by)
 
@@ -339,7 +338,7 @@ class FeatureFlagsManager:
 
         # Trim history if too large
         if len(self._change_history) > self._max_history_size:
-            self._change_history = self._change_history[-self._max_history_size:]
+            self._change_history = self._change_history[-self._max_history_size :]
 
     def _notify_callbacks(self, event: FeatureFlagChangeEvent) -> None:
         """Notify all registered callbacks of a change."""
@@ -389,6 +388,7 @@ def require_feature(flag: str | FeatureFlag) -> Callable:
             pass
     """
     from functools import wraps
+
     from fastapi import HTTPException
 
     def decorator(func: Callable) -> Callable:
@@ -398,10 +398,12 @@ def require_feature(flag: str | FeatureFlag) -> Callable:
                 flag_name = flag.value if isinstance(flag, FeatureFlag) else flag
                 raise HTTPException(
                     status_code=503,
-                    detail=f"Feature '{flag_name}' is currently disabled"
+                    detail=f"Feature '{flag_name}' is currently disabled",
                 )
             return await func(*args, **kwargs)
+
         return wrapper
+
     return decorator
 
 

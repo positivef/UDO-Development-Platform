@@ -17,7 +17,7 @@ from scripts.tool_wrappers import (
     edit_with_recovery,
     write_with_recovery,
     get_wrapper_statistics,
-    reset_wrapper_statistics
+    reset_wrapper_statistics,
 )
 
 
@@ -28,12 +28,14 @@ class TestBashWithRecovery:
         """Setup for each test"""
         # Disable auto-resolution for error scenario tests
         from scripts.auto_3tier_wrapper import disable_auto_resolution
+
         disable_auto_resolution()
 
     def teardown_method(self):
         """Cleanup after each test"""
         # Re-enable auto-resolution
         from scripts.auto_3tier_wrapper import enable_auto_resolution
+
         enable_auto_resolution()
 
     def test_successful_command(self):
@@ -67,7 +69,7 @@ class TestBashWithRecovery:
         assert result["success"] is False
         assert "timeout" in result["stderr"].lower() or "Timeout" in result["stderr"]
 
-    @patch('scripts.auto_3tier_wrapper.get_wrapper')
+    @patch("scripts.auto_3tier_wrapper.get_wrapper")
     def test_auto_recovery_triggered(self, mock_get_wrapper):
         """Test that 3-Tier auto-recovery is triggered on error"""
         mock_wrapper = Mock()
@@ -89,6 +91,7 @@ class TestReadWithRecovery:
         """Create temporary test file"""
         # Disable auto-resolution for these tests
         from scripts.auto_3tier_wrapper import disable_auto_resolution, get_wrapper
+
         disable_auto_resolution()
 
         # Verify it's disabled
@@ -99,13 +102,14 @@ class TestReadWithRecovery:
         self.test_file = Path(self.temp_dir) / "test.txt"
         self.test_content = "Hello, World!\nThis is a test file."
 
-        with open(self.test_file, 'w', encoding='utf-8') as f:
+        with open(self.test_file, "w", encoding="utf-8") as f:
             f.write(self.test_content)
 
     def teardown_method(self):
         """Clean up temporary files"""
         # Re-enable auto-resolution after tests
         from scripts.auto_3tier_wrapper import enable_auto_resolution
+
         enable_auto_resolution()
 
         if self.test_file.exists():
@@ -139,8 +143,8 @@ class TestReadWithRecovery:
         """Test handling of encoding errors"""
         # Create a file with binary data
         binary_file = Path(self.temp_dir) / "binary.dat"
-        with open(binary_file, 'wb') as f:
-            f.write(b'\x80\x81\x82\x83')
+        with open(binary_file, "wb") as f:
+            f.write(b"\x80\x81\x82\x83")
 
         result = read_with_recovery(str(binary_file))
 
@@ -159,6 +163,7 @@ class TestEditWithRecovery:
         """Create temporary test file"""
         # Disable auto-resolution for these tests
         from scripts.auto_3tier_wrapper import disable_auto_resolution, get_wrapper
+
         disable_auto_resolution()
 
         # Verify it's disabled
@@ -169,13 +174,14 @@ class TestEditWithRecovery:
         self.test_file = Path(self.temp_dir) / "edit_test.txt"
         self.original_content = "Line 1\nLine 2 OLD\nLine 3"
 
-        with open(self.test_file, 'w', encoding='utf-8') as f:
+        with open(self.test_file, "w", encoding="utf-8") as f:
             f.write(self.original_content)
 
     def teardown_method(self):
         """Clean up temporary files"""
         # Re-enable auto-resolution after tests
         from scripts.auto_3tier_wrapper import enable_auto_resolution
+
         enable_auto_resolution()
 
         # Clean up all files in temp dir
@@ -185,17 +191,13 @@ class TestEditWithRecovery:
 
     def test_edit_single_occurrence(self):
         """Test editing with single occurrence"""
-        result = edit_with_recovery(
-            str(self.test_file),
-            "OLD",
-            "NEW"
-        )
+        result = edit_with_recovery(str(self.test_file), "OLD", "NEW")
 
         assert result["success"] is True
         assert result["replacements"] == 1
 
         # Verify content changed
-        with open(self.test_file, 'r') as f:
+        with open(self.test_file, "r") as f:
             new_content = f.read()
         assert "NEW" in new_content
         assert "OLD" not in new_content
@@ -204,14 +206,10 @@ class TestEditWithRecovery:
         """Test editing with multiple occurrences (should fail without replace_all)"""
         # Create file with multiple occurrences
         multi_content = "FOO\nFOO\nFOO"
-        with open(self.test_file, 'w') as f:
+        with open(self.test_file, "w") as f:
             f.write(multi_content)
 
-        result = edit_with_recovery(
-            str(self.test_file),
-            "FOO",
-            "BAR"
-        )
+        result = edit_with_recovery(str(self.test_file), "FOO", "BAR")
 
         # Should fail (multiple occurrences without replace_all)
         assert result["success"] is False
@@ -220,43 +218,29 @@ class TestEditWithRecovery:
     def test_edit_replace_all(self):
         """Test editing with replace_all=True"""
         multi_content = "FOO\nFOO\nFOO"
-        with open(self.test_file, 'w') as f:
+        with open(self.test_file, "w") as f:
             f.write(multi_content)
 
-        result = edit_with_recovery(
-            str(self.test_file),
-            "FOO",
-            "BAR",
-            replace_all=True
-        )
+        result = edit_with_recovery(str(self.test_file), "FOO", "BAR", replace_all=True)
 
         assert result["success"] is True
         assert result["replacements"] == 3
 
         # Verify all replaced
-        with open(self.test_file, 'r') as f:
+        with open(self.test_file, "r") as f:
             new_content = f.read()
         assert new_content == "BAR\nBAR\nBAR"
 
     def test_edit_string_not_found(self):
         """Test editing when string doesn't exist"""
-        result = edit_with_recovery(
-            str(self.test_file),
-            "NONEXISTENT",
-            "REPLACEMENT"
-        )
+        result = edit_with_recovery(str(self.test_file), "NONEXISTENT", "REPLACEMENT")
 
         assert result["success"] is False
         assert "String not found" in result.get("error", "")
 
     def test_edit_with_backup(self):
         """Test that backup file is created"""
-        result = edit_with_recovery(
-            str(self.test_file),
-            "OLD",
-            "NEW",
-            backup=True
-        )
+        result = edit_with_recovery(str(self.test_file), "OLD", "NEW", backup=True)
 
         assert result["success"] is True
         assert result["backup_path"] is not None
@@ -266,7 +250,7 @@ class TestEditWithRecovery:
         assert backup_file.exists()
 
         # Verify backup contains original content
-        with open(backup_file, 'r') as f:
+        with open(backup_file, "r") as f:
             backup_content = f.read()
         assert backup_content == self.original_content
 
@@ -294,17 +278,14 @@ class TestWriteWithRecovery:
         test_file = Path(self.temp_dir) / "new_file.txt"
         test_content = "New file content"
 
-        result = write_with_recovery(
-            str(test_file),
-            test_content
-        )
+        result = write_with_recovery(str(test_file), test_content)
 
         assert result["success"] is True
         assert result["size_bytes"] == len(test_content)
         assert test_file.exists()
 
         # Verify content
-        with open(test_file, 'r') as f:
+        with open(test_file, "r") as f:
             assert f.read() == test_content
 
     def test_write_with_subdirectories(self):
@@ -312,11 +293,7 @@ class TestWriteWithRecovery:
         test_file = Path(self.temp_dir) / "sub1" / "sub2" / "file.txt"
         test_content = "Nested file"
 
-        result = write_with_recovery(
-            str(test_file),
-            test_content,
-            create_dirs=True
-        )
+        result = write_with_recovery(str(test_file), test_content, create_dirs=True)
 
         assert result["success"] is True
         assert test_file.exists()
@@ -329,26 +306,22 @@ class TestWriteWithRecovery:
         new_content = "New Content"
 
         # Create original file
-        with open(test_file, 'w') as f:
+        with open(test_file, "w") as f:
             f.write(original_content)
 
-        result = write_with_recovery(
-            str(test_file),
-            new_content,
-            backup_if_exists=True
-        )
+        result = write_with_recovery(str(test_file), new_content, backup_if_exists=True)
 
         assert result["success"] is True
         assert result["backup_path"] is not None
 
         # Verify new content
-        with open(test_file, 'r') as f:
+        with open(test_file, "r") as f:
             assert f.read() == new_content
 
         # Verify backup
         backup = Path(result["backup_path"])
         assert backup.exists()
-        with open(backup, 'r') as f:
+        with open(backup, "r") as f:
             assert f.read() == original_content
 
 
@@ -383,7 +356,7 @@ class TestWrapperStatistics:
 @pytest.fixture
 def temp_test_file():
     """Fixture for temporary test file"""
-    temp = tempfile.NamedTemporaryFile(mode='w', delete=False, suffix=".txt")
+    temp = tempfile.NamedTemporaryFile(mode="w", delete=False, suffix=".txt")
     temp.write("Test content")
     temp.close()
 

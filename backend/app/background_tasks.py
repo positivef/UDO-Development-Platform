@@ -48,7 +48,7 @@ class BackgroundSyncTask:
 
         self.running = True
         self.task = asyncio.create_task(self._sync_loop())
-        logger.info(f"[OK] Background sync started (interval: {self.sync_interval_hours}h)")
+        logger.info(f"✅ Background sync started (interval: {self.sync_interval_hours}h)")
 
     async def stop(self):
         """Stop the background sync task"""
@@ -62,7 +62,7 @@ class BackgroundSyncTask:
                 await self.task
             except asyncio.CancelledError:
                 pass
-        logger.info("⏹ Background sync stopped")
+        logger.info("⏹️ Background sync stopped")
 
     async def _sync_loop(self):
         """Main sync loop - runs every N hours"""
@@ -82,7 +82,7 @@ class BackgroundSyncTask:
     async def _perform_sync(self):
         """Perform the actual sync operation"""
         try:
-            logger.info("[EMOJI] Periodic sync triggered...")
+            logger.info("🔄 Periodic sync triggered...")
 
             # Check if there are uncommitted changes
             has_changes = await self._check_git_changes()
@@ -95,7 +95,7 @@ class BackgroundSyncTask:
             await self._create_temp_devlog()
 
             self.last_sync = datetime.now()
-            logger.info(f"[OK] Periodic sync completed at {self.last_sync.strftime('%H:%M:%S')}")
+            logger.info(f"✅ Periodic sync completed at {self.last_sync.strftime('%H:%M:%S')}")
 
         except Exception as e:
             logger.error(f"Failed to perform sync: {e}")
@@ -137,13 +137,13 @@ class BackgroundSyncTask:
                     "timestamp": datetime.now().isoformat(),
                     "type": "auto_backup",
                     "sync_interval": f"{self.sync_interval_hours}h",
-                    "message": "[EMOJI] [EMOJI] ([EMOJI] [EMOJI] [EMOJI])"
+                    "message": "자동 백업 (컨텍스트 유실 방지)"
                 })
 
                 # Flush immediately (don't wait for debouncing)
                 await obsidian_service.flush_pending_events()
 
-                logger.info("[EMOJI] Temporary devlog created via ObsidianService")
+                logger.info("📝 Temporary devlog created via ObsidianService")
 
             except ImportError:
                 logger.warning("ObsidianService not available, using direct MCP call")

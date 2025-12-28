@@ -8,16 +8,17 @@ Provides Redis connection management and operations for:
 - Cache operations
 """
 
-import os
-import json
 import asyncio
-from typing import Optional, Dict, Any, List, Set
-from datetime import datetime, timedelta
+import json
 import logging
-import redis.asyncio as redis
-from redis.asyncio.lock import Lock
-from redis.asyncio.client import PubSub
+import os
+from datetime import datetime, timedelta
 from enum import Enum
+from typing import Any, Dict, List, Optional, Set
+
+import redis.asyncio as redis
+from redis.asyncio.client import PubSub
+from redis.asyncio.lock import Lock
 
 logger = logging.getLogger(__name__)
 
@@ -34,9 +35,9 @@ class RedisConfig:
         self.socket_timeout = 5
         self.socket_connect_timeout = 5
         self.connection_pool_kwargs = {
-            'max_connections': 50,
-            'retry_on_timeout': True,
-            'retry_on_error': [redis.ConnectionError, redis.TimeoutError]
+            "max_connections": 50,
+            "retry_on_timeout": True,
+            "retry_on_error": [redis.ConnectionError, redis.TimeoutError],
         }
 
     def get_url(self) -> str:
@@ -99,7 +100,7 @@ class RedisClient:
                 pool = redis.ConnectionPool.from_url(
                     self.config.get_url(),
                     decode_responses=self.config.decode_responses,
-                    **self.config.connection_pool_kwargs
+                    **self.config.connection_pool_kwargs,
                 )
 
                 # Create client with pool
@@ -154,7 +155,7 @@ class RedisClient:
         value: str,
         ttl: int = 300,
         blocking: bool = False,
-        blocking_timeout: int = 5
+        blocking_timeout: int = 5,
     ) -> bool:
         """
         Acquire a distributed lock using SET NX
@@ -178,21 +179,15 @@ class RedisClient:
                 end_time = datetime.now() + timedelta(seconds=blocking_timeout)
                 while datetime.now() < end_time:
                     success = await self._client.set(
-                        key, value,
-                        nx=True,  # Only set if not exists
-                        ex=ttl    # Expire after TTL
-                    )
+                        key, value, nx=True, ex=ttl
+                    )  # Only set if not exists  # Expire after TTL
                     if success:
                         return True
                     await asyncio.sleep(0.1)
                 return False
             else:
                 # Single attempt
-                return await self._client.set(
-                    key, value,
-                    nx=True,
-                    ex=ttl
-                )
+                return await self._client.set(key, value, nx=True, ex=ttl)
         except Exception as e:
             logger.error(f"Failed to acquire lock {key}: {e}")
             return False
@@ -259,10 +254,7 @@ class RedisClient:
     # ============= Session Operations =============
 
     async def register_session(
-        self,
-        session_id: str,
-        session_data: Dict[str, Any],
-        ttl: int = 3600
+        self, session_id: str, session_data: Dict[str, Any], ttl: int = 3600
     ) -> bool:
         """Register a new session"""
         if not await self.ensure_connected():
@@ -271,11 +263,7 @@ class RedisClient:
         try:
             # Store session data
             session_key = RedisKeys.SESSION_DATA.format(session_id)
-            await self._client.setex(
-                session_key,
-                ttl,
-                json.dumps(session_data)
-            )
+            await self._client.setex(session_key, ttl, json.dumps(session_data))
 
             # Add to active sessions set
             await self._client.sadd(RedisKeys.ACTIVE_SESSIONS, session_id)
@@ -365,10 +353,7 @@ class RedisClient:
             return False
 
         try:
-            await self._client.publish(
-                channel,
-                json.dumps(message)
-            )
+            await self._client.publish(channel, json.dumps(message))
             return True
         except Exception as e:
             logger.error(f"Failed to publish to {channel}: {e}")
@@ -390,9 +375,7 @@ class RedisClient:
     # ============= Conflict Management =============
 
     async def register_conflict(
-        self,
-        project_id: str,
-        conflict_data: Dict[str, Any]
+        self, project_id: str, conflict_data: Dict[str, Any]
     ) -> bool:
         """Register a detected conflict"""
         if not await self.ensure_connected():
@@ -403,9 +386,7 @@ class RedisClient:
             conflict_id = conflict_data.get("id", str(datetime.now().timestamp()))
 
             await self._client.hset(
-                conflicts_key,
-                conflict_id,
-                json.dumps(conflict_data)
+                conflicts_key, conflict_id, json.dumps(conflict_data)
             )
 
             # Publish conflict event
@@ -414,8 +395,8 @@ class RedisClient:
                 {
                     "type": "conflict_detected",
                     "project_id": project_id,
-                    "conflict": conflict_data
-                }
+                    "conflict": conflict_data,
+                },
             )
 
             return True
@@ -444,11 +425,7 @@ class RedisClient:
             logger.error(f"Failed to get conflicts for {project_id}: {e}")
             return []
 
-    async def resolve_conflict(
-        self,
-        project_id: str,
-        conflict_id: str
-    ) -> bool:
+    async def resolve_conflict(self, project_id: str, conflict_id: str) -> bool:
         """Mark conflict as resolved"""
         if not await self.ensure_connected():
             return False
@@ -463,8 +440,8 @@ class RedisClient:
                 {
                     "type": "conflict_resolved",
                     "project_id": project_id,
-                    "conflict_id": conflict_id
-                }
+                    "conflict_id": conflict_id,
+                },
             )
 
             return True

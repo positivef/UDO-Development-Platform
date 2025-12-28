@@ -21,7 +21,7 @@ from scripts.auto_3tier_wrapper import (
     get_statistics,
     reset_statistics,
     enable_auto_resolution,
-    disable_auto_resolution
+    disable_auto_resolution,
 )
 
 
@@ -82,6 +82,7 @@ class TestAuto3TierWrapper:
 
     def test_wrap_tool_successful_call(self):
         """Test wrapping a tool that succeeds"""
+
         @self.wrapper.wrap_tool
         def successful_tool():
             return {"success": True, "data": "test"}
@@ -92,7 +93,7 @@ class TestAuto3TierWrapper:
         assert self.wrapper.statistics["total_calls"] == 1
         assert self.wrapper.statistics["total_errors"] == 0
 
-    @patch('scripts.unified_error_resolver.UnifiedErrorResolver')
+    @patch("scripts.unified_error_resolver.UnifiedErrorResolver")
     def test_wrap_tool_error_no_resolver(self, mock_resolver_class):
         """Test wrapping a tool that errors when resolver unavailable"""
         # Make import fail to simulate resolver unavailable
@@ -112,7 +113,7 @@ class TestAuto3TierWrapper:
         assert self.wrapper.statistics["total_calls"] == 1
         assert self.wrapper.statistics["total_errors"] == 1
 
-    @patch('scripts.unified_error_resolver.UnifiedErrorResolver')
+    @patch("scripts.unified_error_resolver.UnifiedErrorResolver")
     def test_wrap_tool_tier1_hit(self, mock_resolver_class):
         """Test Tier 1 (Obsidian) resolution"""
         # Mock resolver
@@ -137,7 +138,7 @@ class TestAuto3TierWrapper:
         # This will trigger error on first call, then auto-retry
         # BUT since we can't actually apply the solution in tests,
         # we need to mock _apply_and_retry
-        with patch.object(self.wrapper, '_apply_and_retry') as mock_apply:
+        with patch.object(self.wrapper, "_apply_and_retry") as mock_apply:
             mock_apply.return_value = {"success": True, "data": "Fixed!"}
 
             result = flaky_tool()
@@ -146,7 +147,7 @@ class TestAuto3TierWrapper:
             assert self.wrapper.statistics["tier1_hits"] == 1
             mock_resolver.resolve_error.assert_called_once()
 
-    @patch('scripts.unified_error_resolver.UnifiedErrorResolver')
+    @patch("scripts.unified_error_resolver.UnifiedErrorResolver")
     def test_wrap_tool_tier2_auto_hit(self, mock_resolver_class):
         """Test Tier 2 (Context7 AUTO) resolution"""
         mock_resolver = Mock()
@@ -160,7 +161,7 @@ class TestAuto3TierWrapper:
         def permission_tool():
             return {"error": "PermissionError", "exit_code": 1}
 
-        with patch.object(self.wrapper, '_apply_and_retry') as mock_apply:
+        with patch.object(self.wrapper, "_apply_and_retry") as mock_apply:
             mock_apply.return_value = {"success": True}
 
             result = permission_tool()
@@ -168,7 +169,7 @@ class TestAuto3TierWrapper:
             assert self.wrapper.statistics["tier2_auto"] == 1
             assert self.wrapper.statistics["tier2_hits"] == 1
 
-    @patch('scripts.unified_error_resolver.UnifiedErrorResolver')
+    @patch("scripts.unified_error_resolver.UnifiedErrorResolver")
     def test_wrap_tool_tier3_escalation(self, mock_resolver_class):
         """Test Tier 3 (User) escalation when no solution found"""
         mock_resolver = Mock()
@@ -236,6 +237,7 @@ class TestAuto3TierWrapper:
         """Test @auto_3tier decorator shorthand"""
         # Reset global instance
         import scripts.auto_3tier_wrapper
+
         scripts.auto_3tier_wrapper._wrapper_instance = None
 
         @auto_3tier
@@ -283,7 +285,7 @@ class TestGlobalFunctions:
 @pytest.fixture
 def mock_resolver():
     """Fixture for mocked UnifiedErrorResolver"""
-    with patch('scripts.unified_error_resolver.UnifiedErrorResolver') as mock:
+    with patch("scripts.unified_error_resolver.UnifiedErrorResolver") as mock:
         resolver_instance = Mock()
         resolver_instance.resolve_error.return_value = "test solution"
         resolver_instance.get_statistics.return_value = {"tier1": 1}
@@ -308,7 +310,7 @@ def test_integration_example(mock_resolver):
     assert result["exit_code"] == 0
 
     # Failing command (will trigger 3-Tier resolution)
-    with patch.object(wrapper, '_apply_and_retry') as mock_apply:
+    with patch.object(wrapper, "_apply_and_retry") as mock_apply:
         mock_apply.return_value = {"exit_code": 0, "stdout": "Fixed"}
 
         result = bash_command("nonexistent-command")

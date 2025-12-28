@@ -7,65 +7,67 @@ API endpoints for project context management and project switching.
 import logging
 from typing import Optional
 from uuid import UUID
-from fastapi import APIRouter, HTTPException, Query, Depends, status
 
-from app.models.project_context import (
-    ProjectContextCreate,
-    ProjectContextUpdate,
-    ProjectContextResponse,
-    ProjectSwitchRequest,
-    ProjectSwitchResponse,
-    ProjectsListResponse,
-    ProjectListResponse
-)
+from app.models.project_context import (ProjectContextCreate,
+                                        ProjectContextResponse,
+                                        ProjectContextUpdate,
+                                        ProjectListResponse,
+                                        ProjectsListResponse,
+                                        ProjectSwitchRequest,
+                                        ProjectSwitchResponse)
 from app.services.project_context_service import get_project_context_service
+from fastapi import APIRouter, Depends, HTTPException, Query, status
 
 logger = logging.getLogger(__name__)
 
-router = APIRouter(
-    prefix="/api/project-context",
-    tags=["Project Context"]
-)
+router = APIRouter(prefix="/api/project-context", tags=["Project Context"])
 
-projects_router = APIRouter(
-    prefix="/api/projects",
-    tags=["Projects"]
-)
+projects_router = APIRouter(prefix="/api/projects", tags=["Projects"])
 
 
 # ============================================================
 # Dependency: Get Service
 # ============================================================
 
+
 def get_service():
     """Dependency to get project context service"""
     logger.info(f"[DEBUG] get_service() called")
 
     service = get_project_context_service()
-    logger.info(f"[DEBUG] get_project_context_service() returned: {type(service) if service else 'None'}")
+    logger.info(
+        f"[DEBUG] get_project_context_service() returned: {type(service) if service else 'None'}"
+    )
 
     if not service:
         # Try to enable mock service as fallback
         try:
             logger.info("[DEBUG] Attempting to enable mock service as fallback")
-            from app.services.project_context_service import enable_mock_service, _use_mock_service, _mock_service_instance
-            logger.info(f"[DEBUG] Before enable: _use_mock_service={_use_mock_service}, _mock_service_instance={type(_mock_service_instance) if _mock_service_instance else 'None'}")
+            from app.services.project_context_service import (
+                _mock_service_instance, _use_mock_service, enable_mock_service)
+
+            logger.info(
+                f"[DEBUG] Before enable: _use_mock_service={_use_mock_service}, _mock_service_instance={type(_mock_service_instance) if _mock_service_instance else 'None'}"
+            )
 
             enable_mock_service()
             service = get_project_context_service()
 
-            logger.info(f"[DEBUG] After enable: service={type(service) if service else 'None'}")
+            logger.info(
+                f"[DEBUG] After enable: service={type(service) if service else 'None'}"
+            )
             logger.info("[OK] Mock service enabled as fallback")
         except Exception as e:
             logger.error(f"Failed to enable mock service: {e}")
             import traceback
+
             traceback.print_exc()
 
         if not service:
             logger.error("Project context service not initialized")
             raise HTTPException(
                 status_code=status.HTTP_503_SERVICE_UNAVAILABLE,
-                detail="Project context service not initialized"
+                detail="Project context service not initialized",
             )
     return service
 
@@ -74,10 +76,12 @@ def get_service():
 # Project Context Endpoints
 # ============================================================
 
-@router.post("/save", response_model=ProjectContextResponse, status_code=status.HTTP_200_OK)
+
+@router.post(
+    "/save", response_model=ProjectContextResponse, status_code=status.HTTP_200_OK
+)
 async def save_project_context(
-    context_data: ProjectContextCreate,
-    service=Depends(get_service)
+    context_data: ProjectContextCreate, service=Depends(get_service)
 ) -> ProjectContextResponse:
     """
     Save or update project context.
@@ -97,11 +101,27 @@ async def save_project_context(
 
         result = await service.save_context(
             project_id=context_data.project_id,
-            udo_state=context_data.udo_state.model_dump() if context_data.udo_state else None,
-            ml_models=context_data.ml_models.model_dump() if context_data.ml_models else None,
-            recent_executions=[e.model_dump() for e in context_data.recent_executions] if context_data.recent_executions else None,
-            ai_preferences=context_data.ai_preferences.model_dump() if context_data.ai_preferences else None,
-            editor_state=context_data.editor_state.model_dump() if context_data.editor_state else None
+            udo_state=(
+                context_data.udo_state.model_dump() if context_data.udo_state else None
+            ),
+            ml_models=(
+                context_data.ml_models.model_dump() if context_data.ml_models else None
+            ),
+            recent_executions=(
+                [e.model_dump() for e in context_data.recent_executions]
+                if context_data.recent_executions
+                else None
+            ),
+            ai_preferences=(
+                context_data.ai_preferences.model_dump()
+                if context_data.ai_preferences
+                else None
+            ),
+            editor_state=(
+                context_data.editor_state.model_dump()
+                if context_data.editor_state
+                else None
+            ),
         )
 
         return ProjectContextResponse(**result)
@@ -113,14 +133,13 @@ async def save_project_context(
         logger.error(f"[FAIL] Failed to save context: {e}")
         raise HTTPException(
             status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
-            detail=f"Failed to save project context: {str(e)}"
+            detail=f"Failed to save project context: {str(e)}",
         )
 
 
 @router.get("/load/{project_id}", response_model=ProjectContextResponse)
 async def load_project_context(
-    project_id: UUID,
-    service=Depends(get_service)
+    project_id: UUID, service=Depends(get_service)
 ) -> ProjectContextResponse:
     """
     Load project context for a specific project.
@@ -140,7 +159,7 @@ async def load_project_context(
         if not result:
             raise HTTPException(
                 status_code=status.HTTP_404_NOT_FOUND,
-                detail=f"No context found for project {project_id}"
+                detail=f"No context found for project {project_id}",
             )
 
         return ProjectContextResponse(**result)
@@ -151,15 +170,13 @@ async def load_project_context(
         logger.error(f"[FAIL] Failed to load context: {e}")
         raise HTTPException(
             status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
-            detail=f"Failed to load project context: {str(e)}"
+            detail=f"Failed to load project context: {str(e)}",
         )
 
 
 @router.patch("/update/{project_id}", response_model=ProjectContextResponse)
 async def update_project_context(
-    project_id: UUID,
-    context_update: ProjectContextUpdate,
-    service=Depends(get_service)
+    project_id: UUID, context_update: ProjectContextUpdate, service=Depends(get_service)
 ) -> ProjectContextResponse:
     """
     Partially update project context (merge with existing).
@@ -185,9 +202,13 @@ async def update_project_context(
         if context_update.ml_models:
             partial_context["ml_models"] = context_update.ml_models.model_dump()
         if context_update.recent_executions:
-            partial_context["recent_executions"] = [e.model_dump() for e in context_update.recent_executions]
+            partial_context["recent_executions"] = [
+                e.model_dump() for e in context_update.recent_executions
+            ]
         if context_update.ai_preferences:
-            partial_context["ai_preferences"] = context_update.ai_preferences.model_dump()
+            partial_context["ai_preferences"] = (
+                context_update.ai_preferences.model_dump()
+            )
         if context_update.editor_state:
             partial_context["editor_state"] = context_update.editor_state.model_dump()
 
@@ -199,15 +220,12 @@ async def update_project_context(
         logger.error(f"[FAIL] Failed to update context: {e}")
         raise HTTPException(
             status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
-            detail=f"Failed to update project context: {str(e)}"
+            detail=f"Failed to update project context: {str(e)}",
         )
 
 
 @router.delete("/delete/{project_id}", status_code=status.HTTP_204_NO_CONTENT)
-async def delete_project_context(
-    project_id: UUID,
-    service=Depends(get_service)
-):
+async def delete_project_context(project_id: UUID, service=Depends(get_service)):
     """
     Delete project context.
 
@@ -224,7 +242,7 @@ async def delete_project_context(
         if not deleted:
             raise HTTPException(
                 status_code=status.HTTP_404_NOT_FOUND,
-                detail=f"No context found for project {project_id}"
+                detail=f"No context found for project {project_id}",
             )
 
         return None
@@ -235,14 +253,13 @@ async def delete_project_context(
         logger.error(f"[FAIL] Failed to delete context: {e}")
         raise HTTPException(
             status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
-            detail=f"Failed to delete project context: {str(e)}"
+            detail=f"Failed to delete project context: {str(e)}",
         )
 
 
 @router.post("/switch", response_model=ProjectSwitchResponse)
 async def switch_project(
-    switch_request: ProjectSwitchRequest,
-    service=Depends(get_service)
+    switch_request: ProjectSwitchRequest, service=Depends(get_service)
 ) -> ProjectSwitchResponse:
     """
     Switch to a different project with context auto-loading.
@@ -264,7 +281,7 @@ async def switch_project(
 
         result = await service.switch_project(
             target_project_id=switch_request.project_id,
-            auto_save_current=switch_request.auto_save_current
+            auto_save_current=switch_request.auto_save_current,
         )
 
         return ProjectSwitchResponse(**result)
@@ -276,7 +293,7 @@ async def switch_project(
         logger.error(f"[FAIL] Failed to switch project: {e}")
         raise HTTPException(
             status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
-            detail=f"Failed to switch project: {str(e)}"
+            detail=f"Failed to switch project: {str(e)}",
         )
 
 
@@ -284,12 +301,13 @@ async def switch_project(
 # Projects List Endpoints
 # ============================================================
 
+
 @projects_router.get("", response_model=ProjectsListResponse)
 async def list_projects(
     include_archived: bool = Query(False, description="Include archived projects"),
     limit: int = Query(50, ge=1, le=100, description="Max projects to return"),
     offset: int = Query(0, ge=0, description="Pagination offset"),
-    service=Depends(get_service)
+    service=Depends(get_service),
 ) -> ProjectsListResponse:
     """
     List all projects with context availability status.
@@ -305,9 +323,7 @@ async def list_projects(
         logger.info(f"[EMOJI] Listing projects (limit={limit}, offset={offset})")
 
         result = await service.list_projects(
-            include_archived=include_archived,
-            limit=limit,
-            offset=offset
+            include_archived=include_archived, limit=limit, offset=offset
         )
 
         return ProjectsListResponse(**result)
@@ -316,13 +332,13 @@ async def list_projects(
         logger.error(f"[FAIL] Failed to list projects: {e}")
         raise HTTPException(
             status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
-            detail=f"Failed to list projects: {str(e)}"
+            detail=f"Failed to list projects: {str(e)}",
         )
 
 
 @projects_router.get("/current", response_model=Optional[ProjectListResponse])
 async def get_current_project(
-    service=Depends(get_service)
+    service=Depends(get_service),
 ) -> Optional[ProjectListResponse]:
     """
     Get the currently active project.
@@ -343,7 +359,7 @@ async def get_current_project(
         logger.error(f"[FAIL] Failed to get current project: {e}")
         raise HTTPException(
             status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
-            detail=f"Failed to get current project: {str(e)}"
+            detail=f"Failed to get current project: {str(e)}",
         )
 
 

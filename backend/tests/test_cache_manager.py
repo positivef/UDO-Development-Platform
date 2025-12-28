@@ -9,8 +9,10 @@ Verifies:
 - Statistics tracking
 """
 
-import pytest
 import sys
+
+import pytest
+
 from backend.app.core.cache_manager import CacheManager
 
 
@@ -335,7 +337,6 @@ class TestRealWorldScenarios:
         #
         # For this test, use flat strings instead of nested dicts to accurately
         # test the cache size limit and LRU eviction logic.
-
         # Simulate large task contexts using flat strings (10MB each)
         large_context = "x" * (10 * 1024 * 1024)
         context_size = sys.getsizeof(large_context)

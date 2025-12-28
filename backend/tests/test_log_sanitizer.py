@@ -250,10 +250,10 @@ class TestEdgeCases:
 
     def test_unicode_characters(self):
         """Test that unicode characters don't cause issues"""
-        msg = "User [EMOJI] with password=[EMOJI]123"
+        msg = "User 사용자 with password=비밀번호123"
         result = sanitize_log_message(msg)
-        assert "[EMOJI]123" not in result
-        assert "[EMOJI]" in result
+        assert "비밀번호123" not in result
+        assert "사용자" in result
 
     def test_very_long_message(self):
         """Test that very long messages are handled"""

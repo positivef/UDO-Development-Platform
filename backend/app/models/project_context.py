@@ -5,21 +5,31 @@ Pydantic models for project context auto-loading and state management.
 """
 
 from datetime import datetime
-from typing import Dict, List, Optional, Any
-from pydantic import BaseModel, Field
+from typing import Any, Dict, List, Optional
 from uuid import UUID
 
+from pydantic import BaseModel, Field
 
 # ============================================================
 # UDO State Models
 # ============================================================
 
+
 class UDOState(BaseModel):
     """UDO System State for a project"""
-    last_decision: Optional[str] = Field(None, description="Last UDO decision (GO/GO_WITH_CHECKPOINTS/NO_GO)")
-    confidence: Optional[float] = Field(None, ge=0.0, le=1.0, description="Confidence level")
-    quantum_state: Optional[str] = Field(None, description="Quantum state (Deterministic/Probabilistic/etc)")
-    uncertainty_map: Optional[Dict[str, Any]] = Field(default_factory=dict, description="Current uncertainty map")
+
+    last_decision: Optional[str] = Field(
+        None, description="Last UDO decision (GO/GO_WITH_CHECKPOINTS/NO_GO)"
+    )
+    confidence: Optional[float] = Field(
+        None, ge=0.0, le=1.0, description="Confidence level"
+    )
+    quantum_state: Optional[str] = Field(
+        None, description="Quantum state (Deterministic/Probabilistic/etc)"
+    )
+    uncertainty_map: Optional[Dict[str, Any]] = Field(
+        default_factory=dict, description="Current uncertainty map"
+    )
     phase: Optional[str] = Field(None, description="Current development phase")
 
     class Config:
@@ -30,20 +40,24 @@ class UDOState(BaseModel):
                 "last_decision": "GO",
                 "confidence": 0.85,
                 "quantum_state": "Deterministic",
-                "uncertainty_map": {
-                    "implementation": "low",
-                    "testing": "medium"
-                },
-                "phase": "implementation"
+                "uncertainty_map": {"implementation": "low", "testing": "medium"},
+                "phase": "implementation",
             }
         }
 
 
 class MLModelsState(BaseModel):
     """ML Models State for a project"""
-    confidence_predictor: Optional[str] = Field(None, description="Path to confidence predictor model")
-    task_classifier: Optional[str] = Field(None, description="Path to task classifier model")
-    custom_models: Optional[Dict[str, str]] = Field(default_factory=dict, description="Custom model paths")
+
+    confidence_predictor: Optional[str] = Field(
+        None, description="Path to confidence predictor model"
+    )
+    task_classifier: Optional[str] = Field(
+        None, description="Path to task classifier model"
+    )
+    custom_models: Optional[Dict[str, str]] = Field(
+        default_factory=dict, description="Custom model paths"
+    )
 
     class Config:
         arbitrary_types_allowed = True
@@ -52,15 +66,14 @@ class MLModelsState(BaseModel):
             "example": {
                 "confidence_predictor": "models/confidence_v1.pkl",
                 "task_classifier": "models/classifier_v2.pkl",
-                "custom_models": {
-                    "bug_detector": "models/bug_detector_v1.pkl"
-                }
+                "custom_models": {"bug_detector": "models/bug_detector_v1.pkl"},
             }
         }
 
 
 class ExecutionRecord(BaseModel):
     """Single execution record"""
+
     timestamp: str = Field(..., description="Execution timestamp")
     task: str = Field(..., description="Task description")
     decision: str = Field(..., description="UDO decision")
@@ -76,17 +89,24 @@ class ExecutionRecord(BaseModel):
                 "task": "Implement authentication",
                 "decision": "GO",
                 "confidence": 0.92,
-                "success": True
+                "success": True,
             }
         }
 
 
 class AIPreferences(BaseModel):
     """AI Service Preferences"""
-    preferred_model: Optional[str] = Field("claude-sonnet-4.5", description="Preferred AI model")
-    temperature: Optional[float] = Field(0.7, ge=0.0, le=2.0, description="AI temperature")
+
+    preferred_model: Optional[str] = Field(
+        "claude-sonnet-4.5", description="Preferred AI model"
+    )
+    temperature: Optional[float] = Field(
+        0.7, ge=0.0, le=2.0, description="AI temperature"
+    )
     max_tokens: Optional[int] = Field(2000, gt=0, description="Max tokens per request")
-    custom_settings: Optional[Dict[str, Any]] = Field(default_factory=dict, description="Custom AI settings")
+    custom_settings: Optional[Dict[str, Any]] = Field(
+        default_factory=dict, description="Custom AI settings"
+    )
 
     class Config:
         arbitrary_types_allowed = True
@@ -96,23 +116,26 @@ class AIPreferences(BaseModel):
                 "preferred_model": "claude-sonnet-4.5",
                 "temperature": 0.7,
                 "max_tokens": 2000,
-                "custom_settings": {
-                    "streaming": True,
-                    "retry_count": 3
-                }
+                "custom_settings": {"streaming": True, "retry_count": 3},
             }
         }
 
 
 class EditorState(BaseModel):
     """Editor State (open files, cursor positions, etc)"""
-    open_files: Optional[List[str]] = Field(default_factory=list, description="List of open file paths")
-    cursor_positions: Optional[Dict[str, Dict[str, int]]] = Field(
-        default_factory=dict,
-        description="Cursor positions per file"
+
+    open_files: Optional[List[str]] = Field(
+        default_factory=list, description="List of open file paths"
     )
-    breakpoints: Optional[List[str]] = Field(default_factory=list, description="Debugger breakpoints")
-    terminal_history: Optional[List[str]] = Field(default_factory=list, description="Terminal command history")
+    cursor_positions: Optional[Dict[str, Dict[str, int]]] = Field(
+        default_factory=dict, description="Cursor positions per file"
+    )
+    breakpoints: Optional[List[str]] = Field(
+        default_factory=list, description="Debugger breakpoints"
+    )
+    terminal_history: Optional[List[str]] = Field(
+        default_factory=list, description="Terminal command history"
+    )
 
     class Config:
         arbitrary_types_allowed = True
@@ -121,13 +144,11 @@ class EditorState(BaseModel):
             "example": {
                 "open_files": [
                     "backend/main.py",
-                    "backend/app/routers/quality_metrics.py"
+                    "backend/app/routers/quality_metrics.py",
                 ],
-                "cursor_positions": {
-                    "backend/main.py": {"line": 45, "column": 12}
-                },
+                "cursor_positions": {"backend/main.py": {"line": 45, "column": 12}},
                 "breakpoints": ["backend/main.py:45"],
-                "terminal_history": ["pytest", "python main.py"]
+                "terminal_history": ["pytest", "python main.py"],
             }
         }
 
@@ -136,18 +157,31 @@ class EditorState(BaseModel):
 # Project Context Models
 # ============================================================
 
+
 class ProjectContextCreate(BaseModel):
     """Create new project context"""
+
     project_id: UUID = Field(..., description="Project UUID")
-    udo_state: Optional[UDOState] = Field(default_factory=UDOState, description="UDO system state")
-    ml_models: Optional[MLModelsState] = Field(default_factory=MLModelsState, description="ML models state")
-    recent_executions: Optional[List[ExecutionRecord]] = Field(default_factory=list, description="Recent executions (max 10)")
-    ai_preferences: Optional[AIPreferences] = Field(default_factory=AIPreferences, description="AI preferences")
-    editor_state: Optional[EditorState] = Field(default_factory=EditorState, description="Editor state")
+    udo_state: Optional[UDOState] = Field(
+        default_factory=UDOState, description="UDO system state"
+    )
+    ml_models: Optional[MLModelsState] = Field(
+        default_factory=MLModelsState, description="ML models state"
+    )
+    recent_executions: Optional[List[ExecutionRecord]] = Field(
+        default_factory=list, description="Recent executions (max 10)"
+    )
+    ai_preferences: Optional[AIPreferences] = Field(
+        default_factory=AIPreferences, description="AI preferences"
+    )
+    editor_state: Optional[EditorState] = Field(
+        default_factory=EditorState, description="Editor state"
+    )
 
 
 class ProjectContextUpdate(BaseModel):
     """Update existing project context (all fields optional)"""
+
     udo_state: Optional[UDOState] = None
     ml_models: Optional[MLModelsState] = None
     recent_executions: Optional[List[ExecutionRecord]] = None
@@ -157,6 +191,7 @@ class ProjectContextUpdate(BaseModel):
 
 class ProjectContextResponse(BaseModel):
     """Project context response"""
+
     id: UUID
     project_id: UUID
     udo_state: Dict[str, Any]
@@ -178,43 +213,45 @@ class ProjectContextResponse(BaseModel):
                 "udo_state": {
                     "last_decision": "GO",
                     "confidence": 0.85,
-                    "quantum_state": "Deterministic"
+                    "quantum_state": "Deterministic",
                 },
-                "ml_models": {
-                    "confidence_predictor": "models/confidence_v1.pkl"
-                },
+                "ml_models": {"confidence_predictor": "models/confidence_v1.pkl"},
                 "recent_executions": [
                     {
                         "timestamp": "2025-11-17T14:30:00",
                         "task": "Implement auth",
                         "decision": "GO",
                         "confidence": 0.92,
-                        "success": True
+                        "success": True,
                     }
                 ],
                 "ai_preferences": {
                     "preferred_model": "claude-sonnet-4.5",
                     "temperature": 0.7,
-                    "max_tokens": 2000
+                    "max_tokens": 2000,
                 },
                 "editor_state": {
                     "open_files": ["backend/main.py"],
-                    "cursor_positions": {}
+                    "cursor_positions": {},
                 },
                 "saved_at": "2025-11-17T14:30:00",
-                "loaded_at": None
+                "loaded_at": None,
             }
         }
 
 
 class ProjectSwitchRequest(BaseModel):
     """Request to switch to a different project"""
+
     project_id: UUID = Field(..., description="Target project UUID")
-    auto_save_current: bool = Field(True, description="Auto-save current project context before switching")
+    auto_save_current: bool = Field(
+        True, description="Auto-save current project context before switching"
+    )
 
 
 class ProjectSwitchResponse(BaseModel):
     """Response after project switch"""
+
     previous_project_id: Optional[UUID] = None
     new_project_id: UUID
     context_loaded: bool
@@ -231,9 +268,9 @@ class ProjectSwitchResponse(BaseModel):
                 "context_loaded": True,
                 "context": {
                     "udo_state": {"last_decision": "GO"},
-                    "ai_preferences": {"preferred_model": "claude-sonnet-4.5"}
+                    "ai_preferences": {"preferred_model": "claude-sonnet-4.5"},
                 },
-                "message": "Successfully switched to project 'My Project'"
+                "message": "Successfully switched to project 'My Project'",
             }
         }
 
@@ -242,8 +279,10 @@ class ProjectSwitchResponse(BaseModel):
 # Project Models (simplified for context use)
 # ============================================================
 
+
 class ProjectListResponse(BaseModel):
     """Simplified project info for listing"""
+
     id: UUID
     name: str
     description: Optional[str] = None
@@ -264,13 +303,14 @@ class ProjectListResponse(BaseModel):
                 "current_phase": "testing",
                 "last_active_at": "2025-11-17T14:30:00",
                 "is_archived": False,
-                "has_context": True
+                "has_context": True,
             }
         }
 
 
 class ProjectsListResponse(BaseModel):
     """List of projects with pagination"""
+
     projects: List[ProjectListResponse]
     total: int
     current_project_id: Optional[UUID] = None
@@ -285,10 +325,10 @@ class ProjectsListResponse(BaseModel):
                         "id": "660e8400-e29b-41d4-a716-446655440000",
                         "name": "UDO-Development-Platform",
                         "current_phase": "testing",
-                        "has_context": True
+                        "has_context": True,
                     }
                 ],
                 "total": 1,
-                "current_project_id": "660e8400-e29b-41d4-a716-446655440000"
+                "current_project_id": "660e8400-e29b-41d4-a716-446655440000",
             }
         }

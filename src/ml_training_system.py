@@ -1,8 +1,8 @@
 #!/usr/bin/env python3
 # -*- coding: utf-8 -*-
 """
-ML Training System - [EMOJI] [EMOJI] [EMOJI] [EMOJI] [EMOJI] [EMOJI] [EMOJI]
-RandomForest [EMOJI] [EMOJI] [EMOJI] [EMOJI]
+ML Training System - 기계학습 기반 패턴 인식 및 예측 시스템
+RandomForest 기반 불확실성 예측 모델
 """
 
 import sys
@@ -23,14 +23,14 @@ from sklearn.metrics import mean_squared_error, accuracy_score, r2_score
 import joblib
 from filelock import FileLock
 
-# Windows Unicode [EMOJI] [EMOJI] [EMOJI]
+# Windows Unicode 인코딩 문제 해결
 if sys.platform == 'win32':
     os.environ['PYTHONIOENCODING'] = 'utf-8'
     if hasattr(sys.stdout, 'reconfigure'):
         sys.stdout.reconfigure(encoding='utf-8')
         sys.stderr.reconfigure(encoding='utf-8')
 
-# [EMOJI] [EMOJI]
+# 로깅 설정
 logging.basicConfig(level=logging.INFO)
 logger = logging.getLogger(__name__)
 
@@ -44,7 +44,7 @@ def _resolve_model_dir(custom_dir: Optional[Any] = None) -> Path:
 
 @dataclass
 class TrainingData:
-    """[EMOJI] [EMOJI] [EMOJI]"""
+    """훈련 데이터 구조"""
     features: np.ndarray
     labels: np.ndarray
     metadata: Dict[str, Any]
@@ -57,7 +57,7 @@ class TrainingData:
 
 @dataclass
 class ModelMetrics:
-    """[EMOJI] [EMOJI] [EMOJI]"""
+    """모델 성능 메트릭"""
     accuracy: float
     mse: float
     r2: float
@@ -67,7 +67,7 @@ class ModelMetrics:
 
 
 class MLTrainingSystem:
-    """ML [EMOJI] [EMOJI]"""
+    """ML 훈련 시스템"""
 
     def __init__(self, model_dir: Optional[Any] = None):
         self.model_dir = _resolve_model_dir(model_dir)
@@ -77,12 +77,12 @@ class MLTrainingSystem:
         self.training_history = []
         self.feature_names = []
 
-        # [EMOJI] [EMOJI] [EMOJI]
+        # 기본 모델 초기화
         self._initialize_models()
 
     def _initialize_models(self):
-        """[EMOJI] [EMOJI] [EMOJI]"""
-        # [EMOJI] [EMOJI] [EMOJI]
+        """기본 모델 초기화"""
+        # 불확실성 예측 모델
         self.models['uncertainty_predictor'] = RandomForestRegressor(
             n_estimators=100,
             max_depth=10,
@@ -91,14 +91,14 @@ class MLTrainingSystem:
             random_state=42
         )
 
-        # Phase [EMOJI] [EMOJI]
+        # Phase 분류 모델
         self.models['phase_classifier'] = RandomForestClassifier(
             n_estimators=100,
             max_depth=10,
             random_state=42
         )
 
-        # [EMOJI] [EMOJI] [EMOJI]
+        # 신뢰도 예측 모델
         self.models['confidence_predictor'] = RandomForestRegressor(
             n_estimators=150,
             max_depth=15,
@@ -106,43 +106,43 @@ class MLTrainingSystem:
             random_state=42
         )
 
-        # [EMOJI] [EMOJI] [EMOJI]
+        # 각 모델용 스케일러
         for model_name in self.models.keys():
             self.scalers[model_name] = StandardScaler()
 
         logger.info(f"Initialized {len(self.models)} ML models")
 
     def prepare_features(self, raw_data: Dict) -> np.ndarray:
-        """[EMOJI] [EMOJI] [EMOJI] [EMOJI] [EMOJI]"""
+        """원시 데이터를 특징 벡터로 변환"""
         features = []
 
-        # Phase [EMOJI]
+        # Phase 인코딩
         phase_mapping = {
             'ideation': 0, 'design': 1, 'mvp': 2,
             'implementation': 3, 'testing': 4
         }
         features.append(phase_mapping.get(raw_data.get('phase', 'ideation'), 0))
 
-        # [EMOJI] [EMOJI]
+        # 시간적 특징
         features.append(raw_data.get('timeline_weeks', 12))
         features.append(raw_data.get('team_size', 5))
-        features.append(raw_data.get('budget', 50000) / 10000)  # [EMOJI]
+        features.append(raw_data.get('budget', 50000) / 10000)  # 스케일링
 
-        # [EMOJI] [EMOJI]
+        # 불확실성 차원들
         features.append(raw_data.get('technical_uncertainty', 0.5))
         features.append(raw_data.get('market_uncertainty', 0.5))
         features.append(raw_data.get('resource_uncertainty', 0.3))
         features.append(raw_data.get('timeline_uncertainty', 0.3))
         features.append(raw_data.get('quality_uncertainty', 0.4))
 
-        # [EMOJI] [EMOJI]
+        # 기타 메트릭
         features.append(raw_data.get('code_complexity', 0.5))
         features.append(raw_data.get('test_coverage', 0.0))
         features.append(raw_data.get('architecture_quality', 0.7))
         features.append(len(raw_data.get('files', [])))
         features.append(len(raw_data.get('dependencies', [])))
 
-        # Feature names [EMOJI] ([EMOJI] [EMOJI] [EMOJI])
+        # Feature names 저장 (첫 번째 호출시만)
         if not self.feature_names:
             self.feature_names = [
                 'phase', 'timeline_weeks', 'team_size', 'budget_scaled',
@@ -160,14 +160,14 @@ class MLTrainingSystem:
         training_data: TrainingData,
         test_size: float = 0.2
     ) -> ModelMetrics:
-        """[EMOJI] [EMOJI]"""
+        """모델 훈련"""
         if model_name not in self.models:
             raise ValueError(f"Unknown model: {model_name}")
 
         logger.info(f"Training {model_name}...")
         start_time = datetime.now()
 
-        # [EMOJI] [EMOJI]
+        # 데이터 분할
         X_train, X_test, y_train, y_test = train_test_split(
             training_data.features,
             training_data.labels,
@@ -175,29 +175,29 @@ class MLTrainingSystem:
             random_state=42
         )
 
-        # [EMOJI]
+        # 스케일링
         X_train_scaled = self.scalers[model_name].fit_transform(X_train)
         X_test_scaled = self.scalers[model_name].transform(X_test)
 
-        # [EMOJI] [EMOJI]
+        # 모델 훈련
         self.models[model_name].fit(X_train_scaled, y_train)
 
-        # [EMOJI]
+        # 예측
         y_pred = self.models[model_name].predict(X_test_scaled)
 
-        # [EMOJI] [EMOJI]
+        # 메트릭 계산
         if hasattr(self.models[model_name], 'predict_proba'):
-            # [EMOJI] [EMOJI]
+            # 분류 모델
             accuracy = accuracy_score(y_test, y_pred)
             mse = mean_squared_error(y_test, y_pred)
-            r2 = 0.0  # [EMOJI] R2 [EMOJI] [EMOJI]
+            r2 = 0.0  # 분류에는 R2 사용 안함
         else:
-            # [EMOJI] [EMOJI]
-            accuracy = 0.0  # [EMOJI] [EMOJI] [EMOJI] [EMOJI]
+            # 회귀 모델
+            accuracy = 0.0  # 회귀에는 정확도 사용 안함
             mse = mean_squared_error(y_test, y_pred)
             r2 = r2_score(y_test, y_pred)
 
-        # [EMOJI] [EMOJI]
+        # 교차 검증
         cv_scores = cross_val_score(
             self.models[model_name],
             X_train_scaled,
@@ -205,17 +205,17 @@ class MLTrainingSystem:
             cv=5
         )
 
-        # [EMOJI] [EMOJI]
+        # 특징 중요도
         feature_importance = {}
         if hasattr(self.models[model_name], 'feature_importances_'):
             importances = self.models[model_name].feature_importances_
             for i, name in enumerate(self.feature_names[:len(importances)]):
                 feature_importance[name] = float(importances[i])
 
-        # [EMOJI] [EMOJI]
+        # 훈련 시간
         training_time = (datetime.now() - start_time).total_seconds()
 
-        # [EMOJI] [EMOJI]
+        # 메트릭 생성
         metrics = ModelMetrics(
             accuracy=accuracy,
             mse=mse,
@@ -225,7 +225,7 @@ class MLTrainingSystem:
             training_time=training_time
         )
 
-        # [EMOJI] [EMOJI]
+        # 히스토리 저장
         self.training_history.append({
             'model': model_name,
             'timestamp': datetime.now().isoformat(),
@@ -242,33 +242,33 @@ class MLTrainingSystem:
         model_name: str,
         input_data: Dict
     ) -> Tuple[float, Dict]:
-        """[EMOJI] [EMOJI]"""
+        """예측 수행"""
         if model_name not in self.models:
             raise ValueError(f"Unknown model: {model_name}")
 
-        # [EMOJI] [EMOJI]
+        # 특징 준비
         features = self.prepare_features(input_data)
 
-        # [EMOJI]
+        # 스케일링
         if model_name in self.scalers:
             try:
                 features_scaled = self.scalers[model_name].transform(features)
             except:
-                # [EMOJI] [EMOJI] fit[EMOJI] [EMOJI] [EMOJI]
+                # 스케일러가 아직 fit되지 않은 경우
                 features_scaled = features
         else:
             features_scaled = features
 
-        # [EMOJI]
+        # 예측
         prediction = self.models[model_name].predict(features_scaled)[0]
 
-        # [EMOJI] [EMOJI] ([EMOJI] [EMOJI] [EMOJI])
+        # 예측 확률 (분류 모델의 경우)
         probabilities = {}
         if hasattr(self.models[model_name], 'predict_proba'):
             proba = self.models[model_name].predict_proba(features_scaled)[0]
             probabilities = {i: float(p) for i, p in enumerate(proba)}
 
-        # [EMOJI]
+        # 메타데이터
         metadata = {
             'model': model_name,
             'timestamp': datetime.now().isoformat(),
@@ -279,32 +279,32 @@ class MLTrainingSystem:
         return float(prediction), metadata
 
     def generate_synthetic_data(self, size: int = 1000) -> TrainingData:
-        """[EMOJI] [EMOJI] [EMOJI] [EMOJI]"""
+        """합성 훈련 데이터 생성"""
         np.random.seed(42)
 
         features = []
         labels = []
 
         for _ in range(size):
-            # [EMOJI] Phase
+            # 랜덤 Phase
             phase = np.random.randint(0, 5)
 
-            # [EMOJI] [EMOJI] [EMOJI]
+            # 랜덤 프로젝트 특징
             timeline = np.random.randint(4, 52)
             team_size = np.random.randint(1, 20)
             budget = np.random.uniform(10000, 500000) / 10000
 
-            # [EMOJI] [EMOJI]
+            # 랜덤 불확실성
             uncertainties = np.random.uniform(0, 1, 5)
 
-            # [EMOJI] [EMOJI]
+            # 기타 메트릭
             complexity = np.random.uniform(0, 1)
             coverage = np.random.uniform(0, 1)
             quality = np.random.uniform(0, 1)
             files = np.random.randint(0, 100)
             deps = np.random.randint(0, 50)
 
-            # [EMOJI] [EMOJI]
+            # 특징 벡터
             feature_vector = np.concatenate([
                 [phase, timeline, team_size, budget],
                 uncertainties,
@@ -312,11 +312,11 @@ class MLTrainingSystem:
             ])
             features.append(feature_vector)
 
-            # [EMOJI] ([EMOJI] - [EMOJI] [EMOJI] [EMOJI])
+            # 레이블 (신뢰도 - 간단한 규칙 기반)
             confidence = 0.5
-            confidence += (1 - uncertainties.mean()) * 0.3  # [EMOJI] [EMOJI]
-            confidence += coverage * 0.2  # [EMOJI] [EMOJI] [EMOJI]
-            confidence += quality * 0.1  # [EMOJI] [EMOJI]
+            confidence += (1 - uncertainties.mean()) * 0.3  # 낮은 불확실성
+            confidence += coverage * 0.2  # 높은 테스트 커버리지
+            confidence += quality * 0.1  # 높은 품질
             confidence = np.clip(confidence, 0, 1)
             labels.append(confidence)
 
@@ -327,7 +327,7 @@ class MLTrainingSystem:
         )
 
     def save_models(self, directory: Optional[Any] = None) -> Dict[str, Path]:
-        """[EMOJI] [EMOJI] [EMOJI]"""
+        """모든 모델 저장"""
         target_dir = _resolve_model_dir(directory or self.model_dir)
         saved_paths: Dict[str, Path] = {}
         for model_name, model in self.models.items():
@@ -353,21 +353,21 @@ class MLTrainingSystem:
         return saved_paths
 
     def load_models(self):
-        """[EMOJI] [EMOJI] [EMOJI]"""
+        """저장된 모델 로드"""
         loaded = 0
         for model_file in self.model_dir.glob("*.pkl"):
             if "_scaler" not in model_file.stem:
                 model_name = model_file.stem
                 self.models[model_name] = joblib.load(model_file)
 
-                # [EMOJI] [EMOJI]
+                # 스케일러 로드
                 scaler_file = self.model_dir / f"{model_name}_scaler.pkl"
                 if scaler_file.exists():
                     self.scalers[model_name] = joblib.load(scaler_file)
 
                 loaded += 1
 
-        # [EMOJI] [EMOJI] [EMOJI]
+        # 훈련 히스토리 로드
         history_path = self.model_dir / "training_history.json"
         if history_path.exists():
             with open(history_path, 'r') as f:
@@ -376,7 +376,7 @@ class MLTrainingSystem:
         logger.info(f"Loaded {loaded} models from {self.model_dir}")
 
     def get_model_report(self) -> Dict:
-        """[EMOJI] [EMOJI] [EMOJI]"""
+        """모델 상태 보고서"""
         report = {
             'models': {},
             'training_history': len(self.training_history),
@@ -397,20 +397,20 @@ class MLTrainingSystem:
 
 
 def demo():
-    """[EMOJI] [EMOJI]"""
+    """데모 실행"""
     logger.info("%s", "=" * 60)
     logger.info("ML Training System Demo")
     logger.info("%s", "=" * 60)
 
-    # [EMOJI] [EMOJI]
+    # 시스템 초기화
     ml_system = MLTrainingSystem()
 
-    # [EMOJI] [EMOJI] [EMOJI]
+    # 합성 데이터 생성
     logger.info("Generating synthetic training data...")
     training_data = ml_system.generate_synthetic_data(size=500)
     logger.info("Generated %d samples", len(training_data.features))
 
-    # [EMOJI] [EMOJI] [EMOJI]
+    # 각 모델 훈련
     models_to_train = ['uncertainty_predictor', 'confidence_predictor']
 
     for model_name in models_to_train:
@@ -421,7 +421,7 @@ def demo():
         logger.info("MSE: %.3f", metrics.mse)
         logger.info("Training time: %.2fs", metrics.training_time)
 
-        # Top 3 [EMOJI] [EMOJI]
+        # Top 3 중요 특징
         if metrics.feature_importance:
             sorted_features = sorted(
                 metrics.feature_importance.items(),
@@ -432,7 +432,7 @@ def demo():
             for feat, imp in sorted_features:
                 logger.info("%s: %.3f", feat, imp)
 
-    # [EMOJI] [EMOJI]
+    # 예측 테스트
     logger.info("Testing predictions...")
     test_input = {
         'phase': 'ideation',
@@ -450,15 +450,15 @@ def demo():
         prediction, metadata = ml_system.predict(model_name, test_input)
         logger.info("%s: %.3f", model_name, prediction)
 
-    # [EMOJI] [EMOJI]
+    # 모델 저장
     logger.info("Saving models...")
     ml_system.save_models()
 
-    # [EMOJI] [EMOJI]
+    # 상태 보고
     logger.info("Model report:")
     report = ml_system.get_model_report()
     for model_name, info in report['models'].items():
-        status = "[OK] Trained" if info['trained'] else "[WARN] Not trained"
+        status = "✅ Trained" if info['trained'] else "⚠️ Not trained"
         logger.info("%s: %s (%s)", model_name, status, info['type'])
 
     logger.info("%s", "=" * 60)

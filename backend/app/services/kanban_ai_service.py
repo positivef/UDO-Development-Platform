@@ -5,30 +5,27 @@ Week 3 Day 3: Claude Sonnet 4.5 Integration for Intelligent Task Generation.
 Implements Q2: AI Hybrid (suggest + approve) with Constitutional compliance.
 """
 
+import logging
 import os
 import time
-from datetime import datetime, UTC, timedelta
-from typing import List, Dict, Optional
+from datetime import UTC, datetime, timedelta
+from typing import Dict, List, Optional
 from uuid import UUID
-import logging
 
 from anthropic import Anthropic, AsyncAnthropic
-from backend.app.models.kanban_ai import (
-    TaskSuggestionRequest,
-    TaskSuggestion,
-    TaskSuggestionResponse,
-    TaskSuggestionApproval,
-    TaskSuggestionApprovalResponse,
-    RateLimitStatus,
-    RateLimitExceededError,
-    InvalidSuggestionError,
-    ConstitutionalViolationError,
-    SuggestionConfidence,
-    PhaseName,
-)
-from backend.app.models.kanban_task import TaskCreate
-from backend.app.services.kanban_task_service import kanban_task_service
-from backend.app.core.constitutional_guard import ConstitutionalGuard
+
+from app.core.constitutional_guard import ConstitutionalGuard
+from app.models.kanban_ai import (ConstitutionalViolationError,
+                                          InvalidSuggestionError, PhaseName,
+                                          RateLimitExceededError,
+                                          RateLimitStatus,
+                                          SuggestionConfidence, TaskSuggestion,
+                                          TaskSuggestionApproval,
+                                          TaskSuggestionApprovalResponse,
+                                          TaskSuggestionRequest,
+                                          TaskSuggestionResponse)
+from app.models.kanban_task import TaskCreate
+from app.services.kanban_task_service import kanban_task_service
 
 logger = logging.getLogger(__name__)
 
@@ -49,7 +46,9 @@ class KanbanAIService:
         """Initialize AI service with Claude API client"""
         api_key = os.getenv("ANTHROPIC_API_KEY")
         if not api_key:
-            logger.warning("ANTHROPIC_API_KEY not set, AI suggestions will use mock mode")
+            logger.warning(
+                "ANTHROPIC_API_KEY not set, AI suggestions will use mock mode"
+            )
             self.client = None
             self.async_client = None
             self.mock_mode = True
@@ -66,9 +65,7 @@ class KanbanAIService:
         self.rate_limit_storage: Dict[str, List[datetime]] = {}
 
     async def suggest_tasks(
-        self,
-        request: TaskSuggestionRequest,
-        user_id: str
+        self, request: TaskSuggestionRequest, user_id: str
     ) -> TaskSuggestionResponse:
         """
         Generate AI task suggestions using Claude Sonnet 4.5.
@@ -114,10 +111,7 @@ class KanbanAIService:
         )
 
     async def approve_suggestion(
-        self,
-        suggestion_id: UUID,
-        approval: TaskSuggestionApproval,
-        user_id: str
+        self, suggestion_id: UUID, approval: TaskSuggestionApproval, user_id: str
     ) -> TaskSuggestionApprovalResponse:
         """
         Approve AI suggestion and create actual task.
@@ -138,7 +132,9 @@ class KanbanAIService:
         """
         # Validate suggestion exists
         if suggestion_id not in self.suggestions_cache:
-            raise InvalidSuggestionError(f"Suggestion {suggestion_id} not found or expired")
+            raise InvalidSuggestionError(
+                f"Suggestion {suggestion_id} not found or expired"
+            )
 
         suggestion = self.suggestions_cache[suggestion_id]
 
@@ -155,6 +151,7 @@ class KanbanAIService:
         # TODO: In production, look up actual phase_id from phases table
         # For now, use a mock phase_id based on phase_name
         from uuid import uuid4
+
         mock_phase_id = uuid4()  # Mock phase_id for testing
 
         task_data = TaskCreate(
@@ -165,14 +162,16 @@ class KanbanAIService:
             priority=suggestion.priority,
             estimated_hours=suggestion.estimated_hours,
             ai_suggested=True,  # Mark as AI-generated
-            ai_confidence=0.9 if suggestion.confidence == SuggestionConfidence.HIGH else 0.75,
+            ai_confidence=(
+                0.9 if suggestion.confidence == SuggestionConfidence.HIGH else 0.75
+            ),
             metadata={
                 "ai_generated": True,
                 "suggestion_id": str(suggestion_id),
                 "confidence": suggestion.confidence.value,
                 "approved_by": approval.approved_by,
                 "approval_notes": approval.approval_notes,
-            }
+            },
         )
 
         # Create task using singleton task service (mock for tests, DB for production)
@@ -191,12 +190,11 @@ class KanbanAIService:
             suggestion_id=suggestion_id,
             success=True,
             message="Task created successfully from AI suggestion",
-            created_task=created_task.model_dump()
+            created_task=created_task.model_dump(),
         )
 
     async def _generate_claude_suggestions(
-        self,
-        request: TaskSuggestionRequest
+        self, request: TaskSuggestionRequest
     ) -> List[TaskSuggestion]:
         """
         Generate suggestions using Claude Sonnet 4.5 API.
@@ -254,14 +252,13 @@ Format your response as JSON array of objects with these fields:
                 model="claude-sonnet-4-5-20241022",
                 max_tokens=4096,
                 system=system_prompt,
-                messages=[
-                    {"role": "user", "content": user_prompt}
-                ],
+                messages=[{"role": "user", "content": user_prompt}],
                 temperature=0.7,
             )
 
             # Parse Claude's response
             import json
+
             content = response.content[0].text
 
             # Extract JSON from response (Claude might wrap it in markdown)
@@ -274,7 +271,7 @@ Format your response as JSON array of objects with these fields:
 
             # Convert to TaskSuggestion objects
             suggestions = []
-            for data in suggestions_data[:request.num_suggestions]:
+            for data in suggestions_data[: request.num_suggestions]:
                 suggestion = TaskSuggestion(
                     title=data["title"],
                     description=data["description"],
@@ -284,7 +281,9 @@ Format your response as JSON array of objects with these fields:
                     confidence=SuggestionConfidence(data.get("confidence", "medium")),
                     reasoning=data["reasoning"],
                     suggested_dependencies=data.get("suggested_dependencies", []),
-                    constitutional_compliance=self._check_constitutional_principles(data)
+                    constitutional_compliance=self._check_constitutional_principles(
+                        data
+                    ),
                 )
                 suggestions.append(suggestion)
 
@@ -296,52 +295,107 @@ Format your response as JSON array of objects with these fields:
             return self._generate_mock_suggestions(request)
 
     def _generate_mock_suggestions(
-        self,
-        request: TaskSuggestionRequest
+        self, request: TaskSuggestionRequest
     ) -> List[TaskSuggestion]:
         """Generate mock suggestions for testing/development"""
         mock_suggestions = {
             PhaseName.IDEATION: [
-                ("Market research and competitor analysis", "Conduct comprehensive market research", 8.0),
-                ("Define user personas and pain points", "Create detailed user personas", 4.0),
-                ("Brainstorm solution approaches", "Explore multiple solution approaches", 6.0),
-                ("Identify key success metrics", "Define measurable success criteria", 3.0),
+                (
+                    "Market research and competitor analysis",
+                    "Conduct comprehensive market research",
+                    8.0,
+                ),
+                (
+                    "Define user personas and pain points",
+                    "Create detailed user personas",
+                    4.0,
+                ),
+                (
+                    "Brainstorm solution approaches",
+                    "Explore multiple solution approaches",
+                    6.0,
+                ),
+                (
+                    "Identify key success metrics",
+                    "Define measurable success criteria",
+                    3.0,
+                ),
                 ("Create project roadmap", "Plan implementation timeline", 5.0),
             ],
             PhaseName.DESIGN: [
-                ("Create system architecture diagram", "Design high-level system architecture", 6.0),
-                ("Define API specifications", "Document all API endpoints and contracts", 8.0),
+                (
+                    "Create system architecture diagram",
+                    "Design high-level system architecture",
+                    6.0,
+                ),
+                (
+                    "Define API specifications",
+                    "Document all API endpoints and contracts",
+                    8.0,
+                ),
                 ("Design database schema", "Create normalized database schema", 5.0),
                 ("Create UI/UX mockups", "Design user interface wireframes", 6.0),
                 ("Define security architecture", "Plan security and auth flows", 4.0),
             ],
             PhaseName.MVP: [
-                ("Implement core authentication flow", "Basic login/logout functionality", 12.0),
-                ("Create MVP landing page", "Simple landing page with key features", 6.0),
+                (
+                    "Implement core authentication flow",
+                    "Basic login/logout functionality",
+                    12.0,
+                ),
+                (
+                    "Create MVP landing page",
+                    "Simple landing page with key features",
+                    6.0,
+                ),
                 ("Set up CI/CD pipeline", "Automated testing and deployment", 8.0),
-                ("Configure production environment", "Set up hosting and deployment", 5.0),
+                (
+                    "Configure production environment",
+                    "Set up hosting and deployment",
+                    5.0,
+                ),
                 ("Implement basic analytics", "Track key user interactions", 4.0),
             ],
             PhaseName.IMPLEMENTATION: [
-                ("Implement user management module", "Full CRUD operations for users", 16.0),
+                (
+                    "Implement user management module",
+                    "Full CRUD operations for users",
+                    16.0,
+                ),
                 ("Add data validation layer", "Comprehensive input validation", 8.0),
                 ("Integrate third-party APIs", "Connect to external services", 12.0),
                 ("Implement error handling", "Robust error handling and logging", 6.0),
                 ("Add performance monitoring", "Set up APM and metrics", 5.0),
             ],
             PhaseName.TESTING: [
-                ("Write unit tests for core modules", "Achieve >80% code coverage", 16.0),
-                ("Perform integration testing", "Test all component interactions", 12.0),
+                (
+                    "Write unit tests for core modules",
+                    "Achieve >80% code coverage",
+                    16.0,
+                ),
+                (
+                    "Perform integration testing",
+                    "Test all component interactions",
+                    12.0,
+                ),
                 ("Conduct user acceptance testing", "Validate with real users", 8.0),
                 ("Load and performance testing", "Test system under load", 10.0),
-                ("Security and penetration testing", "Identify security vulnerabilities", 12.0),
+                (
+                    "Security and penetration testing",
+                    "Identify security vulnerabilities",
+                    12.0,
+                ),
             ],
         }
 
-        phase_tasks = mock_suggestions.get(request.phase_name, mock_suggestions[PhaseName.IDEATION])
+        phase_tasks = mock_suggestions.get(
+            request.phase_name, mock_suggestions[PhaseName.IDEATION]
+        )
         suggestions = []
 
-        for i, (title, description, hours) in enumerate(phase_tasks[:request.num_suggestions]):
+        for i, (title, description, hours) in enumerate(
+            phase_tasks[: request.num_suggestions]
+        ):
             suggestion = TaskSuggestion(
                 title=title,
                 description=f"{description}\n\nContext: {request.context[:100]}",
@@ -350,8 +404,12 @@ Format your response as JSON array of objects with these fields:
                 estimated_hours=hours,
                 confidence=SuggestionConfidence.HIGH,
                 reasoning=f"This task is important for completing the {request.phase_name} phase",
-                suggested_dependencies=[phase_tasks[i-1][0]] if i > 0 and request.include_dependencies else [],
-                constitutional_compliance={"P1": True, "P2": True}
+                suggested_dependencies=(
+                    [phase_tasks[i - 1][0]]
+                    if i > 0 and request.include_dependencies
+                    else []
+                ),
+                constitutional_compliance={"P1": True, "P2": True},
             )
             suggestions.append(suggestion)
 
@@ -366,10 +424,7 @@ Format your response as JSON array of objects with these fields:
         user_suggestions = self.rate_limit_storage.get(user_id, [])
 
         # Filter to last hour
-        recent_suggestions = [
-            ts for ts in user_suggestions
-            if ts > one_hour_ago
-        ]
+        recent_suggestions = [ts for ts in user_suggestions if ts > one_hour_ago]
 
         # Update storage
         self.rate_limit_storage[user_id] = recent_suggestions
@@ -391,7 +446,7 @@ Format your response as JSON array of objects with these fields:
             suggestions_remaining=max(0, limit - suggestions_used),
             limit_per_period=limit,
             period_reset_at=reset_at,
-            is_limited=is_limited
+            is_limited=is_limited,
         )
 
     def _record_suggestion_usage(self, user_id: str):
@@ -407,19 +462,14 @@ Format your response as JSON array of objects with these fields:
         return status.suggestions_remaining
 
     def _apply_modifications(
-        self,
-        suggestion: TaskSuggestion,
-        modifications: Dict
+        self, suggestion: TaskSuggestion, modifications: Dict
     ) -> TaskSuggestion:
         """Apply user modifications to suggestion before approval"""
         modified_data = suggestion.model_dump()
         modified_data.update(modifications)
         return TaskSuggestion(**modified_data)
 
-    def _check_constitutional_compliance(
-        self,
-        suggestion: TaskSuggestion
-    ) -> List[str]:
+    def _check_constitutional_compliance(self, suggestion: TaskSuggestion) -> List[str]:
         """
         Check if suggestion complies with Constitutional principles (P1-P17).
 
@@ -430,9 +480,13 @@ Format your response as JSON array of objects with these fields:
         # P1: Design Review First
         # AI-suggested implementation tasks without design context violate P1
         if suggestion.phase_name in [PhaseName.IMPLEMENTATION, PhaseName.MVP]:
-            if "design" not in suggestion.description.lower() and \
-               suggestion.confidence == SuggestionConfidence.LOW:
-                violations.append("P1: Implementation task suggested without design context")
+            if (
+                "design" not in suggestion.description.lower()
+                and suggestion.confidence == SuggestionConfidence.LOW
+            ):
+                violations.append(
+                    "P1: Implementation task suggested without design context"
+                )
 
         # P2-P17: Additional constitutional checks can be added here
         # For now, we focus on P1 as it's most relevant to AI suggestions
@@ -442,8 +496,8 @@ Format your response as JSON array of objects with these fields:
     def _check_constitutional_principles(self, data: Dict) -> Dict[str, bool]:
         """Check compliance with constitutional principles and return status"""
         return {
-            "P1": "design" in data.get("description", "").lower() or \
-                  data.get("confidence") == "high",
+            "P1": "design" in data.get("description", "").lower()
+            or data.get("confidence") == "high",
             "P2": True,  # Placeholder for other principles
         }
 

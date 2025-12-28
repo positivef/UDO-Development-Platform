@@ -35,7 +35,7 @@ class CKTheoryService:
     Service for generating design alternatives using C-K Theory
 
     Features:
-    - 4-stage design process (Concept -> Alternative -> RICE -> Tradeoff)
+    - 4-stage design process (Concept → Alternative → RICE → Tradeoff)
     - 3 parallel alternatives generation
     - Sequential + Context7 MCP integration
     - Obsidian auto-save
@@ -673,9 +673,9 @@ Provide:
         }
 
         decision_tree = [
-            "If security is priority -> Choose A",
-            "If simplicity is critical -> Choose B",
-            "If scalability is key -> Choose C",
+            "If security is priority → Choose A",
+            "If simplicity is critical → Choose B",
+            "If scalability is key → Choose C",
         ]
 
         return TradeoffAnalysis(
@@ -722,9 +722,9 @@ Provide:
         }
 
         decision_tree = [
-            f"If highest ROI needed -> Choose {best_alt.id}",
-            f"If fastest delivery -> Choose {min(alternatives, key=lambda a: a.rice.effort).id}",
-            f"If maximum impact -> Choose {max(alternatives, key=lambda a: a.rice.impact).id}",
+            f"If highest ROI needed → Choose {best_alt.id}",
+            f"If fastest delivery → Choose {min(alternatives, key=lambda a: a.rice.effort).id}",
+            f"If maximum impact → Choose {max(alternatives, key=lambda a: a.rice.impact).id}",
         ]
 
         return TradeoffAnalysis(
@@ -864,7 +864,7 @@ Provide:
         try:
             today = datetime.now().strftime("%Y-%m-%d")
             safe_filename = result.challenge[:50].replace(" ", "-").replace("/", "-")
-            obsidian_path = f"[EMOJI]/{today}/CK-Design-{safe_filename}.md"
+            obsidian_path = f"개발일지/{today}/CK-Design-{safe_filename}.md"
 
             content = self._format_obsidian_note(result)
 
@@ -905,22 +905,22 @@ tags: [ck-theory, design, {result.project}]
 
 # C-K Design: {result.challenge}
 
-## [EMOJI] Design Challenge
+## 🎯 Design Challenge
 
 {result.challenge}
 
-## [EMOJI] Constraints
+## 📋 Constraints
 
 {result.constraints if result.constraints else "None specified"}
 
-## [EMOJI] Design Alternatives
+## 🔀 Design Alternatives
 
 """
 
         # Add each alternative
         for alt in result.alternatives:
             is_recommended = alt.id == recommended_id
-            marker = " [EMOJI] (Recommended)" if is_recommended else ""
+            marker = " ⭐ (Recommended)" if is_recommended else ""
 
             content += f"""
 ### Alternative {alt.id}: {alt.title}{marker}
@@ -953,7 +953,7 @@ tags: [ck-theory, design, {result.project}]
 
         # Add trade-off analysis
         content += f"""
-## [EMOJI] Trade-off Analysis
+## ⚖️ Trade-off Analysis
 
 ### Summary
 {result.tradeoff_analysis.summary}
@@ -972,13 +972,13 @@ tags: [ck-theory, design, {result.project}]
 ### Decision Tree
 {chr(10).join(f'{i+1}. {criterion}' for i, criterion in enumerate(result.tradeoff_analysis.decision_tree))}
 
-## [EMOJI] Metadata
+## 📊 Metadata
 
 - **Total Duration**: {result.total_duration_ms}ms ({result.total_duration_ms / 1000:.1f}s)
 - **Created**: {result.created_at.strftime("%Y-%m-%d %H:%M:%S")}
 - **Project**: {result.project}
 
-## [EMOJI] Related
+## 🔗 Related
 
 - [[C-K Theory Framework]]
 - [[Design Patterns]]

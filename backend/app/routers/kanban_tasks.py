@@ -7,30 +7,26 @@ Implements Q1-Q8 decisions with RBAC protection.
 
 from typing import Optional
 from uuid import UUID
+
 from fastapi import APIRouter, Depends, HTTPException, Query, status
 from fastapi.responses import JSONResponse
 
-from backend.app.core.security import require_role, UserRole, get_current_user
-from backend.app.services.kanban_task_service import KanbanTaskService, MockKanbanTaskService
-from backend.app.models.kanban_task import (
-    Task,
-    TaskCreate,
-    TaskUpdate,
-    TaskListResponse,
-    TaskFilters,
-    PhaseChangeRequest,
-    StatusChangeRequest,
-    PriorityChangeRequest,
-    CompletenessUpdateRequest,
-    QualityGateResult,
-    ArchiveRequest,
-    TaskArchive,
-    TaskNotFoundError,
-)
-from backend.async_database import async_db
-
+from app.core.security import UserRole, get_current_user, require_role
+from app.models.kanban_task import (ArchiveRequest,
+                                            CompletenessUpdateRequest,
+                                            PhaseChangeRequest,
+                                            PriorityChangeRequest,
+                                            QualityGateResult,
+                                            StatusChangeRequest, Task,
+                                            TaskArchive, TaskCreate,
+                                            TaskFilters, TaskListResponse,
+                                            TaskNotFoundError, TaskSortField,
+                                            TaskUpdate)
 # WebSocket support for real-time updates
-from backend.app.routers.kanban_websocket import kanban_manager
+from app.routers.kanban_websocket import kanban_manager
+from app.services.kanban_task_service import (KanbanTaskService,
+                                                      MockKanbanTaskService)
+from backend.async_database import async_db
 
 router = APIRouter(prefix="/api/kanban/tasks", tags=["Kanban Tasks"])
 
@@ -38,6 +34,7 @@ router = APIRouter(prefix="/api/kanban/tasks", tags=["Kanban Tasks"])
 # ============================================================================
 # Dependency Injection
 # ============================================================================
+
 
 def get_kanban_service():
     """
@@ -51,10 +48,14 @@ def get_kanban_service():
     Returns:
         KanbanTaskService or MockKanbanTaskService: Service instance
     """
-    import logging, sys
+    import logging
+    import sys
+
     logger = logging.getLogger(__name__)
     # Identity logs for debugging
-    logger.debug(f"[IDENTITY] async_database module id: {id(sys.modules.get('backend.async_database'))}")
+    logger.debug(
+        f"[IDENTITY] async_database module id: {id(sys.modules.get('backend.async_database'))}"
+    )
     logger.debug(f"[IDENTITY] async_db object id: {id(async_db)}")
     logger.debug(f"[IDENTITY] async_db._initialized: {async_db._initialized}")
     try:
@@ -70,9 +71,11 @@ def get_kanban_service():
 # Error Response Helper
 # ============================================================================
 
+
 def error_response(code: str, message: str, status_code: int, details: dict = None):
     """Standard error response format"""
-    from datetime import datetime, UTC
+    from datetime import UTC, datetime
+
     return JSONResponse(
         status_code=status_code,
         content={
@@ -80,9 +83,9 @@ def error_response(code: str, message: str, status_code: int, details: dict = No
                 "code": code,
                 "message": message,
                 "details": details or {},
-                "timestamp": datetime.now(UTC).isoformat() + "Z"
+                "timestamp": datetime.now(UTC).isoformat() + "Z",
             }
-        }
+        },
     )
 
 
@@ -90,18 +93,19 @@ def error_response(code: str, message: str, status_code: int, details: dict = No
 # 1. CRUD Operations (5 endpoints)
 # ============================================================================
 
+
 @router.post(
     "",
     response_model=Task,
     status_code=status.HTTP_201_CREATED,
     dependencies=[Depends(require_role(UserRole.DEVELOPER))],
     summary="Create new task",
-    description="Create new task (requires developer role or higher)"
+    description="Create new task (requires developer role or higher)",
 )
 async def create_task(
     task_data: TaskCreate,
     service: KanbanTaskService = Depends(get_kanban_service),
-    current_user: dict = Depends(get_current_user)
+    current_user: dict = Depends(get_current_user),
 ):
     """
     Create new task.
@@ -121,9 +125,11 @@ async def create_task(
                 "type": "task_created",
                 "task": task.model_dump(),  # Convert Pydantic model to dict
                 "created_by": current_user.get("username", current_user.get("email")),
-                "timestamp": task.created_at.isoformat() if hasattr(task, 'created_at') else None
+                "timestamp": (
+                    task.created_at.isoformat() if hasattr(task, "created_at") else None
+                ),
             },
-            project_id
+            project_id,
         )
 
         return task
@@ -131,7 +137,7 @@ async def create_task(
         return error_response(
             code="TASK_CREATE_FAILED",
             message=f"Failed to create task: {str(e)}",
-            status_code=status.HTTP_500_INTERNAL_SERVER_ERROR
+            status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
         )
 
 
@@ -140,28 +146,35 @@ async def create_task(
     response_model=TaskListResponse,
     dependencies=[Depends(require_role(UserRole.VIEWER))],
     summary="List tasks with filtering and pagination",
-    description="List tasks with filters, sorting, and pagination (requires viewer role)"
+    description="List tasks with filters, sorting, and pagination (requires viewer role)",
 )
 async def list_tasks(
     # Filters (Q1: Phase filtering)
     phase: Optional[str] = Query(None, description="Filter by phase"),
-    status_filter: Optional[str] = Query(None, alias="status", description="Filter by status"),
+    status_filter: Optional[str] = Query(
+        None, alias="status", description="Filter by status"
+    ),
     priority: Optional[str] = Query(None, description="Filter by priority"),
-    min_completeness: Optional[int] = Query(None, ge=0, le=100, description="Min completeness %"),
-    max_completeness: Optional[int] = Query(None, ge=0, le=100, description="Max completeness %"),
-    ai_suggested: Optional[bool] = Query(None, description="Filter AI-suggested tasks (Q2)"),
-    quality_gate_passed: Optional[bool] = Query(None, description="Filter by quality gate (Q3)"),
-
+    min_completeness: Optional[int] = Query(
+        None, ge=0, le=100, description="Min completeness %"
+    ),
+    max_completeness: Optional[int] = Query(
+        None, ge=0, le=100, description="Max completeness %"
+    ),
+    ai_suggested: Optional[bool] = Query(
+        None, description="Filter AI-suggested tasks (Q2)"
+    ),
+    quality_gate_passed: Optional[bool] = Query(
+        None, description="Filter by quality gate (Q3)"
+    ),
     # Pagination
     page: int = Query(1, ge=1, description="Page number (1-indexed)"),
     per_page: int = Query(50, ge=1, le=100, description="Items per page (default 50)"),
-
     # Sorting
     sort_by: str = Query("created_at", description="Sort field"),
     sort_desc: bool = Query(True, description="Sort descending"),
-
     service: KanbanTaskService = Depends(get_kanban_service, use_cache=False),
-    current_user: dict = Depends(get_current_user)
+    current_user: dict = Depends(get_current_user),
 ):
     """
     List tasks with filtering, sorting, and pagination.
@@ -171,8 +184,17 @@ async def list_tasks(
     **Q1**: Filter by phase (ideation/design/mvp/implementation/testing).
     **Q2**: Filter AI-suggested tasks.
     **Q3**: Filter by quality gate status.
+    **Security (P0-4)**: Sort field validated against whitelist to prevent SQL injection.
     """
     try:
+        # P0-4: Validate sort_by against whitelist (SQL injection protection)
+        try:
+            validated_sort_by = TaskSortField.validate(sort_by)
+        except ValueError as e:
+            raise HTTPException(
+                status_code=status.HTTP_400_BAD_REQUEST, detail=str(e)
+            )
+
         # Build filters
         filters = TaskFilters(
             phase=phase,
@@ -188,7 +210,7 @@ async def list_tasks(
             filters=filters,
             page=page,
             per_page=per_page,
-            sort_by=sort_by,
+            sort_by=validated_sort_by,
             sort_desc=sort_desc,
         )
 
@@ -197,8 +219,9 @@ async def list_tasks(
         return error_response(
             code="TASK_LIST_FAILED",
             message=f"Failed to list tasks: {str(e)}",
-            status_code=status.HTTP_500_INTERNAL_SERVER_ERROR
+            status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
         )
+
 
 @router.get(
     "/debug",
@@ -207,7 +230,7 @@ async def list_tasks(
 )
 async def debug_service(
     service: KanbanTaskService = Depends(get_kanban_service, use_cache=False),
-    current_user: dict = Depends(get_current_user)
+    current_user: dict = Depends(get_current_user),
 ):
     return {
         "service_type": type(service).__name__,
@@ -222,12 +245,12 @@ async def debug_service(
     response_model=Task,
     dependencies=[Depends(require_role(UserRole.VIEWER))],
     summary="Get task details",
-    description="Get task by ID (requires viewer role)"
+    description="Get task by ID (requires viewer role)",
 )
 async def get_task(
     task_id: UUID,
     service: KanbanTaskService = Depends(get_kanban_service),
-    current_user: dict = Depends(get_current_user)
+    current_user: dict = Depends(get_current_user),
 ):
     """
     Get task by ID.
@@ -242,13 +265,13 @@ async def get_task(
             code="TASK_NOT_FOUND",
             message=f"Task with ID {task_id} not found",
             status_code=status.HTTP_404_NOT_FOUND,
-            details={"task_id": str(task_id)}
+            details={"task_id": str(task_id)},
         )
     except Exception as e:
         return error_response(
             code="TASK_GET_FAILED",
             message=f"Failed to get task: {str(e)}",
-            status_code=status.HTTP_500_INTERNAL_SERVER_ERROR
+            status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
         )
 
 
@@ -257,13 +280,13 @@ async def get_task(
     response_model=Task,
     dependencies=[Depends(require_role(UserRole.DEVELOPER))],
     summary="Update task",
-    description="Update task (requires developer role or higher)"
+    description="Update task (requires developer role or higher)",
 )
 async def update_task(
     task_id: UUID,
     task_update: TaskUpdate,
     service: KanbanTaskService = Depends(get_kanban_service),
-    current_user: dict = Depends(get_current_user)
+    current_user: dict = Depends(get_current_user),
 ):
     """
     Update task.
@@ -282,12 +305,16 @@ async def update_task(
             {
                 "type": "task_updated",
                 "task_id": str(task_id),
-                "updates": task_update.model_dump(exclude_unset=True),  # Only changed fields
+                "updates": task_update.model_dump(
+                    exclude_unset=True
+                ),  # Only changed fields
                 "task": task.model_dump(),  # Full updated task
                 "updated_by": current_user.get("username", current_user.get("email")),
-                "timestamp": task.updated_at.isoformat() if hasattr(task, 'updated_at') else None
+                "timestamp": (
+                    task.updated_at.isoformat() if hasattr(task, "updated_at") else None
+                ),
             },
-            project_id
+            project_id,
         )
 
         return task
@@ -296,13 +323,13 @@ async def update_task(
             code="TASK_NOT_FOUND",
             message=f"Task with ID {task_id} not found",
             status_code=status.HTTP_404_NOT_FOUND,
-            details={"task_id": str(task_id)}
+            details={"task_id": str(task_id)},
         )
     except Exception as e:
         return error_response(
             code="TASK_UPDATE_FAILED",
             message=f"Failed to update task: {str(e)}",
-            status_code=status.HTTP_500_INTERNAL_SERVER_ERROR
+            status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
         )
 
 
@@ -311,12 +338,12 @@ async def update_task(
     status_code=status.HTTP_204_NO_CONTENT,
     dependencies=[Depends(require_role(UserRole.DEVELOPER))],
     summary="Delete task",
-    description="Delete task (requires developer role or higher)"
+    description="Delete task (requires developer role or higher)",
 )
 async def delete_task(
     task_id: UUID,
     service: KanbanTaskService = Depends(get_kanban_service),
-    current_user: dict = Depends(get_current_user)
+    current_user: dict = Depends(get_current_user),
 ):
     """
     Delete task (soft delete).
@@ -330,15 +357,16 @@ async def delete_task(
         # Broadcast task deletion to WebSocket clients
         # TODO(Q5): Use actual project_id when multi-project support is implemented
         project_id = "default"
-        from datetime import datetime, UTC
+        from datetime import UTC, datetime
+
         await kanban_manager.broadcast_to_project(
             {
                 "type": "task_deleted",
                 "task_id": str(task_id),
                 "deleted_by": current_user.get("username", current_user.get("email")),
-                "timestamp": datetime.now(UTC).isoformat()
+                "timestamp": datetime.now(UTC).isoformat(),
             },
-            project_id
+            project_id,
         )
 
         return None
@@ -347,13 +375,13 @@ async def delete_task(
             code="TASK_NOT_FOUND",
             message=f"Task with ID {task_id} not found",
             status_code=status.HTTP_404_NOT_FOUND,
-            details={"task_id": str(task_id)}
+            details={"task_id": str(task_id)},
         )
     except Exception as e:
         return error_response(
             code="TASK_DELETE_FAILED",
             message=f"Failed to delete task: {str(e)}",
-            status_code=status.HTTP_500_INTERNAL_SERVER_ERROR
+            status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
         )
 
 
@@ -361,18 +389,19 @@ async def delete_task(
 # 2. Phase Operations (1 endpoint)
 # ============================================================================
 
+
 @router.put(
     "/{task_id}/phase",
     response_model=Task,
     dependencies=[Depends(require_role(UserRole.DEVELOPER))],
     summary="Move task to different phase",
-    description="Move task to different phase (Q1: Task within Phase)"
+    description="Move task to different phase (Q1: Task within Phase)",
 )
 async def change_phase(
     task_id: UUID,
     phase_request: PhaseChangeRequest,
     service: KanbanTaskService = Depends(get_kanban_service),
-    current_user: dict = Depends(get_current_user)
+    current_user: dict = Depends(get_current_user),
 ):
     """
     Move task to different phase.
@@ -388,13 +417,13 @@ async def change_phase(
             code="TASK_NOT_FOUND",
             message=f"Task with ID {task_id} not found",
             status_code=status.HTTP_404_NOT_FOUND,
-            details={"task_id": str(task_id)}
+            details={"task_id": str(task_id)},
         )
     except Exception as e:
         return error_response(
             code="PHASE_CHANGE_FAILED",
             message=f"Failed to change phase: {str(e)}",
-            status_code=status.HTTP_500_INTERNAL_SERVER_ERROR
+            status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
         )
 
 
@@ -402,18 +431,19 @@ async def change_phase(
 # 3. Status & Priority Operations (3 endpoints)
 # ============================================================================
 
+
 @router.put(
     "/{task_id}/status",
     response_model=Task,
     dependencies=[Depends(require_role(UserRole.DEVELOPER))],
     summary="Change task status",
-    description="Change task status"
+    description="Change task status",
 )
 async def change_status(
     task_id: UUID,
     status_request: StatusChangeRequest,
     service: KanbanTaskService = Depends(get_kanban_service),
-    current_user: dict = Depends(get_current_user)
+    current_user: dict = Depends(get_current_user),
 ):
     """
     Change task status.
@@ -429,13 +459,13 @@ async def change_status(
             code="TASK_NOT_FOUND",
             message=f"Task with ID {task_id} not found",
             status_code=status.HTTP_404_NOT_FOUND,
-            details={"task_id": str(task_id)}
+            details={"task_id": str(task_id)},
         )
     except Exception as e:
         return error_response(
             code="STATUS_CHANGE_FAILED",
             message=f"Failed to change status: {str(e)}",
-            status_code=status.HTTP_500_INTERNAL_SERVER_ERROR
+            status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
         )
 
 
@@ -444,13 +474,13 @@ async def change_status(
     response_model=Task,
     dependencies=[Depends(require_role(UserRole.DEVELOPER))],
     summary="Change task priority",
-    description="Change task priority"
+    description="Change task priority",
 )
 async def change_priority(
     task_id: UUID,
     priority_request: PriorityChangeRequest,
     service: KanbanTaskService = Depends(get_kanban_service),
-    current_user: dict = Depends(get_current_user)
+    current_user: dict = Depends(get_current_user),
 ):
     """
     Change task priority.
@@ -465,13 +495,13 @@ async def change_priority(
             code="TASK_NOT_FOUND",
             message=f"Task with ID {task_id} not found",
             status_code=status.HTTP_404_NOT_FOUND,
-            details={"task_id": str(task_id)}
+            details={"task_id": str(task_id)},
         )
     except Exception as e:
         return error_response(
             code="PRIORITY_CHANGE_FAILED",
             message=f"Failed to change priority: {str(e)}",
-            status_code=status.HTTP_500_INTERNAL_SERVER_ERROR
+            status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
         )
 
 
@@ -480,13 +510,13 @@ async def change_priority(
     response_model=Task,
     dependencies=[Depends(require_role(UserRole.DEVELOPER))],
     summary="Update task completeness",
-    description="Update task completeness percentage (0-100)"
+    description="Update task completeness percentage (0-100)",
 )
 async def update_completeness(
     task_id: UUID,
     completeness_request: CompletenessUpdateRequest,
     service: KanbanTaskService = Depends(get_kanban_service),
-    current_user: dict = Depends(get_current_user)
+    current_user: dict = Depends(get_current_user),
 ):
     """
     Update task completeness percentage.
@@ -502,13 +532,13 @@ async def update_completeness(
             code="TASK_NOT_FOUND",
             message=f"Task with ID {task_id} not found",
             status_code=status.HTTP_404_NOT_FOUND,
-            details={"task_id": str(task_id)}
+            details={"task_id": str(task_id)},
         )
     except Exception as e:
         return error_response(
             code="COMPLETENESS_UPDATE_FAILED",
             message=f"Failed to update completeness: {str(e)}",
-            status_code=status.HTTP_500_INTERNAL_SERVER_ERROR
+            status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
         )
 
 
@@ -516,17 +546,18 @@ async def update_completeness(
 # 4. Quality Gate Operations (2 endpoints) - Q3
 # ============================================================================
 
+
 @router.get(
     "/{task_id}/quality-gates",
     response_model=QualityGateResult,
     dependencies=[Depends(require_role(UserRole.VIEWER))],
     summary="Get quality gate status",
-    description="Get quality gate status for task (Q3: Hybrid completion)"
+    description="Get quality gate status for task (Q3: Hybrid completion)",
 )
 async def get_quality_gates(
     task_id: UUID,
     service: KanbanTaskService = Depends(get_kanban_service),
-    current_user: dict = Depends(get_current_user)
+    current_user: dict = Depends(get_current_user),
 ):
     """
     Get quality gate status for task.
@@ -542,13 +573,13 @@ async def get_quality_gates(
             code="TASK_NOT_FOUND",
             message=f"Task with ID {task_id} not found",
             status_code=status.HTTP_404_NOT_FOUND,
-            details={"task_id": str(task_id)}
+            details={"task_id": str(task_id)},
         )
     except Exception as e:
         return error_response(
             code="QUALITY_GATE_GET_FAILED",
             message=f"Failed to get quality gate status: {str(e)}",
-            status_code=status.HTTP_500_INTERNAL_SERVER_ERROR
+            status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
         )
 
 
@@ -557,12 +588,12 @@ async def get_quality_gates(
     response_model=QualityGateResult,
     dependencies=[Depends(require_role(UserRole.DEVELOPER))],
     summary="Run quality gate checks",
-    description="Run quality gate checks on task (Q3: Hybrid completion)"
+    description="Run quality gate checks on task (Q3: Hybrid completion)",
 )
 async def run_quality_gates(
     task_id: UUID,
     service: KanbanTaskService = Depends(get_kanban_service),
-    current_user: dict = Depends(get_current_user)
+    current_user: dict = Depends(get_current_user),
 ):
     """
     Run quality gate checks on task.
@@ -584,13 +615,13 @@ async def run_quality_gates(
             code="TASK_NOT_FOUND",
             message=f"Task with ID {task_id} not found",
             status_code=status.HTTP_404_NOT_FOUND,
-            details={"task_id": str(task_id)}
+            details={"task_id": str(task_id)},
         )
     except Exception as e:
         return error_response(
             code="QUALITY_GATE_RUN_FAILED",
             message=f"Failed to run quality gates: {str(e)}",
-            status_code=status.HTTP_500_INTERNAL_SERVER_ERROR
+            status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
         )
 
 
@@ -598,18 +629,19 @@ async def run_quality_gates(
 # 5. Archive Operation (1 endpoint) - Q6
 # ============================================================================
 
+
 @router.post(
     "/{task_id}/archive",
     response_model=TaskArchive,
     dependencies=[Depends(require_role(UserRole.DEVELOPER))],
     summary="Archive task to Done-End",
-    description="Archive task to Done-End with AI summary (Q6: Done-End archiving)"
+    description="Archive task to Done-End with AI summary (Q6: Done-End archiving)",
 )
 async def archive_task(
     task_id: UUID,
     archive_request: ArchiveRequest,
     service: KanbanTaskService = Depends(get_kanban_service),
-    current_user: dict = Depends(get_current_user)
+    current_user: dict = Depends(get_current_user),
 ):
     """
     Archive task to Done-End.
@@ -631,11 +663,11 @@ async def archive_task(
             code="TASK_NOT_FOUND",
             message=f"Task with ID {task_id} not found",
             status_code=status.HTTP_404_NOT_FOUND,
-            details={"task_id": str(task_id)}
+            details={"task_id": str(task_id)},
         )
     except Exception as e:
         return error_response(
             code="ARCHIVE_FAILED",
             message=f"Failed to archive task: {str(e)}",
-            status_code=status.HTTP_500_INTERNAL_SERVER_ERROR
+            status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
         )

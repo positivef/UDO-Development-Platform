@@ -3,59 +3,52 @@ Performance monitoring with uncertainty tracking
 Implements measurement methods from PRD_UNIFIED_ENHANCED
 """
 
-from functools import wraps
+import asyncio
 import time
-from typing import Callable, Any, Optional, Dict
-from prometheus_client import Counter, Histogram, Gauge, generate_latest
+from functools import wraps
+from typing import Any, Callable, Dict, Optional
+
 import structlog
 from fastapi import Request, Response
-import asyncio
+from prometheus_client import Counter, Gauge, Histogram, generate_latest
 
 logger = structlog.get_logger()
 
 # Define Prometheus metrics
 api_latency = Histogram(
-    'api_request_duration_seconds',
-    'API request duration in seconds',
-    ['method', 'endpoint', 'status'],
-    buckets=[0.01, 0.025, 0.05, 0.1, 0.2, 0.5, 1.0, 2.0, 5.0]
+    "api_request_duration_seconds",
+    "API request duration in seconds",
+    ["method", "endpoint", "status"],
+    buckets=[0.01, 0.025, 0.05, 0.1, 0.2, 0.5, 1.0, 2.0, 5.0],
 )
 
 api_requests = Counter(
-    'api_requests_total',
-    'Total number of API requests',
-    ['method', 'endpoint', 'status']
+    "api_requests_total",
+    "Total number of API requests",
+    ["method", "endpoint", "status"],
 )
 
 uncertainty_score = Gauge(
-    'system_uncertainty_score',
-    'Current system uncertainty level (0-1)',
-    ['component']
+    "system_uncertainty_score", "Current system uncertainty level (0-1)", ["component"]
 )
 
 db_query_duration = Histogram(
-    'db_query_duration_seconds',
-    'Database query duration',
-    ['query_type', 'table']
+    "db_query_duration_seconds", "Database query duration", ["query_type", "table"]
 )
 
 ai_response_time = Histogram(
-    'ai_response_duration_seconds',
-    'AI model response time',
-    ['model', 'operation']
+    "ai_response_duration_seconds", "AI model response time", ["model", "operation"]
 )
 
 error_rate = Counter(
-    'errors_total',
-    'Total number of errors',
-    ['error_type', 'component']
+    "errors_total", "Total number of errors", ["error_type", "component"]
 )
 
 # Circuit breaker metrics
 circuit_breaker_state = Gauge(
-    'circuit_breaker_state',
-    'Circuit breaker state (0=closed, 1=open, 2=half-open)',
-    ['service']
+    "circuit_breaker_state",
+    "Circuit breaker state (0=closed, 1=open, 2=half-open)",
+    ["service"],
 )
 
 
@@ -64,6 +57,7 @@ def measure_latency(endpoint: str = None):
     Decorator to measure API endpoint latency.
     Implements measurement method from PRD Section 5.
     """
+
     def decorator(func: Callable) -> Callable:
         @wraps(func)
         async def wrapper(*args, **kwargs) -> Any:
@@ -71,7 +65,7 @@ def measure_latency(endpoint: str = None):
             status = "success"
 
             # Extract request if available
-            request = kwargs.get('request')
+            request = kwargs.get("request")
             method = "UNKNOWN"
             if request and isinstance(request, Request):
                 method = request.method
@@ -87,14 +81,9 @@ def measure_latency(endpoint: str = None):
             except Exception as e:
                 status = "error"
                 error_type = type(e).__name__
-                error_rate.labels(
-                    error_type=error_type,
-                    component="api"
-                ).inc()
+                error_rate.labels(error_type=error_type, component="api").inc()
                 logger.error(
-                    f"API error in {endpoint}",
-                    error=str(e),
-                    error_type=error_type
+                    f"API error in {endpoint}", error=str(e), error_type=error_type
                 )
                 raise
 
@@ -103,15 +92,11 @@ def measure_latency(endpoint: str = None):
 
                 # Record metrics
                 api_latency.labels(
-                    method=method,
-                    endpoint=endpoint or func.__name__,
-                    status=status
+                    method=method, endpoint=endpoint or func.__name__, status=status
                 ).observe(duration)
 
                 api_requests.labels(
-                    method=method,
-                    endpoint=endpoint or func.__name__,
-                    status=status
+                    method=method, endpoint=endpoint or func.__name__, status=status
                 ).inc()
 
                 # Log slow requests (P95 threshold from PRD)
@@ -120,7 +105,7 @@ def measure_latency(endpoint: str = None):
                         "Slow API call detected",
                         endpoint=endpoint,
                         duration=duration,
-                        method=method
+                        method=method,
                     )
 
                 # Update circuit breaker if needed
@@ -128,6 +113,7 @@ def measure_latency(endpoint: str = None):
                     CircuitBreakerManager.instance().record_slow_call(endpoint)
 
         return wrapper
+
     return decorator
 
 
@@ -136,6 +122,7 @@ def measure_db_query(query_type: str, table: str = "unknown"):
     Decorator to measure database query performance.
     Implements SQL measurement from PRD Section 5.
     """
+
     def decorator(func: Callable) -> Callable:
         @wraps(func)
         async def wrapper(*args, **kwargs) -> Any:
@@ -150,17 +137,15 @@ def measure_db_query(query_type: str, table: str = "unknown"):
 
             except Exception as e:
                 error_rate.labels(
-                    error_type=type(e).__name__,
-                    component="database"
+                    error_type=type(e).__name__, component="database"
                 ).inc()
                 raise
 
             finally:
                 duration = time.time() - start_time
-                db_query_duration.labels(
-                    query_type=query_type,
-                    table=table
-                ).observe(duration)
+                db_query_duration.labels(query_type=query_type, table=table).observe(
+                    duration
+                )
 
                 # Alert on slow queries (30ms threshold from PRD)
                 if duration > 0.03:
@@ -168,10 +153,11 @@ def measure_db_query(query_type: str, table: str = "unknown"):
                         "Slow database query",
                         query_type=query_type,
                         table=table,
-                        duration=duration
+                        duration=duration,
                     )
 
         return wrapper
+
     return decorator
 
 
@@ -204,10 +190,7 @@ def track_uncertainty(component: str, score: float):
         emoji = "[EMOJI]"
 
     logger.info(
-        f"{emoji} Uncertainty update",
-        component=component,
-        score=score,
-        state=state
+        f"{emoji} Uncertainty update", component=component, score=score, state=state
     )
 
     # Trigger alerts for high uncertainty
@@ -216,7 +199,7 @@ def track_uncertainty(component: str, score: float):
             f"High uncertainty detected - activating fallback strategies",
             component=component,
             score=score,
-            state=state
+            state=state,
         )
         # TODO: Trigger fallback strategy based on component
 
@@ -227,18 +210,18 @@ class CircuitBreakerManager:
     Based on uncertainty-aware architecture from PRD.
     """
 
-    _instance: Optional['CircuitBreakerManager'] = None
+    _instance: Optional["CircuitBreakerManager"] = None
 
     def __init__(self):
-        self.breakers: Dict[str, 'CircuitBreaker'] = {}
+        self.breakers: Dict[str, "CircuitBreaker"] = {}
 
     @classmethod
-    def instance(cls) -> 'CircuitBreakerManager':
+    def instance(cls) -> "CircuitBreakerManager":
         if cls._instance is None:
             cls._instance = cls()
         return cls._instance
 
-    def get_breaker(self, service: str) -> 'CircuitBreaker':
+    def get_breaker(self, service: str) -> "CircuitBreaker":
         if service not in self.breakers:
             self.breakers[service] = CircuitBreaker(service)
         return self.breakers[service]
@@ -277,7 +260,7 @@ class CircuitBreaker:
         logger.critical(
             f"Circuit breaker OPENED",
             service=self.service,
-            failure_count=self.failure_count
+            failure_count=self.failure_count,
         )
 
     def close(self):
@@ -294,8 +277,10 @@ class CircuitBreaker:
 
         if self.state == "open":
             # Check if timeout has passed
-            if self.last_failure_time and \
-               (time.time() - self.last_failure_time) > self.timeout:
+            if (
+                self.last_failure_time
+                and (time.time() - self.last_failure_time) > self.timeout
+            ):
                 self.state = "half-open"
                 circuit_breaker_state.labels(service=self.service).set(2)
                 return True
@@ -341,7 +326,7 @@ class PerformanceMonitor:
                 logger.warning(
                     f"P95 latency exceeds threshold",
                     p95=p95_latency,
-                    threshold=self.alert_threshold_p95
+                    threshold=self.alert_threshold_p95,
                 )
                 self._activate_degraded_mode()
 
@@ -349,14 +334,16 @@ class PerformanceMonitor:
                 logger.info(
                     f"P50 latency approaching threshold",
                     p50=p50_latency,
-                    threshold=self.alert_threshold_p50
+                    threshold=self.alert_threshold_p50,
                 )
 
     def _activate_degraded_mode(self):
         """Activate degraded mode to protect system"""
         if not self.degraded_mode:
             self.degraded_mode = True
-            logger.critical("Activating DEGRADED MODE - switching to cache-first strategy")
+            logger.critical(
+                "Activating DEGRADED MODE - switching to cache-first strategy"
+            )
             track_uncertainty("system", 0.7)  # High uncertainty
             # TODO: Implement cache-first strategy
             # TODO: Notify team via Slack webhook
@@ -378,7 +365,4 @@ async def metrics_endpoint(request: Request) -> Response:
     Expose metrics for Prometheus scraping.
     Endpoint to be added to FastAPI router.
     """
-    return Response(
-        content=generate_latest(),
-        media_type="text/plain"
-    )
+    return Response(content=generate_latest(), media_type="text/plain")

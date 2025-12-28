@@ -9,13 +9,15 @@ import asyncio
 import sys
 from pathlib import Path
 from uuid import UUID
+
 from dotenv import load_dotenv
 
 # Fix Windows console encoding for emoji support
-if sys.platform == 'win32':
+if sys.platform == "win32":
     import io
-    sys.stdout = io.TextIOWrapper(sys.stdout.buffer, encoding='utf-8')
-    sys.stderr = io.TextIOWrapper(sys.stderr.buffer, encoding='utf-8')
+
+    sys.stdout = io.TextIOWrapper(sys.stdout.buffer, encoding="utf-8")
+    sys.stderr = io.TextIOWrapper(sys.stderr.buffer, encoding="utf-8")
 
 # CRITICAL: Load .env BEFORE importing database modules
 env_path = Path(__file__).parent / ".env"
@@ -28,8 +30,9 @@ else:
 # Add backend to path
 sys.path.insert(0, str(Path(__file__).parent))
 
-from async_database import initialize_async_database, async_db, close_async_database
 from app.services.project_context_service import ProjectContextService
+from async_database import (async_db, close_async_database,
+                            initialize_async_database)
 
 
 async def test_database_connection():
@@ -52,13 +55,15 @@ async def test_database_connection():
             print(f"[OK] Database connection successful: {result}")
 
             # Check if project_states table exists
-            table_exists = await conn.fetchval("""
+            table_exists = await conn.fetchval(
+                """
                 SELECT EXISTS (
                     SELECT FROM information_schema.tables
                     WHERE table_schema = 'public'
                     AND table_name = 'project_states'
                 )
-            """)
+            """
+            )
             print(f"[OK] project_states table exists: {table_exists}")
 
             return True
@@ -84,13 +89,14 @@ async def test_list_projects():
         print(f"   Projects returned: {len(result['projects'])}")
         print(f"   Current project ID: {result['current_project_id']}")
 
-        for project in result['projects']:
+        for project in result["projects"]:
             print(f"   - {project['name']} (phase: {project.get('current_phase')})")
 
         return True
     except Exception as e:
         print(f"[FAIL] Failed to list projects: {e}")
         import traceback
+
         traceback.print_exc()
         return False
 
@@ -112,16 +118,14 @@ async def test_save_and_load_context():
         test_udo_state = {
             "phase": "implementation",
             "confidence": 0.85,
-            "recent_decisions": ["test_decision_1", "test_decision_2"]
+            "recent_decisions": ["test_decision_1", "test_decision_2"],
         }
 
-        test_ml_models = {
-            "uncertainty_predictor": {"version": "1.0", "accuracy": 0.92}
-        }
+        test_ml_models = {"uncertainty_predictor": {"version": "1.0", "accuracy": 0.92}}
 
         test_executions = [
             {"task": "test_task_1", "result": "success"},
-            {"task": "test_task_2", "result": "success"}
+            {"task": "test_task_2", "result": "success"},
         ]
 
         # Save context
@@ -130,7 +134,7 @@ async def test_save_and_load_context():
             project_id=project_id,
             udo_state=test_udo_state,
             ml_models=test_ml_models,
-            recent_executions=test_executions
+            recent_executions=test_executions,
         )
         print(f"[OK] Context saved successfully")
         print(f"   Saved at: {saved['saved_at']}")
@@ -147,9 +151,9 @@ async def test_save_and_load_context():
             print(f"   Recent executions: {len(loaded['recent_executions'])}")
 
             # Verify data integrity
-            assert loaded['udo_state']['phase'] == test_udo_state['phase']
-            assert loaded['udo_state']['confidence'] == test_udo_state['confidence']
-            assert len(loaded['recent_executions']) == len(test_executions)
+            assert loaded["udo_state"]["phase"] == test_udo_state["phase"]
+            assert loaded["udo_state"]["confidence"] == test_udo_state["confidence"]
+            assert len(loaded["recent_executions"]) == len(test_executions)
             print("[OK] Data integrity verified")
 
             return True
@@ -160,6 +164,7 @@ async def test_save_and_load_context():
     except Exception as e:
         print(f"[FAIL] Failed to save/load context: {e}")
         import traceback
+
         traceback.print_exc()
         return False
 
@@ -179,8 +184,7 @@ async def test_switch_project():
 
         print(f"\n[EMOJI] Switching to project {target_project_id}")
         result = await service.switch_project(
-            target_project_id=target_project_id,
-            auto_save_current=False
+            target_project_id=target_project_id, auto_save_current=False
         )
 
         print(f"[OK] Project switched successfully")
@@ -192,6 +196,7 @@ async def test_switch_project():
     except Exception as e:
         print(f"[FAIL] Failed to switch project: {e}")
         import traceback
+
         traceback.print_exc()
         return False
 

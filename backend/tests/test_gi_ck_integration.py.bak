@@ -12,12 +12,14 @@ Updated: 2025-12-13
 - Use only allowed constraint keys
 """
 
-import pytest
 from datetime import datetime
-from backend.app.models.gi_formula import GIFormulaRequest, StageType
+
+import pytest
+
 from backend.app.models.ck_theory import CKTheoryRequest
-from backend.app.services.gi_formula_service import GIFormulaService
+from backend.app.models.gi_formula import GIFormulaRequest, StageType
 from backend.app.services.ck_theory_service import CKTheoryService
+from backend.app.services.gi_formula_service import GIFormulaService
 
 
 class TestGIFormulaIntegration:

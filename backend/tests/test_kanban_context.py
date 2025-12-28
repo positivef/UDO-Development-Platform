@@ -5,24 +5,23 @@ Tests Week 2 Day 5: Context operations (upload, download, load tracking)
 Q4: Double-click auto-load tracking
 """
 
+from datetime import datetime
+from uuid import uuid4
+
 import pytest
 import pytest_asyncio
-from uuid import uuid4
-from datetime import datetime
 
+from backend.app.models.kanban_context import (ContextLoadRequest,
+                                               ContextNotFoundError,
+                                               ContextSizeLimitExceeded,
+                                               ContextUploadRequest,
+                                               InvalidContextFiles)
 from backend.app.services.kanban_context_service import kanban_context_service
-from backend.app.models.kanban_context import (
-    ContextUploadRequest,
-    ContextLoadRequest,
-    ContextNotFoundError,
-    ContextSizeLimitExceeded,
-    InvalidContextFiles,
-)
-
 
 # ============================================================================
 # Fixtures
 # ============================================================================
+
 
 @pytest.fixture
 def sample_upload_request():
@@ -32,7 +31,7 @@ def sample_upload_request():
         git_branch="feature/auth",
         git_commit_hash="abc123def456",
         git_commit_message="feat: Add authentication",
-        obsidian_notes=["Projects/UDO/Auth Design.md"]
+        obsidian_notes=["Projects/UDO/Auth Design.md"],
     )
 
 
@@ -49,6 +48,7 @@ async def uploaded_context(sample_upload_request):
 # ============================================================================
 # Test Context Upload Operations
 # ============================================================================
+
 
 class TestContextUpload:
     """Test context upload operations"""
@@ -104,8 +104,7 @@ class TestContextUpload:
 
         # Second upload (should replace first)
         new_request = ContextUploadRequest(
-            files=["src/updated.py"],
-            git_branch="feature/updated"
+            files=["src/updated.py"], git_branch="feature/updated"
         )
         second_response = await kanban_context_service.upload_context(
             task_id, new_request
@@ -122,6 +121,7 @@ class TestContextUpload:
 # ============================================================================
 # Test Context Metadata Operations
 # ============================================================================
+
 
 class TestContextMetadata:
     """Test context metadata retrieval"""
@@ -168,6 +168,7 @@ class TestContextMetadata:
 # ============================================================================
 # Test Context Load Tracking (Q4: Double-click)
 # ============================================================================
+
 
 class TestContextLoadTracking:
     """Test context load tracking (Q4)"""
@@ -248,6 +249,7 @@ class TestContextLoadTracking:
 # Test Context Deletion
 # ============================================================================
 
+
 class TestContextDeletion:
     """Test context deletion"""
 
@@ -280,6 +282,7 @@ class TestContextDeletion:
 # ============================================================================
 # Test Edge Cases
 # ============================================================================
+
 
 class TestContextEdgeCases:
     """Test context edge cases"""

@@ -39,7 +39,7 @@ def disable_rbac_in_file(file_path: Path) -> tuple[int, bool]:
     modifications = 0
 
     # Pattern 1: dependencies=[Depends(require_role(UserRole.XXXX))],
-    pattern1 = r'(\s+)(dependencies=\[Depends\(require_role\([^\)]+\)\)\],)'
+    pattern1 = r"(\s+)(dependencies=\[Depends\(require_role\([^\)]+\)\)\],)"
 
     def replace_dependency(match):
         nonlocal modifications
@@ -47,7 +47,7 @@ def disable_rbac_in_file(file_path: Path) -> tuple[int, bool]:
         dependency_line = match.group(2)
 
         # Check if already disabled
-        if DEV_MODE_MARKER in content[max(0, match.start() - 200):match.start()]:
+        if DEV_MODE_MARKER in content[max(0, match.start() - 200) : match.start()]:
             return match.group(0)  # Already disabled, skip
 
         modifications += 1
@@ -58,7 +58,7 @@ def disable_rbac_in_file(file_path: Path) -> tuple[int, bool]:
     content = re.sub(pattern1, replace_dependency, content)
 
     # Pattern 2: current_user: dict = Depends(get_current_user)
-    pattern2 = r'(\s+)(current_user:\s*dict\s*=\s*Depends\(get_current_user\))'
+    pattern2 = r"(\s+)(current_user:\s*dict\s*=\s*Depends\(get_current_user\))"
 
     def replace_current_user(match):
         nonlocal modifications
@@ -66,7 +66,7 @@ def disable_rbac_in_file(file_path: Path) -> tuple[int, bool]:
         param_line = match.group(2)
 
         # Check if already disabled
-        if "# DEV_MODE" in content[max(0, match.start() - 100):match.start()]:
+        if "# DEV_MODE" in content[max(0, match.start() - 100) : match.start()]:
             return match.group(0)  # Already disabled, skip
 
         modifications += 1

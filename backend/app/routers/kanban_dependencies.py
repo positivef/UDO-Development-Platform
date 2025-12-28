@@ -8,22 +8,22 @@ Implements Q7 (Hard Block dependencies with emergency override).
 
 from typing import Optional
 from uuid import UUID
+
 from fastapi import APIRouter, Depends, HTTPException, Query, status
 from fastapi.responses import JSONResponse
 
-from backend.app.core.security import require_role, UserRole, get_current_user
-from backend.app.services.kanban_dependency_service import kanban_dependency_service
-from backend.app.services.kanban_task_service import KanbanTaskService, get_kanban_task_service
-from backend.app.models.kanban_dependencies import (
-    Dependency,
-    DependencyCreate,
-    EmergencyOverride,
-    DependencyAudit,
-    CircularDependencyError,
-    TopologicalSortResult,
-    DependencyGraph,
-    DAGStatistics,
-)
+from app.core.security import UserRole, get_current_user, require_role
+from app.models.kanban_dependencies import (CircularDependencyError,
+                                                    DAGStatistics, Dependency,
+                                                    DependencyAudit,
+                                                    DependencyCreate,
+                                                    DependencyGraph,
+                                                    EmergencyOverride,
+                                                    TopologicalSortResult)
+from app.services.kanban_dependency_service import \
+    kanban_dependency_service
+from app.services.kanban_task_service import (KanbanTaskService,
+                                                      get_kanban_task_service)
 
 router = APIRouter(prefix="/api/kanban/dependencies", tags=["Kanban Dependencies"])
 
@@ -32,9 +32,11 @@ router = APIRouter(prefix="/api/kanban/dependencies", tags=["Kanban Dependencies
 # Error Response Helper
 # ============================================================================
 
+
 def error_response(code: str, message: str, status_code: int, details: dict = None):
     """Standard error response format"""
-    from datetime import datetime, UTC
+    from datetime import UTC, datetime
+
     return JSONResponse(
         status_code=status_code,
         content={
@@ -42,9 +44,9 @@ def error_response(code: str, message: str, status_code: int, details: dict = No
                 "code": code,
                 "message": message,
                 "details": details or {},
-                "timestamp": datetime.now(UTC).isoformat() + "Z"
+                "timestamp": datetime.now(UTC).isoformat() + "Z",
             }
-        }
+        },
     )
 
 
@@ -52,18 +54,19 @@ def error_response(code: str, message: str, status_code: int, details: dict = No
 # 1. CRUD Operations (4 endpoints)
 # ============================================================================
 
+
 @router.post(
     "",
     response_model=Dependency,
     status_code=status.HTTP_201_CREATED,
     dependencies=[Depends(require_role(UserRole.DEVELOPER))],
     summary="Create dependency with DAG cycle validation",
-    description="Create task dependency (requires developer role or higher)"
+    description="Create task dependency (requires developer role or higher)",
 )
 async def create_dependency(
     dependency_data: DependencyCreate,
     task_service: KanbanTaskService = Depends(get_kanban_task_service),
-    current_user: dict = Depends(get_current_user)
+    current_user: dict = Depends(get_current_user),
 ):
     """
     Create new task dependency with DAG cycle validation.
@@ -81,16 +84,15 @@ async def create_dependency(
         task_list = await task_service.list_tasks(
             filters=None,
             page=1,
-            per_page=10000,  # Get all tasks for validation
+            per_page=10000,
             sort_by="created_at",
-            sort_desc=False
+            sort_desc=False,  # Get all tasks for validation
         )
         available_task_ids = {task.task_id for task in task_list.data}
 
         # Create dependency with cycle detection
         dependency = await kanban_dependency_service.create_dependency(
-            dependency_data,
-            available_task_ids
+            dependency_data, available_task_ids
         )
         return dependency
 
@@ -99,19 +101,17 @@ async def create_dependency(
             code="CIRCULAR_DEPENDENCY",
             message=f"Circular dependency detected: {e}",
             status_code=status.HTTP_400_BAD_REQUEST,
-            details={"cycle": [str(task_id) for task_id in e.cycle]}
+            details={"cycle": [str(task_id) for task_id in e.cycle]},
         )
     except ValueError as e:
         return error_response(
-            code="TASK_NOT_FOUND",
-            message=str(e),
-            status_code=status.HTTP_404_NOT_FOUND
+            code="TASK_NOT_FOUND", message=str(e), status_code=status.HTTP_404_NOT_FOUND
         )
     except Exception as e:
         return error_response(
             code="DEPENDENCY_CREATE_FAILED",
             message=f"Failed to create dependency: {str(e)}",
-            status_code=status.HTTP_500_INTERNAL_SERVER_ERROR
+            status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
         )
 
 
@@ -120,11 +120,10 @@ async def create_dependency(
     response_model=Dependency,
     dependencies=[Depends(require_role(UserRole.VIEWER))],
     summary="Get dependency details",
-    description="Get dependency by ID (requires viewer role)"
+    description="Get dependency by ID (requires viewer role)",
 )
 async def get_dependency(
-    dependency_id: UUID,
-    current_user: dict = Depends(get_current_user)
+    dependency_id: UUID, current_user: dict = Depends(get_current_user)
 ):
     """
     Get dependency by ID.
@@ -138,14 +137,14 @@ async def get_dependency(
                 code="DEPENDENCY_NOT_FOUND",
                 message=f"Dependency with ID {dependency_id} not found",
                 status_code=status.HTTP_404_NOT_FOUND,
-                details={"dependency_id": str(dependency_id)}
+                details={"dependency_id": str(dependency_id)},
             )
         return dependency
     except Exception as e:
         return error_response(
             code="DEPENDENCY_GET_FAILED",
             message=f"Failed to get dependency: {str(e)}",
-            status_code=status.HTTP_500_INTERNAL_SERVER_ERROR
+            status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
         )
 
 
@@ -154,11 +153,10 @@ async def get_dependency(
     status_code=status.HTTP_204_NO_CONTENT,
     dependencies=[Depends(require_role(UserRole.DEVELOPER))],
     summary="Delete dependency",
-    description="Delete dependency (requires developer role or higher)"
+    description="Delete dependency (requires developer role or higher)",
 )
 async def delete_dependency(
-    dependency_id: UUID,
-    current_user: dict = Depends(get_current_user)
+    dependency_id: UUID, current_user: dict = Depends(get_current_user)
 ):
     """
     Delete dependency.
@@ -172,14 +170,14 @@ async def delete_dependency(
                 code="DEPENDENCY_NOT_FOUND",
                 message=f"Dependency with ID {dependency_id} not found",
                 status_code=status.HTTP_404_NOT_FOUND,
-                details={"dependency_id": str(dependency_id)}
+                details={"dependency_id": str(dependency_id)},
             )
         return None
     except Exception as e:
         return error_response(
             code="DEPENDENCY_DELETE_FAILED",
             message=f"Failed to delete dependency: {str(e)}",
-            status_code=status.HTTP_500_INTERNAL_SERVER_ERROR
+            status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
         )
 
 
@@ -188,12 +186,12 @@ async def delete_dependency(
     response_model=list[DependencyAudit],
     dependencies=[Depends(require_role(UserRole.VIEWER))],
     summary="Get dependency audit log",
-    description="Get emergency override audit log (requires viewer role)"
+    description="Get emergency override audit log (requires viewer role)",
 )
 async def get_audit_log(
     limit: int = Query(50, ge=1, le=100, description="Number of entries (max 100)"),
     offset: int = Query(0, ge=0, description="Offset for pagination"),
-    current_user: dict = Depends(get_current_user)
+    current_user: dict = Depends(get_current_user),
 ):
     """
     Get dependency audit log (emergency overrides).
@@ -208,7 +206,7 @@ async def get_audit_log(
         return error_response(
             code="AUDIT_LOG_GET_FAILED",
             message=f"Failed to get audit log: {str(e)}",
-            status_code=status.HTTP_500_INTERNAL_SERVER_ERROR
+            status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
         )
 
 
@@ -216,16 +214,16 @@ async def get_audit_log(
 # 2. Task-Specific Operations (3 endpoints)
 # ============================================================================
 
+
 @router.get(
     "/tasks/{task_id}/dependencies",
     response_model=list[Dependency],
     dependencies=[Depends(require_role(UserRole.VIEWER))],
     summary="Get task dependencies (upstream/predecessors)",
-    description="Get all dependencies for a task (tasks this task depends on)"
+    description="Get all dependencies for a task (tasks this task depends on)",
 )
 async def get_task_dependencies(
-    task_id: UUID,
-    current_user: dict = Depends(get_current_user)
+    task_id: UUID, current_user: dict = Depends(get_current_user)
 ):
     """
     Get all dependencies for a task (upstream/predecessors).
@@ -240,7 +238,7 @@ async def get_task_dependencies(
         return error_response(
             code="DEPENDENCIES_GET_FAILED",
             message=f"Failed to get task dependencies: {str(e)}",
-            status_code=status.HTTP_500_INTERNAL_SERVER_ERROR
+            status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
         )
 
 
@@ -249,11 +247,10 @@ async def get_task_dependencies(
     response_model=list[Dependency],
     dependencies=[Depends(require_role(UserRole.VIEWER))],
     summary="Get task dependents (downstream/successors)",
-    description="Get all dependents for a task (tasks that depend on this task)"
+    description="Get all dependents for a task (tasks that depend on this task)",
 )
 async def get_task_dependents(
-    task_id: UUID,
-    current_user: dict = Depends(get_current_user)
+    task_id: UUID, current_user: dict = Depends(get_current_user)
 ):
     """
     Get all dependents for a task (downstream/successors).
@@ -268,7 +265,7 @@ async def get_task_dependents(
         return error_response(
             code="DEPENDENTS_GET_FAILED",
             message=f"Failed to get task dependents: {str(e)}",
-            status_code=status.HTTP_500_INTERNAL_SERVER_ERROR
+            status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
         )
 
 
@@ -277,12 +274,14 @@ async def get_task_dependents(
     response_model=DependencyGraph,
     dependencies=[Depends(require_role(UserRole.VIEWER))],
     summary="Get dependency graph for D3.js visualization",
-    description="Get dependency graph with nodes and edges for force-directed layout"
+    description="Get dependency graph with nodes and edges for force-directed layout",
 )
 async def get_dependency_graph(
     task_id: UUID,
-    depth: int = Query(3, ge=1, le=10, description="Maximum depth to traverse (default: 3)"),
-    current_user: dict = Depends(get_current_user)
+    depth: int = Query(
+        3, ge=1, le=10, description="Maximum depth to traverse (default: 3)"
+    ),
+    current_user: dict = Depends(get_current_user),
 ):
     """
     Get dependency graph for D3.js force-directed visualization.
@@ -299,7 +298,7 @@ async def get_dependency_graph(
         return error_response(
             code="DEPENDENCY_GRAPH_FAILED",
             message=f"Failed to get dependency graph: {str(e)}",
-            status_code=status.HTTP_500_INTERNAL_SERVER_ERROR
+            status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
         )
 
 
@@ -308,11 +307,11 @@ async def get_dependency_graph(
     response_model=TopologicalSortResult,
     dependencies=[Depends(require_role(UserRole.VIEWER))],
     summary="Get topological sort of tasks",
-    description="Topological sort using Kahn's Algorithm (<50ms for 1,000 tasks)"
+    description="Topological sort using Kahn's Algorithm (<50ms for 1,000 tasks)",
 )
 async def topological_sort(
     task_ids: str = Query(..., description="Comma-separated list of task IDs"),
-    current_user: dict = Depends(get_current_user)
+    current_user: dict = Depends(get_current_user),
 ):
     """
     Perform topological sort on task dependencies using Kahn's Algorithm.
@@ -341,13 +340,13 @@ async def topological_sort(
         return error_response(
             code="INVALID_TASK_IDS",
             message=f"Invalid task IDs format: {str(e)}",
-            status_code=status.HTTP_400_BAD_REQUEST
+            status_code=status.HTTP_400_BAD_REQUEST,
         )
     except Exception as e:
         return error_response(
             code="TOPOLOGICAL_SORT_FAILED",
             message=f"Failed to perform topological sort: {str(e)}",
-            status_code=status.HTTP_500_INTERNAL_SERVER_ERROR
+            status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
         )
 
 
@@ -356,11 +355,11 @@ async def topological_sort(
     response_model=DAGStatistics,
     dependencies=[Depends(require_role(UserRole.VIEWER))],
     summary="Get DAG performance statistics",
-    description="DAG performance metrics for monitoring and debugging"
+    description="DAG performance metrics for monitoring and debugging",
 )
 async def get_statistics(
     task_ids: str = Query(..., description="Comma-separated list of task IDs"),
-    current_user: dict = Depends(get_current_user)
+    current_user: dict = Depends(get_current_user),
 ):
     """
     Get DAG performance statistics.
@@ -390,13 +389,13 @@ async def get_statistics(
         return error_response(
             code="INVALID_TASK_IDS",
             message=f"Invalid task IDs format: {str(e)}",
-            status_code=status.HTTP_400_BAD_REQUEST
+            status_code=status.HTTP_400_BAD_REQUEST,
         )
     except Exception as e:
         return error_response(
             code="STATISTICS_GET_FAILED",
             message=f"Failed to get statistics: {str(e)}",
-            status_code=status.HTTP_500_INTERNAL_SERVER_ERROR
+            status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
         )
 
 
@@ -404,17 +403,18 @@ async def get_statistics(
 # 3. Emergency Override (1 endpoint) - Q7
 # ============================================================================
 
+
 @router.post(
     "/{dependency_id}/override",
     response_model=Dependency,
     dependencies=[Depends(require_role(UserRole.PROJECT_OWNER))],
     summary="Emergency override dependency",
-    description="Emergency override for hard-blocked dependency (Q7)"
+    description="Emergency override for hard-blocked dependency (Q7)",
 )
 async def emergency_override(
     dependency_id: UUID,
     override_request: EmergencyOverride,
-    current_user: dict = Depends(get_current_user)
+    current_user: dict = Depends(get_current_user),
 ):
     """
     Emergency override for dependency (Q7: Hard Block with emergency override).
@@ -435,24 +435,28 @@ async def emergency_override(
             return error_response(
                 code="DEPENDENCY_ID_MISMATCH",
                 message="Dependency ID in URL does not match request body",
-                status_code=status.HTTP_400_BAD_REQUEST
+                status_code=status.HTTP_400_BAD_REQUEST,
             )
 
         # Set overridden_by from current user
-        override_request.overridden_by = current_user.get("username", current_user.get("email"))
+        override_request.overridden_by = current_user.get(
+            "username", current_user.get("email")
+        )
 
-        dependency = await kanban_dependency_service.emergency_override(override_request)
+        dependency = await kanban_dependency_service.emergency_override(
+            override_request
+        )
         return dependency
 
     except ValueError as e:
         return error_response(
             code="DEPENDENCY_NOT_FOUND",
             message=str(e),
-            status_code=status.HTTP_404_NOT_FOUND
+            status_code=status.HTTP_404_NOT_FOUND,
         )
     except Exception as e:
         return error_response(
             code="EMERGENCY_OVERRIDE_FAILED",
             message=f"Failed to override dependency: {str(e)}",
-            status_code=status.HTTP_500_INTERNAL_SERVER_ERROR
+            status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
         )

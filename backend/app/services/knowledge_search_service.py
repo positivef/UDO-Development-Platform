@@ -35,9 +35,10 @@ Benchmarking:
 """
 
 import re
-from typing import List, Dict, Optional, Tuple
-from datetime import datetime, timezone, timedelta
+from datetime import datetime, timedelta, timezone
 from pathlib import Path
+from typing import Dict, List, Optional, Tuple
+
 import yaml
 
 
@@ -105,8 +106,10 @@ class KnowledgeSearchService:
     # =========================================================================
 
     def tier1_filename_search(
-        self, query: str, error_type: Optional[str] = None,
-        obsidian_files: Optional[List[str]] = None
+        self,
+        query: str,
+        error_type: Optional[str] = None,
+        obsidian_files: Optional[List[str]] = None,
     ) -> List[Tuple[str, float]]:
         """
         Tier 1: Fast filename pattern matching
@@ -148,14 +151,17 @@ class KnowledgeSearchService:
 
                 # Pattern: Debug-{normalized_keyword}-*.md (case-insensitive)
                 pattern = re.compile(
-                    rf"Debug-{re.escape(normalized_keyword)}-.*\.md$",
-                    re.IGNORECASE
+                    rf"Debug-{re.escape(normalized_keyword)}-.*\.md$", re.IGNORECASE
                 )
 
                 # Find matching files
                 for file_path in obsidian_files:
                     # Extract filename from path
-                    filename = Path(file_path).name if isinstance(file_path, str) else file_path
+                    filename = (
+                        Path(file_path).name
+                        if isinstance(file_path, str)
+                        else file_path
+                    )
 
                     if pattern.search(str(filename)):
                         results.append((file_path, score_weight))
@@ -178,8 +184,10 @@ class KnowledgeSearchService:
     # =========================================================================
 
     def tier2_frontmatter_search(
-        self, query: str, error_type: Optional[str] = None,
-        complex_search_results: Optional[List[Dict]] = None
+        self,
+        query: str,
+        error_type: Optional[str] = None,
+        complex_search_results: Optional[List[Dict]] = None,
     ) -> List[Tuple[str, float]]:
         """
         Tier 2: Frontmatter YAML metadata search
@@ -224,13 +232,13 @@ class KnowledgeSearchService:
         else:
             # MVP fallback: Mock results based on keywords
             for keyword in keywords:
-                results.append(
-                    (f"Frontmatter-Match-{keyword}.md", score_weight)
-                )
+                results.append((f"Frontmatter-Match-{keyword}.md", score_weight))
 
         return results
 
-    def _build_frontmatter_query(self, keywords: List[str], error_type: Optional[str] = None) -> Dict:
+    def _build_frontmatter_query(
+        self, keywords: List[str], error_type: Optional[str] = None
+    ) -> Dict:
         """
         Build JsonLogic query for frontmatter search
 
@@ -253,16 +261,12 @@ class KnowledgeSearchService:
 
         # Add error_type condition if provided
         if error_type:
-            conditions.append({
-                "in": [error_type, {"var": "frontmatter.error_type"}]
-            })
+            conditions.append({"in": [error_type, {"var": "frontmatter.error_type"}]})
 
         # Add keyword conditions (search in tags and error_category)
         for keyword in keywords:
             # Search in tags array
-            conditions.append({
-                "in": [keyword, {"var": "frontmatter.tags"}]
-            })
+            conditions.append({"in": [keyword, {"var": "frontmatter.tags"}]})
 
         # Combine with OR logic (any keyword match)
         if len(conditions) == 1:
@@ -278,8 +282,7 @@ class KnowledgeSearchService:
     # =========================================================================
 
     def tier3_content_search(
-        self, query: str,
-        simple_search_results: Optional[List[Dict]] = None
+        self, query: str, simple_search_results: Optional[List[Dict]] = None
     ) -> List[Tuple[str, float, str]]:
         """
         Tier 3: Full-text content search
@@ -320,11 +323,13 @@ class KnowledgeSearchService:
                     results.append((str(result), score_weight, ""))
         else:
             # MVP fallback: Mock result
-            results.append((
-                f"Content-Match-{query[:20]}.md",
-                score_weight,
-                f"Found content matching '{query[:50]}...'"
-            ))
+            results.append(
+                (
+                    f"Content-Match-{query[:20]}.md",
+                    score_weight,
+                    f"Found content matching '{query[:50]}...'",
+                )
+            )
 
         return results
 
@@ -490,10 +495,9 @@ class KnowledgeSearchService:
             )
 
             result.freshness_bonus = (
-                5.0 if freshness_days < 7 else
-                3.0 if freshness_days < 30 else
-                1.0 if freshness_days < 90 else
-                0.0
+                5.0
+                if freshness_days < 7
+                else 3.0 if freshness_days < 30 else 1.0 if freshness_days < 90 else 0.0
             )
             result.usefulness_score = usefulness_score
 
@@ -532,9 +536,26 @@ class KnowledgeSearchService:
         """
         # Stop words (common words to ignore)
         stop_words = {
-            "a", "an", "the", "is", "are", "was", "were",
-            "in", "on", "at", "to", "for", "of", "with",
-            "how", "what", "when", "where", "why", "which"
+            "a",
+            "an",
+            "the",
+            "is",
+            "are",
+            "was",
+            "were",
+            "in",
+            "on",
+            "at",
+            "to",
+            "for",
+            "of",
+            "with",
+            "how",
+            "what",
+            "when",
+            "where",
+            "why",
+            "which",
         }
 
         # Split and normalize

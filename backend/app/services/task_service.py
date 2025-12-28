@@ -1,8 +1,8 @@
 """
 Task Management Service
 
-[EMOJI] [EMOJI](Task) [EMOJI] [EMOJI] [EMOJI] [EMOJI] [EMOJI].
-[EMOJI] [EMOJI] TODO [EMOJI], [EMOJI] [EMOJI], [EMOJI] [EMOJI].
+개발 작업(Task) 관리 및 상태 추적 서비스입니다.
+각 작업의 TODO 리스트, 진행 상황, 컨텍스트를 관리합니다.
 """
 
 from typing import List, Dict, Any, Optional
@@ -16,7 +16,7 @@ logger = logging.getLogger(__name__)
 
 
 class TaskStatus(Enum):
-    """[EMOJI] [EMOJI]"""
+    """작업 상태"""
     PENDING = "pending"
     IN_PROGRESS = "in_progress"
     REVIEW = "review"
@@ -26,7 +26,7 @@ class TaskStatus(Enum):
 
 
 class TodoStatus(Enum):
-    """TODO [EMOJI] [EMOJI]"""
+    """TODO 항목 상태"""
     PENDING = "pending"
     IN_PROGRESS = "in_progress"
     COMPLETED = "completed"
@@ -35,29 +35,29 @@ class TodoStatus(Enum):
 
 class TaskService:
     """
-    [EMOJI] [EMOJI] [EMOJI]
+    작업 관리 서비스
 
-    [EMOJI] [EMOJI] [EMOJI] [EMOJI],
-    [EMOJI] [EMOJI] [EMOJI] Mock [EMOJI] [EMOJI].
+    실제 환경에서는 데이터베이스와 연동하지만,
+    현재는 메모리 기반 Mock 구현을 사용합니다.
     """
 
     def __init__(self):
-        """TaskService [EMOJI]"""
+        """TaskService 초기화"""
         self.tasks: Dict[str, Dict[str, Any]] = {}
         self.task_contexts: Dict[str, Dict[str, Any]] = {}
 
-        # [EMOJI] [EMOJI] [EMOJI] [EMOJI]
+        # 테스트용 기본 작업 생성
         self._create_default_tasks()
 
     def _create_default_tasks(self):
-        """[EMOJI] [EMOJI] [EMOJI] [EMOJI]"""
+        """테스트용 기본 작업 생성"""
 
         # Task 1: JWT Authentication
         task1_id = "task-jwt-auth"
         self.tasks[task1_id] = {
             "id": task1_id,
             "title": "Implement JWT Authentication",
-            "description": "JWT [EMOJI] [EMOJI] [EMOJI] [EMOJI]",
+            "description": "JWT 기반 인증 미들웨어 구현",
             "project": "UDO Platform",
             "project_id": "proj-udo-001",
             "phase": "development",
@@ -65,7 +65,7 @@ class TaskService:
             "created_at": datetime.now(UTC).isoformat(),
             "updated_at": datetime.now(UTC).isoformat(),
 
-            # TODO [EMOJI]
+            # TODO 그룹
             "todo_groups": [
                 {
                     "id": "group-1",
@@ -167,26 +167,26 @@ class TaskService:
                 }
             ],
 
-            # [EMOJI] [EMOJI] [EMOJI]
+            # 현재 진행 단계
             "current_step": {
                 "group_index": 1,
                 "item_index": 1,
                 "description": "JWT middleware implementation"
             },
 
-            # [EMOJI] [EMOJI]
+            # 완성도 점수
             "completeness": 45,
 
-            # [EMOJI] [EMOJI]
+            # 시간 추적
             "estimated_hours": 8,
             "actual_hours": 3.5,
 
-            # Git [EMOJI]
+            # Git 정보
             "git_branch": "feature/jwt-auth",
             "last_commit": "feat: Add user model and schema"
         }
 
-        # Task 1[EMOJI] [EMOJI]
+        # Task 1의 컨텍스트
         self.task_contexts[task1_id] = {
             "task_id": task1_id,
             "files": [
@@ -217,7 +217,7 @@ class TaskService:
         self.tasks[task2_id] = {
             "id": task2_id,
             "title": "Add Task Management UI",
-            "description": "[EMOJI] [EMOJI] UI [EMOJI] [EMOJI]",
+            "description": "작업 관리 UI 컴포넌트 구현",
             "project": "UDO Platform",
             "project_id": "proj-udo-001",
             "phase": "planning",
@@ -270,7 +270,7 @@ class TaskService:
         self.tasks[task3_id] = {
             "id": task3_id,
             "title": "Implement WebSocket Real-time Updates",
-            "description": "WebSocket[EMOJI] [EMOJI] [EMOJI] [EMOJI] [EMOJI]",
+            "description": "WebSocket을 통한 실시간 업데이트 구현",
             "project": "UDO Platform",
             "project_id": "proj-udo-001",
             "phase": "development",
@@ -335,19 +335,19 @@ class TaskService:
         phase: Optional[str] = None
     ) -> List[Dict[str, Any]]:
         """
-        [EMOJI] [EMOJI] [EMOJI]
+        작업 목록 조회
 
         Args:
-            project_id: [EMOJI] ID ([EMOJI])
-            status: [EMOJI] [EMOJI] ([EMOJI])
-            phase: [EMOJI] [EMOJI] ([EMOJI])
+            project_id: 프로젝트 ID (선택)
+            status: 작업 상태 (선택)
+            phase: 개발 단계 (선택)
 
         Returns:
-            [EMOJI] [EMOJI]
+            작업 목록
         """
         tasks = list(self.tasks.values())
 
-        # [EMOJI]
+        # 필터링
         if project_id:
             tasks = [t for t in tasks if t.get("project_id") == project_id]
 
@@ -357,34 +357,34 @@ class TaskService:
         if phase:
             tasks = [t for t in tasks if t.get("phase") == phase]
 
-        # [EMOJI] ([EMOJI] [EMOJI] [EMOJI])
+        # 정렬 (최근 업데이트 순)
         tasks.sort(key=lambda x: x.get("updated_at", ""), reverse=True)
 
         return tasks
 
     async def get_task(self, task_id: str) -> Optional[Dict[str, Any]]:
         """
-        [EMOJI] [EMOJI] [EMOJI]
+        작업 상세 조회
 
         Args:
-            task_id: [EMOJI] ID
+            task_id: 작업 ID
 
         Returns:
-            [EMOJI] [EMOJI] [EMOJI] None
+            작업 정보 또는 None
         """
         return self.tasks.get(task_id)
 
     async def get_task_context(self, task_id: str) -> Optional[Dict[str, Any]]:
         """
-        [EMOJI] [EMOJI] [EMOJI]
+        작업 컨텍스트 조회
 
-        CLI[EMOJI] [EMOJI] [EMOJI] [EMOJI] [EMOJI] [EMOJI] [EMOJI].
+        CLI로 작업을 계속하기 위한 컨텍스트 정보를 반환합니다.
 
         Args:
-            task_id: [EMOJI] ID
+            task_id: 작업 ID
 
         Returns:
-            [EMOJI] [EMOJI] [EMOJI] None
+            컨텍스트 정보 또는 None
         """
         task = self.tasks.get(task_id)
         if not task:
@@ -392,7 +392,7 @@ class TaskService:
 
         context = self.task_contexts.get(task_id, {})
 
-        # [EMOJI] TODO [EMOJI]
+        # 현재 TODO 찾기
         current_todo = None
         for group in task.get("todo_groups", []):
             for item in group.get("items", []):
@@ -425,16 +425,16 @@ class TaskService:
 
     def _generate_cli_command(self, task_id: str) -> str:
         """
-        CLI [EMOJI] [EMOJI]
+        CLI 명령어 생성
 
         Args:
-            task_id: [EMOJI] ID
+            task_id: 작업 ID
 
         Returns:
-            CLI [EMOJI]
+            CLI 명령어
         """
-        # Deep Link [EMOJI] (Windows)
-        # [EMOJI] [EMOJI] [EMOJI] [EMOJI], [EMOJI] [EMOJI] [EMOJI] [EMOJI] [EMOJI]
+        # Deep Link 프로토콜 (Windows)
+        # 실제로는 레지스트리 등록이 필요하지만, 현재는 복사 가능한 명령어 제공
         return f"claude-code://continue?task={task_id}"
 
     async def update_task_progress(
@@ -443,20 +443,20 @@ class TaskService:
         progress: Dict[str, Any]
     ) -> bool:
         """
-        [EMOJI] [EMOJI] [EMOJI] [EMOJI]
+        작업 진행 상황 업데이트
 
         Args:
-            task_id: [EMOJI] ID
-            progress: [EMOJI] [EMOJI] [EMOJI]
+            task_id: 작업 ID
+            progress: 진행 상황 정보
 
         Returns:
-            [EMOJI] [EMOJI]
+            성공 여부
         """
         task = self.tasks.get(task_id)
         if not task:
             return False
 
-        # [EMOJI] [EMOJI] [EMOJI]
+        # 진행 상황 업데이트
         if "status" in progress:
             task["status"] = progress["status"]
 
@@ -469,7 +469,7 @@ class TaskService:
         if "actual_hours" in progress:
             task["actual_hours"] = progress["actual_hours"]
 
-        # TODO [EMOJI] [EMOJI]
+        # TODO 상태 업데이트
         if "todo_update" in progress:
             todo_id = progress["todo_update"]["id"]
             new_status = progress["todo_update"]["status"]
@@ -493,13 +493,13 @@ class TaskService:
 
     async def create_task(self, task_data: Dict[str, Any]) -> str:
         """
-        [EMOJI] [EMOJI] [EMOJI]
+        새 작업 생성
 
         Args:
-            task_data: [EMOJI] [EMOJI]
+            task_data: 작업 정보
 
         Returns:
-            [EMOJI] [EMOJI] ID
+            생성된 작업 ID
         """
         task_id = f"task-{uuid.uuid4().hex[:8]}"
 
@@ -530,14 +530,14 @@ class TaskService:
         context: Dict[str, Any]
     ) -> bool:
         """
-        [EMOJI] [EMOJI] [EMOJI]
+        작업 컨텍스트 저장
 
         Args:
-            task_id: [EMOJI] ID
-            context: [EMOJI] [EMOJI]
+            task_id: 작업 ID
+            context: 컨텍스트 정보
 
         Returns:
-            [EMOJI] [EMOJI]
+            성공 여부
         """
         if task_id not in self.tasks:
             return False
@@ -553,13 +553,13 @@ class TaskService:
 
     async def calculate_completeness(self, task_id: str) -> int:
         """
-        [EMOJI] [EMOJI] [EMOJI]
+        작업 완성도 계산
 
         Args:
-            task_id: [EMOJI] ID
+            task_id: 작업 ID
 
         Returns:
-            [EMOJI] (0-100)
+            완성도 (0-100)
         """
         task = self.tasks.get(task_id)
         if not task:
@@ -580,7 +580,7 @@ class TaskService:
         return int((completed_items / total_items) * 100)
 
     def get_active_task_count(self) -> int:
-        """[EMOJI] [EMOJI] [EMOJI] [EMOJI]"""
+        """활성 작업 수 반환"""
         return sum(
             1 for task in self.tasks.values()
             if task.get("status") in [
@@ -591,7 +591,7 @@ class TaskService:
         )
 
     def get_blocked_task_count(self) -> int:
-        """[EMOJI] [EMOJI] [EMOJI] [EMOJI]"""
+        """차단된 작업 수 반환"""
         return sum(
             1 for task in self.tasks.values()
             if task.get("status") == TaskStatus.BLOCKED.value

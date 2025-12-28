@@ -5,8 +5,8 @@
 - Obsidian/다른 세션에서 컨텍스트 복구 시 참고용
 
 ## 오늘의 목표
-1) `/api/uncertainty/status` 의존성/응답 구조 정비  
-2) 대시보드에서 실시간 불확실성 데이터(상태/신뢰도/예측/미티게이션) 수신 연결  
+1) `/api/uncertainty/status` 의존성/응답 구조 정비
+2) 대시보드에서 실시간 불확실성 데이터(상태/신뢰도/예측/미티게이션) 수신 연결
 3) UDO v2 Bayesian 통합 스켈레톤 착수 계획 수립
 
 ## 즉시 액션 체크리스트
@@ -39,28 +39,28 @@
 - 프론트 WebSocket 확장: `uncertainty_update` 수신 시 status/metrics 쿼리 무효화 및 토스트 표출
 
 ## 확정된 구현 순서 (vNext PRD 기준)
-1) **불확실성 브리지 완성**  
-   - 백엔드: `/api/uncertainty/status/mitigations/ack` 계약 확정, DI 정리, 회로차단/TTL 적용  
+1) **불확실성 브리지 완성**
+   - 백엔드: `/api/uncertainty/status/mitigations/ack` 계약 확정, DI 정리, 회로차단/TTL 적용
    - 프론트: 상태/신뢰도/24h 예측/미티게이션 표출, 로딩·에러 UX 반영
-2) **미티게이션 액션 & 타임트래킹 연동**  
-   - 미티게이션 적용 시 리스크 하향 기록  
-   - 타임트래킹 1.2x 초과 → 기술/일정 리스크 상승 이벤트 반영  
+2) **미티게이션 액션 & 타임트래킹 연동**
+   - 미티게이션 적용 시 리스크 하향 기록
+   - 타임트래킹 1.2x 초과 → 기술/일정 리스크 상승 이벤트 반영
    - 타임라인에서 “실행→리스크 변화” 연결
-3) **Bayesian 통합 (UDO v2)**  
-   - `udo_bayesian_integration` 초기화, 적응형 임계치로 GO/NO_GO/Checkpoint 결정  
+3) **Bayesian 통합 (UDO v2)**
+   - `udo_bayesian_integration` 초기화, 적응형 임계치로 GO/NO_GO/Checkpoint 결정
    - 학습 루프: 실행/테스트 피드백으로 confidence 업데이트
-4) **Guided Tips / 세컨 브레인**  
-   - 대시보드 Tips 패널(Phase/리스크별 지침), 적용/무시 액션  
+4) **Guided Tips / 세컨 브레인**
+   - 대시보드 Tips 패널(Phase/리스크별 지침), 적용/무시 액션
    - Obsidian 자동 로그: 실행/결정/팁/미티게이션 기록, 태그로 검색 가능하게
-5) **PRD 업로드 & 멀티모달(옵션)**  
-   - 드래그앤드롭/파일 업로드(MD/PDF/텍스트/이미지) → 파싱/요약/임베딩 → 리스크 재산정  
+5) **PRD 업로드 & 멀티모달(옵션)**
+   - 드래그앤드롭/파일 업로드(MD/PDF/텍스트/이미지) → 파싱/요약/임베딩 → 리스크 재산정
    - 업로드 처리 상태 UI, 변경 diff/영향 카드
-6) **모니터링/알림/비용 지표**  
-   - 라우터/AI 호출 계측, 회로차단 상태/비용/토큰 사용량 카드  
+6) **모니터링/알림/비용 지표**
+   - 라우터/AI 호출 계측, 회로차단 상태/비용/토큰 사용량 카드
    - 리스크 급등/회로차단/비용 상승 알림(Slack/웹훅 옵션)
-7) **테스트/운영 게이트**  
-   - 백엔드: pytest + 시나리오(`tests/run_udo_phase1.py`) 회귀  
-   - 프론트: `npm run lint && npm run build`  
+7) **테스트/운영 게이트**
+   - 백엔드: pytest + 시나리오(`tests/run_udo_phase1.py`) 회귀
+   - 프론트: `npm run lint && npm run build`
    - 알림/로그 기준 확정 후 릴리스
 
 ## 초보 개발자 인사이트 & 시행착오 로그

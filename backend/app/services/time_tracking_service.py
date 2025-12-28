@@ -5,27 +5,19 @@ Comprehensive time tracking and ROI measurement system for UDO Development Platf
 Tracks task execution time, calculates ROI, identifies bottlenecks, and generates reports.
 """
 
-import logging
-import yaml
 import asyncio
+import logging
+from datetime import UTC, date, datetime, timedelta
 from pathlib import Path
-from datetime import datetime, UTC, date, timedelta
-from typing import Dict, List, Optional, Any, Tuple
+from typing import Any, Dict, List, Optional, Tuple
 from uuid import UUID
 
-from ..models.time_tracking import (
-    TaskSession,
-    TaskSessionCreate,
-    TaskSessionUpdate,
-    TaskMetrics,
-    TimeMetrics,
-    Bottleneck,
-    ROIReport,
-    WeeklyReport,
-    TaskType,
-    Phase,
-    AIModel,
-)
+import yaml
+
+from ..models.time_tracking import (AIModel, Bottleneck, Phase, ROIReport,
+                                    TaskMetrics, TaskSession,
+                                    TaskSessionCreate, TaskSessionUpdate,
+                                    TaskType, TimeMetrics, WeeklyReport)
 
 logger = logging.getLogger(__name__)
 
@@ -45,10 +37,7 @@ class TimeTrackingService:
     """
 
     def __init__(
-        self,
-        pool=None,
-        obsidian_service=None,
-        config_path: Optional[Path] = None
+        self, pool=None, obsidian_service=None, config_path: Optional[Path] = None
     ):
         """
         Initialize Time Tracking Service
@@ -63,7 +52,9 @@ class TimeTrackingService:
 
         # Load baseline configuration
         if config_path is None:
-            config_path = Path(__file__).parent.parent.parent / "config" / "baseline_times.yaml"
+            config_path = (
+                Path(__file__).parent.parent.parent / "config" / "baseline_times.yaml"
+            )
 
         self.config = self._load_config(config_path)
         self.baseline_times: Dict[str, int] = self._extract_baseline_times()
@@ -72,12 +63,15 @@ class TimeTrackingService:
         self.active_sessions: Dict[str, Dict[str, Any]] = {}
         self.paused_sessions: Dict[str, datetime] = {}
 
-        logger.info("TimeTrackingService initialized with %d baseline types", len(self.baseline_times))
+        logger.info(
+            "TimeTrackingService initialized with %d baseline types",
+            len(self.baseline_times),
+        )
 
     def _load_config(self, config_path: Path) -> Dict[str, Any]:
         """Load configuration from YAML file"""
         try:
-            with open(config_path, 'r', encoding='utf-8') as f:
+            with open(config_path, "r", encoding="utf-8") as f:
                 config = yaml.safe_load(f)
             logger.info(f"Loaded baseline configuration from {config_path}")
             return config
@@ -97,7 +91,7 @@ class TimeTrackingService:
                     "phase_transition": {"manual_minutes": 15},
                     "other": {"manual_minutes": 30},
                 },
-                "roi_settings": {"hourly_rate": 100}
+                "roi_settings": {"hourly_rate": 100},
             }
 
     def _extract_baseline_times(self) -> Dict[str, int]:
@@ -120,7 +114,7 @@ class TimeTrackingService:
         phase: Phase = Phase.IMPLEMENTATION,
         ai_used: AIModel = AIModel.NONE,
         metadata: Optional[Dict[str, Any]] = None,
-        project_id: Optional[UUID] = None
+        project_id: Optional[UUID] = None,
     ) -> UUID:
         """
         Start tracking a task
@@ -149,7 +143,7 @@ class TimeTrackingService:
                 ai_used=ai_used,
                 baseline_seconds=baseline_seconds,
                 metadata=metadata,
-                project_id=project_id
+                project_id=project_id,
             )
 
             # Insert into database
@@ -174,11 +168,12 @@ class TimeTrackingService:
                         baseline_seconds,
                         False,  # success = False until completed
                         metadata,
-                        project_id
+                        project_id,
                     )
             else:
                 # Mock mode for testing
                 from uuid import uuid4
+
                 session_id = uuid4()
                 logger.warning("No database pool - running in mock mode")
 
@@ -187,7 +182,7 @@ class TimeTrackingService:
                 "task_id": task_id,
                 "start_time": start_time,
                 "pause_start": None,
-                "total_pause_duration": 0
+                "total_pause_duration": 0,
             }
 
             logger.info(
@@ -206,7 +201,7 @@ class TimeTrackingService:
         session_id: UUID,
         success: bool = True,
         error_message: Optional[str] = None,
-        metadata: Optional[Dict[str, Any]] = None
+        metadata: Optional[Dict[str, Any]] = None,
     ) -> TaskMetrics:
         """
         End task tracking and calculate metrics
@@ -262,14 +257,14 @@ class TimeTrackingService:
                         success,
                         error_message,
                         metadata,
-                        session_id
+                        session_id,
                     )
 
                     if not row:
                         raise ValueError(f"Session {session_id} not found in database")
 
-                    task_id = row['task_id']
-                    baseline_seconds = row['baseline_seconds']
+                    task_id = row["task_id"]
+                    baseline_seconds = row["baseline_seconds"]
             else:
                 # Mock mode
                 task_id = session_info["task_id"]
@@ -284,7 +279,7 @@ class TimeTrackingService:
                     await conn.execute(
                         "UPDATE task_sessions SET time_saved_seconds = $1 WHERE id = $2",
                         time_saved_seconds,
-                        session_id
+                        session_id,
                     )
 
             # Calculate metrics
@@ -292,16 +287,22 @@ class TimeTrackingService:
                 task_id=task_id,
                 duration_seconds=active_duration_seconds,
                 baseline_seconds=baseline_seconds,
-                time_saved_seconds=time_saved_seconds
+                time_saved_seconds=time_saved_seconds,
             )
 
             # Trigger uncertainty adjustment if we overran baseline significantly
-            ratio = active_duration_seconds / baseline_seconds if baseline_seconds else 0
+            ratio = (
+                active_duration_seconds / baseline_seconds if baseline_seconds else 0
+            )
             if ratio > 1.2:
                 await self._handle_uncertainty_overrun(
                     task_id=task_id,
-                    phase=session_info.get("phase", Phase.IMPLEMENTATION) if isinstance(session_info, dict) else Phase.IMPLEMENTATION,
-                    ratio=ratio
+                    phase=(
+                        session_info.get("phase", Phase.IMPLEMENTATION)
+                        if isinstance(session_info, dict)
+                        else Phase.IMPLEMENTATION
+                    ),
+                    ratio=ratio,
                 )
 
             # Remove from active sessions
@@ -386,7 +387,9 @@ class TimeTrackingService:
             # Remove from paused sessions
             del self.paused_sessions[session_key]
 
-            logger.info(f"Resumed task session {session_id} (paused for {pause_duration}s)")
+            logger.info(
+                f"Resumed task session {session_id} (paused for {pause_duration}s)"
+            )
             return True
 
         except Exception as e:
@@ -423,10 +426,10 @@ class TimeTrackingService:
                     return None
 
                 return self._calculate_task_metrics(
-                    task_id=row['task_id'],
-                    duration_seconds=row['duration_seconds'],
-                    baseline_seconds=row['baseline_seconds'],
-                    time_saved_seconds=row['time_saved_seconds']
+                    task_id=row["task_id"],
+                    duration_seconds=row["duration_seconds"],
+                    baseline_seconds=row["baseline_seconds"],
+                    time_saved_seconds=row["time_saved_seconds"],
                 )
 
         except Exception as e:
@@ -438,17 +441,21 @@ class TimeTrackingService:
         task_id: str,
         duration_seconds: int,
         baseline_seconds: int,
-        time_saved_seconds: int
+        time_saved_seconds: int,
     ) -> TaskMetrics:
         """Calculate metrics for a task"""
         time_saved_minutes = time_saved_seconds / 60
         time_saved_hours = time_saved_seconds / 3600
 
         # Efficiency percentage: how much time was saved relative to baseline
-        efficiency_percentage = (time_saved_seconds / baseline_seconds * 100) if baseline_seconds > 0 else 0
+        efficiency_percentage = (
+            (time_saved_seconds / baseline_seconds * 100) if baseline_seconds > 0 else 0
+        )
 
         # ROI percentage: return on investment (saved time / actual time spent)
-        roi_percentage = (time_saved_seconds / duration_seconds * 100) if duration_seconds > 0 else 0
+        roi_percentage = (
+            (time_saved_seconds / duration_seconds * 100) if duration_seconds > 0 else 0
+        )
 
         return TaskMetrics(
             task_id=task_id,
@@ -458,14 +465,14 @@ class TimeTrackingService:
             time_saved_minutes=time_saved_minutes,
             time_saved_hours=time_saved_hours,
             efficiency_percentage=efficiency_percentage,
-            roi_percentage=roi_percentage
+            roi_percentage=roi_percentage,
         )
 
     async def calculate_roi(
         self,
         period: str = "week",
         start_date: Optional[date] = None,
-        end_date: Optional[date] = None
+        end_date: Optional[date] = None,
     ) -> ROIReport:
         """
         Calculate ROI for specified period
@@ -491,9 +498,9 @@ class TimeTrackingService:
                 return self._empty_roi_report(period, start_date, end_date)
 
             # Calculate aggregated metrics
-            total_duration = sum(t['duration_seconds'] for t in tasks)
-            total_baseline = sum(t['baseline_seconds'] for t in tasks)
-            total_saved = sum(t['time_saved_seconds'] for t in tasks)
+            total_duration = sum(t["duration_seconds"] for t in tasks)
+            total_baseline = sum(t["baseline_seconds"] for t in tasks)
+            total_saved = sum(t["time_saved_seconds"] for t in tasks)
 
             # Convert to hours
             manual_time_hours = total_baseline / 3600
@@ -501,11 +508,15 @@ class TimeTrackingService:
             time_saved_hours = total_saved / 3600
 
             # Calculate ROI
-            roi_percentage = (total_saved / total_duration * 100) if total_duration > 0 else 0
-            efficiency_gain = (total_saved / total_baseline * 100) if total_baseline > 0 else 0
+            roi_percentage = (
+                (total_saved / total_duration * 100) if total_duration > 0 else 0
+            )
+            efficiency_gain = (
+                (total_saved / total_baseline * 100) if total_baseline > 0 else 0
+            )
 
             # Calculate success rate
-            successful_tasks = sum(1 for t in tasks if t['success'])
+            successful_tasks = sum(1 for t in tasks if t["success"])
             success_rate = (successful_tasks / len(tasks) * 100) if tasks else 0
 
             # AI breakdown
@@ -541,7 +552,7 @@ class TimeTrackingService:
                 ai_breakdown=ai_breakdown,
                 phase_breakdown=phase_breakdown,
                 top_time_savers=top_time_savers,
-                bottlenecks=bottlenecks
+                bottlenecks=bottlenecks,
             )
 
         except Exception as e:
@@ -549,9 +560,7 @@ class TimeTrackingService:
             raise
 
     async def get_bottlenecks(
-        self,
-        start_date: Optional[date] = None,
-        end_date: Optional[date] = None
+        self, start_date: Optional[date] = None, end_date: Optional[date] = None
     ) -> List[Bottleneck]:
         """
         Identify bottlenecks (tasks taking longer than baseline)
@@ -574,28 +583,34 @@ class TimeTrackingService:
             # Group by task type
             task_type_stats: Dict[str, List[Dict]] = {}
             for task in tasks:
-                task_type = task['task_type']
+                task_type = task["task_type"]
                 if task_type not in task_type_stats:
                     task_type_stats[task_type] = []
                 task_type_stats[task_type].append(task)
 
             # Calculate bottlenecks
             bottlenecks = []
-            thresholds = self.config.get("roi_settings", {}).get("bottleneck_thresholds", {
-                "low": 10,
-                "medium": 25,
-                "high": 50,
-                "critical": 100
-            })
+            thresholds = self.config.get("roi_settings", {}).get(
+                "bottleneck_thresholds",
+                {"low": 10, "medium": 25, "high": 50, "critical": 100},
+            )
 
             for task_type, task_list in task_type_stats.items():
-                avg_duration = sum(t['duration_seconds'] for t in task_list) / len(task_list)
-                avg_baseline = sum(t['baseline_seconds'] for t in task_list) / len(task_list)
+                avg_duration = sum(t["duration_seconds"] for t in task_list) / len(
+                    task_list
+                )
+                avg_baseline = sum(t["baseline_seconds"] for t in task_list) / len(
+                    task_list
+                )
 
                 # Only consider if actually slower than baseline
                 if avg_duration > avg_baseline:
                     overhead_seconds = int(avg_duration - avg_baseline)
-                    overhead_percentage = (overhead_seconds / avg_baseline * 100) if avg_baseline > 0 else 0
+                    overhead_percentage = (
+                        (overhead_seconds / avg_baseline * 100)
+                        if avg_baseline > 0
+                        else 0
+                    )
 
                     # Determine severity
                     if overhead_percentage >= thresholds.get("critical", 100):
@@ -607,19 +622,23 @@ class TimeTrackingService:
                     else:
                         severity = "low"
 
-                    bottlenecks.append(Bottleneck(
-                        task_type=TaskType(task_type),
-                        avg_duration_seconds=int(avg_duration),
-                        baseline_seconds=int(avg_baseline),
-                        overhead_seconds=overhead_seconds,
-                        overhead_percentage=overhead_percentage,
-                        frequency=len(task_list),
-                        severity=severity
-                    ))
+                    bottlenecks.append(
+                        Bottleneck(
+                            task_type=TaskType(task_type),
+                            avg_duration_seconds=int(avg_duration),
+                            baseline_seconds=int(avg_baseline),
+                            overhead_seconds=overhead_seconds,
+                            overhead_percentage=overhead_percentage,
+                            frequency=len(task_list),
+                            severity=severity,
+                        )
+                    )
 
             # Sort by severity and overhead
             severity_order = {"critical": 0, "high": 1, "medium": 2, "low": 3}
-            bottlenecks.sort(key=lambda b: (severity_order[b.severity], -b.overhead_seconds))
+            bottlenecks.sort(
+                key=lambda b: (severity_order[b.severity], -b.overhead_seconds)
+            )
 
             return bottlenecks
 
@@ -646,7 +665,9 @@ class TimeTrackingService:
             # Calculate trends (compare to previous week)
             prev_week_start = week_start - timedelta(days=7)
             prev_week_end = week_start - timedelta(days=1)
-            prev_roi = await self.calculate_roi("weekly", prev_week_start, prev_week_end)
+            prev_roi = await self.calculate_roi(
+                "weekly", prev_week_start, prev_week_end
+            )
 
             trends = self._calculate_trends(roi_report, prev_roi)
 
@@ -658,7 +679,7 @@ class TimeTrackingService:
                 week_end=week_end,
                 roi_report=roi_report,
                 trends=trends,
-                recommendations=recommendations
+                recommendations=recommendations,
             )
 
         except Exception as e:
@@ -678,9 +699,9 @@ class TimeTrackingService:
                 row = await conn.fetchrow(query, session_id)
                 if row:
                     return {
-                        "task_id": row['task_id'],
-                        "start_time": row['start_time'],
-                        "total_pause_duration": 0
+                        "task_id": row["task_id"],
+                        "start_time": row["start_time"],
+                        "total_pause_duration": 0,
                     }
         except Exception as e:
             logger.error(f"Failed to load session from database: {e}")
@@ -713,9 +734,7 @@ class TimeTrackingService:
             return week_start, week_end
 
     async def _get_tasks_for_period(
-        self,
-        start_date: date,
-        end_date: date
+        self, start_date: date, end_date: date
     ) -> List[Dict[str, Any]]:
         """Get completed tasks for a period"""
         if not self.pool:
@@ -754,62 +773,74 @@ class TimeTrackingService:
         ai_stats: Dict[str, Dict[str, Any]] = {}
 
         for task in tasks:
-            ai_model = task['ai_used']
+            ai_model = task["ai_used"]
             if ai_model not in ai_stats:
                 ai_stats[ai_model] = {
                     "tasks": 0,
                     "time_saved_seconds": 0,
-                    "time_saved_hours": 0.0
+                    "time_saved_hours": 0.0,
                 }
 
             ai_stats[ai_model]["tasks"] += 1
-            ai_stats[ai_model]["time_saved_seconds"] += task['time_saved_seconds']
-            ai_stats[ai_model]["time_saved_hours"] = ai_stats[ai_model]["time_saved_seconds"] / 3600
+            ai_stats[ai_model]["time_saved_seconds"] += task["time_saved_seconds"]
+            ai_stats[ai_model]["time_saved_hours"] = (
+                ai_stats[ai_model]["time_saved_seconds"] / 3600
+            )
 
         return ai_stats
 
-    def _calculate_phase_breakdown(self, tasks: List[Dict]) -> Dict[str, Dict[str, Any]]:
+    def _calculate_phase_breakdown(
+        self, tasks: List[Dict]
+    ) -> Dict[str, Dict[str, Any]]:
         """Calculate performance breakdown by phase"""
         phase_stats: Dict[str, Dict[str, Any]] = {}
 
         for task in tasks:
-            phase = task['phase']
+            phase = task["phase"]
             if phase not in phase_stats:
                 phase_stats[phase] = {
                     "tasks": 0,
                     "time_saved_seconds": 0,
-                    "time_saved_hours": 0.0
+                    "time_saved_hours": 0.0,
                 }
 
             phase_stats[phase]["tasks"] += 1
-            phase_stats[phase]["time_saved_seconds"] += task['time_saved_seconds']
-            phase_stats[phase]["time_saved_hours"] = phase_stats[phase]["time_saved_seconds"] / 3600
+            phase_stats[phase]["time_saved_seconds"] += task["time_saved_seconds"]
+            phase_stats[phase]["time_saved_hours"] = (
+                phase_stats[phase]["time_saved_seconds"] / 3600
+            )
 
         return phase_stats
 
-    def _calculate_top_time_savers(self, tasks: List[Dict], top_n: int = 5) -> List[Dict[str, Any]]:
+    def _calculate_top_time_savers(
+        self, tasks: List[Dict], top_n: int = 5
+    ) -> List[Dict[str, Any]]:
         """Calculate top time-saving task types"""
         task_type_stats: Dict[str, Dict[str, Any]] = {}
 
         for task in tasks:
-            task_type = task['task_type']
+            task_type = task["task_type"]
             if task_type not in task_type_stats:
                 task_type_stats[task_type] = {
                     "task_type": task_type,
                     "tasks": 0,
                     "time_saved_seconds": 0,
-                    "time_saved_hours": 0.0
+                    "time_saved_hours": 0.0,
                 }
 
             task_type_stats[task_type]["tasks"] += 1
-            task_type_stats[task_type]["time_saved_seconds"] += task['time_saved_seconds']
-            task_type_stats[task_type]["time_saved_hours"] = task_type_stats[task_type]["time_saved_seconds"] / 3600
+            task_type_stats[task_type]["time_saved_seconds"] += task[
+                "time_saved_seconds"
+            ]
+            task_type_stats[task_type]["time_saved_hours"] = (
+                task_type_stats[task_type]["time_saved_seconds"] / 3600
+            )
 
         # Sort by time saved and return top N
         sorted_stats = sorted(
             task_type_stats.values(),
-            key=lambda x: x['time_saved_seconds'],
-            reverse=True
+            key=lambda x: x["time_saved_seconds"],
+            reverse=True,
         )
 
         return sorted_stats[:top_n]
@@ -817,10 +848,14 @@ class TimeTrackingService:
     def _project_annual(self, time_saved_hours: float, period: str) -> float:
         """Project annual time savings based on period"""
         if period == "daily":
-            work_days_per_year = self.config.get("roi_settings", {}).get("work_weeks_per_year", 48) * 5
+            work_days_per_year = (
+                self.config.get("roi_settings", {}).get("work_weeks_per_year", 48) * 5
+            )
             return time_saved_hours * work_days_per_year
         elif period == "weekly":
-            work_weeks_per_year = self.config.get("roi_settings", {}).get("work_weeks_per_year", 48)
+            work_weeks_per_year = self.config.get("roi_settings", {}).get(
+                "work_weeks_per_year", 48
+            )
             return time_saved_hours * work_weeks_per_year
         elif period == "monthly":
             return time_saved_hours * 12
@@ -830,7 +865,9 @@ class TimeTrackingService:
             # Default to weekly projection
             return time_saved_hours * 48
 
-    def _empty_roi_report(self, period: str, start_date: date, end_date: date) -> ROIReport:
+    def _empty_roi_report(
+        self, period: str, start_date: date, end_date: date
+    ) -> ROIReport:
         """Create empty ROI report when no data"""
         return ROIReport(
             period=period,
@@ -848,23 +885,31 @@ class TimeTrackingService:
             ai_breakdown={},
             phase_breakdown={},
             top_time_savers=[],
-            bottlenecks=[]
+            bottlenecks=[],
         )
 
-    def _calculate_trends(self, current: ROIReport, previous: ROIReport) -> Dict[str, Any]:
+    def _calculate_trends(
+        self, current: ROIReport, previous: ROIReport
+    ) -> Dict[str, Any]:
         """Calculate week-over-week trends"""
         trends = {}
 
         # ROI change
         if previous.roi_percentage > 0:
-            roi_change = ((current.roi_percentage - previous.roi_percentage) / previous.roi_percentage) * 100
+            roi_change = (
+                (current.roi_percentage - previous.roi_percentage)
+                / previous.roi_percentage
+            ) * 100
             trends["roi_change"] = f"{roi_change:+.1f}%"
         else:
             trends["roi_change"] = "N/A"
 
         # Efficiency change
         if previous.efficiency_gain > 0:
-            efficiency_change = ((current.efficiency_gain - previous.efficiency_gain) / previous.efficiency_gain) * 100
+            efficiency_change = (
+                (current.efficiency_gain - previous.efficiency_gain)
+                / previous.efficiency_gain
+            ) * 100
             trends["efficiency_change"] = f"{efficiency_change:+.1f}%"
         else:
             trends["efficiency_change"] = "N/A"
@@ -885,7 +930,9 @@ class TimeTrackingService:
 
         # Check for bottlenecks
         if roi_report.bottlenecks:
-            critical_bottlenecks = [b for b in roi_report.bottlenecks if b.severity in ["critical", "high"]]
+            critical_bottlenecks = [
+                b for b in roi_report.bottlenecks if b.severity in ["critical", "high"]
+            ]
             if critical_bottlenecks:
                 top_bottleneck = critical_bottlenecks[0]
                 recommendations.append(
@@ -908,7 +955,9 @@ class TimeTrackingService:
         if "multi" in roi_report.ai_breakdown:
             multi_count = roi_report.ai_breakdown["multi"]["tasks"]
             total_count = roi_report.tasks_completed
-            multi_percentage = (multi_count / total_count * 100) if total_count > 0 else 0
+            multi_percentage = (
+                (multi_count / total_count * 100) if total_count > 0 else 0
+            )
 
             if multi_percentage < 10:
                 recommendations.append(
@@ -943,7 +992,9 @@ class TimeTrackingService:
 
         return recommendations
 
-    async def _handle_uncertainty_overrun(self, task_id: str, phase: Phase, ratio: float):
+    async def _handle_uncertainty_overrun(
+        self, task_id: str, phase: Phase, ratio: float
+    ):
         """
         Adjust uncertainty when a task exceeds 1.2x baseline.
 
@@ -951,15 +1002,16 @@ class TimeTrackingService:
         """
         try:
             import sys
-            main_module = sys.modules.get('main')
+
+            main_module = sys.modules.get("main")
             if not main_module:
                 return
 
-            udo_system = getattr(main_module, 'udo_system', None)
+            udo_system = getattr(main_module, "udo_system", None)
             if not udo_system:
                 return
 
-            uncertainty_map = udo_system.components.get('uncertainty')
+            uncertainty_map = udo_system.components.get("uncertainty")
             if not uncertainty_map:
                 return
 
@@ -968,7 +1020,7 @@ class TimeTrackingService:
                 "has_code": True,
                 "validation_score": 0.6,
                 "team_size": 3,
-                "timeline_weeks": 8
+                "timeline_weeks": 8,
             }
 
             vector, _state = uncertainty_map.analyze_context(context)
@@ -1006,29 +1058,31 @@ class TimeTrackingService:
                     f"#time-tracking #risk-surge #uncertainty\n"
                 )
         except Exception as e:
-            logger.error(f"Failed to handle uncertainty overrun for task {task_id}: {e}")
+            logger.error(
+                f"Failed to handle uncertainty overrun for task {task_id}: {e}"
+            )
 
     async def _sync_to_obsidian(
-        self,
-        session_id: UUID,
-        metrics: TaskMetrics,
-        success: bool
+        self, session_id: UUID, metrics: TaskMetrics, success: bool
     ):
         """Sync task completion to Obsidian"""
         if not self.obsidian_service:
             return
 
         try:
-            await self.obsidian_service.sync_event("task_completed", {
-                "session_id": str(session_id),
-                "task_id": metrics.task_id,
-                "duration_seconds": metrics.duration_seconds,
-                "baseline_seconds": metrics.baseline_seconds,
-                "time_saved_seconds": metrics.time_saved_seconds,
-                "time_saved_hours": metrics.time_saved_hours,
-                "efficiency_percentage": metrics.efficiency_percentage,
-                "roi_percentage": metrics.roi_percentage,
-                "success": success
-            })
+            await self.obsidian_service.sync_event(
+                "task_completed",
+                {
+                    "session_id": str(session_id),
+                    "task_id": metrics.task_id,
+                    "duration_seconds": metrics.duration_seconds,
+                    "baseline_seconds": metrics.baseline_seconds,
+                    "time_saved_seconds": metrics.time_saved_seconds,
+                    "time_saved_hours": metrics.time_saved_hours,
+                    "efficiency_percentage": metrics.efficiency_percentage,
+                    "roi_percentage": metrics.roi_percentage,
+                    "success": success,
+                },
+            )
         except Exception as e:
             logger.error(f"Failed to sync to Obsidian: {e}")

@@ -13,8 +13,8 @@ Version: 1.0.0
 import logging
 from dataclasses import dataclass, field
 from datetime import datetime
-from typing import Optional, List, Dict, Any, Callable
 from enum import Enum
+from typing import Any, Callable, Dict, List, Optional
 
 logger = logging.getLogger(__name__)
 
@@ -27,6 +27,7 @@ class Phase(str, Enum):
     - backend/app/models/time_tracking.py::Phase
     - src/unified_development_orchestrator_v2.py::DevelopmentStage
     """
+
     IDEATION = "ideation"
     DESIGN = "design"
     MVP = "mvp"
@@ -46,6 +47,7 @@ class PhaseTransitionEvent:
         duration_seconds: Time spent in previous phase (None if first phase)
         metadata: Additional context about the transition
     """
+
     from_phase: Optional[Phase]
     to_phase: Phase
     transition_time: datetime
@@ -59,7 +61,7 @@ class PhaseTransitionEvent:
             "to_phase": self.to_phase.value,
             "transition_time": self.transition_time.isoformat(),
             "duration_seconds": self.duration_seconds,
-            "metadata": self.metadata
+            "metadata": self.metadata,
         }
 
 
@@ -122,7 +124,7 @@ class PhaseStateManager:
             "to_phase": new_phase.value,
             "transition_time": transition_time,
             "duration_seconds": duration_seconds,
-            "metadata": metadata or {}
+            "metadata": metadata or {},
         }
         self.phase_history.append(history_entry)
 
@@ -132,14 +134,15 @@ class PhaseStateManager:
             to_phase=new_phase,
             transition_time=transition_time,
             duration_seconds=duration_seconds,
-            metadata=metadata or {}
+            metadata=metadata or {},
         )
 
         self._emit_event(event)
 
         logger.info(
             f"Phase transition: {old_phase.value if old_phase else 'None'} -> {new_phase.value} "
-            f"(duration: {duration_seconds}s)" if duration_seconds
+            f"(duration: {duration_seconds}s)"
+            if duration_seconds
             else f"Phase set: {new_phase.value}"
         )
 
@@ -240,7 +243,7 @@ class PhaseStateManager:
                 "total_transitions": 0,
                 "current_phase": None,
                 "current_duration_seconds": None,
-                "total_duration_seconds": 0
+                "total_duration_seconds": 0,
             }
 
         # Calculate total duration across all phases
@@ -260,9 +263,9 @@ class PhaseStateManager:
             "current_phase": self.current_phase.value if self.current_phase else None,
             "current_duration_seconds": current_duration,
             "total_duration_seconds": total_duration,
-            "phases_visited": list(set(
-                entry["to_phase"] for entry in self.phase_history
-            ))
+            "phases_visited": list(
+                set(entry["to_phase"] for entry in self.phase_history)
+            ),
         }
 
 

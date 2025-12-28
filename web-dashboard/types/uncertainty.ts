@@ -1,4 +1,4 @@
-export type UncertaintyState = 
+export type UncertaintyState =
   | "deterministic"
   | "probabilistic"
   | "quantum"

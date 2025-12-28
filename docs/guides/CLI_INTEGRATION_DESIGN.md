@@ -717,4 +717,3 @@ export function KanbanBoard({ project }: { project: string }) {
 2. Phase 1 구현 시작
 3. 프로토타입 테스트
 4. Phase 2-3 점진적 확장
-

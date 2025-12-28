@@ -24,10 +24,7 @@ class TestIntegratedUncertaintyMap(unittest.TestCase):
     def setUp(self):
         """Set up test environment"""
         self.temp_dir = tempfile.mkdtemp()
-        self.integrated = IntegratedUncertaintyMapV3(
-            project_path=".",
-            data_dir=self.temp_dir
-        )
+        self.integrated = IntegratedUncertaintyMapV3(project_path=".", data_dir=self.temp_dir)
 
     def tearDown(self):
         """Clean up test environment"""
@@ -71,7 +68,7 @@ class TestIntegratedUncertaintyMap(unittest.TestCase):
             "integration": 0.35,
             "external": 0.25,
             "quality": 0.4,
-            "magnitude": 0.37
+            "magnitude": 0.37,
         }
 
         # Learn from outcome
@@ -101,7 +98,7 @@ class TestIntegratedUncertaintyMap(unittest.TestCase):
                 "integration": 0.7,
                 "external": 0.6,
                 "quality": 0.8,
-                "magnitude": 0.73
+                "magnitude": 0.73,
             }
 
             self.integrated.learn_from_outcome(prediction, actual)
@@ -130,7 +127,7 @@ class TestIntegratedUncertaintyMap(unittest.TestCase):
                 "integration": 0.4,
                 "external": 0.3,
                 "quality": 0.5,
-                "magnitude": 0.4 + i * 0.05
+                "magnitude": 0.4 + i * 0.05,
             }
             self.integrated.learn_from_outcome(pred, actual)
 
@@ -158,18 +155,22 @@ class TestIntegratedUncertaintyMap(unittest.TestCase):
         # Make predictions and learn
         for i in range(2):
             pred = self.integrated.predict(phase="mvp", hours_ahead=8)
-            actual = {"magnitude": 0.5, "technical": 0.5, "resource": 0.5,
-                     "timeline": 0.5, "integration": 0.5, "external": 0.5, "quality": 0.5}
+            actual = {
+                "magnitude": 0.5,
+                "technical": 0.5,
+                "resource": 0.5,
+                "timeline": 0.5,
+                "integration": 0.5,
+                "external": 0.5,
+                "quality": 0.5,
+            }
             self.integrated.learn_from_outcome(pred, actual)
 
         # Save state
         self.integrated.save_state()
 
         # Create new instance
-        new_integrated = IntegratedUncertaintyMapV3(
-            project_path=".",
-            data_dir=self.temp_dir
-        )
+        new_integrated = IntegratedUncertaintyMapV3(project_path=".", data_dir=self.temp_dir)
 
         # Load state
         new_integrated.load_state()
@@ -207,8 +208,12 @@ class TestIntegratedUncertaintyMap(unittest.TestCase):
             pred = self.integrated.predict(phase="implementation", hours_ahead=24)
             actual = {
                 "magnitude": 0.4 + (i % 3) * 0.1,
-                "technical": 0.4, "resource": 0.4, "timeline": 0.4,
-                "integration": 0.4, "external": 0.4, "quality": 0.4
+                "technical": 0.4,
+                "resource": 0.4,
+                "timeline": 0.4,
+                "integration": 0.4,
+                "external": 0.4,
+                "quality": 0.4,
             }
             self.integrated.learn_from_outcome(pred, actual)
 
@@ -253,8 +258,12 @@ class TestIntegrationWorkflow(unittest.TestCase):
                 # Simulate actual being slightly different
                 actual = {
                     "magnitude": pred["prediction"]["predicted_magnitude"] * 0.9,
-                    "technical": 0.4, "resource": 0.4, "timeline": 0.4,
-                    "integration": 0.4, "external": 0.4, "quality": 0.4
+                    "technical": 0.4,
+                    "resource": 0.4,
+                    "timeline": 0.4,
+                    "integration": 0.4,
+                    "external": 0.4,
+                    "quality": 0.4,
                 }
                 system.learn_from_outcome(pred, actual)
 

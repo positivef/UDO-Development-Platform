@@ -5,32 +5,27 @@ API endpoints for Uncertainty Map v3.0 integration
 Provides real-time uncertainty status, predictions, and mitigation strategies
 """
 
-from fastapi import APIRouter, HTTPException, Depends
-from typing import Optional, Tuple
-from datetime import datetime
 import logging
+from datetime import datetime
+from typing import Optional, Tuple
 
-from app.models.uncertainty import (
-    UncertaintyStatusResponse,
-    UncertaintyVectorResponse,
-    MitigationStrategyResponse,
-    PredictiveModelResponse,
-    UncertaintyStateEnum,
-    ContextAnalysisRequest,
-    MitigationAckRequest,
-    MitigationAckResponse,
-    BayesianConfidenceRequest,
-    BayesianConfidenceResponse,
-)
-from app.models.uncertainty_time_integration import (
-    UncertaintyAwareTrackingRequest,
-    UncertaintyAwareTrackingResponse,
-    CorrelationAnalysisResponse,
-    AdjustedBaselineResponse,
-)
 from app.core.circuit_breaker import CircuitBreaker, SimpleTTLCache
-from app.services.session_manager_v2 import get_session_manager
+from app.models.uncertainty import (BayesianConfidenceRequest,
+                                    BayesianConfidenceResponse,
+                                    ContextAnalysisRequest,
+                                    MitigationAckRequest,
+                                    MitigationAckResponse,
+                                    MitigationStrategyResponse,
+                                    PredictiveModelResponse,
+                                    UncertaintyStateEnum,
+                                    UncertaintyStatusResponse,
+                                    UncertaintyVectorResponse)
+from app.models.uncertainty_time_integration import (
+    AdjustedBaselineResponse, CorrelationAnalysisResponse,
+    UncertaintyAwareTrackingRequest, UncertaintyAwareTrackingResponse)
 from app.services.bayesian_confidence import calculate_bayesian_confidence
+from app.services.session_manager_v2 import get_session_manager
+from fastapi import APIRouter, Depends, HTTPException
 
 logger = logging.getLogger(__name__)
 
@@ -39,8 +34,8 @@ router = APIRouter(
     tags=["uncertainty"],
     responses={
         404: {"description": "UDO system not available"},
-        503: {"description": "Uncertainty Map not initialized"}
-    }
+        503: {"description": "Uncertainty Map not initialized"},
+    },
 )
 
 # Lightweight circuit breaker / cache (in-memory)
@@ -49,41 +44,41 @@ status_cache = SimpleTTLCache()
 
 # TTL map by uncertainty state
 STATE_TTL_SECONDS = {
-    "DETERMINISTIC": 3600,   # 1h
-    "PROBABILISTIC": 1800,   # 30m
-    "QUANTUM": 900,          # 15m
-    "CHAOTIC": 300,          # 5m
-    "VOID": 60,              # 1m
+    "DETERMINISTIC": 3600,  # 1h
+    "PROBABILISTIC": 1800,  # 30m
+    "QUANTUM": 900,  # 15m
+    "CHAOTIC": 300,  # 5m
+    "VOID": 60,  # 1m
 }
+
 
 def get_uncertainty_map():
     """Dependency to get UncertaintyMap instance from global UDO system"""
     import sys
 
     # Get udo_system from backend.main module (correct module name)
-    main_module = sys.modules.get('backend.main')
+    main_module = sys.modules.get("backend.main")
     if not main_module:
         # Fallback: try 'main' for backwards compatibility
-        main_module = sys.modules.get('main')
+        main_module = sys.modules.get("main")
 
     if not main_module:
         raise HTTPException(
             status_code=503,
-            detail="UDO system not initialized. Uncertainty Map unavailable."
+            detail="UDO system not initialized. Uncertainty Map unavailable.",
         )
 
-    udo_system = getattr(main_module, 'udo_system', None)
+    udo_system = getattr(main_module, "udo_system", None)
     if not udo_system:
         raise HTTPException(
             status_code=503,
-            detail="UDO system not initialized. Uncertainty Map unavailable."
+            detail="UDO system not initialized. Uncertainty Map unavailable.",
         )
 
-    uncertainty_map = udo_system.components.get('uncertainty')
+    uncertainty_map = udo_system.components.get("uncertainty")
     if not uncertainty_map:
         raise HTTPException(
-            status_code=503,
-            detail="Uncertainty Map component not initialized"
+            status_code=503, detail="Uncertainty Map component not initialized"
         )
 
     return uncertainty_map
@@ -96,12 +91,12 @@ def _build_context() -> Tuple[str, dict]:
     current_phase = "implementation"
     has_code = True
 
-    main_module = sys.modules.get('main')
+    main_module = sys.modules.get("main")
     if main_module:
-        udo_system = getattr(main_module, 'udo_system', None)
-        if udo_system and hasattr(udo_system, 'udo'):
+        udo_system = getattr(main_module, "udo_system", None)
+        if udo_system and hasattr(udo_system, "udo"):
             udo_instance = udo_system.udo
-            if hasattr(udo_instance, 'current_phase'):
+            if hasattr(udo_instance, "current_phase"):
                 current_phase = udo_instance.current_phase
 
     context = {
@@ -109,7 +104,7 @@ def _build_context() -> Tuple[str, dict]:
         "has_code": has_code,
         "validation_score": 0.7,
         "team_size": 3,
-        "timeline_weeks": 8
+        "timeline_weeks": 8,
     }
     return current_phase, context
 
@@ -120,9 +115,7 @@ def _get_ttl_for_state(state_enum: UncertaintyStateEnum) -> int:
 
 @router.get("/status", response_model=UncertaintyStatusResponse)
 @uncertainty_breaker
-async def get_uncertainty_status(
-    uncertainty_map = Depends(get_uncertainty_map)
-):
+async def get_uncertainty_status(uncertainty_map=Depends(get_uncertainty_map)):
     """
     Get current uncertainty status with predictions and mitigation strategies.
     Applies lightweight TTL caching and circuit breaker for resilience.
@@ -136,7 +129,9 @@ async def get_uncertainty_status(
         current_phase, context = _build_context()
 
         vector, state = uncertainty_map.analyze_context(context)
-        prediction_model = uncertainty_map.predict_evolution(vector, phase=current_phase, hours=24)
+        prediction_model = uncertainty_map.predict_evolution(
+            vector, phase=current_phase, hours=24
+        )
         mitigations = uncertainty_map.generate_mitigations(vector, state)
         mitigations.sort(key=lambda m: m.roi(), reverse=True)
 
@@ -147,7 +142,7 @@ async def get_uncertainty_status(
             timeline=vector.timeline,
             quality=vector.quality,
             magnitude=vector.magnitude(),
-            dominant_dimension=vector.dominant_dimension()
+            dominant_dimension=vector.dominant_dimension(),
         )
 
         mitigation_responses = [
@@ -161,7 +156,7 @@ async def get_uncertainty_status(
                 prerequisites=m.prerequisites,
                 success_probability=m.success_probability,
                 fallback_strategy=m.fallback_strategy,
-                roi=m.roi()
+                roi=m.roi(),
             )
             for m in mitigations
         ]
@@ -172,7 +167,7 @@ async def get_uncertainty_status(
             acceleration=prediction_model.acceleration,
             predicted_resolution=prediction_model.predicted_resolution,
             confidence_interval_lower=prediction_model.confidence_interval[0],
-            confidence_interval_upper=prediction_model.confidence_interval[1]
+            confidence_interval_upper=prediction_model.confidence_interval[1],
         )
 
         state_enum = UncertaintyStateEnum(state.value)
@@ -184,7 +179,7 @@ async def get_uncertainty_status(
             confidence_score=confidence_score,
             prediction=prediction_response,
             mitigations=mitigation_responses,
-            timestamp=datetime.now()
+            timestamp=datetime.now(),
         )
 
         ttl = _get_ttl_for_state(state_enum)
@@ -193,7 +188,9 @@ async def get_uncertainty_status(
 
     except Exception as e:
         logger.error(f"Failed to get uncertainty status: {e}")
-        raise HTTPException(status_code=500, detail=f"Failed to get uncertainty status: {str(e)}")
+        raise HTTPException(
+            status_code=500, detail=f"Failed to get uncertainty status: {str(e)}"
+        )
 
 
 @router.post("/ack/{mitigation_id}", response_model=MitigationAckResponse)
@@ -201,7 +198,7 @@ async def get_uncertainty_status(
 async def acknowledge_mitigation(
     mitigation_id: str,
     request: MitigationAckRequest,
-    uncertainty_map = Depends(get_uncertainty_map)
+    uncertainty_map=Depends(get_uncertainty_map),
 ):
     """
     Acknowledge a mitigation strategy and apply its impact to the uncertainty vector.
@@ -222,25 +219,57 @@ async def acknowledge_mitigation(
 
         target = next((m for m in mitigations if m.id == target_id), None)
         if not target:
-            raise HTTPException(status_code=404, detail=f"Mitigation {mitigation_id} not found")
+            raise HTTPException(
+                status_code=404, detail=f"Mitigation {mitigation_id} not found"
+            )
 
-        applied_impact = request.applied_impact if request.applied_impact is not None else target.estimated_impact
-        dimension = request.dimension or target.dominant_dimension if hasattr(target, "dominant_dimension") else None
+        applied_impact = (
+            request.applied_impact
+            if request.applied_impact is not None
+            else target.estimated_impact
+        )
+        dimension = (
+            request.dimension or target.dominant_dimension
+            if hasattr(target, "dominant_dimension")
+            else None
+        )
         if not dimension:
             dimension = vector.dominant_dimension()
 
         # Apply impact to chosen dimension (work with dataclass then convert)
         adjusted_vector = type(vector)(
-            technical=max(0.0, vector.technical - applied_impact) if dimension == "technical" else vector.technical,
-            market=max(0.0, vector.market - applied_impact) if dimension == "market" else vector.market,
-            resource=max(0.0, vector.resource - applied_impact) if dimension == "resource" else vector.resource,
-            timeline=max(0.0, vector.timeline - applied_impact) if dimension == "timeline" else vector.timeline,
-            quality=max(0.0, vector.quality - applied_impact) if dimension == "quality" else vector.quality,
+            technical=(
+                max(0.0, vector.technical - applied_impact)
+                if dimension == "technical"
+                else vector.technical
+            ),
+            market=(
+                max(0.0, vector.market - applied_impact)
+                if dimension == "market"
+                else vector.market
+            ),
+            resource=(
+                max(0.0, vector.resource - applied_impact)
+                if dimension == "resource"
+                else vector.resource
+            ),
+            timeline=(
+                max(0.0, vector.timeline - applied_impact)
+                if dimension == "timeline"
+                else vector.timeline
+            ),
+            quality=(
+                max(0.0, vector.quality - applied_impact)
+                if dimension == "quality"
+                else vector.quality
+            ),
         )
 
         magnitude = adjusted_vector.magnitude()
         dominant_dim = adjusted_vector.dominant_dimension()
-        updated_state_enum = UncertaintyStateEnum(uncertainty_map.classify_state(magnitude).value)
+        updated_state_enum = UncertaintyStateEnum(
+            uncertainty_map.classify_state(magnitude).value
+        )
         confidence_score = 1.0 - magnitude
 
         updated_vector = UncertaintyVectorResponse(
@@ -250,7 +279,7 @@ async def acknowledge_mitigation(
             timeline=adjusted_vector.timeline,
             quality=adjusted_vector.quality,
             magnitude=magnitude,
-            dominant_dimension=dominant_dim
+            dominant_dimension=dominant_dim,
         )
 
         # Invalidate cache to ensure next status reflects change
@@ -259,12 +288,14 @@ async def acknowledge_mitigation(
         # Broadcast update (best-effort; ignore failures)
         try:
             session_manager = await get_session_manager()
-            await session_manager.broadcast_to_all({
-                "type": "uncertainty_update",
-                "state": updated_state_enum.value,
-                "confidence": confidence_score,
-                "vector": updated_vector.model_dump()
-            })
+            await session_manager.broadcast_to_all(
+                {
+                    "type": "uncertainty_update",
+                    "state": updated_state_enum.value,
+                    "confidence": confidence_score,
+                    "vector": updated_vector.model_dump(),
+                }
+            )
         except Exception as broadcast_err:
             logger.debug(f"Broadcast skipped/failed: {broadcast_err}")
 
@@ -275,19 +306,20 @@ async def acknowledge_mitigation(
             updated_vector=updated_vector,
             updated_state=updated_state_enum,
             confidence_score=confidence_score,
-            timestamp=datetime.now()
+            timestamp=datetime.now(),
         )
     except HTTPException:
         raise
     except Exception as e:
         logger.error(f"Failed to acknowledge mitigation {mitigation_id}: {e}")
-        raise HTTPException(status_code=500, detail=f"Failed to acknowledge mitigation: {str(e)}")
+        raise HTTPException(
+            status_code=500, detail=f"Failed to acknowledge mitigation: {str(e)}"
+        )
 
 
 @router.post("/analyze", response_model=UncertaintyStatusResponse)
 async def analyze_context(
-    request: ContextAnalysisRequest,
-    uncertainty_map = Depends(get_uncertainty_map)
+    request: ContextAnalysisRequest, uncertainty_map=Depends(get_uncertainty_map)
 ):
     """
     Analyze a specific context and generate uncertainty assessment
@@ -308,14 +340,16 @@ async def analyze_context(
             "has_code": request.has_code,
             "validation_score": request.validation_score,
             "team_size": request.team_size,
-            "timeline_weeks": request.timeline_weeks
+            "timeline_weeks": request.timeline_weeks,
         }
 
         # Analyze context
         vector, state = uncertainty_map.analyze_context(context)
 
         # Get prediction (24 hours ahead)
-        prediction_model = uncertainty_map.predict_evolution(vector, phase=request.phase, hours=24)
+        prediction_model = uncertainty_map.predict_evolution(
+            vector, phase=request.phase, hours=24
+        )
 
         # Generate mitigation strategies
         mitigations = uncertainty_map.generate_mitigations(vector, state)
@@ -329,7 +363,7 @@ async def analyze_context(
             timeline=vector.timeline,
             quality=vector.quality,
             magnitude=vector.magnitude(),
-            dominant_dimension=vector.dominant_dimension()
+            dominant_dimension=vector.dominant_dimension(),
         )
 
         mitigation_responses = [
@@ -343,7 +377,7 @@ async def analyze_context(
                 prerequisites=m.prerequisites,
                 success_probability=m.success_probability,
                 fallback_strategy=m.fallback_strategy,
-                roi=m.roi()
+                roi=m.roi(),
             )
             for m in mitigations
         ]
@@ -354,7 +388,7 @@ async def analyze_context(
             acceleration=prediction_model.acceleration,
             predicted_resolution=prediction_model.predicted_resolution,
             confidence_interval_lower=prediction_model.confidence_interval[0],
-            confidence_interval_upper=prediction_model.confidence_interval[1]
+            confidence_interval_upper=prediction_model.confidence_interval[1],
         )
 
         state_enum = UncertaintyStateEnum(state.value)
@@ -366,12 +400,14 @@ async def analyze_context(
             confidence_score=confidence_score,
             prediction=prediction_response,
             mitigations=mitigation_responses,
-            timestamp=datetime.now()
+            timestamp=datetime.now(),
         )
 
     except Exception as e:
         logger.error(f"Failed to analyze context: {e}")
-        raise HTTPException(status_code=500, detail=f"Failed to analyze context: {str(e)}")
+        raise HTTPException(
+            status_code=500, detail=f"Failed to analyze context: {str(e)}"
+        )
 
 
 @router.get("/health")
@@ -381,40 +417,32 @@ async def uncertainty_health_check():
         import sys
 
         # Get udo_system from main module if already imported
-        main_module = sys.modules.get('main')
+        main_module = sys.modules.get("main")
         if not main_module:
-            return {
-                "status": "unavailable",
-                "message": "UDO system not initialized"
-            }
+            return {"status": "unavailable", "message": "UDO system not initialized"}
 
-        udo_system = getattr(main_module, 'udo_system', None)
+        udo_system = getattr(main_module, "udo_system", None)
         if not udo_system:
-            return {
-                "status": "unavailable",
-                "message": "UDO system not initialized"
-            }
+            return {"status": "unavailable", "message": "UDO system not initialized"}
 
-        uncertainty_map = udo_system.components.get('uncertainty')
+        uncertainty_map = udo_system.components.get("uncertainty")
         if not uncertainty_map:
             return {
                 "status": "unavailable",
-                "message": "Uncertainty Map component not initialized"
+                "message": "Uncertainty Map component not initialized",
             }
 
         return {
             "status": "available",
             "project_name": uncertainty_map.project_name,
-            "ml_available": hasattr(uncertainty_map, 'is_trained') and uncertainty_map.is_trained,
-            "message": "Uncertainty Map v3.0 operational"
+            "ml_available": hasattr(uncertainty_map, "is_trained")
+            and uncertainty_map.is_trained,
+            "message": "Uncertainty Map v3.0 operational",
         }
 
     except Exception as e:
         logger.error(f"Health check failed: {e}")
-        return {
-            "status": "error",
-            "message": str(e)
-        }
+        return {"status": "error", "message": str(e)}
 
 
 # ============================================================================
@@ -425,7 +453,7 @@ async def uncertainty_health_check():
 @router.post("/track-with-uncertainty", response_model=UncertaintyAwareTrackingResponse)
 async def start_uncertainty_aware_tracking(
     request: UncertaintyAwareTrackingRequest,
-    uncertainty_map = Depends(get_uncertainty_map)
+    uncertainty_map=Depends(get_uncertainty_map),
 ):
     """
     Start tracking with uncertainty awareness
@@ -464,15 +492,16 @@ async def start_uncertainty_aware_tracking(
     try:
         # Convert has_code boolean to files list format expected by uncertainty_map
         context = dict(request.uncertainty_context)
-        if 'has_code' in context and 'files' not in context:
+        if "has_code" in context and "files" not in context:
             # Convert has_code boolean to files list
-            context['files'] = ['dummy.py'] if context.pop('has_code') else []
+            context["files"] = ["dummy.py"] if context.pop("has_code") else []
 
         # Analyze uncertainty context
         vector, state = uncertainty_map.analyze_context(context)
 
         # Get standard baseline from time tracking config
         from app.services.time_tracking_service import TimeTrackingService
+
         service = TimeTrackingService()  # For baseline lookup only
         standard_baseline = service._get_baseline_seconds(request.task_type)
 
@@ -481,11 +510,11 @@ async def start_uncertainty_aware_tracking(
 
         # Adjustment multiplier based on uncertainty state
         state_multipliers = {
-            "deterministic": 1.0,   # No adjustment needed
-            "probabilistic": 1.2,   # 20% buffer
-            "quantum": 1.5,         # 50% buffer
-            "chaotic": 2.0,         # 100% buffer (double time)
-            "void": 2.5             # 150% buffer
+            "deterministic": 1.0,  # No adjustment needed
+            "probabilistic": 1.2,  # 20% buffer
+            "quantum": 1.5,  # 50% buffer
+            "chaotic": 2.0,  # 100% buffer (double time)
+            "void": 2.5,  # 150% buffer
         }
 
         multiplier = state_multipliers.get(state.value, 1.0)
@@ -509,13 +538,16 @@ async def start_uncertainty_aware_tracking(
             risk_factors.append(f"Quality uncertainty ({vector.quality:.0%})")
 
         if state.value in ["quantum", "chaotic", "void"]:
-            risk_factors.append(f"{state.value.capitalize()} state - multiple possible outcomes")
+            risk_factors.append(
+                f"{state.value.capitalize()} state - multiple possible outcomes"
+            )
 
         if not risk_factors:
             risk_factors.append("Low uncertainty - task should complete smoothly")
 
         # Create session ID (in real implementation, would start actual tracking session)
         from uuid import uuid4
+
         session_id = uuid4()
 
         # Convert to response models
@@ -526,7 +558,7 @@ async def start_uncertainty_aware_tracking(
             timeline=vector.timeline,
             quality=vector.quality,
             magnitude=magnitude,
-            dominant_dimension=vector.dominant_dimension()
+            dominant_dimension=vector.dominant_dimension(),
         )
 
         state_enum = UncertaintyStateEnum(state.value)
@@ -540,20 +572,24 @@ async def start_uncertainty_aware_tracking(
             uncertainty_state=state_enum,
             adjusted_baseline_seconds=adjusted_baseline,
             confidence_score=confidence_score,
-            risk_factors=risk_factors
+            risk_factors=risk_factors,
         )
 
     except Exception as e:
         logger.error(f"Failed to start uncertainty-aware tracking: {e}")
-        raise HTTPException(status_code=500, detail=f"Failed to start tracking: {str(e)}")
+        raise HTTPException(
+            status_code=500, detail=f"Failed to start tracking: {str(e)}"
+        )
 
 
-@router.post("/adjusted-baseline/{task_type}/{phase}", response_model=AdjustedBaselineResponse)
+@router.post(
+    "/adjusted-baseline/{task_type}/{phase}", response_model=AdjustedBaselineResponse
+)
 async def get_adjusted_baseline(
     task_type: str,
     phase: str,
     request: ContextAnalysisRequest,
-    uncertainty_map = Depends(get_uncertainty_map)
+    uncertainty_map=Depends(get_uncertainty_map),
 ):
     """
     Get uncertainty-adjusted baseline estimate
@@ -592,10 +628,10 @@ async def get_adjusted_baseline(
         #  Convert has_code to files list format expected by uncertainty_map
         context = {
             "phase": request.phase,
-            "files": ['dummy.py'] if request.has_code else [],
+            "files": ["dummy.py"] if request.has_code else [],
             "market_validation": request.validation_score,
             "team_size": request.team_size,
-            "timeline_weeks": request.timeline_weeks
+            "timeline_weeks": request.timeline_weeks,
         }
 
         # Analyze uncertainty
@@ -603,8 +639,8 @@ async def get_adjusted_baseline(
         magnitude = vector.magnitude()
 
         # Get standard baseline
+        from app.models.time_tracking import Phase, TaskType
         from app.services.time_tracking_service import TimeTrackingService
-        from app.models.time_tracking import TaskType, Phase
 
         service = TimeTrackingService()
         task_type_enum = TaskType(task_type)
@@ -616,7 +652,7 @@ async def get_adjusted_baseline(
             "probabilistic": 1.2,
             "quantum": 1.5,
             "chaotic": 2.0,
-            "void": 2.5
+            "void": 2.5,
         }
 
         multiplier = state_multipliers.get(state.value, 1.0)
@@ -633,12 +669,18 @@ async def get_adjusted_baseline(
 
         # Explain adjustment factors
         adjustment_factors = []
-        adjustment_factors.append(f"{state.value.capitalize()} uncertainty state (+{(multiplier-1)*100:.0f}%)")
+        adjustment_factors.append(
+            f"{state.value.capitalize()} uncertainty state (+{(multiplier-1)*100:.0f}%)"
+        )
 
         if vector.dominant_dimension() == "timeline":
-            adjustment_factors.append(f"Timeline uncertainty dominant (+{vector.timeline*100:.0f}%)")
+            adjustment_factors.append(
+                f"Timeline uncertainty dominant (+{vector.timeline*100:.0f}%)"
+            )
         if vector.dominant_dimension() == "technical":
-            adjustment_factors.append(f"Technical uncertainty dominant (+{vector.technical*100:.0f}%)")
+            adjustment_factors.append(
+                f"Technical uncertainty dominant (+{vector.technical*100:.0f}%)"
+            )
 
         if phase == "implementation":
             adjustment_factors.append("Implementation phase complexity factor applied")
@@ -650,7 +692,7 @@ async def get_adjusted_baseline(
             timeline=vector.timeline,
             quality=vector.quality,
             magnitude=magnitude,
-            dominant_dimension=vector.dominant_dimension()
+            dominant_dimension=vector.dominant_dimension(),
         )
 
         return AdjustedBaselineResponse(
@@ -664,12 +706,14 @@ async def get_adjusted_baseline(
             confidence_score=confidence_score,
             confidence_interval_lower=confidence_interval_lower,
             confidence_interval_upper=confidence_interval_upper,
-            adjustment_factors=adjustment_factors
+            adjustment_factors=adjustment_factors,
         )
 
     except Exception as e:
         logger.error(f"Failed to get adjusted baseline: {e}")
-        raise HTTPException(status_code=500, detail=f"Failed to calculate adjusted baseline: {str(e)}")
+        raise HTTPException(
+            status_code=500, detail=f"Failed to calculate adjusted baseline: {str(e)}"
+        )
 
 
 # ============================================================================
@@ -679,9 +723,7 @@ async def get_adjusted_baseline(
 
 @router.post("/confidence", response_model=BayesianConfidenceResponse)
 @uncertainty_breaker
-async def calculate_confidence(
-    request: BayesianConfidenceRequest
-):
+async def calculate_confidence(request: BayesianConfidenceRequest):
     """
     Calculate Bayesian confidence score with uncertainty classification.
 
@@ -752,4 +794,6 @@ async def calculate_confidence(
     except Exception as e:
         # Handle unexpected errors
         logger.error(f"Failed to calculate Bayesian confidence: {e}")
-        raise HTTPException(status_code=500, detail=f"Failed to calculate confidence: {str(e)}")
+        raise HTTPException(
+            status_code=500, detail=f"Failed to calculate confidence: {str(e)}"
+        )

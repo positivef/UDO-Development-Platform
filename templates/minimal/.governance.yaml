@@ -1,0 +1,47 @@
+# Minimal Template - .governance.yaml
+# 개인 프로젝트/실험용 최소 설정
+
+version: "1.0.0"
+
+project:
+  name: "my-project"
+  type: "web"
+  size: "minimal"
+
+rules:
+  strict_mode: false
+  skip_rules:
+    - complexity
+    - docstring
+
+languages:
+  python:
+    enabled: true
+    version: "3.13"
+    max_line_length: 127
+  typescript:
+    enabled: false
+
+git:
+  commit_format: "free"  # 자유 형식
+
+testing:
+  backend:
+    required: false
+  frontend:
+    required: false
+
+documentation:
+  require_readme: true
+  require_claude_md: true
+  require_agents_md: false
+
+uncertainty:
+  enabled: false
+
+ci_cd:
+  run_on_pr: false
+  run_on_push: false
+
+auto_update:
+  enabled: false

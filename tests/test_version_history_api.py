@@ -3,6 +3,7 @@ Integration test for Version History API
 
 Tests the Git integration service and version history endpoints.
 """
+
 import sys
 from pathlib import Path
 
@@ -59,10 +60,7 @@ def test_git_service():
 
         # Test: Compare commits (if we have at least 2 commits)
         if len(commits) >= 2:
-            comparison = git_service.compare_commits(
-                commits[1].commit_hash,
-                commits[0].commit_hash
-            )
+            comparison = git_service.compare_commits(commits[1].commit_hash, commits[0].commit_hash)
             assert comparison.files_changed is not None, "Comparison should include files_changed"
             print(f"\n[OK] Commit comparison:")
             print(f"    From: {comparison.from_commit}")
@@ -77,6 +75,7 @@ def test_git_service():
     except Exception as e:
         print(f"\n[FAIL] Test failed: {e}")
         import traceback
+
         traceback.print_exc()
         raise
 
@@ -104,7 +103,7 @@ def test_api_models():
             lines_added=100,
             lines_deleted=50,
             tags=["v1.0.0"],
-            branches=["main"]
+            branches=["main"],
         )
         assert commit.short_hash == "a" * 7
         assert commit.lines_added == 100
@@ -118,7 +117,7 @@ def test_api_models():
             commits=[commit],
             total_contributors=5,
             first_commit_date=datetime.now(),
-            last_commit_date=datetime.now()
+            last_commit_date=datetime.now(),
         )
         assert history.total_commits == 150
         assert history.commits[0].commit_hash == commit.commit_hash
@@ -130,6 +129,7 @@ def test_api_models():
     except Exception as e:
         print(f"\n[FAIL] Model test failed: {e}")
         import traceback
+
         traceback.print_exc()
         raise
 
