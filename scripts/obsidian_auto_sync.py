@@ -29,7 +29,7 @@ Requirements:
 
 Author: System Automation Team
 Date: 2025-12-29
-Version: 3.0.0
+Version: 3.0.1 (Regex False Positive Fix)
 """
 
 import argparse
@@ -45,15 +45,167 @@ from typing import Dict, List, Tuple, Optional, Any
 
 
 # =============================================================================
+# v3.0: Diff Utilities (Git diff 분석 헬퍼)
+# =============================================================================
+
+
+def extract_added_lines(diff: str) -> str:
+    """Git diff에서 추가된 줄만 추출 (+ 로 시작하는 줄)
+
+    이 함수는 diff 전체가 아닌 실제 '추가된 코드'만 분석하도록 합니다.
+    문자열 리터럴 내 주석 오탐지를 방지합니다.
+    """
+    lines = []
+    for line in diff.split("\n"):
+        # +로 시작하지만 +++ (파일 헤더)는 제외
+        if line.startswith("+") and not line.startswith("+++"):
+            # 앞의 + 제거
+            lines.append(line[1:])
+    return "\n".join(lines)
+
+
+def is_real_comment(line: str, pattern: str) -> bool:
+    """실제 주석인지 문자열 리터럴인지 구분
+
+    Args:
+        line: 검사할 라인
+        pattern: 찾는 패턴 (예: "# TODO:")
+
+    Returns:
+        True if 실제 주석, False if 문자열 리터럴
+    """
+    # 문자열 리터럴 내부인지 확인
+    # 패턴 앞에 따옴표가 있으면 문자열 내부일 가능성
+    pattern_pos = line.find(pattern)
+    if pattern_pos == -1:
+        return False
+
+    before = line[:pattern_pos]
+
+    # 열린 따옴표 개수 확인 (홀수면 문자열 내부)
+    single_quotes = before.count("'") - before.count("\\'")
+    double_quotes = before.count('"') - before.count('\\"')
+
+    # 홀수면 문자열 내부로 판단
+    if single_quotes % 2 == 1 or double_quotes % 2 == 1:
+        return False
+
+    return True
+
+
+def clean_extracted_text(text: str) -> str:
+    """추출된 텍스트에서 노이즈 제거
+
+    - 이스케이프 문자 제거
+    - 짧은 무의미 문자열 제거
+    - 따옴표 제거
+    - 코드 설명 주석 필터링
+    """
+    if not text:
+        return ""
+
+    # 이스케이프 문자 포함 시 무효
+    if "\\n" in text or "\\r" in text or "\\t" in text:
+        return ""
+
+    # 따옴표로 시작/끝나면 문자열 리터럴
+    text = text.strip()
+    if text.startswith('"') or text.startswith("'"):
+        return ""
+    if text.endswith('",') or text.endswith("',"):
+        return ""
+
+    # 너무 짧거나 무의미한 패턴
+    if len(text) < 5:
+        return ""
+
+    # 코드 조각 필터링
+    noise_patterns = [
+        r"^\s*\(",
+        r"^\s*\)",
+        r"^\s*\[",
+        r"^\s*\]",
+        r"^\s*\{",
+        r"^\s*\}",
+        r"^\s*#\s*$",
+        r"^[,;:\"\']",
+    ]
+    for pattern in noise_patterns:
+        if re.match(pattern, text):
+            return ""
+
+    # 코드 설명 주석 필터링 (코드 동작 설명은 제외)
+    # "추출", "반환", "생성", "검사" 등으로만 구성된 짧은 설명은 제외
+    code_desc_patterns = [
+        r"^(추출|반환|생성|검사|확인|변환|처리|호출|설정|초기화|로드|저장)\s*$",
+        r"^(에서|에게|으로|로|를|을|이|가)\s",  # 조사로 시작하면 불완전한 문장
+        r"^\w{1,3}\s+(추출|반환|생성|검사)$",  # 짧은 명사 + 동작
+    ]
+    for pattern in code_desc_patterns:
+        if re.match(pattern, text, re.I):
+            return ""
+
+    return text
+
+
+def extract_real_comments(diff: str, prefix: str, require_colon: bool = None) -> List[str]:
+    """diff에서 실제 주석만 추출 (문자열 리터럴 제외)
+
+    Args:
+        diff: Git diff 전체 텍스트
+        prefix: 찾을 주석 접두사 (예: "TODO", "FIXME", "TIL")
+        require_colon: 콜론 필수 여부 (None=자동 결정)
+            - TODO, FIXME, HACK, XXX, RISK: 콜론 필수 (액션 아이템)
+            - TIL, Solution, Pattern, Decision, Why, Rollback: 콜론 선택
+
+    Returns:
+        추출된 주석 내용 리스트
+    """
+    added_lines = extract_added_lines(diff)
+    results = []
+
+    # 액션 아이템 접두사는 콜론 필수 (코드 설명 주석과 구분)
+    action_prefixes = ["TODO", "FIXME", "HACK", "XXX", "RISK"]
+
+    if require_colon is None:
+        require_colon = prefix.upper() in action_prefixes
+
+    # 패턴 구성: 콜론 필수 여부에 따라 다름
+    if require_colon:
+        # 콜론 필수: # TODO: 내용 (공백 허용)
+        pattern = rf"^\s*#\s*{prefix}\s*:\s*(.+)"
+    else:
+        # 콜론 선택: # TIL 내용 또는 # TIL: 내용
+        pattern = rf"^\s*#\s*{prefix}:?\s+(.+)"
+
+    for line in added_lines.split("\n"):
+        match = re.search(pattern, line, re.I)
+        if match:
+            content = match.group(1).strip()
+            # 문자열 리터럴 내부인지 확인
+            if is_real_comment(line, f"# {prefix}"):
+                cleaned = clean_extracted_text(content)
+                if cleaned:
+                    results.append(cleaned)
+
+    return results
+
+
+# =============================================================================
 # v3.0: Flag Detection System
 # =============================================================================
 
 
 class FlagDetector:
-    """Git diff와 커밋 정보에서 플래그 자동 감지"""
+    """Git diff와 커밋 정보에서 플래그 자동 감지
+
+    v3.0.1: 추가된 줄만 분석하여 오탐지 방지
+    """
 
     def __init__(self, diff: str, commit_info: Dict):
         self.diff = diff
+        # 추가된 줄만 추출하여 분석 (삭제된 줄, 컨텍스트 제외)
+        self.added_lines = extract_added_lines(diff)
         self.commit_info = commit_info
         self.message = commit_info.get("message", "").lower()
         self.files = commit_info.get("files_changed", [])
@@ -74,94 +226,114 @@ class FlagDetector:
         """배운 점 감지: 새로운 패턴, 테스트 추가, 문서화"""
         patterns = [
             r"def test_",  # 새 테스트 추가
-            r"# TIL:",  # 명시적 TIL 주석
             r"learned|학습|배움",  # 키워드
-            r"\.md$.*tutorial",  # 튜토리얼 문서
             r"refactor",  # 리팩토링 (학습 포함)
         ]
         # 파일 기반 감지
         if any("test" in f.lower() for f in self.files):
             return True
-        # diff 기반 감지
-        return any(re.search(p, self.diff, re.I) for p in patterns)
+        # 추가된 줄 기반 감지
+        if any(re.search(p, self.added_lines, re.I) for p in patterns):
+            return True
+        # 명시적 TIL 주석 (실제 주석만)
+        return len(extract_real_comments(self.diff, "TIL")) > 0
 
     def detect_solution(self) -> bool:
         """해결책 감지: 버그 수정, 문제 해결"""
         patterns = [
-            r"fix:|bug:|resolve:",  # 커밋 메시지 패턴
-            r"# Solution:",  # 명시적 주석
             r"해결|수정|고침",  # 한글 키워드
             r"fixed|resolved",  # 영어 키워드
         ]
         if any(p in self.message for p in ["fix", "bug", "resolve", "해결"]):
             return True
-        return any(re.search(p, self.diff, re.I) for p in patterns)
+        # 추가된 줄에서 키워드 검색
+        if any(re.search(p, self.added_lines, re.I) for p in patterns):
+            return True
+        # 명시적 Solution 주석 (실제 주석만)
+        return len(extract_real_comments(self.diff, "Solution")) > 0
 
     def detect_pattern(self) -> bool:
         """패턴 감지: 디자인 패턴, 아키텍처 패턴"""
-        patterns = [
-            r"# Pattern:",  # 명시적 주석
-            r"패턴|pattern",  # 키워드
-            r"singleton|factory|observer|strategy",  # 디자인 패턴
-            r"decorator|adapter|facade",  # 디자인 패턴
+        # 디자인 패턴 클래스/함수 정의 감지 (추가된 줄에서만)
+        pattern_keywords = [
+            r"class\s+\w*(singleton|factory|observer|strategy|decorator|adapter|facade)",
+            r"def\s+\w*(factory|observer|strategy)",
         ]
-        return any(re.search(p, self.diff, re.I) for p in patterns)
+        if any(re.search(p, self.added_lines, re.I) for p in pattern_keywords):
+            return True
+        # 명시적 Pattern 주석 (실제 주석만)
+        return len(extract_real_comments(self.diff, "Pattern")) > 0
 
     def detect_uncertainty(self) -> bool:
         """불확실성 감지: 미확정 사항, 리스크"""
-        patterns = [
-            r"# TODO:",  # TODO는 불확실성
-            r"# FIXME:",  # FIXME도 불확실성
+        # 실제 TODO/FIXME 주석 확인
+        if extract_real_comments(self.diff, "TODO"):
+            return True
+        if extract_real_comments(self.diff, "FIXME"):
+            return True
+        if extract_real_comments(self.diff, "RISK"):
+            return True
+        # 추가된 줄에서 불확실성 키워드 검색
+        uncertainty_patterns = [
             r"불확실|uncertain",  # 키워드
             r"\?\?\?|XXX",  # 의문 마커
-            r"risk|리스크|위험",  # 리스크 키워드
             r"maybe|perhaps|아마",  # 불확실 표현
         ]
-        return any(re.search(p, self.diff, re.I) for p in patterns)
+        return any(re.search(p, self.added_lines, re.I) for p in uncertainty_patterns)
 
     def detect_rollback(self) -> bool:
         """롤백 계획 감지: 롤백 전략, 복구 계획"""
-        patterns = [
-            r"# Rollback:",  # 명시적 주석
+        # 마이그레이션 파일이 있으면 롤백 계획 필요
+        if any("migration" in f.lower() for f in self.files):
+            return True
+        # 명시적 Rollback 주석
+        if extract_real_comments(self.diff, "Rollback"):
+            return True
+        # 추가된 줄에서 롤백 관련 키워드 검색
+        rollback_patterns = [
             r"rollback|롤백",  # 키워드
             r"revert|복구|되돌리",  # 복구 키워드
             r"backup|백업",  # 백업 키워드
             r"feature.?flag",  # 피처 플래그
         ]
-        # 마이그레이션 파일이 있으면 롤백 계획 필요
-        if any("migration" in f.lower() for f in self.files):
-            return True
-        return any(re.search(p, self.diff, re.I) for p in patterns)
+        return any(re.search(p, self.added_lines, re.I) for p in rollback_patterns)
 
     def detect_debt(self) -> bool:
         """기술부채 감지: TODO, FIXME, 임시 해결책"""
-        patterns = [
-            r"#\s*TODO:",  # TODO 주석
-            r"#\s*FIXME:",  # FIXME 주석
-            r"#\s*HACK:",  # HACK 주석
-            r"#\s*XXX:",  # XXX 주석
+        # 실제 주석 확인 (문자열 리터럴 제외)
+        if extract_real_comments(self.diff, "TODO"):
+            return True
+        if extract_real_comments(self.diff, "FIXME"):
+            return True
+        if extract_real_comments(self.diff, "HACK"):
+            return True
+        if extract_real_comments(self.diff, "XXX"):
+            return True
+        # 추가된 줄에서 기술부채 패턴 검색
+        debt_patterns = [
             r"temporary|임시",  # 임시 키워드
             r"workaround",  # 우회 해결책
             r"@pytest\.mark\.skip",  # 스킵된 테스트
-            r"# type:\s*ignore",  # 타입 무시
+            r"#\s*type:\s*ignore",  # 타입 무시 (주석 형태만)
         ]
-        return any(re.search(p, self.diff, re.I) for p in patterns)
+        return any(re.search(p, self.added_lines, re.I) for p in debt_patterns)
 
     def detect_decision(self) -> bool:
         """의사결정 감지: 아키텍처 변경, 라이브러리 추가"""
-        patterns = [
-            r"# Decision:",  # 명시적 주석
-            r"# Why:",  # 이유 설명
-            r"선택|결정|채택",  # 한글 키워드
-            r"chose|decided|selected",  # 영어 키워드
-        ]
         # requirements.txt 또는 package.json 변경
         if any(f in ["requirements.txt", "package.json", "pyproject.toml"] for f in self.files):
             return True
-        # 새 의존성 추가 감지
-        if re.search(r"requirements\.txt.*\+", self.diff):
+        # 명시적 Decision/Why 주석
+        if extract_real_comments(self.diff, "Decision"):
             return True
-        return any(re.search(p, self.diff, re.I) for p in patterns)
+        if extract_real_comments(self.diff, "Why"):
+            return True
+        # 추가된 줄에서 의사결정 키워드 검색
+        decision_patterns = [
+            r"선택|결정|채택",  # 한글 키워드
+            r"chose|decided|selected",  # 영어 키워드
+        ]
+        return any(re.search(p, self.added_lines, re.I) for p in decision_patterns)
 
 
 # =============================================================================
@@ -170,11 +342,15 @@ class FlagDetector:
 
 
 class AIContextGenerator:
-    """AI 컨텍스트 자동 생성"""
+    """AI 컨텍스트 자동 생성
+
+    v3.0.1: 실제 주석만 추출하여 오탐지 방지
+    """
 
     def __init__(self, commit_info: Dict, diff: str):
         self.commit_info = commit_info
         self.diff = diff
+        self.added_lines = extract_added_lines(diff)
         self.message = commit_info.get("message", "")
         self.files = commit_info.get("files_changed", [])
 
@@ -211,10 +387,10 @@ class AIContextGenerator:
         """다음 액션 추출"""
         actions = []
 
-        # TODO에서 추출
-        todos = re.findall(r"#\s*TODO:?\s*(.+)", self.diff)
-        for todo in todos[:3]:
-            actions.append(f"TODO: {todo.strip()[:50]}")
+        # 실제 TODO 주석에서 추출 (문자열 리터럴 제외)
+        real_todos = extract_real_comments(self.diff, "TODO")
+        for todo in real_todos[:3]:
+            actions.append(f"TODO: {todo[:50]}")
 
         # 커밋 메시지 기반 추론
         if "feat" in self.message.lower():
@@ -230,16 +406,16 @@ class AIContextGenerator:
         """경고사항 추출"""
         warnings = []
 
-        # FIXME에서 추출
-        fixmes = re.findall(r"#\s*FIXME:?\s*(.+)", self.diff)
-        for fixme in fixmes[:3]:
-            warnings.append(f"FIXME: {fixme.strip()[:50]}")
+        # 실제 FIXME 주석에서 추출 (문자열 리터럴 제외)
+        real_fixmes = extract_real_comments(self.diff, "FIXME")
+        for fixme in real_fixmes[:3]:
+            warnings.append(f"FIXME: {fixme[:50]}")
 
-        # 위험 패턴 감지
-        if re.search(r"rm\s+-rf|DROP\s+TABLE|DELETE\s+FROM", self.diff, re.I):
+        # 추가된 줄에서 위험 패턴 감지
+        if re.search(r"rm\s+-rf|DROP\s+TABLE|DELETE\s+FROM", self.added_lines, re.I):
             warnings.append("위험한 명령어 감지 - 주의 필요")
 
-        if re.search(r"password|secret|api.?key", self.diff, re.I):
+        if re.search(r"password|secret|api.?key", self.added_lines, re.I):
             warnings.append("민감 정보 노출 가능성 - 확인 필요")
 
         if len(self.files) > 20:
@@ -254,13 +430,17 @@ class AIContextGenerator:
 
 
 class SectionGenerator:
-    """9개 Daily 섹션 생성기 (조건부 렌더링 지원)"""
+    """9개 Daily 섹션 생성기 (조건부 렌더링 지원)
+
+    v3.0.1: 실제 주석만 추출하여 오탐지 방지
+    """
 
     def __init__(self, commit_info: Dict, flags: Dict[str, bool], session_state: Dict, diff: str, repo_root: Path):
         self.commit_info = commit_info
         self.flags = flags
         self.session_state = session_state
         self.diff = diff
+        self.added_lines = extract_added_lines(diff)
         self.repo_root = repo_root
         self.message = commit_info.get("message", "")
         self.files = commit_info.get("files_changed", [])
@@ -368,35 +548,65 @@ class SectionGenerator:
     # Section 3: TIL - Today I Learned (has_til)
     # -------------------------------------------------------------------------
     def _section_til(self) -> str:
-        """TIL 섹션 - 배운 점 자동 추출"""
+        """TIL 섹션 - 배운 점 자동 추출 (구체적 인사이트)"""
         content = "## Today I Learned (TIL)\n\n"
 
         learnings = []
 
-        # 테스트 추가 감지
-        if any("test" in f.lower() for f in self.files):
-            learnings.append("테스트 우선 개발 (TDD) 패턴 적용")
+        # 테스트 추가 감지 - 구체적인 파일명 포함
+        test_files = [f for f in self.files if "test" in f.lower()]
+        if test_files:
+            test_names = [Path(f).stem for f in test_files[:2]]
+            learnings.append(f"테스트 작성: `{', '.join(test_names)}` - TDD 패턴으로 품질 보장")
 
-        # 리팩토링 감지
+        # 리팩토링 감지 - 무엇을 리팩토링했는지 추출
         if "refactor" in self.message.lower():
-            learnings.append("코드 구조 개선으로 유지보수성 향상")
+            # 리팩토링 대상 추출
+            refactor_target = re.search(r"refactor[:\s]+(.+?)(?:\n|$)", self.message, re.I)
+            if refactor_target:
+                target = refactor_target.group(1).strip()[:40]
+                learnings.append(f"리팩토링: {target} - 코드 가독성/유지보수성 향상")
+            else:
+                learnings.append("리팩토링으로 코드 구조 개선")
 
-        # 새 패턴 감지
-        patterns = re.findall(r"(singleton|factory|observer|strategy|decorator|adapter|facade)", self.diff, re.I)
-        if patterns:
-            learnings.append(f"디자인 패턴 적용: {', '.join(set(patterns))}")
+        # 새 패턴/클래스 감지 - 구체적인 클래스명 포함
+        new_classes = re.findall(r"class\s+(\w+)", self.added_lines)
+        if new_classes:
+            class_names = list(set(new_classes))[:3]
+            learnings.append(f"새 클래스 설계: `{', '.join(class_names)}` - OOP 원칙 적용")
 
-        # 성능 최적화
-        if any(kw in self.diff.lower() for kw in ["cache", "optimize", "performance"]):
-            learnings.append("성능 최적화 기법 학습")
+        # 새 함수 감지 - 구체적인 함수명 포함
+        new_funcs = re.findall(r"def\s+(\w+)\s*\(", self.added_lines)
+        if new_funcs and not new_classes:  # 클래스 없이 함수만 있는 경우
+            func_names = [f for f in set(new_funcs) if not f.startswith("_")][:3]
+            if func_names:
+                learnings.append(f"새 함수 구현: `{', '.join(func_names)}` - 모듈화 적용")
 
-        # 보안 관련
-        if any(kw in self.diff.lower() for kw in ["auth", "security", "token"]):
-            learnings.append("보안 강화 기법 적용")
+        # 성능 최적화 - 구체적인 기법 추출
+        perf_patterns = {
+            "cache": "캐싱 적용으로 반복 연산 최소화",
+            "memoiz": "메모이제이션으로 함수 결과 재사용",
+            "async": "비동기 처리로 응답성 향상",
+            "parallel": "병렬 처리로 성능 개선",
+            "batch": "배치 처리로 I/O 최적화",
+            "lazy": "지연 로딩으로 초기화 시간 단축",
+        }
+        for pattern, desc in perf_patterns.items():
+            if pattern in self.added_lines.lower():
+                learnings.append(f"성능 최적화: {desc}")
+                break
 
-        # 명시적 TIL 주석 추출
-        til_comments = re.findall(r"#\s*TIL:?\s*(.+)", self.diff)
-        learnings.extend([t.strip()[:80] for t in til_comments[:3]])
+        # 에러 처리 개선
+        if "try:" in self.added_lines or "except" in self.added_lines:
+            learnings.append("에러 처리 강화: 예외 상황에 대한 안정성 확보")
+
+        # 타입 힌팅 추가
+        if ": str" in self.added_lines or ": int" in self.added_lines or "-> " in self.added_lines:
+            learnings.append("타입 힌팅 적용: 코드 문서화 및 IDE 지원 향상")
+
+        # 명시적 TIL 주석 추출 (실제 주석만)
+        til_comments = extract_real_comments(self.diff, "TIL")
+        learnings.extend([t[:80] for t in til_comments[:3]])
 
         if learnings:
             for item in learnings[:5]:
@@ -417,28 +627,37 @@ class SectionGenerator:
         # 해결책 추출
         if self.flags.get("has_solution"):
             content += "### Solutions\n\n"
-            solutions = re.findall(r"#\s*Solution:?\s*(.+)", self.diff)
+            # 실제 Solution 주석만 추출
+            solutions = extract_real_comments(self.diff, "Solution")
             if solutions:
                 for sol in solutions[:5]:
-                    content += f"- {sol.strip()[:80]}\n"
+                    content += f"- {sol[:80]}\n"
             elif "fix" in self.message.lower():
                 content += f"- {self.message.split(chr(10))[0]}\n"
+            else:
+                content += "- (Solution 주석을 추가하여 해결책 기록 권장)\n"
             content += "\n"
 
         # 패턴 추출
         if self.flags.get("has_pattern"):
             content += "### Patterns Applied\n\n"
-            patterns = re.findall(
-                r"(singleton|factory|observer|strategy|decorator|adapter|facade|mixin|proxy)", self.diff, re.I
+            # 클래스/함수 정의에서 패턴명 추출
+            pattern_defs = re.findall(
+                r"class\s+(\w*(?:Singleton|Factory|Observer|Strategy|Decorator|Adapter|Facade|Mixin|Proxy))",
+                self.added_lines,
+                re.I,
             )
-            pattern_comments = re.findall(r"#\s*Pattern:?\s*(.+)", self.diff)
+            # 실제 Pattern 주석만 추출
+            pattern_comments = extract_real_comments(self.diff, "Pattern")
 
-            if patterns:
-                for p in set(patterns):
-                    content += f"- **{p.capitalize()}** 패턴\n"
+            if pattern_defs:
+                for p in set(pattern_defs):
+                    content += f"- **{p}** 클래스\n"
             if pattern_comments:
                 for pc in pattern_comments[:3]:
-                    content += f"- {pc.strip()[:80]}\n"
+                    content += f"- {pc[:80]}\n"
+            if not pattern_defs and not pattern_comments:
+                content += "- (Pattern 주석을 추가하여 패턴 기록 권장)\n"
             content += "\n"
 
         return content
@@ -447,32 +666,63 @@ class SectionGenerator:
     # Section 5: Uncertainty & Blockers (has_uncertainty)
     # -------------------------------------------------------------------------
     def _section_uncertainty(self) -> str:
-        """Uncertainty & Blockers 섹션"""
+        """Uncertainty & Blockers 섹션 - 구체적 불확실성 분석"""
         content = "## Uncertainty & Blockers\n\n"
 
         uncertainties = []
 
-        # TODO 추출
-        todos = re.findall(r"#\s*TODO:?\s*(.+)", self.diff)
-        uncertainties.extend([f"TODO: {t.strip()[:60]}" for t in todos[:5]])
+        # 실제 TODO 주석 추출 (문자열 리터럴 제외)
+        todos = extract_real_comments(self.diff, "TODO")
+        uncertainties.extend([f"**TODO**: {t[:60]}" for t in todos[:5]])
 
-        # FIXME 추출
-        fixmes = re.findall(r"#\s*FIXME:?\s*(.+)", self.diff)
-        uncertainties.extend([f"FIXME: {f.strip()[:60]}" for f in fixmes[:3]])
+        # 실제 FIXME 주석 추출
+        fixmes = extract_real_comments(self.diff, "FIXME")
+        uncertainties.extend([f"**FIXME**: {f[:60]}" for f in fixmes[:3]])
 
-        # 불확실성 키워드
-        if re.search(r"maybe|perhaps|아마|possibly", self.diff, re.I):
-            uncertainties.append("불확실한 구현 감지 - 검토 필요")
+        # 실제 RISK 주석 추출
+        risks = extract_real_comments(self.diff, "RISK")
+        uncertainties.extend([f"**RISK**: {r[:60]}" for r in risks[:3]])
 
-        # 리스크 키워드
-        risks = re.findall(r"#\s*RISK:?\s*(.+)", self.diff)
-        uncertainties.extend([f"RISK: {r.strip()[:60]}" for r in risks[:3]])
+        # 복잡도 기반 불확실성 (추가된 줄에서만)
+        complexity_indicators = {
+            "if.*if.*if": "중첩 조건문 감지 - 로직 복잡도 검토 필요",
+            "for.*for": "중첩 루프 감지 - 성능 영향 확인 필요",
+            "try.*try": "중첩 예외 처리 - 에러 핸들링 정리 필요",
+        }
+        for pattern, msg in complexity_indicators.items():
+            if re.search(pattern, self.added_lines, re.DOTALL):
+                uncertainties.append(f"⚠️ {msg}")
+                break
+
+        # 불확실성 키워드 분석 (추가된 줄에서만)
+        uncertainty_contexts = []
+        for line in self.added_lines.split("\n"):
+            if re.search(r"maybe|perhaps|아마|possibly|\?\?\?", line, re.I):
+                # 해당 줄의 컨텍스트 추출
+                cleaned = line.strip()[:50]
+                if cleaned:
+                    uncertainty_contexts.append(cleaned)
+
+        if uncertainty_contexts:
+            for ctx in uncertainty_contexts[:2]:
+                uncertainties.append(f"불확실한 구현: `{ctx}`")
+
+        # 테스트 없는 신규 코드 감지
+        new_funcs = re.findall(r"def\s+(\w+)\s*\(", self.added_lines)
+        test_files = [f for f in self.files if "test" in f.lower()]
+        if new_funcs and not test_files:
+            func_names = [f for f in set(new_funcs) if not f.startswith("_")][:2]
+            if func_names:
+                uncertainties.append(f"테스트 미작성: `{', '.join(func_names)}` - 테스트 추가 권장")
 
         if uncertainties:
             for item in uncertainties[:8]:
                 content += f"- {item}\n"
         else:
-            content += "- (불확실성 항목 감지됨 - 상세 내용 수동 작성 권장)\n"
+            # 구체적인 폴백 메시지
+            content += (
+                "> 플래그 감지 기반 섹션입니다. 명시적 `# TODO:`, `# FIXME:`, `# RISK:` 주석을 추가하면 자동 추출됩니다.\n"
+            )
 
         content += "\n"
         return content
@@ -486,21 +736,21 @@ class SectionGenerator:
 
         rollbacks = []
 
-        # 명시적 롤백 주석
-        rollback_comments = re.findall(r"#\s*Rollback:?\s*(.+)", self.diff)
-        rollbacks.extend([r.strip()[:80] for r in rollback_comments[:3]])
+        # 실제 Rollback 주석 추출 (문자열 리터럴 제외)
+        rollback_comments = extract_real_comments(self.diff, "Rollback")
+        rollbacks.extend([r[:80] for r in rollback_comments[:3]])
 
         # 마이그레이션 파일 감지
         migrations = [f for f in self.files if "migration" in f.lower()]
         if migrations:
             rollbacks.append(f"DB 마이그레이션 롤백: `python manage.py migrate --reverse` ({len(migrations)}개 파일)")
 
-        # Feature flag 감지
-        if re.search(r"feature.?flag", self.diff, re.I):
+        # Feature flag 감지 (추가된 줄에서만)
+        if re.search(r"feature.?flag", self.added_lines, re.I):
             rollbacks.append("Feature Flag 비활성화로 즉시 롤백 가능")
 
-        # 백업 전략
-        if re.search(r"backup|백업", self.diff, re.I):
+        # 백업 전략 (추가된 줄에서만)
+        if re.search(r"backup|백업", self.added_lines, re.I):
             rollbacks.append("백업 복원 전략 준비됨")
 
         # 기본 롤백 가이드
@@ -560,29 +810,32 @@ class SectionGenerator:
     # Section 8: Technical Debt Daily (has_debt)
     # -------------------------------------------------------------------------
     def _section_tech_debt(self) -> str:
-        """Technical Debt Daily 섹션"""
+        """Technical Debt Daily 섹션
+
+        v3.0.1: 실제 주석만 추출 (문자열 리터럴 제외)
+        """
         content = "## Technical Debt (Daily)\n\n"
 
         debts = []
 
-        # TODO 추출
-        todos = re.findall(r"#\s*TODO:?\s*(.+)", self.diff)
-        debts.extend([{"type": "TODO", "desc": t.strip()[:60]} for t in todos[:5]])
+        # TODO 추출 (실제 주석만)
+        todos = extract_real_comments(self.diff, "TODO")
+        debts.extend([{"type": "TODO", "desc": t[:60]} for t in todos[:5]])
 
-        # FIXME 추출
-        fixmes = re.findall(r"#\s*FIXME:?\s*(.+)", self.diff)
-        debts.extend([{"type": "FIXME", "desc": f.strip()[:60]} for f in fixmes[:3]])
+        # FIXME 추출 (실제 주석만)
+        fixmes = extract_real_comments(self.diff, "FIXME")
+        debts.extend([{"type": "FIXME", "desc": f[:60]} for f in fixmes[:3]])
 
-        # HACK 추출
-        hacks = re.findall(r"#\s*HACK:?\s*(.+)", self.diff)
-        debts.extend([{"type": "HACK", "desc": h.strip()[:60]} for h in hacks[:2]])
+        # HACK 추출 (실제 주석만)
+        hacks = extract_real_comments(self.diff, "HACK")
+        debts.extend([{"type": "HACK", "desc": h[:60]} for h in hacks[:2]])
 
-        # 스킵된 테스트
-        skips = re.findall(r"@pytest\.mark\.skip\(reason=[\"'](.+?)[\"']\)", self.diff)
+        # 스킵된 테스트 (추가된 줄에서만)
+        skips = re.findall(r"@pytest\.mark\.skip\(reason=[\"'](.+?)[\"']\)", self.added_lines)
         debts.extend([{"type": "SKIP", "desc": s[:60]} for s in skips[:2]])
 
-        # 타입 무시
-        ignores = len(re.findall(r"#\s*type:\s*ignore", self.diff))
+        # 타입 무시 (추가된 줄에서만)
+        ignores = len(re.findall(r"#\s*type:\s*ignore", self.added_lines))
         if ignores > 0:
             debts.append({"type": "TYPE", "desc": f"type: ignore 주석 {ignores}개"})
 
@@ -593,7 +846,19 @@ class SectionGenerator:
                 priority = "P1" if debt["type"] == "FIXME" else "P2"
                 content += f"| {debt['type']} | {debt['desc']} | {priority} |\n"
         else:
-            content += "- (기술부채 항목 감지됨 - 상세 분석 권장)\n"
+            # 기술부채 플래그가 감지되었지만 구체적 항목이 없는 경우
+            # 가능한 원인 분석
+            possible_reasons = []
+            if any("test" in f.lower() and "skip" in self.added_lines.lower() for f in self.files):
+                possible_reasons.append("스킵된 테스트가 있을 수 있음")
+            if "# type: ignore" in self.added_lines:
+                possible_reasons.append("타입 무시 주석이 있음")
+
+            if possible_reasons:
+                content += f"> 감지된 패턴: {', '.join(possible_reasons)}\n"
+            else:
+                content += "> 기술부채 플래그가 감지되었지만 구체적 항목이 없습니다.\n"
+            content += "> `# TODO:`, `# FIXME:`, `# HACK:` 주석을 추가하면 자동 추출됩니다.\n"
 
         content += "\n"
         return content
@@ -602,35 +867,73 @@ class SectionGenerator:
     # Section 9: Decisions Made (has_decision)
     # -------------------------------------------------------------------------
     def _section_decisions(self) -> str:
-        """Decisions Made 섹션"""
+        """Decisions Made 섹션 - 구체적 의사결정 분석
+
+        v3.0.1: 실제 주석만 추출 (문자열 리터럴 제외)
+        """
         content = "## Decisions Made (Daily)\n\n"
 
         decisions = []
 
-        # 명시적 Decision 주석
-        decision_comments = re.findall(r"#\s*Decision:?\s*(.+)", self.diff)
-        decisions.extend([d.strip()[:80] for d in decision_comments[:5]])
+        # 명시적 Decision 주석 (실제 주석만)
+        decision_comments = extract_real_comments(self.diff, "Decision")
+        decisions.extend([f"📌 {d[:80]}" for d in decision_comments[:5]])
 
-        # Why 주석
-        why_comments = re.findall(r"#\s*Why:?\s*(.+)", self.diff)
-        decisions.extend([f"이유: {w.strip()[:70]}" for w in why_comments[:3]])
+        # Why 주석 (실제 주석만)
+        why_comments = extract_real_comments(self.diff, "Why")
+        decisions.extend([f"💡 이유: {w[:70]}" for w in why_comments[:3]])
 
-        # 의존성 변경 감지
-        if "requirements.txt" in self.files or "package.json" in self.files:
-            # 추가된 라이브러리 추출
-            added_deps = re.findall(r"\+([a-zA-Z0-9_-]+)==", self.diff)
-            if added_deps:
-                decisions.append(f"의존성 추가: {', '.join(added_deps[:3])}")
+        # 의존성 변경 감지 - 구체적인 라이브러리 및 버전
+        if "requirements.txt" in self.files:
+            added_deps = re.findall(r"^\+([a-zA-Z0-9_-]+)==([0-9.]+)", self.added_lines, re.M)
+            for name, version in added_deps[:3]:
+                decisions.append(f"📦 의존성 추가: `{name}=={version}`")
 
-        # pyproject.toml 변경
-        if "pyproject.toml" in self.files:
-            decisions.append("Python 프로젝트 설정 변경")
+        if "package.json" in self.files:
+            added_npm = re.findall(r'"([^"]+)":\s*"[\^~]?([0-9.]+)"', self.added_lines)
+            for name, version in added_npm[:3]:
+                if not name.startswith("@types"):
+                    decisions.append(f"📦 NPM 패키지: `{name}@{version}`")
+
+        # 아키텍처 결정 감지
+        arch_patterns = {
+            r"class\s+(\w+Factory)": "Factory 패턴 도입",
+            r"class\s+(\w+Singleton)": "Singleton 패턴 도입",
+            r"class\s+(\w+Service)": "Service 계층 분리",
+            r"class\s+(\w+Repository)": "Repository 패턴 적용",
+            r"class\s+(\w+Controller)": "Controller 계층 분리",
+        }
+        for pattern, desc in arch_patterns.items():
+            matches = re.findall(pattern, self.added_lines)
+            if matches:
+                decisions.append(f"🏗️ {desc}: `{matches[0]}`")
+                break
+
+        # 설정 파일 변경 감지
+        config_files = [f for f in self.files if f.endswith((".yaml", ".yml", ".json", ".toml", ".env"))]
+        if config_files:
+            config_names = [Path(f).name for f in config_files[:2]]
+            decisions.append(f"⚙️ 설정 변경: `{', '.join(config_names)}`")
+
+        # 커밋 메시지에서 결정사항 추출
+        commit_decision_patterns = [
+            (r"대신|instead of|rather than", "대안 선택"),
+            (r"전환|migrate|switch", "기술 전환"),
+            (r"도입|introduce|adopt", "새 기술 도입"),
+            (r"제거|remove|deprecate", "기능 제거"),
+        ]
+        for pattern, desc in commit_decision_patterns:
+            if re.search(pattern, self.message, re.I):
+                decisions.append(f"🎯 {desc}: {self.message.split(chr(10))[0][:50]}")
+                break
 
         if decisions:
-            for idx, decision in enumerate(decisions[:6], 1):
+            for idx, decision in enumerate(decisions[:8], 1):
                 content += f"{idx}. {decision}\n"
         else:
-            content += "- (의사결정 감지됨 - 상세 내용 수동 작성 권장)\n"
+            # 구체적인 폴백 메시지
+            content += "> 의사결정 플래그가 감지되었지만 구체적 내용이 없습니다.\n"
+            content += "> `# Decision:` 또는 `# Why:` 주석을 추가하면 자동 추출됩니다.\n"
 
         content += "\n"
         return content
