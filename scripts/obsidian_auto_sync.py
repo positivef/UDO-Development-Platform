@@ -29,7 +29,7 @@ Requirements:
 
 Author: System Automation Team
 Date: 2025-12-29
-Version: 3.0.1 (Regex False Positive Fix)
+Version: 3.1.0 (Uncertainty Map: A + B + Blockers)
 """
 
 import argparse
@@ -62,6 +62,65 @@ def extract_added_lines(diff: str) -> str:
             # 앞의 + 제거
             lines.append(line[1:])
     return "\n".join(lines)
+
+
+# =============================================================================
+# v3.1: AI Metacognition Support (AI 메타인지 연동)
+# =============================================================================
+
+
+def load_ai_metacognition() -> Dict[str, Any]:
+    """AI 세션에서 저장한 메타인지 정보 로드
+
+    Returns:
+        AI 메타인지 딕셔너리:
+        - least_confident: 가장 덜 자신있는 부분 리스트
+        - simplifications: 단순화 가정 리스트
+        - opinion_changers: 의견 변경 가능 질문 리스트
+        - areas_to_improve: 보완 필요 영역 리스트
+        - blockers: 현재 차단 요소 리스트
+    """
+    session_file = Path(".udo/session_state.json")
+    if not session_file.exists():
+        return {}
+
+    try:
+        with open(session_file, "r", encoding="utf-8") as f:
+            data = json.load(f)
+        return data.get("ai_metacognition", {})
+    except (json.JSONDecodeError, IOError):
+        return {}
+
+
+def save_ai_metacognition(metacognition: Dict[str, Any]) -> bool:
+    """AI 메타인지 정보를 session_state.json에 저장
+
+    Args:
+        metacognition: AI 메타인지 딕셔너리
+
+    Returns:
+        성공 여부
+    """
+    session_file = Path(".udo/session_state.json")
+    session_file.parent.mkdir(parents=True, exist_ok=True)
+
+    try:
+        # 기존 데이터 로드
+        if session_file.exists():
+            with open(session_file, "r", encoding="utf-8") as f:
+                data = json.load(f)
+        else:
+            data = {}
+
+        # 메타인지 정보 업데이트
+        data["ai_metacognition"] = metacognition
+        data["ai_metacognition_updated"] = datetime.now().isoformat()
+
+        with open(session_file, "w", encoding="utf-8") as f:
+            json.dump(data, f, ensure_ascii=False, indent=2)
+        return True
+    except (json.JSONDecodeError, IOError):
+        return False
 
 
 def is_real_comment(line: str, pattern: str) -> bool:
@@ -663,66 +722,173 @@ class SectionGenerator:
         return content
 
     # -------------------------------------------------------------------------
-    # Section 5: Uncertainty & Blockers (has_uncertainty)
+    # Section 5: Uncertainty Map (has_uncertainty)
+    # v3.1: A + B 조합 - 기술적 불확실성 + AI 메타인지 + Blockers
     # -------------------------------------------------------------------------
     def _section_uncertainty(self) -> str:
-        """Uncertainty & Blockers 섹션 - 구체적 불확실성 분석"""
-        content = "## Uncertainty & Blockers\n\n"
+        """Uncertainty Map 섹션 - 다층 불확실성 분석
 
-        uncertainties = []
+        구성:
+        1. 🔍 기술적 불확실성 (Option A): Git diff 자동 분석
+        2. 🤔 AI 메타인지 (Option B): 세션 기반 자기 성찰
+        3. 🚧 Blockers: 작업 차단 요소
+        """
+        content = "## Uncertainty Map\n\n"
 
-        # 실제 TODO 주석 추출 (문자열 리터럴 제외)
+        # =====================================================================
+        # Part 1: 🔍 기술적 불확실성 (Option A - Git diff 기반 자동 분석)
+        # =====================================================================
+        content += "### 🔍 기술적 불확실성 (자동 분석)\n\n"
+
+        tech_uncertainties = []
+
+        # 1-1. 주석 기반 명시적 불확실성
         todos = extract_real_comments(self.diff, "TODO")
-        uncertainties.extend([f"**TODO**: {t[:60]}" for t in todos[:5]])
+        tech_uncertainties.extend([f"**TODO**: {t[:60]}" for t in todos[:3]])
 
-        # 실제 FIXME 주석 추출
         fixmes = extract_real_comments(self.diff, "FIXME")
-        uncertainties.extend([f"**FIXME**: {f[:60]}" for f in fixmes[:3]])
+        tech_uncertainties.extend([f"**FIXME**: {f[:60]}" for f in fixmes[:2]])
 
-        # 실제 RISK 주석 추출
         risks = extract_real_comments(self.diff, "RISK")
-        uncertainties.extend([f"**RISK**: {r[:60]}" for r in risks[:3]])
+        tech_uncertainties.extend([f"**RISK**: {r[:60]}" for r in risks[:2]])
 
-        # 복잡도 기반 불확실성 (추가된 줄에서만)
+        # 1-2. 복잡도 기반 추론 (Option A 강화)
         complexity_indicators = {
-            "if.*if.*if": "중첩 조건문 감지 - 로직 복잡도 검토 필요",
-            "for.*for": "중첩 루프 감지 - 성능 영향 확인 필요",
-            "try.*try": "중첩 예외 처리 - 에러 핸들링 정리 필요",
+            r"if.*if.*if": "⚠️ 중첩 조건문 3단계 - 로직 단순화 검토 필요",
+            r"for.*for": "⚠️ 중첩 루프 - O(n²) 성능 영향 확인 필요",
+            r"try.*try": "⚠️ 중첩 예외 처리 - 에러 흐름 정리 필요",
+            r"except\s*:": "⚠️ 광범위 예외 처리 - 구체적 예외 타입 권장",
         }
         for pattern, msg in complexity_indicators.items():
             if re.search(pattern, self.added_lines, re.DOTALL):
-                uncertainties.append(f"⚠️ {msg}")
-                break
+                tech_uncertainties.append(msg)
 
-        # 불확실성 키워드 분석 (추가된 줄에서만)
-        uncertainty_contexts = []
-        for line in self.added_lines.split("\n"):
-            if re.search(r"maybe|perhaps|아마|possibly|\?\?\?", line, re.I):
-                # 해당 줄의 컨텍스트 추출
-                cleaned = line.strip()[:50]
-                if cleaned:
-                    uncertainty_contexts.append(cleaned)
+        # 1-3. 변경 규모 기반 추론 (Option A 강화)
+        lines_added = len(self.added_lines.split("\n"))
+        files_changed = len(self.files)
 
-        if uncertainty_contexts:
-            for ctx in uncertainty_contexts[:2]:
-                uncertainties.append(f"불확실한 구현: `{ctx}`")
+        if lines_added > 200:
+            tech_uncertainties.append(f"📊 대규모 변경 ({lines_added}줄) - 모든 엣지 케이스 고려했는지 검토 필요")
+        if files_changed > 5:
+            tech_uncertainties.append(f"📁 다중 파일 변경 ({files_changed}개) - 파일 간 일관성 확인 필요")
 
-        # 테스트 없는 신규 코드 감지
+        # 1-4. 외부 의존성 추가 감지
+        new_imports = re.findall(r"(?:import|from)\s+(\w+)", self.added_lines)
+        new_deps = re.findall(r'"([^"]+)":\s*"[\^~]?\d', self.added_lines)  # package.json
+        if new_imports or new_deps:
+            dep_names = list(set(new_imports[:3] + new_deps[:2]))
+            if dep_names:
+                tech_uncertainties.append(f"📦 외부 의존성 추가: `{', '.join(dep_names)}` - 호환성 확인 필요")
+
+        # 1-5. 테스트 미작성 신규 코드
         new_funcs = re.findall(r"def\s+(\w+)\s*\(", self.added_lines)
+        new_classes = re.findall(r"class\s+(\w+)", self.added_lines)
         test_files = [f for f in self.files if "test" in f.lower()]
-        if new_funcs and not test_files:
-            func_names = [f for f in set(new_funcs) if not f.startswith("_")][:2]
-            if func_names:
-                uncertainties.append(f"테스트 미작성: `{', '.join(func_names)}` - 테스트 추가 권장")
 
-        if uncertainties:
-            for item in uncertainties[:8]:
+        if (new_funcs or new_classes) and not test_files:
+            items = [f for f in set(new_funcs) if not f.startswith("_")][:2]
+            items += [c for c in set(new_classes)][:1]
+            if items:
+                tech_uncertainties.append(f"🧪 테스트 미작성: `{', '.join(items)}` - 테스트 추가 권장")
+
+        # 1-6. 불확실성 키워드 (코드 내 maybe, 아마 등)
+        uncertainty_keywords = []
+        for line in self.added_lines.split("\n"):
+            if re.search(r"maybe|perhaps|아마|possibly|\?\?\?|임시|temp", line, re.I):
+                cleaned = line.strip()[:40]
+                if cleaned and not cleaned.startswith("#"):
+                    uncertainty_keywords.append(cleaned)
+
+        if uncertainty_keywords:
+            tech_uncertainties.append(f"❓ 불확실한 구현 감지: `{uncertainty_keywords[0][:30]}...`")
+
+        # 기술적 불확실성 출력
+        if tech_uncertainties:
+            for item in tech_uncertainties[:6]:
                 content += f"- {item}\n"
         else:
-            # 구체적인 폴백 메시지
-            content += (
-                "> 플래그 감지 기반 섹션입니다. 명시적 `# TODO:`, `# FIXME:`, `# RISK:` 주석을 추가하면 자동 추출됩니다.\n"
-            )
+            content += "> ✅ 코드 분석에서 주요 불확실성이 감지되지 않았습니다.\n"
+
+        content += "\n"
+
+        # =====================================================================
+        # Part 2: 🤔 AI 메타인지 (Option B - 세션 기반 자기 성찰)
+        # =====================================================================
+        content += "### 🤔 AI 메타인지 (세션 기반)\n\n"
+
+        ai_meta = load_ai_metacognition()
+
+        if ai_meta:
+            # 2-1. 가장 덜 자신있는 부분
+            least_confident = ai_meta.get("least_confident", [])
+            if least_confident:
+                content += "**1. 가장 덜 자신있는 부분**\n"
+                for item in least_confident[:3]:
+                    content += f"   - {item}\n"
+                content += "\n"
+
+            # 2-2. 단순화한 가정
+            simplifications = ai_meta.get("simplifications", [])
+            if simplifications:
+                content += "**2. 단순화한 가정**\n"
+                for item in simplifications[:3]:
+                    content += f"   - {item}\n"
+                content += "\n"
+
+            # 2-3. 의견 변경 가능 질문
+            opinion_changers = ai_meta.get("opinion_changers", [])
+            if opinion_changers:
+                content += "**3. 의견 변경 가능 질문**\n"
+                for item in opinion_changers[:3]:
+                    content += f"   - {item}\n"
+                content += "\n"
+
+            # 2-4. 보완 필요 영역
+            areas_to_improve = ai_meta.get("areas_to_improve", [])
+            if areas_to_improve:
+                content += "**4. 보완 필요 영역**\n"
+                for item in areas_to_improve[:3]:
+                    content += f"   - {item}\n"
+                content += "\n"
+
+            if not any([least_confident, simplifications, opinion_changers, areas_to_improve]):
+                content += "> AI 세션 메타인지가 로드되었으나 내용이 비어있습니다.\n\n"
+        else:
+            content += "> 💡 AI 세션 메타인지 정보가 없습니다.\n"
+            content += "> `save_ai_metacognition()` 함수로 AI 작업 중 메타인지를 저장하면 자동 포함됩니다.\n\n"
+
+        # =====================================================================
+        # Part 3: 🚧 Blockers (작업 차단 요소)
+        # =====================================================================
+        content += "### 🚧 Blockers\n\n"
+
+        blockers = []
+
+        # 3-1. 주석 기반 Blockers
+        blocked_comments = extract_real_comments(self.diff, "BLOCKED")
+        blockers.extend([f"🔴 {b[:60]}" for b in blocked_comments[:2]])
+
+        decision_comments = extract_real_comments(self.diff, "DECISION")
+        blockers.extend([f"🟡 결정 대기: {d[:50]}" for d in decision_comments[:2]])
+
+        waiting_comments = extract_real_comments(self.diff, "WAITING")
+        blockers.extend([f"🟠 대기 중: {w[:50]}" for w in waiting_comments[:2]])
+
+        # 3-2. AI 세션 Blockers
+        ai_blockers = ai_meta.get("blockers", [])
+        for b in ai_blockers[:3]:
+            blockers.append(f"🔵 {b}")
+
+        # 3-3. 외부 의존성 대기
+        if re.search(r"#.*외부.*대기|#.*external.*wait", self.added_lines, re.I):
+            blockers.append("🟣 외부 시스템 응답 대기 중")
+
+        # Blockers 출력
+        if blockers:
+            for item in blockers[:5]:
+                content += f"- {item}\n"
+        else:
+            content += "> ✅ 현재 차단 요소가 없습니다.\n"
 
         content += "\n"
         return content
