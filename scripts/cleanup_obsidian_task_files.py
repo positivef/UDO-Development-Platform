@@ -27,23 +27,32 @@ DEV_LOG_DIR = Path(OBSIDIAN_VAULT) / "개발일지"
 
 def parse_task_filename(filename: str) -> dict:
     """
-    Parse task filename to extract date and task ID.
+    Parse task filename to extract date.
 
-    Supports both formats:
-    - Old: YYYY-MM-DD_task_<uuid>.md
-    - New: YYYY-MM-DD_<title>_<uuid>.md
+    Supports multiple formats:
+    - Newest: YYYY-MM-DD_<title>.md (no UUID, clean)
+    - New: YYYY-MM-DD_<title>_<uuid>.md (with UUID)
+    - Old: YYYY-MM-DD_task_<uuid>.md (legacy)
 
     Returns:
-        dict with 'date' and 'task_id' keys, or None if not a task file
+        dict with 'date' and 'filename' keys, or None if not a task file
     """
-    # Try new format first: YYYY-MM-DD_<title>_<uuid>.md
-    # Title can contain alphanumeric, hyphens, underscores
+    # Try newest format: YYYY-MM-DD_<title>.md (no UUID)
+    # This is the cleanest format for user readability
+    pattern_newest = r"^(\d{4}-\d{2}-\d{2})_(.+?)(-\d+)?\.md$"
+    match = re.match(pattern_newest, filename)
+    if match:
+        return {
+            "date": match.group(1),
+            "filename": filename
+        }
+
+    # Try new format: YYYY-MM-DD_<title>_<uuid>.md
     pattern_new = r"^(\d{4}-\d{2}-\d{2})_(.+?)_([a-f0-9]{8}-[a-f0-9]{4}-[a-f0-9]{4}-[a-f0-9]{4}-[a-f0-9]{12})\.md$"
     match = re.match(pattern_new, filename)
     if match:
         return {
             "date": match.group(1),
-            "task_id": match.group(3),  # UUID is in group 3
             "filename": filename
         }
 
@@ -53,7 +62,6 @@ def parse_task_filename(filename: str) -> dict:
     if match:
         return {
             "date": match.group(1),
-            "task_id": match.group(2),
             "filename": filename
         }
 
