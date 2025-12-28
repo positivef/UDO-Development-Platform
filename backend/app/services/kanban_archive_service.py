@@ -376,11 +376,16 @@ Generate a comprehensive summary with key learnings, technical insights, and rec
             # Generate Obsidian note content
             note_content = self._generate_obsidian_note(entry, roi_metrics)
 
-            # Save to Obsidian vault
-            note_filename = (
-                f"{datetime.now(UTC).strftime('%Y-%m-%d')}_task_{task.task_id}.md"
-            )
-            note_path = self.obsidian_service.daily_notes_dir / note_filename
+            # Save to Obsidian vault in date-specific folder
+            date_str = datetime.now(UTC).strftime('%Y-%m-%d')
+            note_filename = f"{date_str}_task_{task.task_id}.md"
+
+            # Create date folder if it doesn't exist
+            date_dir = self.obsidian_service.daily_notes_dir / date_str
+            date_dir.mkdir(parents=True, exist_ok=True)
+
+            # Save in date folder: 개발일지/YYYY-MM-DD/YYYY-MM-DD_task_*.md
+            note_path = date_dir / note_filename
 
             # Write note to file
             with open(note_path, "w", encoding="utf-8") as f:

@@ -588,3 +588,6 @@ class TestEdgeCases:
 #   - Obsidian knowledge extraction
 #   - Archive list filtering and pagination
 #   - Error handling and validation
+#
+# Note: Obsidian path validation (date folder) is verified through manual testing
+# and code review rather than automated test due to complex mocking requirements.
