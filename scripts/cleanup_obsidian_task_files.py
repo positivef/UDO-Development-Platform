@@ -30,26 +30,36 @@ def parse_task_filename(filename: str) -> dict:
     Parse task filename to extract date.
 
     Supports multiple formats:
-    - Newest: YYYY-MM-DD_<title>.md (no UUID, clean)
-    - New: YYYY-MM-DD_<title>_<uuid>.md (with UUID)
-    - Old: YYYY-MM-DD_task_<uuid>.md (legacy)
+    - Current: YYYY-MM-DD_HHMMSS_<title>.md (with timestamp for chronological order)
+    - Previous: YYYY-MM-DD_<title>.md (clean, no UUID)
+    - Legacy: YYYY-MM-DD_<title>_<uuid>.md (with UUID)
+    - Old: YYYY-MM-DD_task_<uuid>.md (original format)
 
     Returns:
         dict with 'date' and 'filename' keys, or None if not a task file
     """
-    # Try newest format: YYYY-MM-DD_<title>.md (no UUID)
-    # This is the cleanest format for user readability
-    pattern_newest = r"^(\d{4}-\d{2}-\d{2})_(.+?)(-\d+)?\.md$"
-    match = re.match(pattern_newest, filename)
+    # Try current format: YYYY-MM-DD_HHMMSS_<title>.md (with timestamp)
+    # This is the best format: chronological order + human-readable + no UUID clutter
+    pattern_timestamp = r"^(\d{4}-\d{2}-\d{2})_(\d{6})_(.+?)\.md$"
+    match = re.match(pattern_timestamp, filename)
     if match:
         return {
             "date": match.group(1),
             "filename": filename
         }
 
-    # Try new format: YYYY-MM-DD_<title>_<uuid>.md
-    pattern_new = r"^(\d{4}-\d{2}-\d{2})_(.+?)_([a-f0-9]{8}-[a-f0-9]{4}-[a-f0-9]{4}-[a-f0-9]{4}-[a-f0-9]{12})\.md$"
-    match = re.match(pattern_new, filename)
+    # Try previous format: YYYY-MM-DD_<title>.md (clean, no UUID)
+    pattern_clean = r"^(\d{4}-\d{2}-\d{2})_(.+?)(-\d+)?\.md$"
+    match = re.match(pattern_clean, filename)
+    if match:
+        return {
+            "date": match.group(1),
+            "filename": filename
+        }
+
+    # Try legacy format: YYYY-MM-DD_<title>_<uuid>.md
+    pattern_uuid = r"^(\d{4}-\d{2}-\d{2})_(.+?)_([a-f0-9]{8}-[a-f0-9]{4}-[a-f0-9]{4}-[a-f0-9]{4}-[a-f0-9]{12})\.md$"
+    match = re.match(pattern_uuid, filename)
     if match:
         return {
             "date": match.group(1),

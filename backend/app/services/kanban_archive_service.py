@@ -378,31 +378,26 @@ Generate a comprehensive summary with key learnings, technical insights, and rec
             note_content = self._generate_obsidian_note(entry, roi_metrics)
 
             # Save to Obsidian vault in date-specific folder
-            date_str = datetime.now(UTC).strftime('%Y-%m-%d')
+            now = datetime.now(UTC)
+            date_str = now.strftime('%Y-%m-%d')
+            time_str = now.strftime('%H%M%S')  # HHMMSS format for chronological order
 
             # Sanitize task title for filename (remove special characters)
             # Keep only alphanumeric, spaces, hyphens, and underscores
             safe_title = re.sub(r'[<>:"/\\|?*\x00-\x1f]', '', task.title)
             safe_title = re.sub(r'\s+', '-', safe_title.strip())  # Replace spaces with hyphens
-            safe_title = safe_title[:80]  # Limit length (increased from 50 since no UUID)
+            safe_title = safe_title[:80]  # Limit length
 
             # Create date folder if it doesn't exist
             date_dir = self.obsidian_service.daily_notes_dir / date_str
             date_dir.mkdir(parents=True, exist_ok=True)
 
-            # Format: YYYY-MM-DD_TaskTitle.md (clean, no UUID)
-            # If file exists, add suffix: TaskTitle-2.md, TaskTitle-3.md, etc.
-            base_filename = f"{date_str}_{safe_title}.md"
-            note_path = date_dir / base_filename
+            # Format: YYYY-MM-DD_HHMMSS_TaskTitle.md
+            # Timestamp ensures chronological order and prevents conflicts
+            note_filename = f"{date_str}_{time_str}_{safe_title}.md"
+            note_path = date_dir / note_filename
 
-            # Handle filename conflicts (same title on same day)
-            counter = 2
-            while note_path.exists():
-                note_filename = f"{date_str}_{safe_title}-{counter}.md"
-                note_path = date_dir / note_filename
-                counter += 1
-
-            # Final path: 개발일지/YYYY-MM-DD/YYYY-MM-DD_TaskTitle.md
+            # Final path: 개발일지/YYYY-MM-DD/YYYY-MM-DD_HHMMSS_TaskTitle.md
 
             # Write note to file
             with open(note_path, "w", encoding="utf-8") as f:
