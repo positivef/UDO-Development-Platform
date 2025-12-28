@@ -29,7 +29,7 @@ Requirements:
 
 Author: System Automation Team
 Date: 2025-12-29
-Version: 3.1.0 (Uncertainty Map: A + B + Blockers)
+Version: 3.2.0 (Beginner-Friendly Insights + A/B Uncertainty)
 """
 
 import argparse
@@ -607,16 +607,24 @@ class SectionGenerator:
     # Section 3: TIL - Today I Learned (has_til)
     # -------------------------------------------------------------------------
     def _section_til(self) -> str:
-        """TIL 섹션 - 배운 점 자동 추출 (구체적 인사이트)"""
+        """TIL 섹션 - 배운 점 자동 추출 (구체적 인사이트 + 초보자 학습 포인트)
+
+        v3.2: 초보자가 배워야 할 점과 적용 방법 추가
+        """
         content = "## Today I Learned (TIL)\n\n"
 
         learnings = []
+        beginner_tips = []  # 초보자 학습 포인트
 
         # 테스트 추가 감지 - 구체적인 파일명 포함
         test_files = [f for f in self.files if "test" in f.lower()]
         if test_files:
             test_names = [Path(f).stem for f in test_files[:2]]
             learnings.append(f"테스트 작성: `{', '.join(test_names)}` - TDD 패턴으로 품질 보장")
+            beginner_tips.append(
+                "**[초보자 팁]** 테스트를 먼저 작성하면 요구사항이 명확해지고, "
+                "나중에 코드를 수정해도 기존 기능이 깨지지 않았는지 바로 확인할 수 있어요."
+            )
 
         # 리팩토링 감지 - 무엇을 리팩토링했는지 추출
         if "refactor" in self.message.lower():
@@ -627,12 +635,20 @@ class SectionGenerator:
                 learnings.append(f"리팩토링: {target} - 코드 가독성/유지보수성 향상")
             else:
                 learnings.append("리팩토링으로 코드 구조 개선")
+            beginner_tips.append(
+                "**[초보자 팁]** 리팩토링은 기능은 그대로 두고 코드 구조만 개선하는 것이에요. "
+                "항상 테스트가 통과하는 상태에서 조금씩 변경하세요."
+            )
 
         # 새 패턴/클래스 감지 - 구체적인 클래스명 포함
         new_classes = re.findall(r"class\s+(\w+)", self.added_lines)
         if new_classes:
             class_names = list(set(new_classes))[:3]
             learnings.append(f"새 클래스 설계: `{', '.join(class_names)}` - OOP 원칙 적용")
+            beginner_tips.append(
+                "**[초보자 팁]** 클래스는 관련된 데이터와 기능을 묶는 설계 도구예요. "
+                "하나의 클래스는 하나의 책임만 갖도록(SRP) 설계하세요."
+            )
 
         # 새 함수 감지 - 구체적인 함수명 포함
         new_funcs = re.findall(r"def\s+(\w+)\s*\(", self.added_lines)
@@ -640,28 +656,41 @@ class SectionGenerator:
             func_names = [f for f in set(new_funcs) if not f.startswith("_")][:3]
             if func_names:
                 learnings.append(f"새 함수 구현: `{', '.join(func_names)}` - 모듈화 적용")
+                beginner_tips.append(
+                    "**[초보자 팁]** 함수 이름은 동사로 시작하고, 무엇을 하는지 명확히 드러내세요. "
+                    "한 함수는 한 가지 일만 하도록(Single Responsibility) 작성하세요."
+                )
 
         # 성능 최적화 - 구체적인 기법 추출
         perf_patterns = {
-            "cache": "캐싱 적용으로 반복 연산 최소화",
-            "memoiz": "메모이제이션으로 함수 결과 재사용",
-            "async": "비동기 처리로 응답성 향상",
-            "parallel": "병렬 처리로 성능 개선",
-            "batch": "배치 처리로 I/O 최적화",
-            "lazy": "지연 로딩으로 초기화 시간 단축",
+            "cache": ("캐싱 적용으로 반복 연산 최소화", "같은 계산을 여러 번 하지 않도록 결과를 저장해두는 기법"),
+            "memoiz": ("메모이제이션으로 함수 결과 재사용", "함수의 입력값에 대한 결과를 기억해서 재계산 방지"),
+            "async": ("비동기 처리로 응답성 향상", "I/O 작업 중 다른 작업을 할 수 있게 해주는 패턴"),
+            "parallel": ("병렬 처리로 성능 개선", "여러 작업을 동시에 실행해 전체 시간 단축"),
+            "batch": ("배치 처리로 I/O 최적화", "여러 요청을 모아서 한 번에 처리하는 기법"),
+            "lazy": ("지연 로딩으로 초기화 시간 단축", "필요할 때까지 로딩을 미루는 최적화 기법"),
         }
-        for pattern, desc in perf_patterns.items():
+        for pattern, (desc, tip) in perf_patterns.items():
             if pattern in self.added_lines.lower():
                 learnings.append(f"성능 최적화: {desc}")
+                beginner_tips.append(f"**[초보자 팁]** {tip}. 먼저 측정하고, 병목 지점을 찾은 후 최적화하세요.")
                 break
 
         # 에러 처리 개선
         if "try:" in self.added_lines or "except" in self.added_lines:
             learnings.append("에러 처리 강화: 예외 상황에 대한 안정성 확보")
+            beginner_tips.append(
+                "**[초보자 팁]** try-except는 예상 가능한 에러만 잡으세요. "
+                "`except Exception:`처럼 너무 광범위하게 잡으면 버그를 숨길 수 있어요."
+            )
 
         # 타입 힌팅 추가
         if ": str" in self.added_lines or ": int" in self.added_lines or "-> " in self.added_lines:
             learnings.append("타입 힌팅 적용: 코드 문서화 및 IDE 지원 향상")
+            beginner_tips.append(
+                "**[초보자 팁]** 타입 힌팅은 함수가 어떤 값을 받고 반환하는지 명시해요. "
+                "IDE 자동완성과 버그 조기 발견에 큰 도움이 됩니다."
+            )
 
         # 명시적 TIL 주석 추출 (실제 주석만)
         til_comments = extract_real_comments(self.diff, "TIL")
@@ -670,18 +699,67 @@ class SectionGenerator:
         if learnings:
             for item in learnings[:5]:
                 content += f"- {item}\n"
-        else:
-            content += "- (자동 감지된 학습 항목 없음 - 수동 작성 권장)\n"
+            content += "\n"
 
-        content += "\n"
+            # 초보자 학습 포인트 추가
+            if beginner_tips:
+                content += "### 💡 초보자 학습 포인트\n\n"
+                for tip in beginner_tips[:3]:
+                    content += f"{tip}\n\n"
+        else:
+            content += "- (자동 감지된 학습 항목 없음 - 수동 작성 권장)\n\n"
+
         return content
 
     # -------------------------------------------------------------------------
     # Section 4: Solutions & Patterns (has_solution OR has_pattern)
     # -------------------------------------------------------------------------
     def _section_solutions_patterns(self) -> str:
-        """Solutions & Patterns 섹션"""
+        """Solutions & Patterns 섹션
+
+        v3.2: 초보자를 위한 패턴 설명 및 언제 사용하는지 가이드 추가
+        """
         content = "## Solutions & Patterns\n\n"
+
+        # 디자인 패턴 설명 사전 (초보자용)
+        pattern_explanations = {
+            "Singleton": (
+                "애플리케이션 전체에서 인스턴스가 하나만 존재해야 할 때 사용",
+                "예: 설정 관리자, 로거, DB 연결 풀",
+            ),
+            "Factory": (
+                "객체 생성 로직을 분리해서 유연성을 높일 때 사용",
+                "예: 다양한 타입의 객체를 조건에 따라 생성할 때",
+            ),
+            "Observer": (
+                "한 객체의 상태 변화를 여러 객체에게 알릴 때 사용",
+                "예: 이벤트 시스템, 구독/발행 패턴",
+            ),
+            "Strategy": (
+                "알고리즘을 런타임에 교체할 수 있게 할 때 사용",
+                "예: 정렬 방식, 결제 방식 선택",
+            ),
+            "Decorator": (
+                "기존 클래스를 수정하지 않고 기능을 추가할 때 사용",
+                "예: 로깅, 캐싱, 권한 체크 래퍼",
+            ),
+            "Adapter": (
+                "호환되지 않는 인터페이스를 연결할 때 사용",
+                "예: 외부 라이브러리를 내부 인터페이스에 맞출 때",
+            ),
+            "Facade": (
+                "복잡한 서브시스템을 단순한 인터페이스로 감쌀 때 사용",
+                "예: 여러 API를 하나의 간단한 함수로 묶을 때",
+            ),
+            "Proxy": (
+                "객체에 대한 접근을 제어하거나 추가 동작을 넣을 때 사용",
+                "예: 지연 로딩, 접근 권한 체크, 로깅",
+            ),
+            "Mixin": (
+                "다중 상속 없이 여러 클래스에 기능을 추가할 때 사용",
+                "예: 공통 유틸리티 메서드 공유",
+            ),
+        }
 
         # 해결책 추출
         if self.flags.get("has_solution"):
@@ -709,15 +787,32 @@ class SectionGenerator:
             # 실제 Pattern 주석만 추출
             pattern_comments = extract_real_comments(self.diff, "Pattern")
 
+            detected_patterns = []
             if pattern_defs:
                 for p in set(pattern_defs):
                     content += f"- **{p}** 클래스\n"
+                    # 패턴명에서 패턴 타입 추출
+                    for pattern_type in pattern_explanations:
+                        if pattern_type.lower() in p.lower():
+                            detected_patterns.append(pattern_type)
+                            break
             if pattern_comments:
                 for pc in pattern_comments[:3]:
                     content += f"- {pc[:80]}\n"
             if not pattern_defs and not pattern_comments:
                 content += "- (Pattern 주석을 추가하여 패턴 기록 권장)\n"
             content += "\n"
+
+            # 초보자를 위한 패턴 설명 추가
+            if detected_patterns:
+                content += "### 💡 패턴 이해하기 (초보자 가이드)\n\n"
+                for pattern_type in set(detected_patterns):
+                    if pattern_type in pattern_explanations:
+                        when_to_use, example = pattern_explanations[pattern_type]
+                        content += f"**{pattern_type} 패턴**\n"
+                        content += f"- **언제 사용?** {when_to_use}\n"
+                        content += f"- **실제 예시:** {example}\n"
+                        content += "- **주의점:** 패턴을 위한 패턴은 피하세요. " "문제가 명확할 때만 적용하세요.\n\n"
 
         return content
 
@@ -897,42 +992,89 @@ class SectionGenerator:
     # Section 6: Rollback Plans (has_rollback)
     # -------------------------------------------------------------------------
     def _section_rollback(self) -> str:
-        """Rollback Plans 섹션"""
+        """Rollback Plans 섹션
+
+        v3.2: 실전 명령어 + 초보자 가이드 추가
+        """
         content = "## Rollback Plans\n\n"
 
         rollbacks = []
+        commit_hash = self.commit_info.get("hash", "HEAD")[:7]
 
         # 실제 Rollback 주석 추출 (문자열 리터럴 제외)
         rollback_comments = extract_real_comments(self.diff, "Rollback")
-        rollbacks.extend([r[:80] for r in rollback_comments[:3]])
+        rollbacks.extend([{"strategy": r[:60], "cmd": "", "time": ""} for r in rollback_comments[:2]])
 
         # 마이그레이션 파일 감지
         migrations = [f for f in self.files if "migration" in f.lower()]
         if migrations:
-            rollbacks.append(f"DB 마이그레이션 롤백: `python manage.py migrate --reverse` ({len(migrations)}개 파일)")
+            rollbacks.append(
+                {
+                    "strategy": f"DB 마이그레이션 롤백 ({len(migrations)}개)",
+                    "cmd": "python manage.py migrate <app> <previous_migration>",
+                    "time": "~5분",
+                }
+            )
 
         # Feature flag 감지 (추가된 줄에서만)
         if re.search(r"feature.?flag", self.added_lines, re.I):
-            rollbacks.append("Feature Flag 비활성화로 즉시 롤백 가능")
+            rollbacks.append(
+                {
+                    "strategy": "Feature Flag 비활성화",
+                    "cmd": "config에서 플래그 OFF 또는 환경변수 변경",
+                    "time": "<10초",
+                }
+            )
 
         # 백업 전략 (추가된 줄에서만)
         if re.search(r"backup|백업", self.added_lines, re.I):
-            rollbacks.append("백업 복원 전략 준비됨")
+            rollbacks.append(
+                {
+                    "strategy": "백업 복원",
+                    "cmd": "백업 파일에서 복원 (위치 확인 필요)",
+                    "time": "~10분",
+                }
+            )
 
-        # 기본 롤백 가이드
-        if not rollbacks:
-            commit_hash = self.commit_info.get("hash", "HEAD")[:7]
-            rollbacks = [
-                f"Git Revert: `git revert {commit_hash}`",
-                "즉시 롤백 가능 (1분 이내)",
-            ]
+        # 기본 롤백 가이드 (항상 추가)
+        rollbacks.append(
+            {
+                "strategy": "Git Revert (커밋 되돌리기)",
+                "cmd": f"git revert {commit_hash}",
+                "time": "~1분",
+            }
+        )
+        rollbacks.append(
+            {
+                "strategy": "Git Reset (히스토리 삭제)",
+                "cmd": f"git reset --hard {commit_hash}~1",
+                "time": "<30초 (주의: 푸시 전에만!)",
+            }
+        )
 
-        content += "| 전략 | 설명 |\n"
-        content += "|------|------|\n"
+        content += "| 전략 | 명령어/방법 | 예상 시간 |\n"
+        content += "|------|-------------|----------|\n"
         for idx, item in enumerate(rollbacks[:5], 1):
-            content += f"| Tier {idx} | {item} |\n"
+            if isinstance(item, dict):
+                content += f"| Tier {idx}: {item['strategy']} | `{item['cmd']}` | {item['time']} |\n"
+            else:
+                content += f"| Tier {idx} | {item} | - |\n"
 
         content += "\n"
+
+        # 초보자를 위한 롤백 가이드
+        content += "### 💡 롤백 가이드 (초보자용)\n\n"
+        content += "**상황별 롤백 선택:**\n"
+        content += "1. **코드만 문제** → `git revert` (안전, 히스토리 유지)\n"
+        content += "2. **DB도 변경됨** → DB 롤백 먼저 → 코드 롤백\n"
+        content += "3. **설정만 변경** → Feature Flag OFF 또는 환경변수 복원\n"
+        content += "4. **긴급 상황** → `git reset --hard` (히스토리 삭제됨, 신중히!)\n\n"
+
+        content += "**롤백 전 체크리스트:**\n"
+        content += "- [ ] 다른 팀원에게 알림\n"
+        content += "- [ ] 현재 상태 백업/스냅샷\n"
+        content += "- [ ] 롤백 후 테스트 계획 준비\n\n"
+
         return content
 
     # -------------------------------------------------------------------------
@@ -978,7 +1120,7 @@ class SectionGenerator:
     def _section_tech_debt(self) -> str:
         """Technical Debt Daily 섹션
 
-        v3.0.1: 실제 주석만 추출 (문자열 리터럴 제외)
+        v3.2: 초보자 학습 가이드 + 기술부채 관리 방법 추가
         """
         content = "## Technical Debt (Daily)\n\n"
 
@@ -1011,9 +1153,27 @@ class SectionGenerator:
             for debt in debts[:8]:
                 priority = "P1" if debt["type"] == "FIXME" else "P2"
                 content += f"| {debt['type']} | {debt['desc']} | {priority} |\n"
+
+            content += "\n"
+
+            # 초보자를 위한 기술부채 가이드
+            content += "### 💡 기술부채 이해하기 (초보자용)\n\n"
+            content += "**기술부채 유형별 의미:**\n"
+            content += "| 유형 | 의미 | 조치 시점 |\n"
+            content += "|------|------|----------|\n"
+            content += "| TODO | 나중에 구현할 기능 | 시간 여유 있을 때 |\n"
+            content += "| FIXME | 알려진 버그/문제 | **가능한 빨리!** |\n"
+            content += "| HACK | 임시 해결책 | 다음 리팩토링 시 |\n"
+            content += "| SKIP | 스킵된 테스트 | 테스트 안정화 후 |\n"
+            content += "| TYPE | 타입 무시 | 타입 정의 완료 후 |\n\n"
+
+            content += "**기술부채 관리 원칙:**\n"
+            content += "1. **의도적 부채** (마감에 맞추기 위해) → 반드시 기록하고 상환 계획 세우기\n"
+            content += "2. **무의식적 부채** (나중에 발견) → 발견 즉시 기록, 우선순위 판단\n"
+            content += "3. **20% 규칙** - 매 스프린트 시간의 20%는 부채 상환에 할당\n\n"
+
         else:
             # 기술부채 플래그가 감지되었지만 구체적 항목이 없는 경우
-            # 가능한 원인 분석
             possible_reasons = []
             if any("test" in f.lower() and "skip" in self.added_lines.lower() for f in self.files):
                 possible_reasons.append("스킵된 테스트가 있을 수 있음")
@@ -1021,12 +1181,18 @@ class SectionGenerator:
                 possible_reasons.append("타입 무시 주석이 있음")
 
             if possible_reasons:
-                content += f"> 감지된 패턴: {', '.join(possible_reasons)}\n"
+                content += f"> 감지된 패턴: {', '.join(possible_reasons)}\n\n"
             else:
-                content += "> 기술부채 플래그가 감지되었지만 구체적 항목이 없습니다.\n"
-            content += "> `# TODO:`, `# FIXME:`, `# HACK:` 주석을 추가하면 자동 추출됩니다.\n"
+                content += "> 기술부채 플래그가 감지되었지만 구체적 항목이 없습니다.\n\n"
 
-        content += "\n"
+            content += "### 💡 기술부채 기록 방법 (초보자용)\n\n"
+            content += "코드에 다음 주석을 추가하면 자동으로 추출됩니다:\n"
+            content += "```python\n"
+            content += "# TODO: 나중에 구현할 기능 설명\n"
+            content += "# FIXME: 알려진 버그 설명 (빨리 고쳐야 함)\n"
+            content += "# HACK: 임시 해결책 설명 (나중에 제대로 고쳐야 함)\n"
+            content += "```\n\n"
+
         return content
 
     # -------------------------------------------------------------------------
@@ -1035,11 +1201,12 @@ class SectionGenerator:
     def _section_decisions(self) -> str:
         """Decisions Made 섹션 - 구체적 의사결정 분석
 
-        v3.0.1: 실제 주석만 추출 (문자열 리터럴 제외)
+        v3.2: 초보자를 위한 결정 배경 및 트레이드오프 설명 추가
         """
         content = "## Decisions Made (Daily)\n\n"
 
         decisions = []
+        decision_contexts = []  # 결정 배경/트레이드오프
 
         # 명시적 Decision 주석 (실제 주석만)
         decision_comments = extract_real_comments(self.diff, "Decision")
@@ -1054,6 +1221,10 @@ class SectionGenerator:
             added_deps = re.findall(r"^\+([a-zA-Z0-9_-]+)==([0-9.]+)", self.added_lines, re.M)
             for name, version in added_deps[:3]:
                 decisions.append(f"📦 의존성 추가: `{name}=={version}`")
+            if added_deps:
+                decision_contexts.append(
+                    "**의존성 추가 시 고려사항**: 라이선스 호환성, 보안 취약점, " "유지보수 상태, 번들 크기 영향을 확인하세요."
+                )
 
         if "package.json" in self.files:
             added_npm = re.findall(r'"([^"]+)":\s*"[\^~]?([0-9.]+)"', self.added_lines)
@@ -1063,16 +1234,17 @@ class SectionGenerator:
 
         # 아키텍처 결정 감지
         arch_patterns = {
-            r"class\s+(\w+Factory)": "Factory 패턴 도입",
-            r"class\s+(\w+Singleton)": "Singleton 패턴 도입",
-            r"class\s+(\w+Service)": "Service 계층 분리",
-            r"class\s+(\w+Repository)": "Repository 패턴 적용",
-            r"class\s+(\w+Controller)": "Controller 계층 분리",
+            r"class\s+(\w+Factory)": ("Factory 패턴 도입", "객체 생성 로직 분리로 유연성 확보, but 복잡도 증가"),
+            r"class\s+(\w+Singleton)": ("Singleton 패턴 도입", "전역 상태 관리, but 테스트 어려움 주의"),
+            r"class\s+(\w+Service)": ("Service 계층 분리", "비즈니스 로직 분리로 재사용성 향상"),
+            r"class\s+(\w+Repository)": ("Repository 패턴 적용", "데이터 접근 추상화로 DB 변경 용이"),
+            r"class\s+(\w+Controller)": ("Controller 계층 분리", "요청 처리 분리로 관심사 명확화"),
         }
-        for pattern, desc in arch_patterns.items():
+        for pattern, (desc, tradeoff) in arch_patterns.items():
             matches = re.findall(pattern, self.added_lines)
             if matches:
                 decisions.append(f"🏗️ {desc}: `{matches[0]}`")
+                decision_contexts.append(f"**{desc} 트레이드오프**: {tradeoff}")
                 break
 
         # 설정 파일 변경 감지
@@ -1080,28 +1252,55 @@ class SectionGenerator:
         if config_files:
             config_names = [Path(f).name for f in config_files[:2]]
             decisions.append(f"⚙️ 설정 변경: `{', '.join(config_names)}`")
+            decision_contexts.append(
+                "**설정 변경 주의**: 환경별(dev/staging/prod) 차이, " "민감정보 노출, 기본값 영향 확인 필요"
+            )
 
         # 커밋 메시지에서 결정사항 추출
         commit_decision_patterns = [
-            (r"대신|instead of|rather than", "대안 선택"),
-            (r"전환|migrate|switch", "기술 전환"),
-            (r"도입|introduce|adopt", "새 기술 도입"),
-            (r"제거|remove|deprecate", "기능 제거"),
+            (r"대신|instead of|rather than", "대안 선택", "대안을 선택한 이유와 포기한 옵션도 기록해두세요"),
+            (r"전환|migrate|switch", "기술 전환", "마이그레이션 계획과 롤백 전략이 중요합니다"),
+            (r"도입|introduce|adopt", "새 기술 도입", "학습 비용과 팀 역량을 고려했나요?"),
+            (r"제거|remove|deprecate", "기능 제거", "하위 호환성과 사용자 영향을 확인하세요"),
         ]
-        for pattern, desc in commit_decision_patterns:
+        for pattern, desc, context in commit_decision_patterns:
             if re.search(pattern, self.message, re.I):
                 decisions.append(f"🎯 {desc}: {self.message.split(chr(10))[0][:50]}")
+                decision_contexts.append(f"**{desc} 시 고려사항**: {context}")
                 break
 
         if decisions:
             for idx, decision in enumerate(decisions[:8], 1):
                 content += f"{idx}. {decision}\n"
+            content += "\n"
+
+            # 초보자를 위한 결정 배경 설명
+            if decision_contexts:
+                content += "### 💡 결정의 배경 이해하기 (초보자용)\n\n"
+                for ctx in decision_contexts[:3]:
+                    content += f"{ctx}\n\n"
+
+            # 의사결정 기록 가이드
+            content += "### 📝 좋은 의사결정 기록 방법\n\n"
+            content += "```python\n"
+            content += "# Decision: Factory 패턴 대신 Builder 패턴 선택\n"
+            content += "# Why: 객체 생성 단계가 복잡하고, 선택적 필드가 많아서\n"
+            content += "# Tradeoff: 코드량 증가 vs 가독성/유연성 향상\n"
+            content += "# Alternative: Factory 패턴 (더 단순하지만 유연성 부족)\n"
+            content += "```\n\n"
+
         else:
             # 구체적인 폴백 메시지
-            content += "> 의사결정 플래그가 감지되었지만 구체적 내용이 없습니다.\n"
-            content += "> `# Decision:` 또는 `# Why:` 주석을 추가하면 자동 추출됩니다.\n"
+            content += "> 의사결정 플래그가 감지되었지만 구체적 내용이 없습니다.\n\n"
 
-        content += "\n"
+            content += "### 💡 의사결정 기록의 중요성 (초보자용)\n\n"
+            content += "코드는 **무엇**을 하는지 보여주지만, **왜** 그렇게 했는지는 보여주지 않습니다.\n"
+            content += "6개월 후의 자신(또는 동료)이 이해할 수 있도록 결정 이유를 남기세요:\n\n"
+            content += "```python\n"
+            content += "# Decision: 여기에 결정 내용\n"
+            content += "# Why: 여기에 이유\n"
+            content += "```\n\n"
+
         return content
 
     # -------------------------------------------------------------------------
