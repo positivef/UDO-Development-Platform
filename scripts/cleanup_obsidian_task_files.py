@@ -29,20 +29,34 @@ def parse_task_filename(filename: str) -> dict:
     """
     Parse task filename to extract date and task ID.
 
-    Format: YYYY-MM-DD_task_<uuid>.md
+    Supports both formats:
+    - Old: YYYY-MM-DD_task_<uuid>.md
+    - New: YYYY-MM-DD_<title>_<uuid>.md
 
     Returns:
         dict with 'date' and 'task_id' keys, or None if not a task file
     """
-    pattern = r"^(\d{4}-\d{2}-\d{2})_task_([a-f0-9\-]+)\.md$"
-    match = re.match(pattern, filename)
+    # Try new format first: YYYY-MM-DD_<title>_<uuid>.md
+    # Title can contain alphanumeric, hyphens, underscores
+    pattern_new = r"^(\d{4}-\d{2}-\d{2})_(.+?)_([a-f0-9]{8}-[a-f0-9]{4}-[a-f0-9]{4}-[a-f0-9]{4}-[a-f0-9]{12})\.md$"
+    match = re.match(pattern_new, filename)
+    if match:
+        return {
+            "date": match.group(1),
+            "task_id": match.group(3),  # UUID is in group 3
+            "filename": filename
+        }
 
+    # Try old format: YYYY-MM-DD_task_<uuid>.md
+    pattern_old = r"^(\d{4}-\d{2}-\d{2})_task_([a-f0-9\-]+)\.md$"
+    match = re.match(pattern_old, filename)
     if match:
         return {
             "date": match.group(1),
             "task_id": match.group(2),
             "filename": filename
         }
+
     return None
 
 

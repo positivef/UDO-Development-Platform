@@ -7,6 +7,7 @@ Implements Q6: Done-End archive with GPT-4o summarization and Obsidian knowledge
 
 import logging
 import os
+import re
 import time
 from datetime import UTC, datetime
 from typing import Dict, List, Optional
@@ -378,13 +379,22 @@ Generate a comprehensive summary with key learnings, technical insights, and rec
 
             # Save to Obsidian vault in date-specific folder
             date_str = datetime.now(UTC).strftime('%Y-%m-%d')
-            note_filename = f"{date_str}_task_{task.task_id}.md"
+
+            # Sanitize task title for filename (remove special characters)
+            # Keep only alphanumeric, spaces, hyphens, and underscores
+            safe_title = re.sub(r'[<>:"/\\|?*\x00-\x1f]', '', task.title)
+            safe_title = re.sub(r'\s+', '-', safe_title.strip())  # Replace spaces with hyphens
+            safe_title = safe_title[:50]  # Limit length to 50 chars for readability
+
+            # Format: YYYY-MM-DD_TaskTitle_uuid.md
+            # This provides human-readable names while maintaining uniqueness
+            note_filename = f"{date_str}_{safe_title}_{task.task_id}.md"
 
             # Create date folder if it doesn't exist
             date_dir = self.obsidian_service.daily_notes_dir / date_str
             date_dir.mkdir(parents=True, exist_ok=True)
 
-            # Save in date folder: 개발일지/YYYY-MM-DD/YYYY-MM-DD_task_*.md
+            # Save in date folder: 개발일지/YYYY-MM-DD/YYYY-MM-DD_TaskTitle_uuid.md
             note_path = date_dir / note_filename
 
             # Write note to file
