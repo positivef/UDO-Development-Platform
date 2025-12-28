@@ -24,7 +24,7 @@ from pathlib import Path
 # ---------- Configuration ----------
 PROJECT_ROOT = Path(__file__).resolve().parents[1]
 REQUIRED_FILES = [
-    PROJECT_ROOT / "claudedocs" / "decisions" / "2025-12-15-DOCUMENTATION-RULES-SYSTEM-v2-COMPLETE.md",
+    PROJECT_ROOT / "claudedocs" / "decisions" / "2025-12-15-ADR-002-DOCUMENTATION-RULES-SYSTEM-V2.md",
     PROJECT_ROOT / "config" / "config.yaml",
     PROJECT_ROOT / ".governance.yaml",
     PROJECT_ROOT / "docs" / "SSOT_REGISTRY.md",
@@ -32,11 +32,13 @@ REQUIRED_FILES = [
     PROJECT_ROOT / "scripts" / "check_korean_preservation.py",
 ]
 
+
 def check_file_exists(path: Path) -> bool:
     if not path.exists():
         print(f"[ERROR] Missing required file: {path}")
         return False
     return True
+
 
 def load_governance() -> dict:
     gov_path = PROJECT_ROOT / ".governance.yaml"
@@ -46,6 +48,7 @@ def load_governance() -> dict:
     with open(gov_path, "r", encoding="utf-8") as f:
         return yaml.safe_load(f)
 
+
 def verify_governance_rules(governance: dict) -> bool:
     ok = True
     # Example: ensure obsidian_sync flag exists
@@ -53,6 +56,7 @@ def verify_governance_rules(governance: dict) -> bool:
         print("[WARN] obsidian_sync not defined in .governance.yaml (defaulting to true)")
     # Add more rule checks as needed
     return ok
+
 
 def verify_ssot_registry() -> bool:
     ssot_path = PROJECT_ROOT / "docs" / "SSOT_REGISTRY.md"
@@ -71,6 +75,7 @@ def verify_ssot_registry() -> bool:
         return False
     return True
 
+
 def verify_obsidian_path() -> bool:
     # User‑defined memory path
     expected_path = Path(r"C:\\Users\\user\\Documents\\Obsidian Vault")
@@ -80,6 +85,7 @@ def verify_obsidian_path() -> bool:
     if vault_path and Path(vault_path) != expected_path:
         print(f"[WARN] Obsidian vault path in .governance.yaml ({vault_path}) differs from expected ({expected_path})")
     return True
+
 
 def verify_precommit_hook() -> bool:
     precommit_path = PROJECT_ROOT / ".pre-commit-config.yaml"
@@ -93,6 +99,7 @@ def verify_precommit_hook() -> bool:
         return False
     return True
 
+
 def main():
     all_ok = True
     for p in REQUIRED_FILES:
@@ -103,6 +110,7 @@ def main():
     all_ok &= verify_obsidian_path()
     all_ok &= verify_precommit_hook()
     sys.exit(0 if all_ok else 1)
+
 
 if __name__ == "__main__":
     main()
