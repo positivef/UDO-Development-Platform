@@ -1,8 +1,13 @@
 #!/usr/bin/env python
 """
-Obsidian Auto-Sync v3.6.1 - AI-Enhanced Development Log Generator
+Obsidian Auto-Sync v3.6.2 - AI-Enhanced Development Log Generator
 
 자동으로 Git commit 정보를 분석하여 Obsidian 개발일지를 생성합니다.
+
+Features (v3.6.2):
+- 로깅 개선: print() → logging 모듈 (표준 Python 로깅)
+- 스키마 검증: 커리큘럼 항목 필수 필드 및 타입 검증
+- Path Traversal 방어: 환경변수 경로 보안 검증
 
 Features (v3.6.1):
 - 커리큘럼 외부화: YAML 설정 파일 분리 (config/learning_curriculum.yaml)
@@ -43,11 +48,12 @@ Requirements:
 
 Author: System Automation Team
 Date: 2025-12-29
-Version: 3.6.1 (YAML Configuration Externalization)
+Version: 3.6.2 (Logging + Schema Validation + Path Traversal Defense)
 """
 
 import argparse
 import json
+import logging
 import os
 import re
 import subprocess
@@ -56,6 +62,18 @@ import yaml
 from datetime import datetime, timedelta
 from pathlib import Path
 from typing import Dict, List, Tuple, Optional, Any
+
+# =============================================================================
+# Logging Configuration
+# =============================================================================
+logger = logging.getLogger(__name__)
+
+# 기본 로깅 설정 (호출자가 설정하지 않은 경우)
+if not logger.handlers:
+    handler = logging.StreamHandler(sys.stderr)
+    handler.setFormatter(logging.Formatter("%(asctime)s - %(name)s - %(levelname)s - %(message)s"))
+    logger.addHandler(handler)
+    logger.setLevel(logging.INFO)
 
 
 # =============================================================================
@@ -141,17 +159,97 @@ def save_ai_metacognition(metacognition: Dict[str, Any]) -> bool:
 # v3.6.1: External YAML Configuration Loading
 # =============================================================================
 
+# 커리큘럼 항목 필수 필드 정의
+REQUIRED_CURRICULUM_FIELDS = {"title", "focus", "checkpoints"}
+OPTIONAL_CURRICULUM_FIELDS = {"considerations", "warnings", "guide"}
+
+
+def _validate_curriculum_entry(key: str, entry: Any) -> Tuple[bool, str]:
+    """커리큘럼 항목 스키마 검증
+
+    Args:
+        key: 커리큘럼 키 (예: "1-2")
+        entry: 커리큘럼 항목 딕셔너리
+
+    Returns:
+        (is_valid, error_message) 튜플
+    """
+    if not isinstance(entry, dict):
+        return False, f"Entry '{key}' must be a dictionary, got {type(entry).__name__}"
+
+    # 필수 필드 검증
+    missing = REQUIRED_CURRICULUM_FIELDS - set(entry.keys())
+    if missing:
+        return False, f"Entry '{key}' missing required fields: {missing}"
+
+    # 타입 검증
+    if not isinstance(entry.get("title"), str):
+        return False, f"Entry '{key}' field 'title' must be a string"
+    if not isinstance(entry.get("focus"), str):
+        return False, f"Entry '{key}' field 'focus' must be a string"
+    if not isinstance(entry.get("checkpoints"), list):
+        return False, f"Entry '{key}' field 'checkpoints' must be a list"
+
+    # 선택적 필드 타입 검증
+    if "considerations" in entry and not isinstance(entry["considerations"], list):
+        return False, f"Entry '{key}' field 'considerations' must be a list"
+    if "warnings" in entry and not isinstance(entry["warnings"], list):
+        return False, f"Entry '{key}' field 'warnings' must be a list"
+    if "guide" in entry and not isinstance(entry["guide"], str):
+        return False, f"Entry '{key}' field 'guide' must be a string"
+
+    return True, ""
+
+
+def _is_path_within_allowed_dirs(path: Path, allowed_dirs: List[Path]) -> bool:
+    """경로가 허용된 디렉토리 내에 있는지 확인 (Path Traversal 방어)
+
+    Args:
+        path: 검증할 경로
+        allowed_dirs: 허용된 디렉토리 목록
+
+    Returns:
+        허용된 디렉토리 내에 있으면 True
+    """
+    try:
+        resolved_path = path.resolve()
+        for allowed_dir in allowed_dirs:
+            resolved_allowed = allowed_dir.resolve()
+            # path가 allowed_dir의 하위에 있는지 확인
+            try:
+                resolved_path.relative_to(resolved_allowed)
+                return True
+            except ValueError:
+                continue
+        return False
+    except (OSError, RuntimeError):
+        # 경로 해석 실패 시 안전하게 거부
+        return False
+
 
 def _get_curriculum_yaml_path() -> Path:
     """커리큘럼 YAML 파일 경로 반환"""
-    # 1. 환경변수에서 경로 확인
+    script_dir = Path(__file__).parent
+    project_root = script_dir.parent
+
+    # 허용된 디렉토리 목록 (Path Traversal 방어)
+    allowed_dirs = [
+        project_root,  # 프로젝트 루트
+        Path.cwd(),  # 현재 작업 디렉토리
+    ]
+
+    # 1. 환경변수에서 경로 확인 (Path Traversal 검증 포함)
     env_path = os.environ.get("CURRICULUM_YAML_PATH")
-    if env_path and Path(env_path).exists():
-        return Path(env_path)
+    if env_path:
+        env_path_obj = Path(env_path)
+        if env_path_obj.exists():
+            if _is_path_within_allowed_dirs(env_path_obj, allowed_dirs):
+                return env_path_obj
+            else:
+                logger.warning(f"CURRICULUM_YAML_PATH '{env_path}' is outside allowed directories. " f"Ignoring for security.")
 
     # 2. 스크립트 기준 상대 경로
-    script_dir = Path(__file__).parent
-    config_path = script_dir.parent / "config" / "learning_curriculum.yaml"
+    config_path = project_root / "config" / "learning_curriculum.yaml"
     if config_path.exists():
         return config_path
 
@@ -173,27 +271,47 @@ def _load_curriculum_from_yaml() -> Tuple[Dict, Dict]:
 
     if not yaml_path.exists():
         # Fallback: 하드코딩된 최소 커리큘럼
+        logger.info(f"Curriculum YAML not found at {yaml_path}. Using fallback.")
         return _get_fallback_curriculum(), _get_fallback_patterns()
 
     try:
         with open(yaml_path, "r", encoding="utf-8") as f:
             data = yaml.safe_load(f)
 
-        # 커리큘럼 변환: "1-2" -> (1, 2)
+        # 커리큘럼 변환: "1-2" -> (1, 2) + 스키마 검증
         curriculum = {}
+        validation_errors = []
         for key, value in data.get("curriculum", {}).items():
+            # 스키마 검증
+            is_valid, error_msg = _validate_curriculum_entry(key, value)
+            if not is_valid:
+                validation_errors.append(error_msg)
+                continue
+
+            # 키 형식 검증 및 변환
             parts = key.split("-")
             if len(parts) == 2:
-                month, week = int(parts[0]), int(parts[1])
-                curriculum[(month, week)] = value
+                try:
+                    month, week = int(parts[0]), int(parts[1])
+                    curriculum[(month, week)] = value
+                except ValueError:
+                    validation_errors.append(f"Invalid key format '{key}': must be 'N-N'")
+
+        # 검증 오류 로깅
+        if validation_errors:
+            logger.warning(
+                f"Schema validation errors ({len(validation_errors)}): "
+                f"{validation_errors[:3]}{'...' if len(validation_errors) > 3 else ''}"
+            )
 
         # 패턴 로드
         patterns = data.get("checkpoint_patterns", {})
 
+        logger.info(f"Curriculum loaded from {yaml_path}: " f"{len(curriculum)} entries, {len(patterns)} patterns")
         return curriculum, patterns
 
     except (yaml.YAMLError, IOError) as e:
-        print(f"Warning: Failed to load curriculum YAML: {e}", file=sys.stderr)
+        logger.warning(f"Failed to load curriculum YAML: {e}. Using fallback.")
         return _get_fallback_curriculum(), _get_fallback_patterns()
 
 
