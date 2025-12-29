@@ -1,8 +1,17 @@
 #!/usr/bin/env python
 """
-Obsidian Auto-Sync v3.0 - AI-Enhanced Development Log Generator
+Obsidian Auto-Sync v3.6 - AI-Enhanced Development Log Generator
 
 자동으로 Git commit 정보를 분석하여 Obsidian 개발일지를 생성합니다.
+
+Features (v3.6):
+- 체크포인트 자동 감지 (커밋 메시지 + diff 패턴 분석)
+- 완료된 체크포인트 자동 체크 및 저장
+
+Features (v3.5):
+- 학습 진행 상황 추적 (Learning Progress Tracking)
+- 고려사항(Considerations) + 주의점(Warnings) 표시
+- Bridge Review/Preview (월간 전환 시)
 
 Features (v3.0):
 - 14개 Frontmatter 필드 (기본4 + 플래그7 + AI컨텍스트3 + 자동수집2 + schema1)
@@ -29,7 +38,7 @@ Requirements:
 
 Author: System Automation Team
 Date: 2025-12-29
-Version: 3.5.1 (Learning Progress Tracking + Considerations + Warnings)
+Version: 3.6.0 (Checkpoint Auto-Detection)
 """
 
 import argparse
@@ -216,6 +225,15 @@ LEARNING_CURRICULUM = {
             "테스트 건너뛰기(skip) 남발 금지",
         ],
         "guide": "Claude-Skills-Curriculum",
+        "bridge_preview": {
+            "next_month": "Month 2: 실전 적용",
+            "preview": "MCP 서버 조합으로 복잡한 문제 해결",
+            "preparation": [
+                "Context7 MCP 설치 확인",
+                "Sequential MCP 개념 학습",
+                "복잡한 디버깅 케이스 1개 준비",
+            ],
+        },
     },
     (2, 1): {
         "title": "실전 적용 - MCP 조합",
@@ -233,6 +251,18 @@ LEARNING_CURRICULUM = {
             "각 MCP 응답을 검증 후 다음 단계 진행",
         ],
         "guide": "MCP-Combination-Patterns",
+        "bridge_review": {
+            "previous_month": "Month 1: 기초 다지기",
+            "key_concepts": [
+                "Claude Code 기본 명령어",
+                "/sc:analyze 코드 분석",
+                "Context7 공식 문서 검색",
+            ],
+            "self_check": [
+                "간단한 함수를 AI로 구현할 수 있는가?",
+                "에러 메시지를 해석하고 해결할 수 있는가?",
+            ],
+        },
     },
     (2, 2): {
         "title": "실전 적용 - UI 개발",
@@ -284,6 +314,15 @@ LEARNING_CURRICULUM = {
             "계획 변경 시 문서 업데이트 필수",
         ],
         "guide": "Claude-Skills-Curriculum",
+        "bridge_preview": {
+            "next_month": "Month 3: 고급 활용",
+            "preview": "멀티에이전트 오케스트레이션과 대규모 코드베이스 관리",
+            "preparation": [
+                "Task 에이전트 개념 이해",
+                "Morphllm 대량 편집 학습",
+                "Serena 프로젝트 메모리 설정",
+            ],
+        },
     },
     (3, 1): {
         "title": "고급 활용 - 멀티에이전트",
@@ -301,6 +340,18 @@ LEARNING_CURRICULUM = {
             "병렬 실행 시 토큰 소비량 증가에 주의",
         ],
         "guide": "Multi-Agent-Workflows",
+        "bridge_review": {
+            "previous_month": "Month 2: 실전 적용",
+            "key_concepts": [
+                "Sequential + Context7 조합",
+                "Magic MCP UI 컴포넌트",
+                "Playwright E2E 테스트",
+            ],
+            "self_check": [
+                "MCP 서버 2개 이상 조합하여 문제를 해결할 수 있는가?",
+                "PRD 기반으로 워크플로우를 설계할 수 있는가?",
+            ],
+        },
     },
     (3, 2): {
         "title": "고급 활용 - 페르소나 리뷰",
@@ -435,6 +486,179 @@ def get_current_curriculum() -> Dict[str, Any]:
         "guide": curriculum["guide"],
         "checkpoints_done": progress.get("checkpoints_done", []),
     }
+
+
+# =============================================================================
+# v3.6: Checkpoint Auto-Detection (체크포인트 자동 감지)
+# =============================================================================
+
+# 체크포인트별 감지 패턴 정의
+# 각 키는 체크포인트 설명의 일부이며, 값은 해당 체크포인트 완료를 감지하는 정규식 패턴 리스트
+CHECKPOINT_PATTERNS: Dict[str, List[str]] = {
+    # Week 0 (환경 설정) patterns
+    "Python": [r"python.*3\.\d+", r"pip\s+install", r"requirements\.txt"],
+    "Node.js": [r"node.*\d+\.", r"npm\s+install", r"package\.json"],
+    "Git 설정": [r"git\s+config", r"user\.name", r"user\.email"],
+    "Obsidian": [r"obsidian", r"vault", r"\.md\s+생성"],
+    "Claude": [r"claude", r"anthropic", r"api.*key"],
+    # Week 1 (기초 다지기 - Claude Code 기본) patterns
+    "/sc:analyze": [
+        r"sc:analyze",
+        r"분석\s*완료",
+        r"analyze.*quality",
+        r"analyze.*security",
+        r"quality.*check",
+        r"코드\s*분석",
+    ],
+    "함수 구현": [
+        r"def\s+\w+\s*\(",
+        r"function\s+\w+\s*\(",
+        r"const\s+\w+\s*=\s*\(",
+        r"async\s+def\s+\w+",
+        r"impl.*function",
+        r"구현\s*완료",
+    ],
+    # Week 2 (기초 다지기 - 코드 분석) patterns
+    "코드 분석": [
+        r"sc:analyze",
+        r"quality.*check",
+        r"lint.*pass",
+        r"pylint",
+        r"flake8",
+        r"eslint",
+    ],
+    "--focus quality": [r"--focus\s+quality", r"quality\s+분석", r"코드\s*품질"],
+    "--focus security": [r"--focus\s+security", r"security\s+분석", r"보안\s*점검"],
+    # Week 3 (기초 다지기 - Context7 MCP) patterns
+    "Context7": [
+        r"context7",
+        r"mcp.*context",
+        r"공식.*문서",
+        r"라이브러리.*문서",
+        r"documentation",
+    ],
+    "공식 문서": [r"official.*doc", r"공식.*문서", r"문서.*기반"],
+    # Week 4 (기초 다지기 - 테스트 작성) patterns
+    "테스트 작성": [
+        r"test_\w+",
+        r"\.test\.",
+        r"pytest",
+        r"jest",
+        r"spec\.",
+        r"unittest",
+        r"테스트.*작성",
+    ],
+    "단위 테스트": [r"unit.*test", r"단위.*테스트", r"test_\w+\.py"],
+    "테스트 커버리지": [r"coverage", r"--cov", r"커버리지", r"\d+%\s*coverage"],
+    # Month 2 Week 1 (실전 적용 - MCP 조합) patterns
+    "MCP 조합": [
+        r"mcp.*조합",
+        r"sequential.*context7",
+        r"체인.*사용",
+        r"mcp.*chain",
+    ],
+    "Obsidian -> Context7": [r"obsidian.*context7", r"지식.*문서", r"3tier"],
+    # Month 2 Week 2 (실전 적용 - UI 개발) patterns
+    "Magic MCP": [r"magic.*mcp", r"21st\.dev", r"ui.*컴포넌트", r"component.*생성"],
+    "Context7 -> Magic": [r"context7.*magic", r"문서.*ui", r"pattern.*component"],
+    # Month 2 Week 3 (실전 적용 - E2E 테스트) patterns
+    "E2E 테스트": [
+        r"e2e",
+        r"playwright",
+        r"cypress",
+        r"end.to.end",
+        r"integration.*test",
+    ],
+    "Magic -> Playwright": [r"magic.*playwright", r"ui.*e2e", r"component.*test"],
+    # Month 2 Week 4 (실전 적용 - 워크플로우) patterns
+    "/sc:workflow": [r"sc:workflow", r"workflow.*생성", r"계획.*생성"],
+    "계획 기반": [r"prd.*기반", r"계획.*구현", r"workflow.*impl"],
+    # Month 3 Week 1 (고급 활용 - 멀티에이전트) patterns
+    "에이전트 병렬": [r"parallel.*agent", r"병렬.*실행", r"multi.*agent"],
+    "Explore 에이전트": [r"explore.*agent", r"탐색.*에이전트", r"exploration"],
+    # Month 3 Week 2 (고급 활용 - 페르소나 리뷰) patterns
+    "security-engineer": [r"security.engineer", r"보안.*리뷰", r"security.*review"],
+    "performance-engineer": [r"performance.engineer", r"성능.*리뷰", r"perf.*review"],
+    # Month 3 Week 3 (고급 활용 - 대량 리팩토링) patterns
+    "리팩토링": [
+        r"refactor",
+        r"리팩토링",
+        r"cleanup",
+        r"개선",
+        r"restructure",
+    ],
+    "Morphllm": [r"morphllm", r"morph.*transform", r"패턴.*변환"],
+    "Sequential -> Morphllm": [r"sequential.*morph", r"분석.*변환"],
+    # Month 3 Week 4 (고급 활용 - 프로젝트 메모리) patterns
+    "/sc:load": [r"sc:load", r"세션.*로드", r"context.*load"],
+    "/sc:save": [r"sc:save", r"세션.*저장", r"context.*save"],
+    "심볼 검색": [r"symbol.*search", r"심볼.*검색", r"find.*symbol"],
+    # General patterns (공통)
+    "버그 수정": [r"fix", r"bug", r"버그", r"수정", r"resolve", r"해결"],
+}
+
+
+def detect_checkpoint_completion(commit_message: str, diff: str, current_curriculum: Dict[str, Any]) -> List[str]:
+    """커밋 메시지와 diff를 분석하여 완료된 체크포인트 감지
+
+    Args:
+        commit_message: Git 커밋 메시지
+        diff: Git diff 내용
+        current_curriculum: 현재 학습 단계 커리큘럼 정보
+
+    Returns:
+        완료된 체크포인트 설명 리스트 (새로 감지된 것만)
+    """
+    newly_completed = []
+    checkpoints = current_curriculum.get("checkpoints", [])
+    already_done = set(current_curriculum.get("checkpoints_done", []))
+
+    # 분석 대상 텍스트 결합 (커밋 메시지 + 추가된 줄만)
+    added_lines = extract_added_lines(diff)
+    combined_text = f"{commit_message}\n{added_lines}".lower()
+
+    for checkpoint in checkpoints:
+        # 이미 완료된 체크포인트는 스킵
+        if checkpoint in already_done:
+            continue
+
+        # 체크포인트와 매칭되는 패턴 찾기
+        checkpoint_matched = False
+        for pattern_key, patterns in CHECKPOINT_PATTERNS.items():
+            # 패턴 키가 체크포인트 설명에 포함되어 있는지 확인
+            if pattern_key.lower() in checkpoint.lower():
+                # 해당 패턴들 중 하나라도 매칭되면 완료로 판정
+                for pattern in patterns:
+                    if re.search(pattern, combined_text, re.IGNORECASE):
+                        newly_completed.append(checkpoint)
+                        checkpoint_matched = True
+                        break
+                if checkpoint_matched:
+                    break
+
+    return newly_completed
+
+
+def update_checkpoints_done(newly_completed: List[str]) -> bool:
+    """완료된 체크포인트를 learning_progress에 저장
+
+    Args:
+        newly_completed: 새로 완료된 체크포인트 리스트
+
+    Returns:
+        저장 성공 여부
+    """
+    if not newly_completed:
+        return True
+
+    progress = load_learning_progress()
+    existing = set(progress.get("checkpoints_done", []))
+    updated = existing.union(set(newly_completed))
+
+    if updated != existing:
+        progress["checkpoints_done"] = list(updated)
+        return save_learning_progress(progress)
+    return True
 
 
 def is_real_comment(line: str, pattern: str) -> bool:
@@ -2031,6 +2255,12 @@ class SectionGenerator:
         warnings = curriculum["warnings"]
         guide = curriculum["guide"]
 
+        # v3.6: Bridge content for smooth month transitions
+        key = (month, week)
+        raw_curriculum = LEARNING_CURRICULUM.get(key, {})
+        bridge_preview = raw_curriculum.get("bridge_preview")
+        bridge_review = raw_curriculum.get("bridge_review")
+
         content += "\n### 📚 Learning Progress (VibeCoding)\n\n"
 
         # Progress bar visualization
@@ -2061,10 +2291,27 @@ class SectionGenerator:
         content += f"**현재 단계**: Month {month} Week {week} - {title}\n"
         content += f"**이번 주 포커스**: {focus}\n\n"
 
-        # 필수 체크포인트
+        # v3.6: 체크포인트 자동 감지
+        newly_detected = detect_checkpoint_completion(self.message, self.diff, curriculum)
+        already_done = set(curriculum.get("checkpoints_done", []))
+        all_completed = already_done.union(set(newly_detected))
+
+        # 새로 감지된 체크포인트를 session_state에 저장
+        if newly_detected:
+            update_checkpoints_done(newly_detected)
+
+        # 필수 체크포인트 (완료 여부 + 자동 감지 표시)
         content += "**필수 체크포인트**:\n"
         for cp in checkpoints:
-            content += f"- [ ] {cp}\n"
+            if cp in all_completed:
+                if cp in newly_detected:
+                    # 이번 커밋에서 새로 감지됨
+                    content += f"- [x] {cp} (자동 감지됨)\n"
+                else:
+                    # 이전에 이미 완료됨
+                    content += f"- [x] {cp}\n"
+            else:
+                content += f"- [ ] {cp}\n"
         content += "\n"
 
         # 고려사항
@@ -2079,6 +2326,28 @@ class SectionGenerator:
             content += "**⚠️ 주의점**:\n"
             for w in warnings:
                 content += f"- {w}\n"
+            content += "\n"
+
+        # v3.6: Bridge Review (Week 1 of Months 2 and 3 - start of new month)
+        if bridge_review:
+            content += "**🔄 지난 달 복습 (Bridge Review)**:\n\n"
+            content += f"*이전 단계*: {bridge_review['previous_month']}\n\n"
+            content += "핵심 개념 확인:\n"
+            for concept in bridge_review["key_concepts"]:
+                content += f"- {concept}\n"
+            content += "\n자가 점검:\n"
+            for check in bridge_review["self_check"]:
+                content += f"- [ ] {check}\n"
+            content += "\n"
+
+        # v3.6: Bridge Preview (Week 4 of Months 1 and 2 - end of month)
+        if bridge_preview:
+            content += "**🚀 다음 달 미리보기 (Bridge Preview)**:\n\n"
+            content += f"*다음 단계*: {bridge_preview['next_month']}\n\n"
+            content += f"미리보기: {bridge_preview['preview']}\n\n"
+            content += "사전 준비 사항:\n"
+            for prep in bridge_preview["preparation"]:
+                content += f"- [ ] {prep}\n"
             content += "\n"
 
         # 참고 가이드 링크
