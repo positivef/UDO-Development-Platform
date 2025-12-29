@@ -29,7 +29,7 @@ Requirements:
 
 Author: System Automation Team
 Date: 2025-12-29
-Version: 3.2.0 (Beginner-Friendly Insights + A/B Uncertainty)
+Version: 3.3.0 (Quantified Metacognition + Priority Matrix)
 """
 
 import argparse
@@ -907,43 +907,172 @@ class SectionGenerator:
         content += "\n"
 
         # =====================================================================
-        # Part 2: 🤔 AI 메타인지 (Option B - 세션 기반 자기 성찰)
+        # Part 2: 🤔 AI 메타인지 v3.3 (정량적 지표 + 우선순위 매트릭스)
         # =====================================================================
-        content += "### 🤔 AI 메타인지 (세션 기반)\n\n"
+        content += "### 🤔 AI 메타인지 (신뢰도 기반)\n\n"
 
         ai_meta = load_ai_metacognition()
+        all_priority_items = []  # 우선순위 정렬용
 
         if ai_meta:
-            # 2-1. 가장 덜 자신있는 부분
+            # 2-1. 가장 덜 자신있는 부분 (신뢰도 %)
             least_confident = ai_meta.get("least_confident", [])
             if least_confident:
-                content += "**1. 가장 덜 자신있는 부분**\n"
-                for item in least_confident[:3]:
-                    content += f"   - {item}\n"
+                content += "**1. 🔴 덜 자신있는 부분** (신뢰도: 구현 정확성 확신 수준)\n\n"
+                content += "| 항목 | 신뢰도 | 보완 시 기대효과 |\n"
+                content += "|------|--------|------------------|\n"
+                for item in least_confident[:4]:
+                    if isinstance(item, dict):
+                        name = item.get("item", str(item))
+                        conf = item.get("confidence", 40)
+                        effect = item.get("expected_effect", "정확도 향상")
+                    else:
+                        name = str(item)[:40]
+                        conf = self._estimate_confidence(name)
+                        effect = self._estimate_effect("confidence", name)
+                    content += f"| {name} | **{conf}%** | {effect} |\n"
+                    all_priority_items.append(
+                        {
+                            "category": "신뢰도",
+                            "item": name,
+                            "score": conf,
+                            "urgency": "high" if conf < 40 else "medium" if conf < 60 else "low",
+                            "effect": effect,
+                        }
+                    )
                 content += "\n"
 
-            # 2-2. 단순화한 가정
+            # 2-2. 단순화한 가정 (유효확률 %)
             simplifications = ai_meta.get("simplifications", [])
             if simplifications:
-                content += "**2. 단순화한 가정**\n"
-                for item in simplifications[:3]:
-                    content += f"   - {item}\n"
+                content += "**2. 🟡 단순화한 가정** (유효확률: 가정이 현실에서 성립할 확률)\n\n"
+                content += "| 가정 | 유효확률 | 검증 시 기대효과 |\n"
+                content += "|------|----------|------------------|\n"
+                for item in simplifications[:4]:
+                    if isinstance(item, dict):
+                        name = item.get("item", str(item))
+                        validity = item.get("validity", 55)
+                        effect = item.get("expected_effect", "설계 안정성 확보")
+                    else:
+                        name = str(item)[:40]
+                        validity = self._estimate_validity(name)
+                        effect = self._estimate_effect("validity", name)
+                    content += f"| {name} | **{validity}%** | {effect} |\n"
+                    all_priority_items.append(
+                        {
+                            "category": "유효확률",
+                            "item": name,
+                            "score": validity,
+                            "urgency": "high" if validity < 40 else "medium" if validity < 60 else "low",
+                            "effect": effect,
+                        }
+                    )
                 content += "\n"
 
-            # 2-3. 의견 변경 가능 질문
+            # 2-3. 의견 변경 가능 질문 (변경확률 %)
             opinion_changers = ai_meta.get("opinion_changers", [])
             if opinion_changers:
-                content += "**3. 의견 변경 가능 질문**\n"
-                for item in opinion_changers[:3]:
-                    content += f"   - {item}\n"
+                content += "**3. 🟠 의견 변경 가능 질문** (변경확률: 검증 시 설계가 바뀔 확률)\n\n"
+                content += "| 질문 | 변경확률 | 조기 검증 효과 |\n"
+                content += "|------|----------|----------------|\n"
+                for item in opinion_changers[:4]:
+                    if isinstance(item, dict):
+                        name = item.get("item", str(item))
+                        change_prob = item.get("change_prob", 65)
+                        effect = item.get("expected_effect", "재작업 방지")
+                    else:
+                        name = str(item)[:40]
+                        change_prob = self._estimate_change_prob(name)
+                        effect = self._estimate_effect("change", name)
+                    content += f"| {name} | **{change_prob}%** | {effect} |\n"
+                    all_priority_items.append(
+                        {
+                            "category": "변경확률",
+                            "item": name,
+                            "score": 100 - change_prob,  # 높은 변경확률 = 낮은 안정성
+                            "urgency": "high" if change_prob > 70 else "medium" if change_prob > 50 else "low",
+                            "effect": effect,
+                        }
+                    )
                 content += "\n"
 
-            # 2-4. 보완 필요 영역
+            # 2-4. 보완 필요 영역 (완성도 + 긴급도 2차원)
             areas_to_improve = ai_meta.get("areas_to_improve", [])
             if areas_to_improve:
-                content += "**4. 보완 필요 영역**\n"
-                for item in areas_to_improve[:3]:
-                    content += f"   - {item}\n"
+                content += "**4. 🔵 보완 필요 영역** (완성도 × 긴급도 2차원 분석)\n\n"
+                content += "| 영역 | 완성도 | 긴급도 | 우선순위 | 보완 시 기대효과 |\n"
+                content += "|------|--------|--------|----------|------------------|\n"
+                for item in areas_to_improve[:5]:
+                    if isinstance(item, dict):
+                        name = item.get("item", str(item))
+                        completeness = item.get("completeness", 45)
+                        urgency = item.get("urgency", "medium")
+                        remaining = 100 - completeness
+                        effect = item.get("expected_effect", f"+{remaining}% 기능 완성")
+                    else:
+                        name = str(item)[:35]
+                        completeness = self._estimate_completeness(name)
+                        urgency = self._estimate_urgency(name, completeness)
+                        effect = self._estimate_effect("completeness", name)
+
+                    # 우선순위 계산: 완성도 낮고 긴급도 높으면 최우선
+                    urgency_score = {"high": 3, "medium": 2, "low": 1}.get(urgency.lower(), 2)
+                    priority_score = (100 - completeness) * urgency_score
+                    priority_label = "🚨 즉시" if priority_score > 150 else "⚡ 우선" if priority_score > 100 else "📋 계획"
+
+                    urgency_icon = {"high": "🔴", "medium": "🟡", "low": "🟢"}.get(urgency.lower(), "🟡")
+                    content += (
+                        f"| {name} | {completeness}% | {urgency_icon} {urgency.capitalize()} | {priority_label} | {effect} |\n"
+                    )
+
+                    all_priority_items.append(
+                        {
+                            "category": "완성도",
+                            "item": name,
+                            "score": completeness,
+                            "urgency": urgency.lower(),
+                            "priority_score": priority_score,
+                            "effect": effect,
+                        }
+                    )
+                content += "\n"
+
+                # 2차원 해석 가이드 (초보자용)
+                content += "**💡 우선순위 판단 기준:**\n"
+                content += "```\n"
+                content += "              긴급도\n"
+                content += "         Low    Medium    High\n"
+                content += "완성도  ┌────────┬────────┬────────┐\n"
+                content += " High   │ 관찰   │ 계획   │ 즉시   │\n"
+                content += " (>70%) │        │        │ 마무리 │\n"
+                content += "        ├────────┼────────┼────────┤\n"
+                content += " Medium │ 백로그 │ 다음   │ 우선   │\n"
+                content += " (40-70)│ 등록   │ 스프린트│ 처리   │\n"
+                content += "        ├────────┼────────┼────────┤\n"
+                content += " Low    │ 장기   │ 단기   │ 🚨     │\n"
+                content += " (<40%) │ 로드맵 │ 계획   │ 크리티컬│\n"
+                content += "        └────────┴────────┴────────┘\n"
+                content += "```\n\n"
+
+            # 전체 우선순위 정렬 요약
+            if all_priority_items:
+                content += "**📊 전체 메타인지 우선순위 (점수 기준 정렬)**\n\n"
+                # 점수가 낮을수록 (불확실할수록) 우선순위 높음
+                sorted_items = sorted(
+                    all_priority_items,
+                    key=lambda x: ({"high": 0, "medium": 1, "low": 2}.get(x.get("urgency", "medium"), 1), x.get("score", 50)),
+                )
+
+                content += "| 순위 | 카테고리 | 항목 | 점수 | 긴급도 | 조치 |\n"
+                content += "|------|----------|------|------|--------|------|\n"
+                for idx, item in enumerate(sorted_items[:8], 1):
+                    urgency = item.get("urgency", "medium")
+                    urgency_icon = {"high": "🔴", "medium": "🟡", "low": "🟢"}.get(urgency, "🟡")
+                    action = "즉시 검증" if urgency == "high" else "모니터링" if urgency == "medium" else "관찰"
+                    cat = item["category"]
+                    name = item["item"][:25]
+                    score = item["score"]
+                    content += f"| {idx} | {cat} | {name} | {score}% | {urgency_icon} | {action} |\n"
                 content += "\n"
 
             if not any([least_confident, simplifications, opinion_changers, areas_to_improve]):
@@ -951,6 +1080,7 @@ class SectionGenerator:
         else:
             content += "> 💡 AI 세션 메타인지 정보가 없습니다.\n"
             content += "> `save_ai_metacognition()` 함수로 AI 작업 중 메타인지를 저장하면 자동 포함됩니다.\n\n"
+            content += self._generate_default_metacognition()
 
         # =====================================================================
         # Part 3: 🚧 Blockers (작업 차단 요소)
@@ -986,6 +1116,171 @@ class SectionGenerator:
             content += "> ✅ 현재 차단 요소가 없습니다.\n"
 
         content += "\n"
+        return content
+
+    # -------------------------------------------------------------------------
+    # v3.3 Metacognition Helper Methods
+    # -------------------------------------------------------------------------
+    def _estimate_confidence(self, item: str) -> int:
+        """항목명에서 신뢰도 추정 (휴리스틱)"""
+        item_lower = item.lower()
+        # 키워드 기반 신뢰도 추정
+        if any(k in item_lower for k in ["regex", "정규", "패턴", "edge", "엣지"]):
+            return 35
+        elif any(k in item_lower for k in ["성능", "performance", "최적화"]):
+            return 45
+        elif any(k in item_lower for k in ["api", "인터페이스", "연동"]):
+            return 50
+        elif any(k in item_lower for k in ["테스트", "test", "검증"]):
+            return 55
+        else:
+            return 40  # 기본값
+
+    def _estimate_validity(self, item: str) -> int:
+        """가정의 유효확률 추정"""
+        item_lower = item.lower()
+        if any(k in item_lower for k in ["충분", "enough", "만으로"]):
+            return 55
+        elif any(k in item_lower for k in ["항상", "always", "모든"]):
+            return 40  # 절대적 가정은 낮은 확률
+        elif any(k in item_lower for k in ["대부분", "most", "일반적"]):
+            return 65
+        else:
+            return 55
+
+    def _estimate_change_prob(self, item: str) -> int:
+        """의견 변경 확률 추정"""
+        item_lower = item.lower()
+        if any(k in item_lower for k in ["사용자", "user", "피드백", "feedback"]):
+            return 75  # 사용자 의견에 따라 변경 가능성 높음
+        elif any(k in item_lower for k in ["성능", "performance", "속도"]):
+            return 65
+        elif any(k in item_lower for k in ["구조", "architecture", "설계"]):
+            return 70
+        else:
+            return 60
+
+    def _estimate_completeness(self, item: str) -> int:
+        """완성도 추정"""
+        item_lower = item.lower()
+        if any(k in item_lower for k in ["미구현", "todo", "not implemented"]):
+            return 20
+        elif any(k in item_lower for k in ["부분", "partial", "일부"]):
+            return 45
+        elif any(k in item_lower for k in ["개선", "improve", "보완"]):
+            return 60
+        elif any(k in item_lower for k in ["조정", "adjust", "튜닝"]):
+            return 70
+        else:
+            return 45
+
+    def _estimate_urgency(self, item: str, completeness: int) -> str:
+        """긴급도 추정 (완성도와 항목명 기반)"""
+        item_lower = item.lower()
+        # 키워드 기반
+        if any(k in item_lower for k in ["보안", "security", "인증", "auth"]):
+            return "high"
+        elif any(k in item_lower for k in ["버그", "bug", "에러", "error", "crash"]):
+            return "high"
+        elif any(k in item_lower for k in ["성능", "performance", "느림", "slow"]):
+            return "medium"
+        # 완성도 기반
+        elif completeness < 30:
+            return "high"
+        elif completeness < 50:
+            return "medium"
+        else:
+            return "low"
+
+    def _estimate_effect(self, effect_type: str, item: str) -> str:
+        """기대효과 추정"""
+        item_lower = item.lower()
+
+        if effect_type == "confidence":
+            if "regex" in item_lower or "정규" in item_lower:
+                return "+40% 정확도, 엣지케이스 90% 해결"
+            elif "성능" in item_lower:
+                return "+30% 응답속도, 리소스 최적화"
+            else:
+                return "+25% 정확도 향상"
+
+        elif effect_type == "validity":
+            if "충분" in item_lower:
+                return "검증 시 설계 안정성 확보"
+            else:
+                return "가정 검증으로 리스크 감소"
+
+        elif effect_type == "change":
+            if "사용자" in item_lower or "user" in item_lower:
+                return "사용자 피드백 반영으로 만족도 +20%"
+            else:
+                return "조기 검증으로 재작업 -50%"
+
+        elif effect_type == "completeness":
+            if "자동" in item_lower or "auto" in item_lower:
+                return "자동화로 수작업 -70%"
+            elif "저장" in item_lower or "save" in item_lower:
+                return "데이터 연속성 확보"
+            else:
+                return "기능 완성도 향상"
+
+        return "개선 효과 기대"
+
+    def _generate_default_metacognition(self) -> str:
+        """Diff 분석 기반 기본 메타인지 생성 (세션 데이터 없을 때)"""
+        content = "\n**📝 자동 분석 기반 메타인지:**\n\n"
+
+        items = []
+
+        # 복잡도 기반 추정
+        nested_count = len(re.findall(r"if.*:\s*\n\s+if", self.added_lines))
+        if nested_count > 0:
+            items.append(
+                {
+                    "category": "신뢰도",
+                    "item": f"중첩 조건문 {nested_count}개",
+                    "score": max(30, 60 - nested_count * 10),
+                    "urgency": "high" if nested_count > 2 else "medium",
+                    "effect": "로직 단순화로 버그 감소",
+                }
+            )
+
+        # 테스트 커버리지 기반
+        has_tests = any("test" in f.lower() for f in self.files)
+        if not has_tests and len(self.files) > 2:
+            items.append(
+                {
+                    "category": "완성도",
+                    "item": "테스트 코드 미작성",
+                    "score": 30,
+                    "urgency": "medium",
+                    "effect": "테스트 추가로 안정성 +50%",
+                }
+            )
+
+        # TODO 주석 기반
+        todos = re.findall(r"#\s*TODO[:\s](.{10,40})", self.added_lines, re.I)
+        if todos:
+            items.append(
+                {
+                    "category": "완성도",
+                    "item": f"TODO 항목 {len(todos)}개",
+                    "score": 40,
+                    "urgency": "low",
+                    "effect": "기술부채 해소",
+                }
+            )
+
+        if items:
+            content += "| 카테고리 | 항목 | 점수 | 긴급도 | 기대효과 |\n"
+            content += "|----------|------|------|--------|----------|\n"
+            for item in items[:5]:
+                urgency_icon = {"high": "🔴", "medium": "🟡", "low": "🟢"}.get(item["urgency"], "🟡")
+                content += f"| {item['category']} | {item['item']} | {item['score']}% | {urgency_icon} | {item['effect']} |\n"
+            content += "\n"
+        else:
+            content += "> 자동 분석에서 주요 메타인지 항목이 감지되지 않았습니다.\n\n"
+
         return content
 
     # -------------------------------------------------------------------------
