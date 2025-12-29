@@ -129,6 +129,26 @@ def save_ai_metacognition(metacognition: Dict[str, Any]) -> bool:
 
 # 3개월 커리큘럼 정의 (Month, Week, 설명, 필수 체크포인트, 고려사항, 주의점)
 LEARNING_CURRICULUM = {
+    (0, 0): {
+        "title": "환경 설정 및 사전 준비",
+        "focus": "학습 환경 구성 및 기초 점검",
+        "checkpoints": [
+            "Python 3.11+ 설치 확인",
+            "Node.js 18+ 설치 확인",
+            "Git 설정 완료 (user.name, user.email)",
+            "Obsidian Vault 생성 및 경로 설정",
+            "Claude Pro 구독 및 API 접근 확인",
+        ],
+        "considerations": [
+            "환경 설정은 한 번만 정확히 하면 이후 수정 불필요",
+            "버전 호환성 확인 (Python/Node.js 최소 버전)",
+        ],
+        "warnings": [
+            "환경 변수 설정 주의 (OBSIDIAN_VAULT_PATH, API keys)",
+            "PATH 설정 확인 (python, node, git 명령어 실행 가능 여부)",
+        ],
+        "guide": "VibeCoding-Growth-Guide",
+    },
     (1, 1): {
         "title": "기초 다지기 - Claude Code 기본",
         "focus": "Claude Code 기본 명령어 익히기",
@@ -389,14 +409,16 @@ def get_current_curriculum() -> Dict[str, Any]:
     month = progress.get("month", 1)
     week = progress.get("week", 1)
 
-    # 범위 체크
-    if month < 1:
-        month = 1
+    # 범위 체크 (month=0은 사전 준비 주간으로 허용)
+    if month < 0:
+        month = 0
     if month > 3:
         month = 3
-    if week < 1:
+    if month == 0:
+        week = 0  # month=0일 때는 week도 0으로 고정
+    elif week < 1:
         week = 1
-    if week > 4:
+    elif week > 4:
         week = 4
 
     key = (month, week)
@@ -2010,6 +2032,32 @@ class SectionGenerator:
         guide = curriculum["guide"]
 
         content += "\n### 📚 Learning Progress (VibeCoding)\n\n"
+
+        # Progress bar visualization
+        # Week 0 = week 1 of 13, Month 1 Week 1 = week 2 of 13, etc.
+        # Formula: ((month-1)*4 + week) gives 0-based week index
+        # For Week 0 (month=0, week=0): total_weeks = 1
+        # For Month 1-3: total_weeks = month*4 + week
+        if month == 0:
+            total_weeks_completed = week  # Week 0 = 0 weeks completed initially
+        else:
+            total_weeks_completed = (month - 1) * 4 + week
+
+        # Calculate progress percentage (13 weeks total: Week 0 + 3 months * 4 weeks)
+        progress_percent = min(100, int((total_weeks_completed / 13) * 100))
+
+        # Create ASCII progress bar (10 characters wide)
+        filled_chars = int(progress_percent / 10)
+        empty_chars = 10 - filled_chars
+        progress_bar = "█" * filled_chars + "░" * empty_chars
+
+        # Calculate current week number (1-indexed for display)
+        if month == 0:
+            current_week_num = 1  # Week 0 is displayed as Week 1/13
+        else:
+            current_week_num = 1 + (month - 1) * 4 + week  # +1 for Week 0
+
+        content += f"**진행률**: {progress_bar} {progress_percent}% (Week {current_week_num}/13)\n\n"
         content += f"**현재 단계**: Month {month} Week {week} - {title}\n"
         content += f"**이번 주 포커스**: {focus}\n\n"
 
