@@ -29,7 +29,7 @@ Requirements:
 
 Author: System Automation Team
 Date: 2025-12-29
-Version: 3.4.0 (All Sections Quantified + Expert-Validated Metrics)
+Version: 3.5.1 (Learning Progress Tracking + Considerations + Warnings)
 """
 
 import argparse
@@ -121,6 +121,298 @@ def save_ai_metacognition(metacognition: Dict[str, Any]) -> bool:
         return True
     except (json.JSONDecodeError, IOError):
         return False
+
+
+# =============================================================================
+# v3.5: Learning Progress Tracking (학습 진행 상황 추적)
+# =============================================================================
+
+# 3개월 커리큘럼 정의 (Month, Week, 설명, 필수 체크포인트, 고려사항, 주의점)
+LEARNING_CURRICULUM = {
+    (1, 1): {
+        "title": "기초 다지기 - Claude Code 기본",
+        "focus": "Claude Code 기본 명령어 익히기",
+        "checkpoints": [
+            "/sc:analyze 3회 이상 사용",
+            "간단한 함수 구현 1회",
+        ],
+        "considerations": [
+            "AI 응답을 그대로 복붙하지 말고 이해한 후 사용",
+            "작은 단위로 요청하여 결과 확인",
+        ],
+        "warnings": [
+            "AI가 생성한 코드도 반드시 검토 필요",
+            "민감 정보(API키, 비밀번호)를 프롬프트에 포함하지 않기",
+        ],
+        "guide": "Claude-Skills-Curriculum",
+    },
+    (1, 2): {
+        "title": "기초 다지기 - 코드 분석",
+        "focus": "/sc:analyze로 코드 분석 학습",
+        "checkpoints": [
+            "/sc:analyze --focus quality 1회",
+            "/sc:analyze --focus security 1회",
+        ],
+        "considerations": [
+            "분석 결과의 우선순위(severity)를 먼저 확인",
+            "모든 경고를 한번에 수정하려 하지 말고 중요한 것부터",
+        ],
+        "warnings": [
+            "보안 취약점은 즉시 수정 (나중에로 미루지 않기)",
+            "false positive도 있을 수 있으니 맹신 금지",
+        ],
+        "guide": "Claude-Skills-Curriculum",
+    },
+    (1, 3): {
+        "title": "기초 다지기 - Context7 MCP",
+        "focus": "공식 문서 검색으로 라이브러리 학습",
+        "checkpoints": [
+            "Context7로 라이브러리 문서 검색 3회",
+            "공식 문서 기반 구현 1회",
+        ],
+        "considerations": [
+            "공식 문서 버전과 프로젝트 버전 일치 확인",
+            "deprecated 메서드 사용 주의",
+        ],
+        "warnings": [
+            "Stack Overflow보다 공식 문서 우선",
+            "오래된 예제 코드는 현재 버전과 다를 수 있음",
+        ],
+        "guide": "MCP-Combination-Patterns",
+    },
+    (1, 4): {
+        "title": "기초 다지기 - 테스트 작성",
+        "focus": "/sc:test로 단위 테스트 작성",
+        "checkpoints": [
+            "단위 테스트 5개 작성",
+            "테스트 커버리지 확인 1회",
+        ],
+        "considerations": [
+            "Happy path뿐 아니라 edge case도 테스트",
+            "테스트 이름은 무엇을 테스트하는지 명확하게",
+        ],
+        "warnings": [
+            "테스트가 통과한다고 버그가 없는 게 아님",
+            "테스트 건너뛰기(skip) 남발 금지",
+        ],
+        "guide": "Claude-Skills-Curriculum",
+    },
+    (2, 1): {
+        "title": "실전 적용 - MCP 조합",
+        "focus": "Sequential + Context7 조합 디버깅",
+        "checkpoints": [
+            "MCP 조합으로 복잡한 버그 해결 1회",
+            "Obsidian -> Context7 체인 사용 1회",
+        ],
+        "considerations": [
+            "MCP 서버 간 의존성 순서 중요",
+            "먼저 Obsidian(과거 솔루션) 확인 후 Context7",
+        ],
+        "warnings": [
+            "너무 많은 MCP 동시 사용 시 혼란 가능",
+            "각 MCP 응답을 검증 후 다음 단계 진행",
+        ],
+        "guide": "MCP-Combination-Patterns",
+    },
+    (2, 2): {
+        "title": "실전 적용 - UI 개발",
+        "focus": "Magic MCP로 UI 컴포넌트 생성",
+        "checkpoints": [
+            "Magic MCP로 컴포넌트 생성 2회",
+            "Context7 -> Magic 체인 사용 1회",
+        ],
+        "considerations": [
+            "생성된 UI의 접근성(a11y) 확인",
+            "반응형 디자인 검증 필수",
+        ],
+        "warnings": [
+            "UI 라이브러리 버전 호환성 확인",
+            "생성된 스타일이 기존 디자인 시스템과 충돌하지 않는지 확인",
+        ],
+        "guide": "MCP-Combination-Patterns",
+    },
+    (2, 3): {
+        "title": "실전 적용 - E2E 테스트",
+        "focus": "Playwright로 자동화 테스트",
+        "checkpoints": [
+            "E2E 테스트 3개 작성",
+            "Magic -> Playwright 체인 사용 1회",
+        ],
+        "considerations": [
+            "selector는 data-testid 사용 권장",
+            "네트워크 지연 고려한 적절한 timeout 설정",
+        ],
+        "warnings": [
+            "flaky test(가끔 실패하는 테스트) 방치 금지",
+            "실제 API 호출 대신 mock 사용 고려",
+        ],
+        "guide": "MCP-Combination-Patterns",
+    },
+    (2, 4): {
+        "title": "실전 적용 - 워크플로우",
+        "focus": "/sc:workflow로 PRD 기반 구현",
+        "checkpoints": [
+            "/sc:workflow로 구현 계획 1개 생성",
+            "계획 기반 구현 완료 1회",
+        ],
+        "considerations": [
+            "워크플로우 각 단계별 완료 기준 명확히",
+            "의존성 있는 작업은 순서대로 진행",
+        ],
+        "warnings": [
+            "계획만 세우고 실행 안 하면 무의미",
+            "계획 변경 시 문서 업데이트 필수",
+        ],
+        "guide": "Claude-Skills-Curriculum",
+    },
+    (3, 1): {
+        "title": "고급 활용 - 멀티에이전트",
+        "focus": "Task 에이전트 병렬 실행",
+        "checkpoints": [
+            "2개 이상 에이전트 병렬 실행 1회",
+            "Explore 에이전트 사용 2회",
+        ],
+        "considerations": [
+            "에이전트 결과를 종합하여 최종 판단은 본인이",
+            "각 에이전트의 전문 영역 파악 후 적절히 활용",
+        ],
+        "warnings": [
+            "에이전트 간 상충되는 의견 발생 가능 - 맥락에 맞게 판단",
+            "병렬 실행 시 토큰 소비량 증가에 주의",
+        ],
+        "guide": "Multi-Agent-Workflows",
+    },
+    (3, 2): {
+        "title": "고급 활용 - 페르소나 리뷰",
+        "focus": "security-engineer 등 페르소나 활용",
+        "checkpoints": [
+            "security-engineer 리뷰 1회",
+            "performance-engineer 리뷰 1회",
+        ],
+        "considerations": [
+            "페르소나별 관점 차이 이해하고 활용",
+            "모든 제안을 수용할 필요 없음 - 프로젝트 맥락 고려",
+        ],
+        "warnings": [
+            "보안 리뷰 결과는 반드시 검토 후 적용",
+            "성능 최적화는 측정 먼저, 최적화 나중에",
+        ],
+        "guide": "Multi-Agent-Workflows",
+    },
+    (3, 3): {
+        "title": "고급 활용 - 대량 리팩토링",
+        "focus": "Morphllm으로 코드 일괄 수정",
+        "checkpoints": [
+            "Morphllm 패턴 변환 1회",
+            "Sequential -> Morphllm 체인 1회",
+        ],
+        "considerations": [
+            "리팩토링 전 반드시 테스트 스위트 확보",
+            "작은 범위부터 시작하여 점진적 확대",
+        ],
+        "warnings": [
+            "대량 수정 전 git commit으로 롤백 포인트 확보 필수",
+            "자동 변환 후 반드시 diff 검토",
+        ],
+        "guide": "MCP-Combination-Patterns",
+    },
+    (3, 4): {
+        "title": "고급 활용 - 프로젝트 메모리",
+        "focus": "Serena로 세션 지속성 관리",
+        "checkpoints": [
+            "/sc:load, /sc:save 사용 1회",
+            "프로젝트 심볼 검색 2회",
+        ],
+        "considerations": [
+            "세션 종료 전 중요 컨텍스트 저장 습관화",
+            "프로젝트 메모리는 주기적으로 정리",
+        ],
+        "warnings": [
+            "오래된 컨텍스트가 현재 코드와 불일치할 수 있음",
+            "민감 정보가 메모리에 저장되지 않도록 주의",
+        ],
+        "guide": "VibeCoding-Growth-Guide",
+    },
+}
+
+
+def load_learning_progress() -> Dict[str, Any]:
+    """학습 진행 상황 로드
+
+    Returns:
+        learning_progress: {month, week, started_at, checkpoints_done}
+    """
+    session_file = Path(".udo/session_state.json")
+    if not session_file.exists():
+        return {"month": 1, "week": 1, "started_at": None, "checkpoints_done": []}
+
+    try:
+        with open(session_file, "r", encoding="utf-8") as f:
+            data = json.load(f)
+        progress = data.get("learning_progress", {})
+        if not progress:
+            return {"month": 1, "week": 1, "started_at": None, "checkpoints_done": []}
+        return progress
+    except (json.JSONDecodeError, IOError):
+        return {"month": 1, "week": 1, "started_at": None, "checkpoints_done": []}
+
+
+def save_learning_progress(progress: Dict[str, Any]) -> bool:
+    """학습 진행 상황 저장"""
+    session_file = Path(".udo/session_state.json")
+    session_file.parent.mkdir(parents=True, exist_ok=True)
+
+    try:
+        if session_file.exists():
+            with open(session_file, "r", encoding="utf-8") as f:
+                data = json.load(f)
+        else:
+            data = {}
+
+        # 시작일 자동 설정
+        if not progress.get("started_at"):
+            progress["started_at"] = datetime.now().isoformat()
+
+        data["learning_progress"] = progress
+        data["learning_progress_updated"] = datetime.now().isoformat()
+
+        with open(session_file, "w", encoding="utf-8") as f:
+            json.dump(data, f, ensure_ascii=False, indent=2)
+        return True
+    except (json.JSONDecodeError, IOError):
+        return False
+
+
+def get_current_curriculum() -> Dict[str, Any]:
+    """현재 학습 단계의 커리큘럼 정보 반환"""
+    progress = load_learning_progress()
+    month = progress.get("month", 1)
+    week = progress.get("week", 1)
+
+    # 범위 체크
+    if month < 1:
+        month = 1
+    if month > 3:
+        month = 3
+    if week < 1:
+        week = 1
+    if week > 4:
+        week = 4
+
+    key = (month, week)
+    curriculum = LEARNING_CURRICULUM.get(key, LEARNING_CURRICULUM[(1, 1)])
+
+    return {
+        "month": month,
+        "week": week,
+        "title": curriculum["title"],
+        "focus": curriculum["focus"],
+        "checkpoints": curriculum["checkpoints"],
+        "considerations": curriculum.get("considerations", []),
+        "warnings": curriculum.get("warnings", []),
+        "guide": curriculum["guide"],
+        "checkpoints_done": progress.get("checkpoints_done", []),
+    }
 
 
 def is_real_comment(line: str, pattern: str) -> bool:
@@ -973,19 +1265,74 @@ class SectionGenerator:
             ),
         }
 
-        # 해결책 추출
+        # 해결책 추출 (v3.5: 자동 추출 로직 강화)
         if self.flags.get("has_solution"):
             content += "### Solutions\n\n"
-            # 실제 Solution 주석만 추출
+            extracted_solutions = []
+
+            # 1. 실제 Solution 주석 추출
             solutions = extract_real_comments(self.diff, "Solution")
             if solutions:
                 for sol in solutions[:5]:
-                    content += f"- {sol[:80]}\n"
+                    extracted_solutions.append(sol[:80])
+
+            # 2. 커밋 메시지에서 해결책 패턴 자동 추출 (v3.5)
+            fix_patterns = {
+                r"fix(?:ed|es)?[:\s]+(.+?)(?:\n|$)": "버그 수정",
+                r"resolve[ds]?[:\s]+(.+?)(?:\n|$)": "이슈 해결",
+                r"(?:수정|고침|해결)[:\s]+(.+?)(?:\n|$)": "문제 해결",
+                r"by[:\s]+(.+?)(?:\n|$)": "해결 방법",
+            }
+            for pattern, prefix in fix_patterns.items():
+                matches = re.findall(pattern, self.message, re.I)
+                for match in matches[:2]:
+                    if len(match) > 5:
+                        extracted_solutions.append(f"{prefix}: {match[:60]}")
+
+            # 3. diff에서 수정 패턴 자동 분석 (v3.5)
+            code_fix_patterns = {
+                r"[-]\s*.*(?:bug|error|issue).*\n[+]\s*(.+)": "코드 수정",
+                r"[-]\s*#.*(?:TODO|FIXME).*\n[+]\s*(.+)": "기술부채 해결",
+                r"[+]\s*try:.*\n[+]\s*(.+?)\n[+]\s*except": "예외 처리 추가",
+            }
+            for pattern, prefix in code_fix_patterns.items():
+                matches = re.findall(pattern, self.diff, re.I | re.MULTILINE)
+                for match in matches[:2]:
+                    if len(match) > 10:
+                        extracted_solutions.append(f"{prefix}: {match[:50]}...")
+
+            # 결과 렌더링
+            if extracted_solutions:
+                for sol in extracted_solutions[:5]:
+                    content += f"- {sol}\n"
             elif "fix" in self.message.lower():
                 content += f"- {self.message.split(chr(10))[0]}\n"
             else:
                 content += "- (Solution 주석을 추가하여 해결책 기록 권장)\n"
             content += "\n"
+
+            # 바이브코딩 학습 가이드 (v3.5 추가)
+            content += "### 🎯 바이브코딩 성장 가이드 (초보자용)\n\n"
+            content += "**[프롬프트 팁]** AI에게 명확한 컨텍스트를 제공하세요:\n"
+            content += "- 현재 상황 → 원하는 결과 → 제약 조건 순으로 설명\n"
+            content += '- 예: "FastAPI에서 401 에러 발생. JWT 토큰 검증 로직 수정 필요. Python 3.11 사용 중"\n\n'
+
+            content += "**[SW 설계 원칙]** 검증된 이론 학습 추천:\n"
+            content += "- **SOLID 원칙**: 단일 책임(S), 개방-폐쇄(O), 리스코프 치환(L), 인터페이스 분리(I), 의존성 역전(D)\n"
+            content += "- **DRY/KISS/YAGNI**: 반복 금지, 단순하게, 필요할 때만 구현\n"
+            content += '- 📚 추천: "Clean Code" (Robert C. Martin), "Refactoring" (Martin Fowler)\n\n'
+
+            content += "**[오류 정정 프로세스]** 체계적 디버깅 5단계:\n"
+            content += "1. 에러 메시지 정확히 읽기 (스택 트레이스 분석)\n"
+            content += "2. 최소 재현 케이스 만들기\n"
+            content += "3. 가설 수립 → 검증 → 반복\n"
+            content += "4. 수정 후 회귀 테스트\n"
+            content += "5. 해결책 문서화 (다음에 재사용)\n\n"
+
+            content += "**[테스트 전략]** TDD/BDD 접근법:\n"
+            content += "- 테스트 먼저 작성 → 실패 확인 → 코드 작성 → 통과 확인 → 리팩토링\n"
+            content += "- 경계값, 엣지 케이스, 예외 상황 우선 테스트\n"
+            content += '- 📚 추천: "Test-Driven Development" (Kent Beck)\n\n'
 
         # 패턴 추출
         if self.flags.get("has_pattern"):
@@ -1650,6 +1997,53 @@ class SectionGenerator:
         # Frontend 관련
         if any("web-dashboard" in f.lower() or "frontend" in f.lower() for f in self.files):
             content += "- [[Frontend Guide]]\n"
+
+        # v3.5: 학습 가이드 + 현재 단계 표시
+        curriculum = get_current_curriculum()
+        month = curriculum["month"]
+        week = curriculum["week"]
+        title = curriculum["title"]
+        focus = curriculum["focus"]
+        checkpoints = curriculum["checkpoints"]
+        considerations = curriculum["considerations"]
+        warnings = curriculum["warnings"]
+        guide = curriculum["guide"]
+
+        content += "\n### 📚 Learning Progress (VibeCoding)\n\n"
+        content += f"**현재 단계**: Month {month} Week {week} - {title}\n"
+        content += f"**이번 주 포커스**: {focus}\n\n"
+
+        # 필수 체크포인트
+        content += "**필수 체크포인트**:\n"
+        for cp in checkpoints:
+            content += f"- [ ] {cp}\n"
+        content += "\n"
+
+        # 고려사항
+        if considerations:
+            content += "**💡 고려사항**:\n"
+            for c in considerations:
+                content += f"- {c}\n"
+            content += "\n"
+
+        # 주의점
+        if warnings:
+            content += "**⚠️ 주의점**:\n"
+            for w in warnings:
+                content += f"- {w}\n"
+            content += "\n"
+
+        # 참고 가이드 링크
+        content += f"**참고**: [[{guide}]]\n\n"
+
+        # 전체 가이드 링크 (접힌 상태)
+        content += "<details>\n<summary>📖 전체 가이드 목록</summary>\n\n"
+        content += "- [[VibeCoding-Growth-Guide]] - 3개월 성장 로드맵\n"
+        content += "- [[MCP-Combination-Patterns]] - MCP 서버 조합 패턴\n"
+        content += "- [[Claude-Skills-Curriculum]] - 클로드 스킬 4주 커리큘럼\n"
+        content += "- [[Prompt-Pattern-Library]] - 효과적인 프롬프트 패턴\n"
+        content += "- [[Multi-Agent-Workflows]] - 멀티에이전트 워크플로우\n"
+        content += "</details>\n"
 
         content += "\n"
         return content
