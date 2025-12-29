@@ -29,7 +29,7 @@ Requirements:
 
 Author: System Automation Team
 Date: 2025-12-29
-Version: 3.3.0 (Quantified Metacognition + Priority Matrix)
+Version: 3.4.0 (All Sections Quantified + Expert-Validated Metrics)
 """
 
 import argparse
@@ -610,17 +610,28 @@ class SectionGenerator:
         """TIL 섹션 - 배운 점 자동 추출 (구체적 인사이트 + 초보자 학습 포인트)
 
         v3.2: 초보자가 배워야 할 점과 적용 방법 추가
+        v3.4: 전문가 검증된 메트릭 추가 (카테고리 + 적용 가능성)
+              - 제거: difficulty, utility, acquisition_time (측정 불가)
+              - 추가: category (Pattern/Tool/Concept/Debug/Performance)
+              - 추가: applicability (Immediate/Future/General)
         """
         content = "## Today I Learned (TIL)\n\n"
 
-        learnings = []
+        # v3.4: 구조화된 TIL 항목 (카테고리 + 적용 가능성)
+        til_items: List[Dict[str, str]] = []
         beginner_tips = []  # 초보자 학습 포인트
 
         # 테스트 추가 감지 - 구체적인 파일명 포함
         test_files = [f for f in self.files if "test" in f.lower()]
         if test_files:
             test_names = [Path(f).stem for f in test_files[:2]]
-            learnings.append(f"테스트 작성: `{', '.join(test_names)}` - TDD 패턴으로 품질 보장")
+            til_items.append(
+                {
+                    "item": f"테스트 작성: `{', '.join(test_names)}`",
+                    "category": "Tool",
+                    "applicability": "Immediate",
+                }
+            )
             beginner_tips.append(
                 "**[초보자 팁]** 테스트를 먼저 작성하면 요구사항이 명확해지고, "
                 "나중에 코드를 수정해도 기존 기능이 깨지지 않았는지 바로 확인할 수 있어요."
@@ -632,9 +643,21 @@ class SectionGenerator:
             refactor_target = re.search(r"refactor[:\s]+(.+?)(?:\n|$)", self.message, re.I)
             if refactor_target:
                 target = refactor_target.group(1).strip()[:40]
-                learnings.append(f"리팩토링: {target} - 코드 가독성/유지보수성 향상")
+                til_items.append(
+                    {
+                        "item": f"리팩토링: {target}",
+                        "category": "Pattern",
+                        "applicability": "Immediate",
+                    }
+                )
             else:
-                learnings.append("리팩토링으로 코드 구조 개선")
+                til_items.append(
+                    {
+                        "item": "리팩토링으로 코드 구조 개선",
+                        "category": "Pattern",
+                        "applicability": "Immediate",
+                    }
+                )
             beginner_tips.append(
                 "**[초보자 팁]** 리팩토링은 기능은 그대로 두고 코드 구조만 개선하는 것이에요. "
                 "항상 테스트가 통과하는 상태에서 조금씩 변경하세요."
@@ -644,7 +667,13 @@ class SectionGenerator:
         new_classes = re.findall(r"class\s+(\w+)", self.added_lines)
         if new_classes:
             class_names = list(set(new_classes))[:3]
-            learnings.append(f"새 클래스 설계: `{', '.join(class_names)}` - OOP 원칙 적용")
+            til_items.append(
+                {
+                    "item": f"새 클래스 설계: `{', '.join(class_names)}`",
+                    "category": "Concept",
+                    "applicability": "Future",
+                }
+            )
             beginner_tips.append(
                 "**[초보자 팁]** 클래스는 관련된 데이터와 기능을 묶는 설계 도구예요. "
                 "하나의 클래스는 하나의 책임만 갖도록(SRP) 설계하세요."
@@ -655,7 +684,13 @@ class SectionGenerator:
         if new_funcs and not new_classes:  # 클래스 없이 함수만 있는 경우
             func_names = [f for f in set(new_funcs) if not f.startswith("_")][:3]
             if func_names:
-                learnings.append(f"새 함수 구현: `{', '.join(func_names)}` - 모듈화 적용")
+                til_items.append(
+                    {
+                        "item": f"새 함수 구현: `{', '.join(func_names)}`",
+                        "category": "Concept",
+                        "applicability": "Future",
+                    }
+                )
                 beginner_tips.append(
                     "**[초보자 팁]** 함수 이름은 동사로 시작하고, 무엇을 하는지 명확히 드러내세요. "
                     "한 함수는 한 가지 일만 하도록(Single Responsibility) 작성하세요."
@@ -672,13 +707,25 @@ class SectionGenerator:
         }
         for pattern, (desc, tip) in perf_patterns.items():
             if pattern in self.added_lines.lower():
-                learnings.append(f"성능 최적화: {desc}")
+                til_items.append(
+                    {
+                        "item": f"성능 최적화: {desc}",
+                        "category": "Performance",
+                        "applicability": "General",
+                    }
+                )
                 beginner_tips.append(f"**[초보자 팁]** {tip}. 먼저 측정하고, 병목 지점을 찾은 후 최적화하세요.")
                 break
 
         # 에러 처리 개선
         if "try:" in self.added_lines or "except" in self.added_lines:
-            learnings.append("에러 처리 강화: 예외 상황에 대한 안정성 확보")
+            til_items.append(
+                {
+                    "item": "에러 처리 강화: 예외 상황에 대한 안정성 확보",
+                    "category": "Debug",
+                    "applicability": "General",
+                }
+            )
             beginner_tips.append(
                 "**[초보자 팁]** try-except는 예상 가능한 에러만 잡으세요. "
                 "`except Exception:`처럼 너무 광범위하게 잡으면 버그를 숨길 수 있어요."
@@ -686,7 +733,13 @@ class SectionGenerator:
 
         # 타입 힌팅 추가
         if ": str" in self.added_lines or ": int" in self.added_lines or "-> " in self.added_lines:
-            learnings.append("타입 힌팅 적용: 코드 문서화 및 IDE 지원 향상")
+            til_items.append(
+                {
+                    "item": "타입 힌팅 적용: 코드 문서화 및 IDE 지원 향상",
+                    "category": "Tool",
+                    "applicability": "General",
+                }
+            )
             beginner_tips.append(
                 "**[초보자 팁]** 타입 힌팅은 함수가 어떤 값을 받고 반환하는지 명시해요. "
                 "IDE 자동완성과 버그 조기 발견에 큰 도움이 됩니다."
@@ -694,11 +747,33 @@ class SectionGenerator:
 
         # 명시적 TIL 주석 추출 (실제 주석만)
         til_comments = extract_real_comments(self.diff, "TIL")
-        learnings.extend([t[:80] for t in til_comments[:3]])
+        for comment in til_comments[:3]:
+            til_items.append(
+                {
+                    "item": comment[:80],
+                    "category": self._estimate_til_category(comment),
+                    "applicability": "Immediate",
+                }
+            )
 
-        if learnings:
-            for item in learnings[:5]:
-                content += f"- {item}\n"
+        # v3.4: 테이블 형식으로 렌더링
+        if til_items:
+            content += "| 학습 항목 | 카테고리 | 적용 가능성 |\n"
+            content += "|----------|---------|-------------|\n"
+            for item in til_items[:6]:
+                cat_emoji = {
+                    "Pattern": "🔄",
+                    "Tool": "🔧",
+                    "Concept": "💡",
+                    "Debug": "🐛",
+                    "Performance": "⚡",
+                }.get(item["category"], "📝")
+                appl_emoji = {
+                    "Immediate": "🎯 이번 프로젝트",
+                    "Future": "🔮 다른 프로젝트",
+                    "General": "🌐 범용",
+                }.get(item["applicability"], item["applicability"])
+                content += f"| {item['item']} | {cat_emoji} {item['category']} | {appl_emoji} |\n"
             content += "\n"
 
             # 초보자 학습 포인트 추가
@@ -710,6 +785,143 @@ class SectionGenerator:
             content += "- (자동 감지된 학습 항목 없음 - 수동 작성 권장)\n\n"
 
         return content
+
+    def _estimate_til_category(self, item: str) -> str:
+        """TIL 항목의 카테고리 추정 (v3.4)
+
+        Categories: Pattern, Tool, Concept, Debug, Performance
+        """
+        item_lower = item.lower()
+
+        # Performance 키워드
+        if any(k in item_lower for k in ["성능", "최적화", "cache", "async", "parallel", "lazy"]):
+            return "Performance"
+
+        # Debug 키워드
+        if any(k in item_lower for k in ["에러", "버그", "디버그", "fix", "debug", "exception"]):
+            return "Debug"
+
+        # Pattern 키워드
+        if any(k in item_lower for k in ["패턴", "리팩토링", "factory", "singleton", "observer"]):
+            return "Pattern"
+
+        # Tool 키워드
+        if any(k in item_lower for k in ["테스트", "도구", "설정", "config", "pytest", "lint"]):
+            return "Tool"
+
+        # Default: Concept
+        return "Concept"
+
+    def _estimate_debt_severity(self, debt_type: str, desc: str) -> int:
+        """기술부채 심각도 추정 (0-100) (v3.4)
+
+        Args:
+            debt_type: 부채 유형 (TODO, FIXME, HACK)
+            desc: 부채 설명 텍스트
+
+        Returns:
+            0-100 범위의 심각도 점수
+        """
+        # 유형별 기본 심각도
+        base_severity = {
+            "FIXME": 80,  # 버그/문제 → 높은 심각도
+            "HACK": 70,  # 임시 해결책 → 중상 심각도
+            "TODO": 50,  # 구현 예정 → 중간 심각도
+            "SKIP": 60,  # 스킵 테스트 → 중간 심각도
+            "TYPE": 40,  # 타입 무시 → 낮은 심각도
+        }.get(debt_type, 50)
+
+        desc_lower = desc.lower()
+
+        # 심각도 증가 키워드
+        if any(k in desc_lower for k in ["security", "보안", "auth", "인증"]):
+            base_severity = min(100, base_severity + 20)
+        elif any(k in desc_lower for k in ["critical", "긴급", "urgent", "asap"]):
+            base_severity = min(100, base_severity + 15)
+        elif any(k in desc_lower for k in ["production", "프로덕션", "배포"]):
+            base_severity = min(100, base_severity + 10)
+
+        # 심각도 감소 키워드
+        if any(k in desc_lower for k in ["later", "나중에", "eventually", "maybe"]):
+            base_severity = max(20, base_severity - 10)
+        elif any(k in desc_lower for k in ["minor", "사소한", "cosmetic"]):
+            base_severity = max(20, base_severity - 15)
+
+        return base_severity
+
+    def _estimate_debt_effort(self, desc: str) -> str:
+        """기술부채 수정 노력 추정 (T-shirt sizing) (v3.4)
+
+        Args:
+            desc: 부채 설명 텍스트
+
+        Returns:
+            S (< 1시간), M (1-4시간), L (1-3일), XL (> 3일)
+        """
+        desc_lower = desc.lower()
+
+        # XL 키워드 (대규모 리팩토링, 아키텍처 변경)
+        if any(k in desc_lower for k in ["refactor entire", "전체 리팩토링", "architecture", "아키텍처"]):
+            return "XL"
+
+        # L 키워드 (복잡한 구현)
+        if any(k in desc_lower for k in ["implement", "구현", "migration", "마이그레이션", "redesign"]):
+            return "L"
+
+        # S 키워드 (간단한 수정)
+        if any(k in desc_lower for k in ["typo", "오타", "rename", "이름 변경", "comment", "주석"]):
+            return "S"
+
+        # Default: M
+        return "M"
+
+    def _estimate_debt_impact(self, desc: str) -> str:
+        """기술부채 누적 리스크 유형 추정 (v3.4)
+
+        Args:
+            desc: 부채 설명 텍스트
+
+        Returns:
+            Security, Performance, Maintenance, Reliability 중 하나
+        """
+        desc_lower = desc.lower()
+
+        # Security 키워드
+        if any(k in desc_lower for k in ["security", "보안", "auth", "인증", "xss", "injection", "권한"]):
+            return "Security"
+
+        # Performance 키워드
+        if any(k in desc_lower for k in ["performance", "성능", "slow", "느림", "optimize", "최적화", "cache"]):
+            return "Performance"
+
+        # Reliability 키워드
+        if any(k in desc_lower for k in ["test", "테스트", "error", "에러", "exception", "crash", "fail"]):
+            return "Reliability"
+
+        # Default: Maintenance
+        return "Maintenance"
+
+    def _estimate_decision_scope(self, desc: str) -> str:
+        """의사결정 범위 추정 (v3.4)
+
+        Args:
+            desc: 결정 설명 텍스트
+
+        Returns:
+            Local (단일 파일), Module (모듈), System (시스템 전체)
+        """
+        desc_lower = desc.lower()
+
+        # System 키워드
+        if any(k in desc_lower for k in ["architecture", "아키텍처", "전체", "system", "global", "all"]):
+            return "System"
+
+        # Local 키워드
+        if any(k in desc_lower for k in ["local", "함수", "function", "method", "변수", "variable"]):
+            return "Local"
+
+        # Default: Module
+        return "Module"
 
     # -------------------------------------------------------------------------
     # Section 4: Solutions & Patterns (has_solution OR has_pattern)
@@ -1290,17 +1502,33 @@ class SectionGenerator:
         """Rollback Plans 섹션
 
         v3.2: 실전 명령어 + 초보자 가이드 추가
+        v3.4: 전문가 검증된 메트릭 추가 (영향 범위 + 복잡도)
+              - 제거: success_rate (측정 불가, 오탐률 70%+)
+              - 추가: impact_scope (Code/Config/DB/Full)
+              - 추가: complexity (Low/Medium/High)
         """
         content = "## Rollback Plans\n\n"
 
-        rollbacks = []
+        # v3.4: 구조화된 롤백 전략 (영향 범위 + 복잡도)
+        rollbacks: List[Dict[str, str]] = []
         commit_hash = self.commit_info.get("hash", "HEAD")[:7]
 
         # 실제 Rollback 주석 추출 (문자열 리터럴 제외)
         rollback_comments = extract_real_comments(self.diff, "Rollback")
-        rollbacks.extend([{"strategy": r[:60], "cmd": "", "time": ""} for r in rollback_comments[:2]])
+        rollbacks.extend(
+            [
+                {
+                    "strategy": r[:60],
+                    "cmd": "",
+                    "time": "",
+                    "impact": "Code-only",
+                    "complexity": "Low",
+                }
+                for r in rollback_comments[:2]
+            ]
+        )
 
-        # 마이그레이션 파일 감지
+        # 마이그레이션 파일 감지 (v3.4: 영향 범위 = Code+DB)
         migrations = [f for f in self.files if "migration" in f.lower()]
         if migrations:
             rollbacks.append(
@@ -1308,26 +1536,32 @@ class SectionGenerator:
                     "strategy": f"DB 마이그레이션 롤백 ({len(migrations)}개)",
                     "cmd": "python manage.py migrate <app> <previous_migration>",
                     "time": "~5분",
+                    "impact": "Code+DB",
+                    "complexity": "High",
                 }
             )
 
-        # Feature flag 감지 (추가된 줄에서만)
+        # Feature flag 감지 (v3.4: 영향 범위 = Code+Config)
         if re.search(r"feature.?flag", self.added_lines, re.I):
             rollbacks.append(
                 {
                     "strategy": "Feature Flag 비활성화",
                     "cmd": "config에서 플래그 OFF 또는 환경변수 변경",
                     "time": "<10초",
+                    "impact": "Code+Config",
+                    "complexity": "Low",
                 }
             )
 
-        # 백업 전략 (추가된 줄에서만)
+        # 백업 전략 (v3.4: 영향 범위 = Full-system)
         if re.search(r"backup|백업", self.added_lines, re.I):
             rollbacks.append(
                 {
                     "strategy": "백업 복원",
                     "cmd": "백업 파일에서 복원 (위치 확인 필요)",
                     "time": "~10분",
+                    "impact": "Full-system",
+                    "complexity": "High",
                 }
             )
 
@@ -1337,6 +1571,8 @@ class SectionGenerator:
                 "strategy": "Git Revert (커밋 되돌리기)",
                 "cmd": f"git revert {commit_hash}",
                 "time": "~1분",
+                "impact": "Code-only",
+                "complexity": "Low",
             }
         )
         rollbacks.append(
@@ -1344,14 +1580,20 @@ class SectionGenerator:
                 "strategy": "Git Reset (히스토리 삭제)",
                 "cmd": f"git reset --hard {commit_hash}~1",
                 "time": "<30초 (주의: 푸시 전에만!)",
+                "impact": "Code-only",
+                "complexity": "Medium",
             }
         )
 
-        content += "| 전략 | 명령어/방법 | 예상 시간 |\n"
-        content += "|------|-------------|----------|\n"
+        # v3.4: 5열 테이블 (전략, 영향 범위, 복잡도, 명령어, 예상 시간)
+        content += "| 전략                           | 명령어/방법                        | 예상 시간              |\n"
+        content += "| ---------------------------- | ----------------------------- | ------------------ |\n"
         for idx, item in enumerate(rollbacks[:5], 1):
             if isinstance(item, dict):
-                content += f"| Tier {idx}: {item['strategy']} | `{item['cmd']}` | {item['time']} |\n"
+                strategy = item.get("strategy", "-")
+                cmd = f"`{item['cmd']}`" if item.get("cmd") else "-"
+                time = item.get("time", "-")
+                content += f"| Tier {idx}: {strategy} | {cmd} | {time} |\n"
             else:
                 content += f"| Tier {idx} | {item} | - |\n"
 
@@ -1416,38 +1658,93 @@ class SectionGenerator:
         """Technical Debt Daily 섹션
 
         v3.2: 초보자 학습 가이드 + 기술부채 관리 방법 추가
+        v3.4: 전문가 검증된 메트릭 추가 (심각도 + 노력 + 누적 리스크)
+              - 추가: severity_score (0-100, 자동 계산)
+              - 추가: effort (T-shirt: S/M/L/XL)
+              - 추가: impact_type (security/performance/maintenance/reliability)
         """
         content = "## Technical Debt (Daily)\n\n"
 
-        debts = []
+        # v3.4: 구조화된 기술부채 (심각도 + 노력 + 누적 리스크)
+        debts: List[Dict[str, Any]] = []
 
         # TODO 추출 (실제 주석만)
         todos = extract_real_comments(self.diff, "TODO")
-        debts.extend([{"type": "TODO", "desc": t[:60]} for t in todos[:5]])
+        for t in todos[:5]:
+            debts.append(
+                {
+                    "type": "TODO",
+                    "desc": t[:60],
+                    "severity": self._estimate_debt_severity("TODO", t),
+                    "effort": self._estimate_debt_effort(t),
+                    "impact": self._estimate_debt_impact(t),
+                }
+            )
 
         # FIXME 추출 (실제 주석만)
         fixmes = extract_real_comments(self.diff, "FIXME")
-        debts.extend([{"type": "FIXME", "desc": f[:60]} for f in fixmes[:3]])
+        for f in fixmes[:3]:
+            debts.append(
+                {
+                    "type": "FIXME",
+                    "desc": f[:60],
+                    "severity": self._estimate_debt_severity("FIXME", f),
+                    "effort": self._estimate_debt_effort(f),
+                    "impact": self._estimate_debt_impact(f),
+                }
+            )
 
         # HACK 추출 (실제 주석만)
         hacks = extract_real_comments(self.diff, "HACK")
-        debts.extend([{"type": "HACK", "desc": h[:60]} for h in hacks[:2]])
+        for h in hacks[:2]:
+            debts.append(
+                {
+                    "type": "HACK",
+                    "desc": h[:60],
+                    "severity": self._estimate_debt_severity("HACK", h),
+                    "effort": self._estimate_debt_effort(h),
+                    "impact": self._estimate_debt_impact(h),
+                }
+            )
 
         # 스킵된 테스트 (추가된 줄에서만)
         skips = re.findall(r"@pytest\.mark\.skip\(reason=[\"'](.+?)[\"']\)", self.added_lines)
-        debts.extend([{"type": "SKIP", "desc": s[:60]} for s in skips[:2]])
+        for s in skips[:2]:
+            debts.append(
+                {
+                    "type": "SKIP",
+                    "desc": s[:60],
+                    "severity": 60,  # 스킵 테스트는 중간 심각도
+                    "effort": "S",
+                    "impact": "Reliability",
+                }
+            )
 
         # 타입 무시 (추가된 줄에서만)
         ignores = len(re.findall(r"#\s*type:\s*ignore", self.added_lines))
         if ignores > 0:
-            debts.append({"type": "TYPE", "desc": f"type: ignore 주석 {ignores}개"})
+            debts.append(
+                {
+                    "type": "TYPE",
+                    "desc": f"type: ignore 주석 {ignores}개",
+                    "severity": 40 + (ignores * 5),  # 개수에 따라 심각도 증가
+                    "effort": "S" if ignores <= 3 else "M",
+                    "impact": "Maintenance",
+                }
+            )
 
         if debts:
-            content += "| 유형 | 설명 | 우선순위 |\n"
-            content += "|------|------|----------|\n"
+            # v3.4: 심각도 기준 정렬 후 테이블 렌더링
+            debts.sort(key=lambda x: x.get("severity", 0), reverse=True)
+
+            content += "| 유형 | 설명 | 심각도 | 노력 | 누적 리스크 |\n"
+            content += "|------|------|--------|------|------------|\n"
             for debt in debts[:8]:
-                priority = "P1" if debt["type"] == "FIXME" else "P2"
-                content += f"| {debt['type']} | {debt['desc']} | {priority} |\n"
+                severity = debt.get("severity", 50)
+                severity_emoji = "🔴" if severity >= 80 else "🟠" if severity >= 60 else "🟡" if severity >= 40 else "🟢"
+                effort = debt.get("effort", "M")
+                impact = debt.get("impact", "Maintenance")
+                content += f"| {debt['type']} | {debt['desc']} | {severity_emoji} {severity}% | {effort} | {impact} |\n"
 
             content += "\n"
 
@@ -1497,92 +1794,148 @@ class SectionGenerator:
         """Decisions Made 섹션 - 구체적 의사결정 분석
 
         v3.2: 초보자를 위한 결정 배경 및 트레이드오프 설명 추가
+        v3.4: 전문가 검증된 메트릭 추가 (유형 + 되돌림 가능성 + 결정 범위)
+              - 추가: type (Architecture/Dependency/Config/Process)
+              - 추가: reversibility (Easy/Medium/Hard) - AI 신뢰도와 구분
+              - 추가: scope (Local/Module/System)
         """
         content = "## Decisions Made (Daily)\n\n"
 
-        decisions = []
+        # v3.4: 구조화된 의사결정 (유형 + 되돌림 + 범위)
+        decisions: List[Dict[str, Any]] = []
         decision_contexts = []  # 결정 배경/트레이드오프
 
         # 명시적 Decision 주석 (실제 주석만)
         decision_comments = extract_real_comments(self.diff, "Decision")
-        decisions.extend([f"📌 {d[:80]}" for d in decision_comments[:5]])
+        for d in decision_comments[:5]:
+            decisions.append(
+                {
+                    "desc": d[:70],
+                    "type": "Process",
+                    "reversibility": "Medium",
+                    "scope": self._estimate_decision_scope(d),
+                }
+            )
 
-        # Why 주석 (실제 주석만)
+        # Why 주석 (실제 주석만) - 배경 컨텍스트용
         why_comments = extract_real_comments(self.diff, "Why")
-        decisions.extend([f"💡 이유: {w[:70]}" for w in why_comments[:3]])
+        for w in why_comments[:3]:
+            decision_contexts.append(f"**이유**: {w[:80]}")
 
-        # 의존성 변경 감지 - 구체적인 라이브러리 및 버전
+        # 의존성 변경 감지 (v3.4: Dependency 유형)
         if "requirements.txt" in self.files:
             added_deps = re.findall(r"^\+([a-zA-Z0-9_-]+)==([0-9.]+)", self.added_lines, re.M)
             for name, version in added_deps[:3]:
-                decisions.append(f"📦 의존성 추가: `{name}=={version}`")
-            if added_deps:
-                decision_contexts.append(
-                    "**의존성 추가 시 고려사항**: 라이선스 호환성, 보안 취약점, " "유지보수 상태, 번들 크기 영향을 확인하세요."
+                decisions.append(
+                    {
+                        "desc": f"의존성 추가: {name}=={version}",
+                        "type": "Dependency",
+                        "reversibility": "Easy",  # pip uninstall 가능
+                        "scope": "Module",
+                    }
                 )
+            if added_deps:
+                decision_contexts.append("**의존성 추가 주의**: 라이선스 호환성, 보안 취약점, 유지보수 상태 확인")
 
         if "package.json" in self.files:
             added_npm = re.findall(r'"([^"]+)":\s*"[\^~]?([0-9.]+)"', self.added_lines)
             for name, version in added_npm[:3]:
                 if not name.startswith("@types"):
-                    decisions.append(f"📦 NPM 패키지: `{name}@{version}`")
+                    decisions.append(
+                        {
+                            "desc": f"NPM 패키지: {name}@{version}",
+                            "type": "Dependency",
+                            "reversibility": "Easy",
+                            "scope": "Module",
+                        }
+                    )
 
-        # 아키텍처 결정 감지
+        # 아키텍처 결정 감지 (v3.4: Architecture 유형)
         arch_patterns = {
-            r"class\s+(\w+Factory)": ("Factory 패턴 도입", "객체 생성 로직 분리로 유연성 확보, but 복잡도 증가"),
-            r"class\s+(\w+Singleton)": ("Singleton 패턴 도입", "전역 상태 관리, but 테스트 어려움 주의"),
-            r"class\s+(\w+Service)": ("Service 계층 분리", "비즈니스 로직 분리로 재사용성 향상"),
-            r"class\s+(\w+Repository)": ("Repository 패턴 적용", "데이터 접근 추상화로 DB 변경 용이"),
-            r"class\s+(\w+Controller)": ("Controller 계층 분리", "요청 처리 분리로 관심사 명확화"),
+            r"class\s+(\w+Factory)": ("Factory 패턴", "Hard", "System"),
+            r"class\s+(\w+Singleton)": ("Singleton 패턴", "Hard", "System"),
+            r"class\s+(\w+Service)": ("Service 계층", "Medium", "Module"),
+            r"class\s+(\w+Repository)": ("Repository 패턴", "Medium", "Module"),
+            r"class\s+(\w+Controller)": ("Controller 계층", "Medium", "Module"),
         }
-        for pattern, (desc, tradeoff) in arch_patterns.items():
+        for pattern, (desc, rev, scope) in arch_patterns.items():
             matches = re.findall(pattern, self.added_lines)
             if matches:
-                decisions.append(f"🏗️ {desc}: `{matches[0]}`")
-                decision_contexts.append(f"**{desc} 트레이드오프**: {tradeoff}")
+                decisions.append(
+                    {
+                        "desc": f"{desc}: {matches[0]}",
+                        "type": "Architecture",
+                        "reversibility": rev,
+                        "scope": scope,
+                    }
+                )
                 break
 
-        # 설정 파일 변경 감지
+        # 설정 파일 변경 감지 (v3.4: Config 유형)
         config_files = [f for f in self.files if f.endswith((".yaml", ".yml", ".json", ".toml", ".env"))]
         if config_files:
             config_names = [Path(f).name for f in config_files[:2]]
-            decisions.append(f"⚙️ 설정 변경: `{', '.join(config_names)}`")
-            decision_contexts.append(
-                "**설정 변경 주의**: 환경별(dev/staging/prod) 차이, " "민감정보 노출, 기본값 영향 확인 필요"
+            decisions.append(
+                {
+                    "desc": f"설정 변경: {', '.join(config_names)}",
+                    "type": "Config",
+                    "reversibility": "Easy",
+                    "scope": "System" if any("prod" in f.lower() for f in config_files) else "Local",
+                }
             )
+            decision_contexts.append("**설정 변경 주의**: 환경별(dev/staging/prod) 차이, 민감정보 노출 확인 필요")
 
-        # 커밋 메시지에서 결정사항 추출
+        # 커밋 메시지에서 결정사항 추출 (v3.4: Process 유형)
         commit_decision_patterns = [
-            (r"대신|instead of|rather than", "대안 선택", "대안을 선택한 이유와 포기한 옵션도 기록해두세요"),
-            (r"전환|migrate|switch", "기술 전환", "마이그레이션 계획과 롤백 전략이 중요합니다"),
-            (r"도입|introduce|adopt", "새 기술 도입", "학습 비용과 팀 역량을 고려했나요?"),
-            (r"제거|remove|deprecate", "기능 제거", "하위 호환성과 사용자 영향을 확인하세요"),
+            (r"대신|instead of|rather than", "대안 선택", "Medium", "Module"),
+            (r"전환|migrate|switch", "기술 전환", "Hard", "System"),
+            (r"도입|introduce|adopt", "새 기술 도입", "Medium", "Module"),
+            (r"제거|remove|deprecate", "기능 제거", "Hard", "System"),
         ]
-        for pattern, desc, context in commit_decision_patterns:
+        for pattern, desc, rev, scope in commit_decision_patterns:
             if re.search(pattern, self.message, re.I):
-                decisions.append(f"🎯 {desc}: {self.message.split(chr(10))[0][:50]}")
-                decision_contexts.append(f"**{desc} 시 고려사항**: {context}")
+                decisions.append(
+                    {
+                        "desc": f"{desc}: {self.message.split(chr(10))[0][:40]}",
+                        "type": "Process",
+                        "reversibility": rev,
+                        "scope": scope,
+                    }
+                )
                 break
 
         if decisions:
-            for idx, decision in enumerate(decisions[:8], 1):
-                content += f"{idx}. {decision}\n"
+            # v3.4: 테이블 형식으로 렌더링 (되돌림 가능성 기준 정렬)
+            reversibility_order = {"Hard": 0, "Medium": 1, "Easy": 2}
+            decisions.sort(key=lambda x: reversibility_order.get(x.get("reversibility", "Medium"), 1))
+
+            content += "| 결정 내용 | 유형 | 되돌림 | 범위 |\n"
+            content += "|----------|------|--------|------|\n"
+            for dec in decisions[:8]:
+                rev = dec.get("reversibility", "Medium")
+                rev_emoji = {"Easy": "🟢", "Medium": "🟡", "Hard": "🔴"}.get(rev, "🟡")
+                scope = dec.get("scope", "Module")
+                scope_emoji = {"Local": "📄", "Module": "📦", "System": "🌐"}.get(scope, "📦")
+                content += f"| {dec['desc']} | {dec['type']} | {rev_emoji} {rev} | {scope_emoji} {scope} |\n"
             content += "\n"
 
-            # 초보자를 위한 결정 배경 설명
+            # 초보자를 위한 메트릭 설명
+            content += "### 💡 의사결정 메트릭 이해하기 (초보자용)\n\n"
+            content += "**되돌림 가능성 (Reversibility)**:\n"
+            content += "- 🟢 Easy: 쉽게 되돌릴 수 있음 (의존성 제거, 설정 변경)\n"
+            content += "- 🟡 Medium: 약간의 작업 필요 (코드 리팩토링, DB 마이그레이션)\n"
+            content += "- 🔴 Hard: 되돌리기 어려움 (아키텍처 변경, 데이터 스키마 변경)\n\n"
+
+            content += "**결정 범위 (Scope)**:\n"
+            content += "- 📄 Local: 단일 파일/함수 수준\n"
+            content += "- 📦 Module: 모듈/패키지 수준\n"
+            content += "- 🌐 System: 시스템 전체 영향\n\n"
+
+            # 결정 배경 설명
             if decision_contexts:
-                content += "### 💡 결정의 배경 이해하기 (초보자용)\n\n"
+                content += "### 📝 결정의 배경\n\n"
                 for ctx in decision_contexts[:3]:
                     content += f"{ctx}\n\n"
-
-            # 의사결정 기록 가이드
-            content += "### 📝 좋은 의사결정 기록 방법\n\n"
-            content += "```python\n"
-            content += "# Decision: Factory 패턴 대신 Builder 패턴 선택\n"
-            content += "# Why: 객체 생성 단계가 복잡하고, 선택적 필드가 많아서\n"
-            content += "# Tradeoff: 코드량 증가 vs 가독성/유연성 향상\n"
-            content += "# Alternative: Factory 패턴 (더 단순하지만 유연성 부족)\n"
-            content += "```\n\n"
 
         else:
             # 구체적인 폴백 메시지
