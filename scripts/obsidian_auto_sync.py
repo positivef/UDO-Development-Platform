@@ -1,8 +1,13 @@
 #!/usr/bin/env python
 """
-Obsidian Auto-Sync v3.6 - AI-Enhanced Development Log Generator
+Obsidian Auto-Sync v3.6.1 - AI-Enhanced Development Log Generator
 
 자동으로 Git commit 정보를 분석하여 Obsidian 개발일지를 생성합니다.
+
+Features (v3.6.1):
+- 커리큘럼 외부화: YAML 설정 파일 분리 (config/learning_curriculum.yaml)
+- 패턴도 YAML에서 로드 (CHECKPOINT_PATTERNS)
+- Fallback 지원: YAML 로드 실패 시 최소 기능 유지
 
 Features (v3.6):
 - 체크포인트 자동 감지 (커밋 메시지 + diff 패턴 분석)
@@ -38,7 +43,7 @@ Requirements:
 
 Author: System Automation Team
 Date: 2025-12-29
-Version: 3.6.0 (Checkpoint Auto-Detection)
+Version: 3.6.1 (YAML Configuration Externalization)
 """
 
 import argparse
@@ -133,278 +138,94 @@ def save_ai_metacognition(metacognition: Dict[str, Any]) -> bool:
 
 
 # =============================================================================
-# v3.5: Learning Progress Tracking (학습 진행 상황 추적)
+# v3.6.1: External YAML Configuration Loading
 # =============================================================================
 
-# 3개월 커리큘럼 정의 (Month, Week, 설명, 필수 체크포인트, 고려사항, 주의점)
-LEARNING_CURRICULUM = {
-    (0, 0): {
-        "title": "환경 설정 및 사전 준비",
-        "focus": "학습 환경 구성 및 기초 점검",
-        "checkpoints": [
-            "Python 3.11+ 설치 확인",
-            "Node.js 18+ 설치 확인",
-            "Git 설정 완료 (user.name, user.email)",
-            "Obsidian Vault 생성 및 경로 설정",
-            "Claude Pro 구독 및 API 접근 확인",
-        ],
-        "considerations": [
-            "환경 설정은 한 번만 정확히 하면 이후 수정 불필요",
-            "버전 호환성 확인 (Python/Node.js 최소 버전)",
-        ],
-        "warnings": [
-            "환경 변수 설정 주의 (OBSIDIAN_VAULT_PATH, API keys)",
-            "PATH 설정 확인 (python, node, git 명령어 실행 가능 여부)",
-        ],
-        "guide": "VibeCoding-Growth-Guide",
-    },
-    (1, 1): {
-        "title": "기초 다지기 - Claude Code 기본",
-        "focus": "Claude Code 기본 명령어 익히기",
-        "checkpoints": [
-            "/sc:analyze 3회 이상 사용",
-            "간단한 함수 구현 1회",
-        ],
-        "considerations": [
-            "AI 응답을 그대로 복붙하지 말고 이해한 후 사용",
-            "작은 단위로 요청하여 결과 확인",
-        ],
-        "warnings": [
-            "AI가 생성한 코드도 반드시 검토 필요",
-            "민감 정보(API키, 비밀번호)를 프롬프트에 포함하지 않기",
-        ],
-        "guide": "Claude-Skills-Curriculum",
-    },
-    (1, 2): {
-        "title": "기초 다지기 - 코드 분석",
-        "focus": "/sc:analyze로 코드 분석 학습",
-        "checkpoints": [
-            "/sc:analyze --focus quality 1회",
-            "/sc:analyze --focus security 1회",
-        ],
-        "considerations": [
-            "분석 결과의 우선순위(severity)를 먼저 확인",
-            "모든 경고를 한번에 수정하려 하지 말고 중요한 것부터",
-        ],
-        "warnings": [
-            "보안 취약점은 즉시 수정 (나중에로 미루지 않기)",
-            "false positive도 있을 수 있으니 맹신 금지",
-        ],
-        "guide": "Claude-Skills-Curriculum",
-    },
-    (1, 3): {
-        "title": "기초 다지기 - Context7 MCP",
-        "focus": "공식 문서 검색으로 라이브러리 학습",
-        "checkpoints": [
-            "Context7로 라이브러리 문서 검색 3회",
-            "공식 문서 기반 구현 1회",
-        ],
-        "considerations": [
-            "공식 문서 버전과 프로젝트 버전 일치 확인",
-            "deprecated 메서드 사용 주의",
-        ],
-        "warnings": [
-            "Stack Overflow보다 공식 문서 우선",
-            "오래된 예제 코드는 현재 버전과 다를 수 있음",
-        ],
-        "guide": "MCP-Combination-Patterns",
-    },
-    (1, 4): {
-        "title": "기초 다지기 - 테스트 작성",
-        "focus": "/sc:test로 단위 테스트 작성",
-        "checkpoints": [
-            "단위 테스트 5개 작성",
-            "테스트 커버리지 확인 1회",
-        ],
-        "considerations": [
-            "Happy path뿐 아니라 edge case도 테스트",
-            "테스트 이름은 무엇을 테스트하는지 명확하게",
-        ],
-        "warnings": [
-            "테스트가 통과한다고 버그가 없는 게 아님",
-            "테스트 건너뛰기(skip) 남발 금지",
-        ],
-        "guide": "Claude-Skills-Curriculum",
-        "bridge_preview": {
-            "next_month": "Month 2: 실전 적용",
-            "preview": "MCP 서버 조합으로 복잡한 문제 해결",
-            "preparation": [
-                "Context7 MCP 설치 확인",
-                "Sequential MCP 개념 학습",
-                "복잡한 디버깅 케이스 1개 준비",
-            ],
-        },
-    },
-    (2, 1): {
-        "title": "실전 적용 - MCP 조합",
-        "focus": "Sequential + Context7 조합 디버깅",
-        "checkpoints": [
-            "MCP 조합으로 복잡한 버그 해결 1회",
-            "Obsidian -> Context7 체인 사용 1회",
-        ],
-        "considerations": [
-            "MCP 서버 간 의존성 순서 중요",
-            "먼저 Obsidian(과거 솔루션) 확인 후 Context7",
-        ],
-        "warnings": [
-            "너무 많은 MCP 동시 사용 시 혼란 가능",
-            "각 MCP 응답을 검증 후 다음 단계 진행",
-        ],
-        "guide": "MCP-Combination-Patterns",
-        "bridge_review": {
-            "previous_month": "Month 1: 기초 다지기",
-            "key_concepts": [
-                "Claude Code 기본 명령어",
-                "/sc:analyze 코드 분석",
-                "Context7 공식 문서 검색",
-            ],
-            "self_check": [
-                "간단한 함수를 AI로 구현할 수 있는가?",
-                "에러 메시지를 해석하고 해결할 수 있는가?",
-            ],
-        },
-    },
-    (2, 2): {
-        "title": "실전 적용 - UI 개발",
-        "focus": "Magic MCP로 UI 컴포넌트 생성",
-        "checkpoints": [
-            "Magic MCP로 컴포넌트 생성 2회",
-            "Context7 -> Magic 체인 사용 1회",
-        ],
-        "considerations": [
-            "생성된 UI의 접근성(a11y) 확인",
-            "반응형 디자인 검증 필수",
-        ],
-        "warnings": [
-            "UI 라이브러리 버전 호환성 확인",
-            "생성된 스타일이 기존 디자인 시스템과 충돌하지 않는지 확인",
-        ],
-        "guide": "MCP-Combination-Patterns",
-    },
-    (2, 3): {
-        "title": "실전 적용 - E2E 테스트",
-        "focus": "Playwright로 자동화 테스트",
-        "checkpoints": [
-            "E2E 테스트 3개 작성",
-            "Magic -> Playwright 체인 사용 1회",
-        ],
-        "considerations": [
-            "selector는 data-testid 사용 권장",
-            "네트워크 지연 고려한 적절한 timeout 설정",
-        ],
-        "warnings": [
-            "flaky test(가끔 실패하는 테스트) 방치 금지",
-            "실제 API 호출 대신 mock 사용 고려",
-        ],
-        "guide": "MCP-Combination-Patterns",
-    },
-    (2, 4): {
-        "title": "실전 적용 - 워크플로우",
-        "focus": "/sc:workflow로 PRD 기반 구현",
-        "checkpoints": [
-            "/sc:workflow로 구현 계획 1개 생성",
-            "계획 기반 구현 완료 1회",
-        ],
-        "considerations": [
-            "워크플로우 각 단계별 완료 기준 명확히",
-            "의존성 있는 작업은 순서대로 진행",
-        ],
-        "warnings": [
-            "계획만 세우고 실행 안 하면 무의미",
-            "계획 변경 시 문서 업데이트 필수",
-        ],
-        "guide": "Claude-Skills-Curriculum",
-        "bridge_preview": {
-            "next_month": "Month 3: 고급 활용",
-            "preview": "멀티에이전트 오케스트레이션과 대규모 코드베이스 관리",
-            "preparation": [
-                "Task 에이전트 개념 이해",
-                "Morphllm 대량 편집 학습",
-                "Serena 프로젝트 메모리 설정",
-            ],
-        },
-    },
-    (3, 1): {
-        "title": "고급 활용 - 멀티에이전트",
-        "focus": "Task 에이전트 병렬 실행",
-        "checkpoints": [
-            "2개 이상 에이전트 병렬 실행 1회",
-            "Explore 에이전트 사용 2회",
-        ],
-        "considerations": [
-            "에이전트 결과를 종합하여 최종 판단은 본인이",
-            "각 에이전트의 전문 영역 파악 후 적절히 활용",
-        ],
-        "warnings": [
-            "에이전트 간 상충되는 의견 발생 가능 - 맥락에 맞게 판단",
-            "병렬 실행 시 토큰 소비량 증가에 주의",
-        ],
-        "guide": "Multi-Agent-Workflows",
-        "bridge_review": {
-            "previous_month": "Month 2: 실전 적용",
-            "key_concepts": [
-                "Sequential + Context7 조합",
-                "Magic MCP UI 컴포넌트",
-                "Playwright E2E 테스트",
-            ],
-            "self_check": [
-                "MCP 서버 2개 이상 조합하여 문제를 해결할 수 있는가?",
-                "PRD 기반으로 워크플로우를 설계할 수 있는가?",
-            ],
-        },
-    },
-    (3, 2): {
-        "title": "고급 활용 - 페르소나 리뷰",
-        "focus": "security-engineer 등 페르소나 활용",
-        "checkpoints": [
-            "security-engineer 리뷰 1회",
-            "performance-engineer 리뷰 1회",
-        ],
-        "considerations": [
-            "페르소나별 관점 차이 이해하고 활용",
-            "모든 제안을 수용할 필요 없음 - 프로젝트 맥락 고려",
-        ],
-        "warnings": [
-            "보안 리뷰 결과는 반드시 검토 후 적용",
-            "성능 최적화는 측정 먼저, 최적화 나중에",
-        ],
-        "guide": "Multi-Agent-Workflows",
-    },
-    (3, 3): {
-        "title": "고급 활용 - 대량 리팩토링",
-        "focus": "Morphllm으로 코드 일괄 수정",
-        "checkpoints": [
-            "Morphllm 패턴 변환 1회",
-            "Sequential -> Morphllm 체인 1회",
-        ],
-        "considerations": [
-            "리팩토링 전 반드시 테스트 스위트 확보",
-            "작은 범위부터 시작하여 점진적 확대",
-        ],
-        "warnings": [
-            "대량 수정 전 git commit으로 롤백 포인트 확보 필수",
-            "자동 변환 후 반드시 diff 검토",
-        ],
-        "guide": "MCP-Combination-Patterns",
-    },
-    (3, 4): {
-        "title": "고급 활용 - 프로젝트 메모리",
-        "focus": "Serena로 세션 지속성 관리",
-        "checkpoints": [
-            "/sc:load, /sc:save 사용 1회",
-            "프로젝트 심볼 검색 2회",
-        ],
-        "considerations": [
-            "세션 종료 전 중요 컨텍스트 저장 습관화",
-            "프로젝트 메모리는 주기적으로 정리",
-        ],
-        "warnings": [
-            "오래된 컨텍스트가 현재 코드와 불일치할 수 있음",
-            "민감 정보가 메모리에 저장되지 않도록 주의",
-        ],
-        "guide": "VibeCoding-Growth-Guide",
-    },
-}
+
+def _get_curriculum_yaml_path() -> Path:
+    """커리큘럼 YAML 파일 경로 반환"""
+    # 1. 환경변수에서 경로 확인
+    env_path = os.environ.get("CURRICULUM_YAML_PATH")
+    if env_path and Path(env_path).exists():
+        return Path(env_path)
+
+    # 2. 스크립트 기준 상대 경로
+    script_dir = Path(__file__).parent
+    config_path = script_dir.parent / "config" / "learning_curriculum.yaml"
+    if config_path.exists():
+        return config_path
+
+    # 3. 현재 작업 디렉토리 기준
+    cwd_path = Path.cwd() / "config" / "learning_curriculum.yaml"
+    if cwd_path.exists():
+        return cwd_path
+
+    return config_path  # 기본값 (없으면 fallback 사용)
+
+
+def _load_curriculum_from_yaml() -> Tuple[Dict, Dict]:
+    """YAML 파일에서 커리큘럼과 패턴 로드
+
+    Returns:
+        (LEARNING_CURRICULUM, CHECKPOINT_PATTERNS) 튜플
+    """
+    yaml_path = _get_curriculum_yaml_path()
+
+    if not yaml_path.exists():
+        # Fallback: 하드코딩된 최소 커리큘럼
+        return _get_fallback_curriculum(), _get_fallback_patterns()
+
+    try:
+        with open(yaml_path, "r", encoding="utf-8") as f:
+            data = yaml.safe_load(f)
+
+        # 커리큘럼 변환: "1-2" -> (1, 2)
+        curriculum = {}
+        for key, value in data.get("curriculum", {}).items():
+            parts = key.split("-")
+            if len(parts) == 2:
+                month, week = int(parts[0]), int(parts[1])
+                curriculum[(month, week)] = value
+
+        # 패턴 로드
+        patterns = data.get("checkpoint_patterns", {})
+
+        return curriculum, patterns
+
+    except (yaml.YAMLError, IOError) as e:
+        print(f"Warning: Failed to load curriculum YAML: {e}", file=sys.stderr)
+        return _get_fallback_curriculum(), _get_fallback_patterns()
+
+
+def _get_fallback_curriculum() -> Dict:
+    """YAML 로드 실패 시 최소 fallback 커리큘럼"""
+    return {
+        (1, 1): {
+            "title": "기초 다지기 - Claude Code 기본",
+            "focus": "Claude Code 기본 명령어 익히기",
+            "checkpoints": ["/sc:analyze 3회 이상 사용", "간단한 함수 구현 1회"],
+            "considerations": ["AI 응답을 그대로 복붙하지 말고 이해한 후 사용"],
+            "warnings": ["AI가 생성한 코드도 반드시 검토 필요"],
+            "guide": "Claude-Skills-Curriculum",
+        }
+    }
+
+
+def _get_fallback_patterns() -> Dict:
+    """YAML 로드 실패 시 최소 fallback 패턴"""
+    return {
+        "/sc:analyze": ["sc:analyze", "분석\\s*완료"],
+        "함수 구현": ["def\\s+\\w+\\s*\\(", "function\\s+\\w+\\s*\\("],
+    }
+
+
+# YAML에서 커리큘럼 로드 (모듈 로드 시 1회만 실행)
+LEARNING_CURRICULUM, CHECKPOINT_PATTERNS = _load_curriculum_from_yaml()
+
+
+# =============================================================================
+# v3.5: Learning Progress Tracking (학습 진행 상황 추적)
+# =============================================================================
 
 
 def load_learning_progress() -> Dict[str, Any]:
@@ -491,111 +312,8 @@ def get_current_curriculum() -> Dict[str, Any]:
 # =============================================================================
 # v3.6: Checkpoint Auto-Detection (체크포인트 자동 감지)
 # =============================================================================
-
-# 체크포인트별 감지 패턴 정의
-# 각 키는 체크포인트 설명의 일부이며, 값은 해당 체크포인트 완료를 감지하는 정규식 패턴 리스트
-CHECKPOINT_PATTERNS: Dict[str, List[str]] = {
-    # Week 0 (환경 설정) patterns
-    "Python": [r"python.*3\.\d+", r"pip\s+install", r"requirements\.txt"],
-    "Node.js": [r"node.*\d+\.", r"npm\s+install", r"package\.json"],
-    "Git 설정": [r"git\s+config", r"user\.name", r"user\.email"],
-    "Obsidian": [r"obsidian", r"vault", r"\.md\s+생성"],
-    "Claude": [r"claude", r"anthropic", r"api.*key"],
-    # Week 1 (기초 다지기 - Claude Code 기본) patterns
-    "/sc:analyze": [
-        r"sc:analyze",
-        r"분석\s*완료",
-        r"analyze.*quality",
-        r"analyze.*security",
-        r"quality.*check",
-        r"코드\s*분석",
-    ],
-    "함수 구현": [
-        r"def\s+\w+\s*\(",
-        r"function\s+\w+\s*\(",
-        r"const\s+\w+\s*=\s*\(",
-        r"async\s+def\s+\w+",
-        r"impl.*function",
-        r"구현\s*완료",
-    ],
-    # Week 2 (기초 다지기 - 코드 분석) patterns
-    "코드 분석": [
-        r"sc:analyze",
-        r"quality.*check",
-        r"lint.*pass",
-        r"pylint",
-        r"flake8",
-        r"eslint",
-    ],
-    "--focus quality": [r"--focus\s+quality", r"quality\s+분석", r"코드\s*품질"],
-    "--focus security": [r"--focus\s+security", r"security\s+분석", r"보안\s*점검"],
-    # Week 3 (기초 다지기 - Context7 MCP) patterns
-    "Context7": [
-        r"context7",
-        r"mcp.*context",
-        r"공식.*문서",
-        r"라이브러리.*문서",
-        r"documentation",
-    ],
-    "공식 문서": [r"official.*doc", r"공식.*문서", r"문서.*기반"],
-    # Week 4 (기초 다지기 - 테스트 작성) patterns
-    "테스트 작성": [
-        r"test_\w+",
-        r"\.test\.",
-        r"pytest",
-        r"jest",
-        r"spec\.",
-        r"unittest",
-        r"테스트.*작성",
-    ],
-    "단위 테스트": [r"unit.*test", r"단위.*테스트", r"test_\w+\.py"],
-    "테스트 커버리지": [r"coverage", r"--cov", r"커버리지", r"\d+%\s*coverage"],
-    # Month 2 Week 1 (실전 적용 - MCP 조합) patterns
-    "MCP 조합": [
-        r"mcp.*조합",
-        r"sequential.*context7",
-        r"체인.*사용",
-        r"mcp.*chain",
-    ],
-    "Obsidian -> Context7": [r"obsidian.*context7", r"지식.*문서", r"3tier"],
-    # Month 2 Week 2 (실전 적용 - UI 개발) patterns
-    "Magic MCP": [r"magic.*mcp", r"21st\.dev", r"ui.*컴포넌트", r"component.*생성"],
-    "Context7 -> Magic": [r"context7.*magic", r"문서.*ui", r"pattern.*component"],
-    # Month 2 Week 3 (실전 적용 - E2E 테스트) patterns
-    "E2E 테스트": [
-        r"e2e",
-        r"playwright",
-        r"cypress",
-        r"end.to.end",
-        r"integration.*test",
-    ],
-    "Magic -> Playwright": [r"magic.*playwright", r"ui.*e2e", r"component.*test"],
-    # Month 2 Week 4 (실전 적용 - 워크플로우) patterns
-    "/sc:workflow": [r"sc:workflow", r"workflow.*생성", r"계획.*생성"],
-    "계획 기반": [r"prd.*기반", r"계획.*구현", r"workflow.*impl"],
-    # Month 3 Week 1 (고급 활용 - 멀티에이전트) patterns
-    "에이전트 병렬": [r"parallel.*agent", r"병렬.*실행", r"multi.*agent"],
-    "Explore 에이전트": [r"explore.*agent", r"탐색.*에이전트", r"exploration"],
-    # Month 3 Week 2 (고급 활용 - 페르소나 리뷰) patterns
-    "security-engineer": [r"security.engineer", r"보안.*리뷰", r"security.*review"],
-    "performance-engineer": [r"performance.engineer", r"성능.*리뷰", r"perf.*review"],
-    # Month 3 Week 3 (고급 활용 - 대량 리팩토링) patterns
-    "리팩토링": [
-        r"refactor",
-        r"리팩토링",
-        r"cleanup",
-        r"개선",
-        r"restructure",
-    ],
-    "Morphllm": [r"morphllm", r"morph.*transform", r"패턴.*변환"],
-    "Sequential -> Morphllm": [r"sequential.*morph", r"분석.*변환"],
-    # Month 3 Week 4 (고급 활용 - 프로젝트 메모리) patterns
-    "/sc:load": [r"sc:load", r"세션.*로드", r"context.*load"],
-    "/sc:save": [r"sc:save", r"세션.*저장", r"context.*save"],
-    "심볼 검색": [r"symbol.*search", r"심볼.*검색", r"find.*symbol"],
-    # General patterns (공통)
-    "버그 수정": [r"fix", r"bug", r"버그", r"수정", r"resolve", r"해결"],
-}
+# NOTE: CHECKPOINT_PATTERNS는 config/learning_curriculum.yaml에서 로드됨
+# 이 부분은 위의 _load_curriculum_from_yaml() 함수에서 처리됨
 
 
 def detect_checkpoint_completion(commit_message: str, diff: str, current_curriculum: Dict[str, Any]) -> List[str]:
