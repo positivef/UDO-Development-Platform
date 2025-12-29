@@ -1586,16 +1586,19 @@ class SectionGenerator:
         )
 
         # v3.4: 5열 테이블 (전략, 영향 범위, 복잡도, 명령어, 예상 시간)
-        content += "| 전략                           | 명령어/방법                        | 예상 시간              |\n"
-        content += "| ---------------------------- | ----------------------------- | ------------------ |\n"
+        content += "| 전략 | 영향 범위 | 복잡도 | 명령어/방법 | 예상 시간 |\n"
+        content += "|------|----------|--------|------------|----------|\n"
         for idx, item in enumerate(rollbacks[:5], 1):
             if isinstance(item, dict):
                 strategy = item.get("strategy", "-")
+                impact = item.get("impact", "Code-only")
+                complexity = item.get("complexity", "Low")
+                complexity_emoji = {"Low": "🟢", "Medium": "🟡", "High": "🔴"}.get(complexity, "🟡")
                 cmd = f"`{item['cmd']}`" if item.get("cmd") else "-"
                 time = item.get("time", "-")
-                content += f"| Tier {idx}: {strategy} | {cmd} | {time} |\n"
+                content += f"| Tier {idx}: {strategy} | {impact} | {complexity_emoji} {complexity} | {cmd} | {time} |\n"
             else:
-                content += f"| Tier {idx} | {item} | - |\n"
+                content += f"| Tier {idx} | {item} | - | - | - |\n"
 
         content += "\n"
 
