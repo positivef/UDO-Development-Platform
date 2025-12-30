@@ -146,7 +146,8 @@ function TaskCardComponent({ task, onClick, onDoubleClick }: TaskCardProps) {
       role="button"
       tabIndex={0}
       aria-label={`${task.title}. 클릭하면 상세보기, 더블클릭 또는 Ctrl+C로 컨텍스트 열기`}
-      className="cursor-pointer"
+      className="cursor-pointer task-card"
+      data-testid="task-card"
     >
       <Card
         className={cn(
