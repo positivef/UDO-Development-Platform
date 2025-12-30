@@ -19,17 +19,20 @@ from datetime import UTC, datetime
 from typing import Dict, List, Optional, Set, Tuple
 from uuid import UUID, uuid4
 
-from app.models.kanban_dependencies import (CircularDependencyError,
-                                                    DAGStatistics, Dependency,
-                                                    DependencyAudit,
-                                                    DependencyCreate,
-                                                    DependencyGraph,
-                                                    DependencyGraphEdge,
-                                                    DependencyGraphNode,
-                                                    DependencyStatus,
-                                                    DependencyType,
-                                                    EmergencyOverride,
-                                                    TopologicalSortResult)
+from app.models.kanban_dependencies import (
+    CircularDependencyError,
+    DAGStatistics,
+    Dependency,
+    DependencyAudit,
+    DependencyCreate,
+    DependencyGraph,
+    DependencyGraphEdge,
+    DependencyGraphNode,
+    DependencyStatus,
+    DependencyType,
+    EmergencyOverride,
+    TopologicalSortResult,
+)
 
 # Import task service for fetching task metadata (Week 3 Day 1-2)
 # NOTE: Cannot import at module level due to circular dependency
@@ -69,9 +72,7 @@ class KanbanDependencyService:
     # CRUD Operations
     # ========================================================================
 
-    async def create_dependency(
-        self, dependency_data: DependencyCreate, available_task_ids: Set[UUID]
-    ) -> Dependency:
+    async def create_dependency(self, dependency_data: DependencyCreate, available_task_ids: Set[UUID]) -> Dependency:
         """
         Create new dependency with DAG cycle validation.
 
@@ -120,8 +121,7 @@ class KanbanDependencyService:
             self._invalidate_caches()
 
         logger.info(
-            f"Created dependency: {temp_dep.depends_on_task_id} -> {temp_dep.task_id} "
-            f"({temp_dep.dependency_type.value})"
+            f"Created dependency: {temp_dep.depends_on_task_id} -> {temp_dep.task_id} " f"({temp_dep.dependency_type.value})"
         )
 
         return temp_dep
@@ -204,17 +204,14 @@ class KanbanDependencyService:
             return [
                 dep
                 for dep in self._mock_dependencies.values()
-                if dep.depends_on_task_id == task_id
-                and dep.status == DependencyStatus.PENDING
+                if dep.depends_on_task_id == task_id and dep.status == DependencyStatus.PENDING
             ]
 
     # ========================================================================
     # Emergency Override (Q7)
     # ========================================================================
 
-    async def emergency_override(
-        self, override_request: EmergencyOverride
-    ) -> Dependency:
+    async def emergency_override(self, override_request: EmergencyOverride) -> Dependency:
         """
         Emergency override for dependency (Q7: Hard Block with emergency override).
 
@@ -259,9 +256,7 @@ class KanbanDependencyService:
 
         return dependency
 
-    async def get_audit_log(
-        self, limit: int = 50, offset: int = 0
-    ) -> List[DependencyAudit]:
+    async def get_audit_log(self, limit: int = 50, offset: int = 0) -> List[DependencyAudit]:
         """
         Get dependency audit log (emergency overrides).
 
@@ -277,18 +272,14 @@ class KanbanDependencyService:
             pass
         else:
             # Mock implementation
-            sorted_log = sorted(
-                self._mock_audit_log, key=lambda x: x.overridden_at, reverse=True
-            )
+            sorted_log = sorted(self._mock_audit_log, key=lambda x: x.overridden_at, reverse=True)
             return sorted_log[offset : offset + limit]
 
     # ========================================================================
     # DAG Operations (Cycle Detection & Topological Sort)
     # ========================================================================
 
-    def _would_create_cycle(
-        self, new_dependency: Dependency, available_task_ids: Set[UUID]
-    ) -> bool:
+    def _would_create_cycle(self, new_dependency: Dependency, available_task_ids: Set[UUID]) -> bool:
         """
         Check if adding this dependency would create a cycle using DFS.
 
@@ -328,9 +319,7 @@ class KanbanDependencyService:
         # Start DFS from the dependent task
         return has_cycle_dfs(new_dependency.task_id)
 
-    def _find_cycle(
-        self, new_dependency: Dependency, available_task_ids: Set[UUID]
-    ) -> List[UUID]:
+    def _find_cycle(self, new_dependency: Dependency, available_task_ids: Set[UUID]) -> List[UUID]:
         """
         Find the cycle path for error reporting.
 
@@ -383,9 +372,7 @@ class KanbanDependencyService:
 
         execution_time = (time.perf_counter() - start_time) * 1000  # Convert to ms
 
-        logger.info(
-            f"Topological sort completed: {len(result)} tasks sorted in {execution_time:.2f}ms"
-        )
+        logger.info(f"Topological sort completed: {len(result)} tasks sorted in {execution_time:.2f}ms")
 
         return TopologicalSortResult(
             ordered_tasks=result,
@@ -394,9 +381,7 @@ class KanbanDependencyService:
             dependency_count=len(self._mock_dependencies),
         )
 
-    async def get_dependency_graph(
-        self, task_id: UUID, depth: int = 3
-    ) -> DependencyGraph:
+    async def get_dependency_graph(self, task_id: UUID, depth: int = 3) -> DependencyGraph:
         """
         Get dependency graph for D3.js force-directed visualization.
 
@@ -411,8 +396,7 @@ class KanbanDependencyService:
         """
         # Import inside method to avoid circular dependency
         # Use singleton instance for both mock (tests) and production
-        from app.services.kanban_task_service import \
-            kanban_task_service
+        from app.services.kanban_task_service import kanban_task_service
 
         # Get task service instance (uses mock for tests, real DB for production)
         task_service = kanban_task_service
@@ -517,19 +501,18 @@ class KanbanDependencyService:
         # Cycle detection time (already done during sort)
         cycle_time = topo_time * 0.3  # Estimate
 
-        # Calculate max depth (longest dependency chain)
-        max_depth = 0
-        for task_id in task_ids:
-            depth = await self._calculate_task_depth(task_id)
-            max_depth = max(max_depth, depth)
+        # HIGH-08 FIX: Calculate max depth using optimized BFS O(V+E)
+        # Previous: O(V * depth) recursive approach
+        # Now: O(V+E) single-pass BFS for better performance with 1,000+ tasks
+        depth_start = time.perf_counter()
+        max_depth = self._calculate_max_depth_optimized(task_ids)
+        depth_time = (time.perf_counter() - depth_start) * 1000
+
+        logger.debug(f"Max depth calculation: {max_depth} in {depth_time:.2f}ms")
 
         # Average dependencies per task
         dep_count = len(
-            [
-                d
-                for d in self._mock_dependencies.values()
-                if d.task_id in task_ids and d.depends_on_task_id in task_ids
-            ]
+            [d for d in self._mock_dependencies.values() if d.task_id in task_ids and d.depends_on_task_id in task_ids]
         )
         avg_deps = dep_count / len(task_ids) if task_ids else 0
 
@@ -588,6 +571,62 @@ class KanbanDependencyService:
             max_depth = max(max_depth, depth)
 
         return max_depth + 1
+
+    def _calculate_max_depth_optimized(self, task_ids: Set[UUID]) -> int:
+        """
+        HIGH-08 FIX: BFS-based O(V+E) depth calculation.
+
+        Replaces recursive approach for better performance with 1,000+ tasks.
+        Performance target: <50ms for 1,000 tasks.
+
+        Args:
+            task_ids: Set of task IDs to analyze
+
+        Returns:
+            Maximum depth in the dependency graph
+        """
+        if not task_ids:
+            return 0
+
+        # Build in-degree count and adjacency list
+        in_degree = {task_id: 0 for task_id in task_ids}
+        adj_list = defaultdict(list)
+
+        for dep in self._mock_dependencies.values():
+            if dep.status == DependencyStatus.PENDING:
+                if dep.task_id in task_ids and dep.depends_on_task_id in task_ids:
+                    # Edge: depends_on_task_id -> task_id (predecessor to successor)
+                    adj_list[dep.depends_on_task_id].append(dep.task_id)
+                    in_degree[dep.task_id] += 1
+
+        # Initialize depth for root nodes (no dependencies)
+        depth = {}
+        queue = deque()
+        for tid in task_ids:
+            if in_degree.get(tid, 0) == 0:
+                depth[tid] = 0
+                queue.append(tid)
+
+        max_depth = 0
+
+        # BFS from roots
+        while queue:
+            current = queue.popleft()
+            current_depth = depth[current]
+
+            for neighbor in adj_list[current]:
+                # Update depth to maximum path length to this node
+                new_depth = current_depth + 1
+                if neighbor not in depth or depth[neighbor] < new_depth:
+                    depth[neighbor] = new_depth
+                    max_depth = max(max_depth, new_depth)
+
+                # Decrease in-degree and add to queue if all predecessors processed
+                in_degree[neighbor] -= 1
+                if in_degree[neighbor] == 0:
+                    queue.append(neighbor)
+
+        return max_depth
 
 
 # ============================================================================

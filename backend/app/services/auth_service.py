@@ -31,11 +31,42 @@ class AuthService:
         self._create_default_users()
 
     def _create_default_users(self):
-        """테스트용 기본 사용자 생성 (4 roles)"""
+        """
+        테스트용 기본 사용자 생성 (4 roles)
+
+        CRIT-02 FIX: 환경변수로 제어 가능
+        - DISABLE_DEFAULT_USERS=true: 기본 사용자 생성 안함 (프로덕션 권장)
+        - DEFAULT_ADMIN_PASSWORD: admin 비밀번호 (기본값 사용 금지 권장)
+        - DEFAULT_OWNER_PASSWORD: owner 비밀번호
+        - DEFAULT_DEV_PASSWORD: developer 비밀번호
+        - DEFAULT_VIEWER_PASSWORD: viewer 비밀번호
+        """
+        import os
         from ..core.security import UserRole
 
+        # CRIT-02 FIX: Production에서는 기본 사용자 생성 비활성화 가능
+        if os.getenv("DISABLE_DEFAULT_USERS", "").lower() == "true":
+            logger.info("Default users DISABLED (DISABLE_DEFAULT_USERS=true)")
+            return
+
+        # Production 환경에서는 경고 출력
+        if os.getenv("ENVIRONMENT") == "production":
+            logger.warning(
+                "SECURITY WARNING: Default users enabled in production! " "Set DISABLE_DEFAULT_USERS=true to disable."
+            )
+
+        # CRIT-02 FIX: 환경변수에서 비밀번호 가져오기 (hardcoded 대신)
+        admin_pwd = os.getenv("DEFAULT_ADMIN_PASSWORD", "admin123!@#")
+        owner_pwd = os.getenv("DEFAULT_OWNER_PASSWORD", "owner123!@#")
+        dev_pwd = os.getenv("DEFAULT_DEV_PASSWORD", "dev123!@#")
+        viewer_pwd = os.getenv("DEFAULT_VIEWER_PASSWORD", "viewer123!@#")
+
+        # 기본 비밀번호 사용 시 경고
+        if admin_pwd == "admin123!@#":
+            logger.warning("Using default admin password! Set DEFAULT_ADMIN_PASSWORD env var.")
+
         # 1. Admin user (full access)
-        admin_password = PasswordHasher.hash_password("admin123!@#")
+        admin_password = PasswordHasher.hash_password(admin_pwd)
         self.users["admin@udo.dev"] = {
             "id": self.user_id_counter,
             "email": "admin@udo.dev",
@@ -44,12 +75,12 @@ class AuthService:
             "full_name": "System Administrator",
             "created_at": datetime.now(UTC).isoformat(),
             "is_active": True,
-            "role": UserRole.ADMIN
+            "role": UserRole.ADMIN,
         }
         self.user_id_counter += 1
 
         # 2. Project Owner (project management)
-        owner_password = PasswordHasher.hash_password("owner123!@#")
+        owner_password = PasswordHasher.hash_password(owner_pwd)
         self.users["owner@udo.dev"] = {
             "id": self.user_id_counter,
             "email": "owner@udo.dev",
@@ -58,12 +89,12 @@ class AuthService:
             "full_name": "Project Owner",
             "created_at": datetime.now(UTC).isoformat(),
             "is_active": True,
-            "role": UserRole.PROJECT_OWNER
+            "role": UserRole.PROJECT_OWNER,
         }
         self.user_id_counter += 1
 
         # 3. Developer (task management)
-        dev_password = PasswordHasher.hash_password("dev123!@#")
+        dev_password = PasswordHasher.hash_password(dev_pwd)
         self.users["dev@udo.dev"] = {
             "id": self.user_id_counter,
             "email": "dev@udo.dev",
@@ -72,12 +103,12 @@ class AuthService:
             "full_name": "Developer User",
             "created_at": datetime.now(UTC).isoformat(),
             "is_active": True,
-            "role": UserRole.DEVELOPER
+            "role": UserRole.DEVELOPER,
         }
         self.user_id_counter += 1
 
         # 4. Viewer (read-only)
-        viewer_password = PasswordHasher.hash_password("viewer123!@#")
+        viewer_password = PasswordHasher.hash_password(viewer_pwd)
         self.users["viewer@udo.dev"] = {
             "id": self.user_id_counter,
             "email": "viewer@udo.dev",
@@ -86,18 +117,14 @@ class AuthService:
             "full_name": "Viewer User",
             "created_at": datetime.now(UTC).isoformat(),
             "is_active": True,
-            "role": UserRole.VIEWER
+            "role": UserRole.VIEWER,
         }
         self.user_id_counter += 1
 
         logger.info("Default users created for testing (4 roles: admin, project_owner, developer, viewer)")
 
     async def create_user(
-        self,
-        email: str,
-        password: str,
-        username: str,
-        full_name: Optional[str] = None
+        self, email: str, password: str, username: str, full_name: Optional[str] = None
     ) -> Optional[Dict[str, Any]]:
         """
         새로운 사용자 생성
@@ -137,7 +164,7 @@ class AuthService:
                 "full_name": full_name,
                 "created_at": datetime.now(UTC).isoformat(),
                 "is_active": True,
-                "role": UserRole.DEVELOPER  # Default role for new users
+                "role": UserRole.DEVELOPER,  # Default role for new users
             }
 
             # 저장
@@ -156,11 +183,7 @@ class AuthService:
             logger.error(f"Failed to create user: {sanitize_exception(e)}")
             return None
 
-    async def authenticate_user(
-        self,
-        email: str,
-        password: str
-    ) -> Optional[Dict[str, Any]]:
+    async def authenticate_user(self, email: str, password: str) -> Optional[Dict[str, Any]]:
         """
         사용자 인증
 
@@ -225,11 +248,7 @@ class AuthService:
             logger.error(f"Failed to get user: {sanitize_exception(e)}")
             return None
 
-    async def update_user(
-        self,
-        email: str,
-        update_data: Dict[str, Any]
-    ) -> Optional[Dict[str, Any]]:
+    async def update_user(self, email: str, update_data: Dict[str, Any]) -> Optional[Dict[str, Any]]:
         """
         사용자 정보 업데이트
 
@@ -253,9 +272,7 @@ class AuthService:
 
             # 비밀번호 변경 처리
             if "password" in update_data:
-                user["password_hash"] = PasswordHasher.hash_password(
-                    update_data["password"]
-                )
+                user["password_hash"] = PasswordHasher.hash_password(update_data["password"])
 
             # 업데이트 시간 기록
             user["updated_at"] = datetime.now(UTC).isoformat()
@@ -294,11 +311,7 @@ class AuthService:
             logger.error(f"Failed to delete user: {sanitize_exception(e)}")
             return False
 
-    async def list_users(
-        self,
-        limit: int = 100,
-        offset: int = 0
-    ) -> Dict[str, Any]:
+    async def list_users(self, limit: int = 100, offset: int = 0) -> Dict[str, Any]:
         """
         사용자 목록 조회
 
@@ -318,31 +331,18 @@ class AuthService:
                 all_users.append(user_data)
 
             # 정렬 (생성일 기준 내림차순)
-            all_users.sort(
-                key=lambda x: x.get("created_at", ""),
-                reverse=True
-            )
+            all_users.sort(key=lambda x: x.get("created_at", ""), reverse=True)
 
             # 페이지네이션
             total = len(all_users)
-            users = all_users[offset:offset + limit]
+            users = all_users[offset : offset + limit]
 
-            return {
-                "users": users,
-                "total": total,
-                "limit": limit,
-                "offset": offset
-            }
+            return {"users": users, "total": total, "limit": limit, "offset": offset}
 
         except Exception as e:
             # MED-04: Sanitize exception before logging
             logger.error(f"Failed to list users: {sanitize_exception(e)}")
-            return {
-                "users": [],
-                "total": 0,
-                "limit": limit,
-                "offset": offset
-            }
+            return {"users": [], "total": 0, "limit": limit, "offset": offset}
 
     def get_user_count(self) -> int:
         """전체 사용자 수 반환"""
@@ -359,4 +359,4 @@ class AuthService:
 auth_service = AuthService()
 
 # Export
-__all__ = ['AuthService', 'auth_service']
+__all__ = ["AuthService", "auth_service"]

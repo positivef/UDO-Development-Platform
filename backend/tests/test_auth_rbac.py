@@ -11,24 +11,29 @@ Test Coverage:
 Total: 20 tests
 """
 
+import os
 import pytest
 from datetime import timedelta
 from fastapi import HTTPException
 from fastapi.security import HTTPAuthorizationCredentials
 
-from backend.app.core.security import (
-    JWTManager,
-    UserRole,
-    require_role,
-    get_current_user,
-    PasswordHasher
-)
+from backend.app.core.security import JWTManager, UserRole, require_role, get_current_user, PasswordHasher
 from backend.app.services.auth_service import AuthService
+
+
+@pytest.fixture(autouse=True)
+def disable_dev_auth_bypass(monkeypatch):
+    """
+    테스트 중 dev auth bypass 비활성화.
+    CRIT-01 보안 수정 후 테스트가 올바른 에러 동작을 검증하도록 함.
+    """
+    monkeypatch.setenv("DISABLE_DEV_AUTH_BYPASS", "true")
 
 
 # ============================================================================
 # 1. JWT Token Tests (6 tests)
 # ============================================================================
+
 
 class TestJWTTokens:
     """JWT 토큰 생성 및 검증 테스트"""
@@ -36,11 +41,7 @@ class TestJWTTokens:
     def test_create_access_token(self):
         """액세스 토큰 생성 - role 포함 확인"""
         # Given: 사용자 데이터 (role 포함)
-        data = {
-            "sub": "test@udo.dev",
-            "user_id": 1,
-            "role": UserRole.DEVELOPER
-        }
+        data = {"sub": "test@udo.dev", "user_id": 1, "role": UserRole.DEVELOPER}
 
         # When: 액세스 토큰 생성
         token = JWTManager.create_access_token(data)
@@ -67,11 +68,7 @@ class TestJWTTokens:
     def test_create_refresh_token(self):
         """리프레시 토큰 생성 - role 포함 확인"""
         # Given: 사용자 데이터
-        data = {
-            "sub": "test@udo.dev",
-            "user_id": 1,
-            "role": UserRole.PROJECT_OWNER
-        }
+        data = {"sub": "test@udo.dev", "user_id": 1, "role": UserRole.PROJECT_OWNER}
 
         # When: 리프레시 토큰 생성
         token = JWTManager.create_refresh_token(data)
@@ -98,10 +95,7 @@ class TestJWTTokens:
         """만료된 토큰 디코드 - 401 에러"""
         # Given: 만료된 토큰 (만료 시간 0초)
         data = {"sub": "test@udo.dev", "user_id": 1, "role": UserRole.DEVELOPER}
-        token = JWTManager.create_access_token(
-            data,
-            expires_delta=timedelta(seconds=-1)  # 이미 만료됨
-        )
+        token = JWTManager.create_access_token(data, expires_delta=timedelta(seconds=-1))  # 이미 만료됨
 
         # When/Then: HTTPException 발생
         with pytest.raises(HTTPException) as exc_info:
@@ -125,6 +119,7 @@ class TestJWTTokens:
 # ============================================================================
 # 2. RBAC Permission Tests (8 tests)
 # ============================================================================
+
 
 class TestRBACPermissions:
     """Role-based access control 권한 검증 테스트"""
@@ -216,6 +211,7 @@ class TestRBACPermissions:
 # 3. Auth Endpoint Tests (6 tests)
 # ============================================================================
 
+
 class TestAuthEndpoints:
     """인증 엔드포인트 테스트 (AuthService 통합)"""
 
@@ -227,11 +223,7 @@ class TestAuthEndpoints:
         auth_service.clear_all_users()  # Reset for clean test
 
         # When: 사용자 생성
-        user = await auth_service.create_user(
-            email="newuser@test.com",
-            password="Test123!@#",
-            username="newuser"
-        )
+        user = await auth_service.create_user(email="newuser@test.com", password="Test123!@#", username="newuser")
 
         # Then: role이 developer로 생성됨
         assert user is not None
@@ -244,10 +236,7 @@ class TestAuthEndpoints:
         auth_service = AuthService()
 
         # When: 인증
-        user = await auth_service.authenticate_user(
-            email="admin@udo.dev",
-            password="admin123!@#"
-        )
+        user = await auth_service.authenticate_user(email="admin@udo.dev", password="admin123!@#")
 
         # Then: role 포함된 사용자 정보 반환
         assert user is not None
@@ -276,10 +265,7 @@ class TestAuthEndpoints:
         assert user["role"] == UserRole.DEVELOPER
 
         # When: Project Owner로 업그레이드
-        updated_user = await auth_service.update_user(
-            email="dev@udo.dev",
-            update_data={"role": UserRole.PROJECT_OWNER}
-        )
+        updated_user = await auth_service.update_user(email="dev@udo.dev", update_data={"role": UserRole.PROJECT_OWNER})
 
         # Then: role 업데이트 확인
         assert updated_user["role"] == UserRole.PROJECT_OWNER
@@ -314,6 +300,95 @@ class TestAuthEndpoints:
         # Then: 검증 성공
         assert PasswordHasher.verify_password(password, hashed) is True
         assert PasswordHasher.verify_password("wrong_password", hashed) is False
+
+
+# ============================================================================
+# 4. Rate Limiting Tests (HIGH-02 FIX) - 5 tests
+# ============================================================================
+
+
+class TestRateLimiting:
+    """Rate limiting 테스트 - HIGH-02 보안 수정 검증"""
+
+    def setup_method(self):
+        """각 테스트 전 rate limiter 리셋"""
+        from backend.app.core.security import auth_rate_limiter
+
+        # Reset all attempts for test isolation
+        auth_rate_limiter._login_attempts = {}
+        auth_rate_limiter._register_attempts = {}
+        auth_rate_limiter._reset_attempts = {}
+        auth_rate_limiter._lockouts = {}
+
+    def test_login_rate_limit_allows_under_threshold(self):
+        """로그인 시도 5회 미만 허용"""
+        from backend.app.core.security import auth_rate_limiter
+
+        client_ip = "192.168.1.100"
+
+        # 4번 시도 (5회 제한 미만)
+        for i in range(4):
+            assert auth_rate_limiter.check_login_limit(client_ip) is True
+
+        # 5번째도 허용 (5회까지 OK)
+        assert auth_rate_limiter.check_login_limit(client_ip) is True
+
+    def test_login_rate_limit_blocks_after_threshold(self):
+        """로그인 시도 5회 초과 후 차단"""
+        from backend.app.core.security import auth_rate_limiter
+
+        client_ip = "192.168.1.101"
+
+        # 5번 시도
+        for i in range(5):
+            auth_rate_limiter.check_login_limit(client_ip)
+
+        # 6번째 시도 차단
+        assert auth_rate_limiter.check_login_limit(client_ip) is False
+
+    def test_register_rate_limit_blocks_after_threshold(self):
+        """등록 시도 3회 초과 후 차단"""
+        from backend.app.core.security import auth_rate_limiter
+
+        client_ip = "192.168.1.102"
+
+        # 3번 시도
+        for i in range(3):
+            auth_rate_limiter.check_register_limit(client_ip)
+
+        # 4번째 시도 차단
+        assert auth_rate_limiter.check_register_limit(client_ip) is False
+
+    def test_remaining_attempts_calculation(self):
+        """남은 시도 횟수 계산"""
+        from backend.app.core.security import auth_rate_limiter
+
+        client_ip = "192.168.1.103"
+
+        # 초기 상태: 5회 남음
+        assert auth_rate_limiter.get_remaining_attempts(client_ip, "login") == 5
+
+        # 2번 시도 후: 3회 남음
+        auth_rate_limiter.check_login_limit(client_ip)
+        auth_rate_limiter.check_login_limit(client_ip)
+        assert auth_rate_limiter.get_remaining_attempts(client_ip, "login") == 3
+
+    def test_reset_attempts_clears_all(self):
+        """성공 시 모든 시도 횟수 리셋"""
+        from backend.app.core.security import auth_rate_limiter
+
+        client_ip = "192.168.1.104"
+
+        # 4번 시도
+        for i in range(4):
+            auth_rate_limiter.check_login_limit(client_ip)
+
+        # 남은 횟수 1회
+        assert auth_rate_limiter.get_remaining_attempts(client_ip, "login") == 1
+
+        # 리셋 후 5회로 복원
+        auth_rate_limiter.reset_attempts(client_ip)
+        assert auth_rate_limiter.get_remaining_attempts(client_ip, "login") == 5
 
 
 # ============================================================================

@@ -15,15 +15,19 @@ from uuid import UUID
 from anthropic import Anthropic, AsyncAnthropic
 
 from app.core.constitutional_guard import ConstitutionalGuard
-from app.models.kanban_ai import (ConstitutionalViolationError,
-                                          InvalidSuggestionError, PhaseName,
-                                          RateLimitExceededError,
-                                          RateLimitStatus,
-                                          SuggestionConfidence, TaskSuggestion,
-                                          TaskSuggestionApproval,
-                                          TaskSuggestionApprovalResponse,
-                                          TaskSuggestionRequest,
-                                          TaskSuggestionResponse)
+from app.models.kanban_ai import (
+    ConstitutionalViolationError,
+    InvalidSuggestionError,
+    PhaseName,
+    RateLimitExceededError,
+    RateLimitStatus,
+    SuggestionConfidence,
+    TaskSuggestion,
+    TaskSuggestionApproval,
+    TaskSuggestionApprovalResponse,
+    TaskSuggestionRequest,
+    TaskSuggestionResponse,
+)
 from app.models.kanban_task import TaskCreate
 from app.services.kanban_task_service import kanban_task_service
 
@@ -46,15 +50,14 @@ class KanbanAIService:
         """Initialize AI service with Claude API client"""
         api_key = os.getenv("ANTHROPIC_API_KEY")
         if not api_key:
-            logger.warning(
-                "ANTHROPIC_API_KEY not set, AI suggestions will use mock mode"
-            )
+            logger.warning("ANTHROPIC_API_KEY not set, AI suggestions will use mock mode")
             self.client = None
             self.async_client = None
             self.mock_mode = True
         else:
-            self.client = Anthropic(api_key=api_key)
-            self.async_client = AsyncAnthropic(api_key=api_key)
+            # HIGH-06 FIX: Add 30-second timeout to prevent hanging API calls
+            self.client = Anthropic(api_key=api_key, timeout=30.0)
+            self.async_client = AsyncAnthropic(api_key=api_key, timeout=30.0)
             self.mock_mode = False
 
         self.constitutional_guard = ConstitutionalGuard()
@@ -64,9 +67,7 @@ class KanbanAIService:
         self.suggestions_cache: Dict[UUID, TaskSuggestion] = {}
         self.rate_limit_storage: Dict[str, List[datetime]] = {}
 
-    async def suggest_tasks(
-        self, request: TaskSuggestionRequest, user_id: str
-    ) -> TaskSuggestionResponse:
+    async def suggest_tasks(self, request: TaskSuggestionRequest, user_id: str) -> TaskSuggestionResponse:
         """
         Generate AI task suggestions using Claude Sonnet 4.5.
 
@@ -132,9 +133,7 @@ class KanbanAIService:
         """
         # Validate suggestion exists
         if suggestion_id not in self.suggestions_cache:
-            raise InvalidSuggestionError(
-                f"Suggestion {suggestion_id} not found or expired"
-            )
+            raise InvalidSuggestionError(f"Suggestion {suggestion_id} not found or expired")
 
         suggestion = self.suggestions_cache[suggestion_id]
 
@@ -162,9 +161,7 @@ class KanbanAIService:
             priority=suggestion.priority,
             estimated_hours=suggestion.estimated_hours,
             ai_suggested=True,  # Mark as AI-generated
-            ai_confidence=(
-                0.9 if suggestion.confidence == SuggestionConfidence.HIGH else 0.75
-            ),
+            ai_confidence=(0.9 if suggestion.confidence == SuggestionConfidence.HIGH else 0.75),
             metadata={
                 "ai_generated": True,
                 "suggestion_id": str(suggestion_id),
@@ -181,8 +178,7 @@ class KanbanAIService:
         del self.suggestions_cache[suggestion_id]
 
         logger.info(
-            f"AI suggestion {suggestion_id} approved by {approval.approved_by}, "
-            f"created task {created_task.task_id}"
+            f"AI suggestion {suggestion_id} approved by {approval.approved_by}, " f"created task {created_task.task_id}"
         )
 
         return TaskSuggestionApprovalResponse(
@@ -193,9 +189,7 @@ class KanbanAIService:
             created_task=created_task.model_dump(),
         )
 
-    async def _generate_claude_suggestions(
-        self, request: TaskSuggestionRequest
-    ) -> List[TaskSuggestion]:
+    async def _generate_claude_suggestions(self, request: TaskSuggestionRequest) -> List[TaskSuggestion]:
         """
         Generate suggestions using Claude Sonnet 4.5 API.
 
@@ -281,9 +275,7 @@ Format your response as JSON array of objects with these fields:
                     confidence=SuggestionConfidence(data.get("confidence", "medium")),
                     reasoning=data["reasoning"],
                     suggested_dependencies=data.get("suggested_dependencies", []),
-                    constitutional_compliance=self._check_constitutional_principles(
-                        data
-                    ),
+                    constitutional_compliance=self._check_constitutional_principles(data),
                 )
                 suggestions.append(suggestion)
 
@@ -294,9 +286,7 @@ Format your response as JSON array of objects with these fields:
             # Fallback to mock suggestions
             return self._generate_mock_suggestions(request)
 
-    def _generate_mock_suggestions(
-        self, request: TaskSuggestionRequest
-    ) -> List[TaskSuggestion]:
+    def _generate_mock_suggestions(self, request: TaskSuggestionRequest) -> List[TaskSuggestion]:
         """Generate mock suggestions for testing/development"""
         mock_suggestions = {
             PhaseName.IDEATION: [
@@ -388,14 +378,10 @@ Format your response as JSON array of objects with these fields:
             ],
         }
 
-        phase_tasks = mock_suggestions.get(
-            request.phase_name, mock_suggestions[PhaseName.IDEATION]
-        )
+        phase_tasks = mock_suggestions.get(request.phase_name, mock_suggestions[PhaseName.IDEATION])
         suggestions = []
 
-        for i, (title, description, hours) in enumerate(
-            phase_tasks[: request.num_suggestions]
-        ):
+        for i, (title, description, hours) in enumerate(phase_tasks[: request.num_suggestions]):
             suggestion = TaskSuggestion(
                 title=title,
                 description=f"{description}\n\nContext: {request.context[:100]}",
@@ -404,11 +390,7 @@ Format your response as JSON array of objects with these fields:
                 estimated_hours=hours,
                 confidence=SuggestionConfidence.HIGH,
                 reasoning=f"This task is important for completing the {request.phase_name} phase",
-                suggested_dependencies=(
-                    [phase_tasks[i - 1][0]]
-                    if i > 0 and request.include_dependencies
-                    else []
-                ),
+                suggested_dependencies=([phase_tasks[i - 1][0]] if i > 0 and request.include_dependencies else []),
                 constitutional_compliance={"P1": True, "P2": True},
             )
             suggestions.append(suggestion)
@@ -461,9 +443,7 @@ Format your response as JSON array of objects with these fields:
         status = self._check_rate_limit(user_id)
         return status.suggestions_remaining
 
-    def _apply_modifications(
-        self, suggestion: TaskSuggestion, modifications: Dict
-    ) -> TaskSuggestion:
+    def _apply_modifications(self, suggestion: TaskSuggestion, modifications: Dict) -> TaskSuggestion:
         """Apply user modifications to suggestion before approval"""
         modified_data = suggestion.model_dump()
         modified_data.update(modifications)
@@ -480,13 +460,8 @@ Format your response as JSON array of objects with these fields:
         # P1: Design Review First
         # AI-suggested implementation tasks without design context violate P1
         if suggestion.phase_name in [PhaseName.IMPLEMENTATION, PhaseName.MVP]:
-            if (
-                "design" not in suggestion.description.lower()
-                and suggestion.confidence == SuggestionConfidence.LOW
-            ):
-                violations.append(
-                    "P1: Implementation task suggested without design context"
-                )
+            if "design" not in suggestion.description.lower() and suggestion.confidence == SuggestionConfidence.LOW:
+                violations.append("P1: Implementation task suggested without design context")
 
         # P2-P17: Additional constitutional checks can be added here
         # For now, we focus on P1 as it's most relevant to AI suggestions
@@ -496,8 +471,7 @@ Format your response as JSON array of objects with these fields:
     def _check_constitutional_principles(self, data: Dict) -> Dict[str, bool]:
         """Check compliance with constitutional principles and return status"""
         return {
-            "P1": "design" in data.get("description", "").lower()
-            or data.get("confidence") == "high",
+            "P1": "design" in data.get("description", "").lower() or data.get("confidence") == "high",
             "P2": True,  # Placeholder for other principles
         }
 

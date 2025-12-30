@@ -114,7 +114,8 @@ class KanbanArchiveService:
             self.openai_client = None
             self.mock_mode = True
         else:
-            self.openai_client = AsyncOpenAI(api_key=api_key)
+            # HIGH-06 FIX: Add 30-second timeout to prevent hanging API calls
+            self.openai_client = AsyncOpenAI(api_key=api_key, timeout=30.0)
             self.mock_mode = False
 
         # Obsidian service for knowledge sync

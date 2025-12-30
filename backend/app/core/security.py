@@ -31,12 +31,14 @@ from .log_sanitizer import sanitize_log_message, sanitize_exception
 # Optional bcrypt import with fallback
 try:
     import bcrypt
+
     BCRYPT_AVAILABLE = True
 except ImportError:
     BCRYPT_AVAILABLE = False
     logging.warning("bcrypt not installed. Using PBKDF2 fallback. Install with: pip install bcrypt")
 
 logger = logging.getLogger(__name__)
+
 
 # =============================================================================
 # CRIT-01 FIX: JWT Secret from Environment Variable
@@ -69,11 +71,13 @@ def _get_secret_key() -> str:
     )
     return secrets.token_urlsafe(32)
 
+
 # Security configurations
 SECRET_KEY = _get_secret_key()
 ALGORITHM = "HS256"
 ACCESS_TOKEN_EXPIRE_MINUTES = 30
 REFRESH_TOKEN_EXPIRE_DAYS = 7
+
 
 # =============================================================================
 # CRIT-03 FIX: Token Blacklist for Proper Logout (Redis-based)
@@ -138,7 +142,7 @@ class TokenBlacklist:
             try:
                 key = f"udo:auth:blacklist:{token}"
                 # Get the actual Redis client (handle both real RedisClient and test mock)
-                redis_client = getattr(self._redis_client, '_client', self._redis_client)
+                redis_client = getattr(self._redis_client, "_client", self._redis_client)
                 await redis_client.setex(key, ttl, "1")
                 logger.debug(f"Token blacklisted in Redis (TTL: {ttl}s)")
                 return
@@ -157,7 +161,7 @@ class TokenBlacklist:
             try:
                 key = f"udo:auth:blacklist:{token}"
                 # Get the actual Redis client (handle both real RedisClient and test mock)
-                redis_client = getattr(self._redis_client, '_client', self._redis_client)
+                redis_client = getattr(self._redis_client, "_client", self._redis_client)
                 exists = await redis_client.exists(key)
                 return bool(exists)
             except Exception as e:
@@ -182,12 +186,13 @@ class TokenBlacklist:
                 ttl = 86400  # 24 hours
 
                 # Get the actual Redis client (handle both real RedisClient and test mock)
-                redis_client = getattr(self._redis_client, '_client', self._redis_client)
+                redis_client = getattr(self._redis_client, "_client", self._redis_client)
                 await redis_client.setex(key, ttl, "revoked")
 
                 logger.info(f"User {user_id} tokens revoked (24h TTL)")
             except Exception as e:
                 logger.error(f"Redis revoke failed: {e}")
+
 
 # Global token blacklist instance
 token_blacklist = TokenBlacklist()
@@ -200,18 +205,14 @@ security = HTTPBearer(auto_error=False)
 # RBAC (Role-Based Access Control) Configuration
 class UserRole:
     """User roles with hierarchical permissions"""
-    ADMIN = "admin"               # Full access (all operations)
+
+    ADMIN = "admin"  # Full access (all operations)
     PROJECT_OWNER = "project_owner"  # Project creation/deletion, team management
-    DEVELOPER = "developer"       # Task CRUD, own task modification
-    VIEWER = "viewer"             # Read-only access
+    DEVELOPER = "developer"  # Task CRUD, own task modification
+    VIEWER = "viewer"  # Read-only access
 
     # Role hierarchy (higher number = more permissions)
-    ROLE_HIERARCHY = {
-        ADMIN: 4,
-        PROJECT_OWNER: 3,
-        DEVELOPER: 2,
-        VIEWER: 1
-    }
+    ROLE_HIERARCHY = {ADMIN: 4, PROJECT_OWNER: 3, DEVELOPER: 2, VIEWER: 1}
 
     @classmethod
     def has_permission(cls, user_role: str, required_role: str) -> bool:
@@ -280,7 +281,7 @@ class InputValidator:
     @staticmethod
     def validate_email(email: str) -> bool:
         """이메일 형식 검증"""
-        pattern = r'^[a-zA-Z0-9._%+-]+@[a-zA-Z0-9.-]+\.[a-zA-Z]{2,}$'
+        pattern = r"^[a-zA-Z0-9._%+-]+@[a-zA-Z0-9.-]+\.[a-zA-Z]{2,}$"
         return re.match(pattern, email) is not None
 
     @staticmethod
@@ -291,23 +292,19 @@ class InputValidator:
         if len(password) < SecurityConfig.MIN_PASSWORD_LENGTH:
             errors.append(f"Password must be at least {SecurityConfig.MIN_PASSWORD_LENGTH} characters")
 
-        if SecurityConfig.REQUIRE_UPPERCASE and not re.search(r'[A-Z]', password):
+        if SecurityConfig.REQUIRE_UPPERCASE and not re.search(r"[A-Z]", password):
             errors.append("Password must contain uppercase letter")
 
-        if SecurityConfig.REQUIRE_LOWERCASE and not re.search(r'[a-z]', password):
+        if SecurityConfig.REQUIRE_LOWERCASE and not re.search(r"[a-z]", password):
             errors.append("Password must contain lowercase letter")
 
-        if SecurityConfig.REQUIRE_NUMBERS and not re.search(r'\d', password):
+        if SecurityConfig.REQUIRE_NUMBERS and not re.search(r"\d", password):
             errors.append("Password must contain number")
 
         if SecurityConfig.REQUIRE_SPECIAL_CHARS and not re.search(r'[!@#$%^&*(),.?":{}|<>]', password):
             errors.append("Password must contain special character")
 
-        return {
-            "valid": len(errors) == 0,
-            "errors": errors,
-            "strength": InputValidator.calculate_password_strength(password)
-        }
+        return {"valid": len(errors) == 0, "errors": errors, "strength": InputValidator.calculate_password_strength(password)}
 
     @staticmethod
     def calculate_password_strength(password: str) -> str:
@@ -318,11 +315,11 @@ class InputValidator:
             score += 1
         if len(password) >= 12:
             score += 1
-        if re.search(r'[a-z]', password):
+        if re.search(r"[a-z]", password):
             score += 1
-        if re.search(r'[A-Z]', password):
+        if re.search(r"[A-Z]", password):
             score += 1
-        if re.search(r'\d', password):
+        if re.search(r"\d", password):
             score += 1
         if re.search(r'[!@#$%^&*(),.?":{}|<>]', password):
             score += 1
@@ -341,7 +338,7 @@ class InputValidator:
             return ""
 
         # Remove null bytes
-        sanitized = input_string.replace('\x00', '')
+        sanitized = input_string.replace("\x00", "")
 
         # Strip whitespace
         sanitized = sanitized.strip()
@@ -350,7 +347,7 @@ class InputValidator:
         if max_length:
             sanitized = sanitized[:max_length]
         elif len(sanitized) > SecurityConfig.MAX_INPUT_LENGTH:
-            sanitized = sanitized[:SecurityConfig.MAX_INPUT_LENGTH]
+            sanitized = sanitized[: SecurityConfig.MAX_INPUT_LENGTH]
 
         return sanitized
 
@@ -387,7 +384,7 @@ class InputValidator:
         required: bool = False,
         max_length: Optional[int] = None,
         pattern: Optional[str] = None,
-        check_injection: bool = True
+        check_injection: bool = True,
     ) -> Any:
         """종합적인 입력 검증"""
 
@@ -426,10 +423,7 @@ class JWTManager:
     """JWT 토큰 관리"""
 
     @staticmethod
-    def create_access_token(
-        data: Dict[str, Any],
-        expires_delta: Optional[timedelta] = None
-    ) -> str:
+    def create_access_token(data: Dict[str, Any], expires_delta: Optional[timedelta] = None) -> str:
         """
         액세스 토큰 생성
 
@@ -501,7 +495,7 @@ class JWTManager:
             # CRIT-03 FIX: Check blacklist BEFORE decoding (fast path)
             if check_blacklist and await token_blacklist.is_blacklisted(token):
                 if os.getenv("ENVIRONMENT") == "development":
-                     logger.warning("[DEV] Token blacklisted but ignored in development")
+                    logger.warning("[DEV] Token blacklisted but ignored in development")
                 else:
                     logger.warning("Attempted use of blacklisted token")
                     raise HTTPException(
@@ -510,52 +504,49 @@ class JWTManager:
                     )
 
             # Development Bypass for WebSocket and other direct callers
-            if os.getenv("ENVIRONMENT") == "development":
+            # CRIT-01 FIX: Controlled by DISABLE_DEV_AUTH_BYPASS environment variable
+            # Set DISABLE_DEV_AUTH_BYPASS=true to disable this bypass even in development
+            dev_bypass_disabled = os.getenv("DISABLE_DEV_AUTH_BYPASS", "").lower() == "true"
+            if os.getenv("ENVIRONMENT") == "development" and not dev_bypass_disabled:
                 # Accept 'dev-token' or specific mock tokens, or fallback on error
                 if token == "dev-token" or token.startswith("mock-"):
-                     logger.warning("[DEV] Bypass JWT decode for development")
-                     return {"sub": "dev_admin", "role": UserRole.ADMIN, "user_id": "dev-id", "type": "access"}
+                    logger.warning("[DEV] Bypass JWT decode for development (set DISABLE_DEV_AUTH_BYPASS=true to disable)")
+                    return {"sub": "dev_admin", "role": UserRole.ADMIN, "user_id": "dev-id", "type": "access"}
 
             payload = jwt.decode(token, SECRET_KEY, algorithms=[ALGORITHM])
             return payload
         except Exception as e:
-             # Development Bypass (Final Fallback for decode)
-             if os.getenv("ENVIRONMENT") == "development":
-                 logger.warning(f"[DEV] JWT decode failed ({e}), returning MOCK payload")
-                 return {"sub": "dev_admin", "role": UserRole.ADMIN, "user_id": "dev-id", "type": "access"}
-             
-             # Re-raise for non-dev
-             if isinstance(e, jwt.ExpiredSignatureError):
-                 raise HTTPException(
+            # Development Bypass (Final Fallback for decode)
+            # CRIT-01 FIX: Controlled by DISABLE_DEV_AUTH_BYPASS environment variable
+            dev_bypass_disabled = os.getenv("DISABLE_DEV_AUTH_BYPASS", "").lower() == "true"
+            if os.getenv("ENVIRONMENT") == "development" and not dev_bypass_disabled:
+                logger.warning(
+                    f"[DEV] JWT decode failed ({e}), returning MOCK payload (set DISABLE_DEV_AUTH_BYPASS=true to disable)"
+                )
+                return {"sub": "dev_admin", "role": UserRole.ADMIN, "user_id": "dev-id", "type": "access"}
+
+            # Re-raise for non-dev
+            if isinstance(e, jwt.ExpiredSignatureError):
+                raise HTTPException(
                     status_code=status.HTTP_401_UNAUTHORIZED,
                     detail="Token has expired",
                 )
-             if isinstance(e, (jwt.PyJWTError, jwt.DecodeError)):
-                 raise HTTPException(
+            if isinstance(e, (jwt.PyJWTError, jwt.DecodeError)):
+                raise HTTPException(
                     status_code=status.HTTP_401_UNAUTHORIZED,
                     detail="Invalid token",
                 )
-             if isinstance(e, HTTPException):
-                 raise e
-             
-             raise e
-             
-        # Dead code removed (original except blocks)
-        except Exception as e:
-            # Catch any other decoding errors (UnicodeDecodeError, ValueError, etc.)
+            if isinstance(e, HTTPException):
+                raise e
+
             # MED-04: Sanitize exception before logging to prevent sensitive data leakage
             logger.error(f"Token decode error: {type(e).__name__}: {sanitize_exception(e)}")
-            raise HTTPException(
-                status_code=status.HTTP_401_UNAUTHORIZED,
-                detail="Invalid token",
-            )
+            raise e
 
     @staticmethod
     def decode_token(token: str, check_blacklist: bool = True) -> Dict[str, Any]:
         """Sync wrapper for token decoding (used by sync callers/tests)."""
-        return asyncio.run(
-            JWTManager.decode_token_async(token, check_blacklist=check_blacklist)
-        )
+        return asyncio.run(JWTManager.decode_token_async(token, check_blacklist=check_blacklist))
 
     @staticmethod
     async def blacklist_token(token: str) -> None:
@@ -587,10 +578,7 @@ class JWTManager:
 
             # Check token type
             if payload.get("type") != "access":
-                raise HTTPException(
-                    status_code=status.HTTP_401_UNAUTHORIZED,
-                    detail="Invalid token type"
-                )
+                raise HTTPException(status_code=status.HTTP_401_UNAUTHORIZED, detail="Invalid token type")
 
             return payload
 
@@ -604,10 +592,7 @@ class JWTManager:
 
             # MED-04: Sanitize exception before logging
             logger.error(f"Token verification failed: {sanitize_exception(e)}")
-            raise HTTPException(
-                status_code=status.HTTP_401_UNAUTHORIZED,
-                detail="Could not validate credentials"
-            )
+            raise HTTPException(status_code=status.HTTP_401_UNAUTHORIZED, detail="Could not validate credentials")
 
 
 class RateLimiter:
@@ -626,10 +611,7 @@ class RateLimiter:
 
         # Remove old requests outside window
         window_start = now - timedelta(seconds=SecurityConfig.RATE_LIMIT_WINDOW)
-        self.requests[client_ip] = [
-            req_time for req_time in self.requests[client_ip]
-            if req_time > window_start
-        ]
+        self.requests[client_ip] = [req_time for req_time in self.requests[client_ip] if req_time > window_start]
 
         # Check if limit exceeded
         if len(self.requests[client_ip]) >= SecurityConfig.RATE_LIMIT_REQUESTS:
@@ -670,11 +652,11 @@ class AuthRateLimiter:
     """
 
     # Auth-specific rate limits (stricter than general API)
-    LOGIN_LIMIT = 5          # 5 login attempts per minute
-    REGISTER_LIMIT = 3       # 3 registration attempts per minute
-    RESET_LIMIT = 3          # 3 password reset attempts per minute
-    WINDOW_SECONDS = 60      # 1 minute window
-    LOCKOUT_DURATION = 300   # 5 minute lockout after exceeding limit
+    LOGIN_LIMIT = 5  # 5 login attempts per minute
+    REGISTER_LIMIT = 3  # 3 registration attempts per minute
+    RESET_LIMIT = 3  # 3 password reset attempts per minute
+    WINDOW_SECONDS = 60  # 1 minute window
+    LOCKOUT_DURATION = 300  # 5 minute lockout after exceeding limit
 
     def __init__(self):
         self._login_attempts: Dict[str, List[datetime]] = {}
@@ -770,7 +752,7 @@ class AuthRateLimiter:
         attempts_map = {
             "login": (self._login_attempts, self.LOGIN_LIMIT),
             "register": (self._register_attempts, self.REGISTER_LIMIT),
-            "reset": (self._reset_attempts, self.RESET_LIMIT)
+            "reset": (self._reset_attempts, self.RESET_LIMIT),
         }
 
         attempts_dict, limit = attempts_map.get(endpoint, (self._login_attempts, self.LOGIN_LIMIT))
@@ -787,6 +769,7 @@ class AuthRateLimiter:
             self._register_attempts.pop(client_ip, None)
             self._reset_attempts.pop(client_ip, None)
             self._lockouts.pop(client_ip, None)
+
 
 # Global auth rate limiter instance
 auth_rate_limiter = AuthRateLimiter()
@@ -822,16 +805,16 @@ class PasswordHasher:
         if BCRYPT_AVAILABLE:
             # bcrypt: Industry standard, memory-hard
             salt = bcrypt.gensalt(rounds=PasswordHasher.BCRYPT_ROUNDS)
-            hashed = bcrypt.hashpw(password.encode('utf-8'), salt)
+            hashed = bcrypt.hashpw(password.encode("utf-8"), salt)
             return f"bcrypt${hashed.decode('utf-8')}"
         else:
             # Fallback to PBKDF2 with 600,000 iterations (OWASP 2023 recommendation)
             salt = secrets.token_hex(32)
             password_hash = hashlib.pbkdf2_hmac(
-                'sha256',
-                password.encode('utf-8'),
-                salt.encode('utf-8'),
-                600000  # OWASP 2023: minimum 600,000 iterations for SHA-256
+                "sha256",
+                password.encode("utf-8"),
+                salt.encode("utf-8"),
+                600000,  # OWASP 2023: minimum 600,000 iterations for SHA-256
             )
             return f"pbkdf2${salt}${password_hash.hex()}"
 
@@ -849,40 +832,31 @@ class PasswordHasher:
         """
         try:
             # Detect hash format
-            if hashed.startswith('bcrypt$'):
+            if hashed.startswith("bcrypt$"):
                 # bcrypt format: bcrypt$<hash>
                 if not BCRYPT_AVAILABLE:
                     logger.error("bcrypt hash found but bcrypt not installed!")
                     return False
 
                 stored_hash = hashed[7:]  # Remove 'bcrypt$' prefix
-                return bcrypt.checkpw(
-                    password.encode('utf-8'),
-                    stored_hash.encode('utf-8')
-                )
+                return bcrypt.checkpw(password.encode("utf-8"), stored_hash.encode("utf-8"))
 
-            elif hashed.startswith('pbkdf2$'):
+            elif hashed.startswith("pbkdf2$"):
                 # New PBKDF2 format: pbkdf2$<salt>$<hash>
-                parts = hashed.split('$')
+                parts = hashed.split("$")
                 if len(parts) != 3:
                     return False
                 _, salt, stored_hash = parts
                 password_hash = hashlib.pbkdf2_hmac(
-                    'sha256',
-                    password.encode('utf-8'),
-                    salt.encode('utf-8'),
-                    600000  # Match new iteration count
+                    "sha256", password.encode("utf-8"), salt.encode("utf-8"), 600000  # Match new iteration count
                 )
                 return password_hash.hex() == stored_hash
 
             else:
                 # Legacy format: <salt>$<hash> (100,000 iterations)
-                salt, stored_hash = hashed.split('$')
+                salt, stored_hash = hashed.split("$")
                 password_hash = hashlib.pbkdf2_hmac(
-                    'sha256',
-                    password.encode('utf-8'),
-                    salt.encode('utf-8'),
-                    100000  # Legacy iteration count
+                    "sha256", password.encode("utf-8"), salt.encode("utf-8"), 100000  # Legacy iteration count
                 )
                 return password_hash.hex() == stored_hash
 
@@ -900,7 +874,7 @@ class PasswordHasher:
             True if password should be rehashed on next login
         """
         # Rehash if using legacy format or PBKDF2 when bcrypt is available
-        if BCRYPT_AVAILABLE and not hashed.startswith('bcrypt$'):
+        if BCRYPT_AVAILABLE and not hashed.startswith("bcrypt$"):
             return True
         return False
 
@@ -918,23 +892,17 @@ class SecurityMiddleware:
         client_ip = self.rate_limiter.get_client_ip(request)
         if not self.rate_limiter.check_rate_limit(client_ip):
             logger.warning(f"Rate limit exceeded for {client_ip}")
-            raise HTTPException(
-                status_code=status.HTTP_429_TOO_MANY_REQUESTS,
-                detail="Too many requests"
-            )
+            raise HTTPException(status_code=status.HTTP_429_TOO_MANY_REQUESTS, detail="Too many requests")
 
         # Check content type for POST/PUT/PATCH
         if request.method in ["POST", "PUT", "PATCH"]:
             content_type = request.headers.get("content-type", "")
 
             # Check if content type is allowed
-            if content_type and not any(
-                allowed in content_type for allowed in SecurityConfig.ALLOWED_CONTENT_TYPES
-            ):
+            if content_type and not any(allowed in content_type for allowed in SecurityConfig.ALLOWED_CONTENT_TYPES):
                 logger.warning(f"Invalid content type: {content_type}")
                 raise HTTPException(
-                    status_code=status.HTTP_415_UNSUPPORTED_MEDIA_TYPE,
-                    detail=f"Unsupported content type: {content_type}"
+                    status_code=status.HTTP_415_UNSUPPORTED_MEDIA_TYPE, detail=f"Unsupported content type: {content_type}"
                 )
 
         # Add security headers
@@ -957,33 +925,33 @@ class SecureUserCreate(BaseModel):
     password: str = Field(..., min_length=8, max_length=128)
     username: str = Field(..., min_length=3, max_length=50)
 
-    @validator('email')
+    @validator("email")
     def validate_email(cls, v):
         if not InputValidator.validate_email(v):
-            raise ValueError('Invalid email format')
+            raise ValueError("Invalid email format")
 
         # Check for injection
         if InputValidator.check_sql_injection(v) or InputValidator.check_xss(v):
-            raise ValueError('Invalid email content')
+            raise ValueError("Invalid email content")
 
         return v.lower()
 
-    @validator('password')
+    @validator("password")
     def validate_password(cls, v):
         result = InputValidator.validate_password(v)
-        if not result['valid']:
-            raise ValueError('; '.join(result['errors']))
+        if not result["valid"]:
+            raise ValueError("; ".join(result["errors"]))
         return v
 
-    @validator('username')
+    @validator("username")
     def validate_username(cls, v):
         # Allow only alphanumeric and underscore
-        if not re.match(r'^[a-zA-Z0-9_]+$', v):
-            raise ValueError('Username can only contain letters, numbers, and underscore')
+        if not re.match(r"^[a-zA-Z0-9_]+$", v):
+            raise ValueError("Username can only contain letters, numbers, and underscore")
 
         # Check for injection
         if InputValidator.check_sql_injection(v) or InputValidator.check_xss(v):
-            raise ValueError('Invalid username content')
+            raise ValueError("Invalid username content")
 
         return v
 
@@ -995,16 +963,16 @@ class SecureProjectCreate(BaseModel):
     description: Optional[str] = Field(None, max_length=1000)
     tags: Optional[List[str]] = Field(None, max_items=20)
 
-    @validator('name')
+    @validator("name")
     def validate_name(cls, v):
         sanitized = InputValidator.sanitize_input(v, max_length=255)
 
         if InputValidator.check_sql_injection(sanitized) or InputValidator.check_xss(sanitized):
-            raise ValueError('Invalid project name')
+            raise ValueError("Invalid project name")
 
         return sanitized
 
-    @validator('description')
+    @validator("description")
     def validate_description(cls, v):
         if v is None:
             return v
@@ -1012,11 +980,11 @@ class SecureProjectCreate(BaseModel):
         sanitized = InputValidator.sanitize_input(v, max_length=1000)
 
         if InputValidator.check_sql_injection(sanitized) or InputValidator.check_xss(sanitized):
-            raise ValueError('Invalid description')
+            raise ValueError("Invalid description")
 
         return sanitized
 
-    @validator('tags')
+    @validator("tags")
     def validate_tags(cls, v):
         if v is None:
             return v
@@ -1039,11 +1007,13 @@ class SecureProjectCreate(BaseModel):
 # Utility functions
 def require_auth(func):
     """인증 필수 데코레이터"""
+
     @wraps(func)
     async def wrapper(*args, **kwargs):
         # This is a decorator for route functions
         # The actual auth check is done via Depends(JWTManager.verify_token)
         return await func(*args, **kwargs)
+
     return wrapper
 
 
@@ -1081,10 +1051,7 @@ def require_role(required_role: str):
                 return {"sub": "dev_admin", "role": UserRole.ADMIN, "user_id": "dev-id"}
 
             if not credentials:
-                 raise HTTPException(
-                    status_code=status.HTTP_403_FORBIDDEN,
-                    detail="Not authenticated"
-                )
+                raise HTTPException(status_code=status.HTTP_403_FORBIDDEN, detail="Not authenticated")
 
             # 토큰 검증
             payload = await JWTManager.verify_token(credentials)
@@ -1094,13 +1061,9 @@ def require_role(required_role: str):
 
             # 권한 검증
             if not UserRole.has_permission(user_role, required_role):
-                logger.warning(
-                    f"Permission denied: user role '{user_role}' "
-                    f"requires '{required_role}' for access"
-                )
+                logger.warning(f"Permission denied: user role '{user_role}' " f"requires '{required_role}' for access")
                 raise HTTPException(
-                    status_code=status.HTTP_403_FORBIDDEN,
-                    detail=f"Insufficient permissions. Required role: {required_role}"
+                    status_code=status.HTTP_403_FORBIDDEN, detail=f"Insufficient permissions. Required role: {required_role}"
                 )
 
             # 권한 통과 - 사용자 정보 반환
@@ -1112,10 +1075,7 @@ def require_role(required_role: str):
         except Exception as e:
             # MED-04: Sanitize exception before logging
             logger.error(f"Role verification failed: {sanitize_exception(e)}")
-            raise HTTPException(
-                status_code=status.HTTP_403_FORBIDDEN,
-                detail="Permission verification failed"
-            )
+            raise HTTPException(status_code=status.HTTP_403_FORBIDDEN, detail="Permission verification failed")
 
     return role_checker
 
@@ -1140,13 +1100,16 @@ async def get_current_user(credentials: Optional[HTTPAuthorizationCredentials] =
     # Development Bypass
     if not credentials and os.getenv("ENVIRONMENT") == "development":
         logger.warning("[DEV] Bypass auth for development (get_current_user)")
-        return {"sub": "dev_admin", "role": UserRole.ADMIN, "user_id": "dev-id", "username": "dev_admin", "email": "dev@example.com"}
+        return {
+            "sub": "dev_admin",
+            "role": UserRole.ADMIN,
+            "user_id": "dev-id",
+            "username": "dev_admin",
+            "email": "dev@example.com",
+        }
 
     if not credentials:
-        raise HTTPException(
-            status_code=status.HTTP_401_UNAUTHORIZED,
-            detail="Not authenticated"
-        )
+        raise HTTPException(status_code=status.HTTP_401_UNAUTHORIZED, detail="Not authenticated")
 
     return await JWTManager.verify_token(credentials)
 
@@ -1166,24 +1129,23 @@ def setup_security(app):
 # Export key components
 __all__ = [
     # Core security
-    'InputValidator',
-    'JWTManager',
-    'RateLimiter',
-    'PasswordHasher',
-    'SecurityMiddleware',
-    'SecureUserCreate',
-    'SecureProjectCreate',
-    'setup_security',
-    'require_auth',
-    'require_role',           # RBAC: Role-based access control
-    'get_current_user',       # RBAC: Get current user from token
-    'UserRole',               # RBAC: Role constants
-    'security',
-
+    "InputValidator",
+    "JWTManager",
+    "RateLimiter",
+    "PasswordHasher",
+    "SecurityMiddleware",
+    "SecureUserCreate",
+    "SecureProjectCreate",
+    "setup_security",
+    "require_auth",
+    "require_role",  # RBAC: Role-based access control
+    "get_current_user",  # RBAC: Get current user from token
+    "UserRole",  # RBAC: Role constants
+    "security",
     # Security improvements (2025-12-14)
-    'token_blacklist',        # CRIT-03: Token blacklist for logout
-    'TokenBlacklist',         # CRIT-03: Token blacklist class
-    'auth_rate_limiter',      # HIGH-01: Auth endpoint rate limiting
-    'AuthRateLimiter',        # HIGH-01: Auth rate limiter class
-    'BCRYPT_AVAILABLE',       # CRIT-02: bcrypt availability flag
+    "token_blacklist",  # CRIT-03: Token blacklist for logout
+    "TokenBlacklist",  # CRIT-03: Token blacklist class
+    "auth_rate_limiter",  # HIGH-01: Auth endpoint rate limiting
+    "AuthRateLimiter",  # HIGH-01: Auth rate limiter class
+    "BCRYPT_AVAILABLE",  # CRIT-02: bcrypt availability flag
 ]
