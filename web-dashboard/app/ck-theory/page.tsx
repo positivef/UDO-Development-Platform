@@ -19,6 +19,7 @@ import {
 } from "lucide-react"
 import { cn } from "@/lib/utils"
 import { toast } from "sonner"
+import { useTranslations } from "next-intl"
 
 const API_URL = process.env.NEXT_PUBLIC_API_URL || "http://localhost:8000"
 
@@ -70,6 +71,8 @@ interface DesignSummary {
 }
 
 export default function CKTheoryPage() {
+  const t = useTranslations('ckTheory')
+  const tCommon = useTranslations('common')
   const [challenge, setChallenge] = useState("")
   const [constraints, setConstraints] = useState<Record<string, unknown>>({})
   const [result, setResult] = useState<CKTheoryResult | null>(null)
@@ -108,11 +111,11 @@ export default function CKTheoryPage() {
     },
     onSuccess: (data: CKTheoryResult) => {
       setResult(data)
-      toast.success("Design alternatives generated!")
+      toast.success(t('designGenerated'))
       refetchDesigns()
     },
     onError: (error: Error) => {
-      toast.error(`Failed to generate design: ${error.message}`)
+      toast.error(`${error.message}`)
     },
   })
 
@@ -136,19 +139,19 @@ export default function CKTheoryPage() {
       return response.json()
     },
     onSuccess: () => {
-      toast.success("Feedback submitted successfully!")
+      toast.success(t('feedbackSubmitted'))
       setShowFeedbackForm(false)
       setComments("")
     },
     onError: (error: Error) => {
-      toast.error(`Failed to submit feedback: ${error.message}`)
+      toast.error(`${error.message}`)
     },
   })
 
   const handleSubmit = (e: React.FormEvent) => {
     e.preventDefault()
     if (!challenge.trim()) {
-      toast.error("Please enter a design challenge")
+      toast.error(t('enterChallenge'))
       return
     }
     generateMutation.mutate()
@@ -157,7 +160,7 @@ export default function CKTheoryPage() {
   const handleFeedbackSubmit = (e: React.FormEvent) => {
     e.preventDefault()
     if (!selectedAlt) {
-      toast.error("Please select an alternative")
+      toast.error(t('selectAlt'))
       return
     }
     feedbackMutation.mutate()
@@ -194,9 +197,9 @@ export default function CKTheoryPage() {
             <Palette className="h-8 w-8 text-purple-400" />
           </div>
           <div>
-            <h1 className="text-4xl font-bold text-white">C-K Theory</h1>
+            <h1 className="text-4xl font-bold text-white">{t('title')}</h1>
             <p className="text-gray-400 mt-1">
-              Concept-Knowledge Design Theory (3 Alternatives + RICE Scoring)
+              {t('description')}
             </p>
           </div>
         </div>
@@ -213,18 +216,18 @@ export default function CKTheoryPage() {
           <form onSubmit={handleSubmit} className="space-y-4">
             <div className="p-6 rounded-xl bg-gray-800/50 border border-gray-700/50">
               <h2 className="text-xl font-semibold text-white mb-4">
-                Design Challenge
+                {t('designChallenge')}
               </h2>
 
               <div className="space-y-4">
                 <div>
                   <label className="block text-sm text-gray-400 mb-2">
-                    What design challenge do you want to solve?
+                    {t('challengeLabel')}
                   </label>
                   <textarea
                     value={challenge}
                     onChange={(e) => setChallenge(e.target.value)}
-                    placeholder="E.g., Design an authentication system that supports multiple providers"
+                    placeholder={t('challengePlaceholder')}
                     className={cn(
                       "w-full px-4 py-3 rounded-lg",
                       "bg-gray-900/50 border border-gray-700",
@@ -239,7 +242,7 @@ export default function CKTheoryPage() {
 
                 <div>
                   <label className="block text-sm text-gray-400 mb-2">
-                    Constraints (Optional)
+                    {t('constraintsLabel')}
                   </label>
                   <textarea
                     value={JSON.stringify(constraints, null, 2)}
@@ -250,7 +253,7 @@ export default function CKTheoryPage() {
                         // Invalid JSON, ignore
                       }
                     }}
-                    placeholder='{"budget": "2 weeks", "team_size": 2}'
+                    placeholder={t('constraintsPlaceholder')}
                     className={cn(
                       "w-full px-4 py-3 rounded-lg",
                       "bg-gray-900/50 border border-gray-700",
@@ -278,12 +281,12 @@ export default function CKTheoryPage() {
                   {generateMutation.isPending ? (
                     <>
                       <Loader2 className="h-5 w-5 animate-spin" />
-                      Generating Alternatives...
+                      {t('generatingAlternatives')}
                     </>
                   ) : (
                     <>
                       <Lightbulb className="h-5 w-5" />
-                      Generate Alternatives
+                      {t('generateAlternatives')}
                     </>
                   )}
                 </button>
@@ -294,7 +297,7 @@ export default function CKTheoryPage() {
             {recentDesigns?.designs && recentDesigns.designs.length > 0 && (
               <div className="p-6 rounded-xl bg-gray-800/50 border border-gray-700/50">
                 <h3 className="text-lg font-semibold text-white mb-4">
-                  Recent Designs
+                  {t('recentDesigns')}
                 </h3>
                 <div className="space-y-3">
                   {recentDesigns.designs.map((design) => (
@@ -348,14 +351,14 @@ export default function CKTheoryPage() {
                 <div className="p-6 rounded-xl bg-gradient-to-br from-purple-500/10 to-pink-500/10 border border-purple-500/20">
                   <div className="flex items-center gap-3 mb-4">
                     <TrendingUp className="h-6 w-6 text-purple-400" />
-                    <h2 className="text-2xl font-bold text-white">Trade-off Analysis</h2>
+                    <h2 className="text-2xl font-bold text-white">{t('tradeoffAnalysis')}</h2>
                   </div>
                   <p className="text-lg text-gray-200 leading-relaxed mb-4">
                     {result.tradeoff_analysis.summary}
                   </p>
                   <div className="p-4 rounded-lg bg-purple-500/10 border border-purple-500/20">
                     <p className="text-sm font-semibold text-purple-400 mb-2">
-                      Recommendation:
+                      {t('recommendation')}:
                     </p>
                     <p className="text-white">
                       {result.tradeoff_analysis.recommendation}
@@ -368,7 +371,7 @@ export default function CKTheoryPage() {
                     </div>
                     <div className="flex items-center gap-1">
                       <CheckCircle2 className="h-4 w-4 text-green-400" />
-                      {result.alternatives.length} alternatives
+                      {result.alternatives.length} {t('alternatives')}
                     </div>
                   </div>
                 </div>
@@ -392,10 +395,10 @@ export default function CKTheoryPage() {
                           "text-2xl font-bold",
                           getAlternativeTextColor(alt.id)
                         )}>
-                          Alternative {alt.id}
+                          {t('alternative')} {alt.id}
                         </span>
                         <div className="text-right">
-                          <p className="text-xs text-gray-400">RICE Score</p>
+                          <p className="text-xs text-gray-400">{t('riceScore')}</p>
                           <p className={cn(
                             "text-2xl font-bold",
                             getAlternativeTextColor(alt.id)
@@ -415,19 +418,19 @@ export default function CKTheoryPage() {
                       {/* RICE Breakdown */}
                       <div className="grid grid-cols-2 gap-2 mb-4 text-xs">
                         <div className="p-2 rounded bg-gray-900/30">
-                          <p className="text-gray-400">Reach</p>
+                          <p className="text-gray-400">{t('reach')}</p>
                           <p className="font-bold text-white">{alt.rice.reach}/10</p>
                         </div>
                         <div className="p-2 rounded bg-gray-900/30">
-                          <p className="text-gray-400">Impact</p>
+                          <p className="text-gray-400">{t('impact')}</p>
                           <p className="font-bold text-white">{alt.rice.impact}/10</p>
                         </div>
                         <div className="p-2 rounded bg-gray-900/30">
-                          <p className="text-gray-400">Confidence</p>
+                          <p className="text-gray-400">{t('confidence')}</p>
                           <p className="font-bold text-white">{alt.rice.confidence}/10</p>
                         </div>
                         <div className="p-2 rounded bg-gray-900/30">
-                          <p className="text-gray-400">Effort</p>
+                          <p className="text-gray-400">{t('effort')}</p>
                           <p className="font-bold text-white">{alt.rice.effort}/10</p>
                         </div>
                       </div>
@@ -435,7 +438,7 @@ export default function CKTheoryPage() {
                       {/* Pros/Cons */}
                       <div className="space-y-3 text-xs">
                         <div>
-                          <p className="font-semibold text-green-400 mb-1">Pros:</p>
+                          <p className="font-semibold text-green-400 mb-1">{t('pros')}:</p>
                           <ul className="list-disc list-inside space-y-0.5">
                             {alt.pros.map((pro, i) => (
                               <li key={i} className="text-gray-300">{pro}</li>
@@ -443,7 +446,7 @@ export default function CKTheoryPage() {
                           </ul>
                         </div>
                         <div>
-                          <p className="font-semibold text-red-400 mb-1">Cons:</p>
+                          <p className="font-semibold text-red-400 mb-1">{t('cons')}:</p>
                           <ul className="list-disc list-inside space-y-0.5">
                             {alt.cons.map((con, i) => (
                               <li key={i} className="text-gray-300">{con}</li>
@@ -464,7 +467,7 @@ export default function CKTheoryPage() {
                           "transition-colors"
                         )}
                       >
-                        Select This Alternative
+                        {t('selectAlternative')}
                       </button>
                     </motion.div>
                   ))}
@@ -481,17 +484,17 @@ export default function CKTheoryPage() {
                     >
                       <h3 className="text-xl font-semibold text-white mb-4 flex items-center gap-2">
                         <MessageSquare className="h-5 w-5" />
-                        Provide Feedback
+                        {t('provideFeedback')}
                       </h3>
                       <form onSubmit={handleFeedbackSubmit} className="space-y-4">
                         <div>
                           <label className="block text-sm text-gray-400 mb-2">
-                            Selected Alternative: <span className="text-white font-semibold">Alternative {selectedAlt}</span>
+                            {t('selectedAlternative')}: <span className="text-white font-semibold">{t('alternative')} {selectedAlt}</span>
                           </label>
                         </div>
                         <div>
                           <label className="block text-sm text-gray-400 mb-2">
-                            Rating (1-5)
+                            {t('rating')}
                           </label>
                           <div className="flex gap-2">
                             {[1, 2, 3, 4, 5].map((val) => (
@@ -513,12 +516,12 @@ export default function CKTheoryPage() {
                         </div>
                         <div>
                           <label className="block text-sm text-gray-400 mb-2">
-                            Comments
+                            {t('comments')}
                           </label>
                           <textarea
                             value={comments}
                             onChange={(e) => setComments(e.target.value)}
-                            placeholder="Share your thoughts on this alternative..."
+                            placeholder={t('commentsPlaceholder')}
                             className={cn(
                               "w-full px-4 py-3 rounded-lg",
                               "bg-gray-900/50 border border-gray-700",
@@ -545,12 +548,12 @@ export default function CKTheoryPage() {
                             {feedbackMutation.isPending ? (
                               <>
                                 <Loader2 className="h-5 w-5 animate-spin" />
-                                Submitting...
+                                {t('submitting')}
                               </>
                             ) : (
                               <>
                                 <ThumbsUp className="h-5 w-5" />
-                                Submit Feedback
+                                {t('submitFeedback')}
                               </>
                             )}
                           </button>
@@ -563,7 +566,7 @@ export default function CKTheoryPage() {
                               "hover:bg-gray-600 transition-colors"
                             )}
                           >
-                            Cancel
+                            {tCommon('cancel')}
                           </button>
                         </div>
                       </form>
@@ -583,11 +586,10 @@ export default function CKTheoryPage() {
                   <Palette className="h-16 w-16 text-gray-600" />
                 </div>
                 <h3 className="text-2xl font-semibold text-gray-400 mb-2">
-                  No Design Generated Yet
+                  {t('noDesignYet')}
                 </h3>
                 <p className="text-gray-500 max-w-md">
-                  Enter a design challenge and click &ldquo;Generate Alternatives&rdquo; to see 3 design
-                  alternatives with RICE scoring and trade-off analysis.
+                  {t('noDesignDesc')}
                 </p>
               </motion.div>
             )}

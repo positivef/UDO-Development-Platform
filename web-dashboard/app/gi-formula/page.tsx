@@ -18,6 +18,7 @@ import {
 } from "lucide-react"
 import { cn } from "@/lib/utils"
 import { toast } from "sonner"
+import { useTranslations } from "next-intl"
 
 const API_URL = process.env.NEXT_PUBLIC_API_URL || "http://localhost:8000"
 
@@ -74,6 +75,7 @@ interface GIFormulaResult {
 }
 
 export default function GIFormulaPage() {
+  const t = useTranslations('giFormula')
   const router = useRouter()
   const [problem, setProblem] = useState("")
   const [context, setContext] = useState<Record<string, string>>({})
@@ -133,7 +135,7 @@ export default function GIFormulaPage() {
     },
     onSuccess: (data: ApiGIFormulaResult) => {
       setResult(normalizeResult(data))
-      toast.success("Insight generated successfully!")
+      toast.success(t('insightGenerated'))
       refetchInsights()
     },
     onError: (error: Error) => {
@@ -144,7 +146,7 @@ export default function GIFormulaPage() {
   const handleSubmit = (e: React.FormEvent) => {
     e.preventDefault()
     if (!problem.trim()) {
-      toast.error("Please enter a problem statement")
+      toast.error(t('enterProblem'))
       return
     }
     generateMutation.mutate()
@@ -186,7 +188,7 @@ export default function GIFormulaPage() {
           )}
         >
           <ArrowRight className="h-4 w-4 rotate-180" />
-          Back
+          {t('back')}
         </button>
       </div>
 
@@ -201,9 +203,9 @@ export default function GIFormulaPage() {
             <Lightbulb className="h-8 w-8 text-blue-400" />
           </div>
           <div>
-            <h1 className="text-4xl font-bold text-white">GI Formula</h1>
+            <h1 className="text-4xl font-bold text-white">{t('title')}</h1>
             <p className="text-gray-400 mt-1">
-              5-Stage Genius Insight Generation System
+              {t('description')}
             </p>
           </div>
         </div>
@@ -220,18 +222,18 @@ export default function GIFormulaPage() {
           <form onSubmit={handleSubmit} className="space-y-4">
             <div className="p-6 rounded-xl bg-gray-800/50 border border-gray-700/50">
               <h2 className="text-xl font-semibold text-white mb-4">
-                Problem Statement
+                {t('problemStatement')}
               </h2>
 
               <div className="space-y-4">
                 <div>
                   <label className="block text-sm text-gray-400 mb-2">
-                    What problem do you want to solve?
+                    {t('problemLabel')}
                   </label>
                   <textarea
                     value={problem}
                     onChange={(e) => setProblem(e.target.value)}
-                    placeholder="E.g., How can we reduce API latency by 50%?"
+                    placeholder={t('problemPlaceholder')}
                     className={cn(
                       "w-full px-4 py-3 rounded-lg",
                       "bg-gray-900/50 border border-gray-700",
@@ -247,7 +249,7 @@ export default function GIFormulaPage() {
 
                 <div>
                   <label className="block text-sm text-gray-400 mb-2">
-                    Context (Optional)
+                    {t('contextLabel')}
                   </label>
                   <textarea
                     value={JSON.stringify(context, null, 2)}
@@ -258,7 +260,7 @@ export default function GIFormulaPage() {
                         // Invalid JSON, ignore
                       }
                     }}
-                    placeholder='{"current_latency": "200ms", "target_latency": "100ms"}'
+                    placeholder={t('contextPlaceholder')}
                     className={cn(
                       "w-full px-4 py-3 rounded-lg",
                       "bg-gray-900/50 border border-gray-700",
@@ -287,12 +289,12 @@ export default function GIFormulaPage() {
                   {generateMutation.isPending ? (
                     <>
                       <Loader2 className="h-5 w-5 animate-spin" />
-                      Generating Insight...
+                      {t('generatingInsight')}
                     </>
                   ) : (
                     <>
                       <Sparkles className="h-5 w-5" />
-                      Generate Insight
+                      {t('generateInsight')}
                     </>
                   )}
                 </button>
@@ -303,7 +305,7 @@ export default function GIFormulaPage() {
             {recentInsights.length > 0 && (
               <div className="p-6 rounded-xl bg-gray-800/50 border border-gray-700/50">
                 <h3 className="text-lg font-semibold text-white mb-4">
-                  Recent Insights
+                  {t('recentInsights')}
                 </h3>
                 <div className="space-y-3">
                   {recentInsights.map((insight) => (
@@ -327,7 +329,7 @@ export default function GIFormulaPage() {
                         <Clock className="h-3 w-3" />
                         {new Date(insight.created_at).toLocaleDateString()}
                         <span className="ml-auto text-blue-400">
-                          {(insight.confidence_score * 100).toFixed(0)}% confidence
+                          {(insight.confidence_score * 100).toFixed(0)}% {t('confidence')}
                         </span>
                       </div>
                     </button>
@@ -358,7 +360,7 @@ export default function GIFormulaPage() {
                 <div className="p-6 rounded-xl bg-gradient-to-br from-blue-500/10 to-purple-500/10 border border-blue-500/20">
                   <div className="flex items-center gap-3 mb-4">
                     <Sparkles className="h-6 w-6 text-blue-400" />
-                    <h2 className="text-2xl font-bold text-white">Final Insight</h2>
+                    <h2 className="text-2xl font-bold text-white">{t('finalInsight')}</h2>
                   </div>
                   <p className="text-lg text-gray-200 leading-relaxed">
                     {result.final_insight}
@@ -370,7 +372,7 @@ export default function GIFormulaPage() {
                     </div>
                     <div className="flex items-center gap-1">
                       <CheckCircle2 className="h-4 w-4 text-green-400" />
-                      {(result.bias_check.confidence_score * 100).toFixed(0)}% confidence
+                      {(result.bias_check.confidence_score * 100).toFixed(0)}% {t('confidence')}
                     </div>
                   </div>
                 </div>
@@ -378,7 +380,7 @@ export default function GIFormulaPage() {
                 {/* Stages */}
                 <div className="space-y-4">
                   <h3 className="text-xl font-semibold text-white">
-                    Processing Stages
+                    {t('processingStages')}
                   </h3>
                   {result.stages.map((stage, index) => (
                     <motion.div
@@ -413,12 +415,12 @@ export default function GIFormulaPage() {
                   <div className="p-6 rounded-xl bg-red-500/10 border border-red-500/20">
                     <div className="flex items-center gap-3 mb-4">
                       <AlertCircle className="h-6 w-6 text-red-400" />
-                      <h3 className="text-xl font-semibold text-white">Bias Check</h3>
+                      <h3 className="text-xl font-semibold text-white">{t('biasCheck')}</h3>
                     </div>
                     <div className="space-y-3">
                       <div>
                         <h4 className="text-sm font-medium text-red-400 mb-2">
-                          Potential Biases:
+                          {t('potentialBiases')}:
                         </h4>
                         <ul className="list-disc list-inside space-y-1">
                           {result.bias_check.potential_biases.map((bias, i) => (
@@ -431,7 +433,7 @@ export default function GIFormulaPage() {
                       {result.bias_check.recommendations.length > 0 && (
                         <div>
                           <h4 className="text-sm font-medium text-blue-400 mb-2">
-                            Recommendations:
+                            {t('recommendations')}:
                           </h4>
                           <ul className="list-disc list-inside space-y-1">
                             {result.bias_check.recommendations.map((rec, i) => (
@@ -458,11 +460,10 @@ export default function GIFormulaPage() {
                   <Brain className="h-16 w-16 text-gray-600" />
                 </div>
                 <h3 className="text-2xl font-semibold text-gray-400 mb-2">
-                  No Insight Generated Yet
+                  {t('noInsightYet')}
                 </h3>
                 <p className="text-gray-500 max-w-md">
-                  Enter a problem statement and click &ldquo;Generate Insight&rdquo; to see the 5-stage
-                  GI Formula analysis in action.
+                  {t('noInsightDesc')}
                 </p>
               </motion.div>
             )}

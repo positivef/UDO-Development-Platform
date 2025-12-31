@@ -12,6 +12,7 @@
  */
 
 import { useEffect, useState, useMemo } from 'react'
+import { useTranslations } from 'next-intl'
 import dynamic from 'next/dynamic'
 import { KanbanBoard } from '@/components/kanban/KanbanBoard'
 import { TaskCreateModal } from '@/components/kanban/TaskCreateModal'
@@ -37,6 +38,7 @@ const FilterPanel = dynamic(
 const mockTasks = getMockTasks()
 
 export default function KanbanPage() {
+  const t = useTranslations('kanban')
   const { setTasks, tasks: storeTasks, isLoading: storeLoading, error: storeError, clearError } = useKanbanStore()
   const [useMockData, setUseMockData] = useState(false)
   const [isOnline, setIsOnline] = useState(true)
@@ -139,27 +141,29 @@ export default function KanbanPage() {
     }
   }, [])
 
-  // Handle API response or fallback to mock data
+  // Initialize with mock data immediately, then update if API succeeds
+  useEffect(() => {
+    // Always start with mock data to avoid loading spinner blocking UI
+    if (tasks.length === 0) {
+      setTasks(mockTasks)
+      setUseMockData(true)
+    }
+  }, []) // Run once on mount
+
+  // Handle API response - update to real data if available
   useEffect(() => {
     if (apiData?.tasks && apiData.tasks.length > 0) {
       // Use API data
+      setTasks(apiData.tasks)
       setUseMockData(false)
     } else if (apiError || !isOnline) {
-      // Fallback to mock data
-      if (tasks.length === 0) {
-        setTasks(mockTasks)
-        setUseMockData(true)
-      }
-    } else if (!apiLoading && (!apiData?.tasks || apiData.tasks.length === 0)) {
-      // API returned empty, use mock data for demo
-      if (tasks.length === 0) {
-        setTasks(mockTasks)
-        setUseMockData(true)
-      }
+      // Keep using mock data on API error
+      setUseMockData(true)
     }
-  }, [apiData, apiError, apiLoading, isOnline, setTasks, tasks.length])
+  }, [apiData, apiError, isOnline, setTasks])
 
-  const isLoading = apiLoading || storeLoading
+  // Only show loading spinner if we have no tasks yet (initial load)
+  const isLoading = (apiLoading || storeLoading) && tasks.length === 0
 
   const handleAddTask = () => {
     setIsCreateModalOpen(true)
@@ -214,9 +218,9 @@ export default function KanbanPage() {
       <div className="flex items-center justify-between mb-6">
         <div className="flex items-center gap-4">
           <div>
-            <h1 className="text-3xl font-bold">Kanban Board</h1>
+            <h1 className="text-3xl font-bold">{t('title')}</h1>
             <p className="text-muted-foreground">
-              Manage tasks across UDO v2 development phases
+              {t('description')}
             </p>
           </div>
 
@@ -225,10 +229,10 @@ export default function KanbanPage() {
             {wsStatus === 'connected' && (
               <>
                 <Radio className="h-4 w-4 text-green-500 animate-pulse" />
-                <span className="text-sm font-medium">Live</span>
+                <span className="text-sm font-medium">{t('wsStatus.live')}</span>
                 {activeClients > 1 && (
                   <Badge variant="outline" className="text-xs">
-                    {activeClients} users
+                    {activeClients} {t('wsStatus.users')}
                   </Badge>
                 )}
               </>
@@ -236,19 +240,19 @@ export default function KanbanPage() {
             {wsStatus === 'connecting' && (
               <>
                 <Wifi className="h-4 w-4 text-yellow-500 animate-spin" />
-                <span className="text-sm text-muted-foreground">Connecting...</span>
+                <span className="text-sm text-muted-foreground">{t('wsStatus.connecting')}</span>
               </>
             )}
             {wsStatus === 'disconnected' && (
               <>
                 <WifiOff className="h-4 w-4 text-muted-foreground" />
-                <span className="text-sm text-muted-foreground">Offline</span>
+                <span className="text-sm text-muted-foreground">{t('wsStatus.offline')}</span>
               </>
             )}
             {wsStatus === 'error' && (
               <>
                 <AlertCircle className="h-4 w-4 text-red-500" />
-                <span className="text-sm text-red-500">Error</span>
+                <span className="text-sm text-red-500">{t('wsStatus.error')}</span>
               </>
             )}
           </div>
@@ -265,7 +269,7 @@ export default function KanbanPage() {
               className="h-8"
             >
               <LayoutGrid className="h-4 w-4 mr-2" />
-              Board
+              {t('viewBoard')}
             </Button>
             <Button
               variant={currentView === 'graph' ? 'default' : 'ghost'}
@@ -274,7 +278,7 @@ export default function KanbanPage() {
               className="h-8"
             >
               <GitBranch className="h-4 w-4 mr-2" />
-              Graph
+              {t('viewGraph')}
             </Button>
           </div>
 
@@ -285,16 +289,16 @@ export default function KanbanPage() {
             disabled={isLoading}
           >
             <RefreshCw className={`h-4 w-4 mr-2 ${isLoading ? 'animate-spin' : ''}`} />
-            Refresh
+            {t('refresh')}
           </Button>
           <FilterPanel filters={filters} onFiltersChange={setFilters} />
           <Button variant="outline" size="sm" onClick={handleImport}>
             <Upload className="h-4 w-4 mr-2" />
-            Import
+            {t('import')}
           </Button>
           <Button variant="outline" size="sm" onClick={handleExport}>
             <Download className="h-4 w-4 mr-2" />
-            Export
+            {t('export')}
           </Button>
           <Button
             variant="outline"
@@ -303,11 +307,11 @@ export default function KanbanPage() {
             className="bg-purple-500/10 hover:bg-purple-500/20 text-purple-600 border-purple-500/20"
           >
             <Sparkles className="h-4 w-4 mr-2" />
-            AI Suggest
+            {t('aiSuggest')}
           </Button>
           <Button size="sm" onClick={handleAddTask}>
             <Plus className="h-4 w-4 mr-2" />
-            Add Task
+            {t('createTask')}
           </Button>
         </div>
       </div>
@@ -317,7 +321,7 @@ export default function KanbanPage() {
         <div className="mb-4 p-3 rounded-lg bg-blue-100 dark:bg-blue-900/20 border border-blue-200 dark:border-blue-800 flex items-center gap-2">
           <Radio className="h-4 w-4 text-blue-600 animate-pulse" />
           <span className="text-sm text-blue-700 dark:text-blue-300">
-            Real-time sync active • {activeClients} users online
+            {t('realTimeSync')} • {activeClients} {t('wsStatus.users')}
           </span>
         </div>
       )}
@@ -334,14 +338,14 @@ export default function KanbanPage() {
               <>
                 <WifiOff className="h-4 w-4 text-red-600" />
                 <span className="text-sm text-red-700 dark:text-red-300">
-                  Offline - Changes will sync when connection is restored
+                  {t('offlineMessage')}
                 </span>
               </>
             ) : (
               <>
                 <AlertCircle className="h-4 w-4 text-yellow-600" />
                 <span className="text-sm text-yellow-700 dark:text-yellow-300">
-                  Using demo data - Backend API unavailable
+                  {t('demoMessage')}
                   {apiErrorDetails && (
                     <span className="ml-1 text-xs opacity-75">
                       ({apiErrorDetails instanceof Error ? apiErrorDetails.message : 'Connection error'})
@@ -359,7 +363,7 @@ export default function KanbanPage() {
               className="text-yellow-700 border-yellow-300 hover:bg-yellow-200"
             >
               <Wifi className="h-3 w-3 mr-1" />
-              Retry Connection
+              {t('retryConnection')}
             </Button>
           )}
         </div>
@@ -378,7 +382,7 @@ export default function KanbanPage() {
             onClick={clearError}
             className="text-red-700 border-red-300 hover:bg-red-200"
           >
-            Dismiss
+            {t('dismiss')}
           </Button>
         </div>
       )}
@@ -389,7 +393,7 @@ export default function KanbanPage() {
           <div className="flex items-center justify-center h-full">
             <div className="flex flex-col items-center gap-2">
               <RefreshCw className="h-8 w-8 animate-spin text-muted-foreground" />
-              <p className="text-muted-foreground">Loading tasks...</p>
+              <p className="text-muted-foreground">{t('loadingTasks')}</p>
             </div>
           </div>
         ) : currentView === 'board' ? (
@@ -406,7 +410,7 @@ export default function KanbanPage() {
             {/* Task Selector for Graph View */}
             <div className="p-4 bg-muted/50 rounded-lg">
               <label className="text-sm font-medium mb-2 block">
-                Select a task to view its dependency graph:
+                {t('graph.selectTask')}
               </label>
               <div className="flex gap-2 flex-wrap">
                 {(hasActiveFilters ? filteredTasks : tasks).map((task) => (
@@ -447,7 +451,7 @@ export default function KanbanPage() {
               <div className="flex-1 flex items-center justify-center text-muted-foreground">
                 <div className="text-center">
                   <GitBranch className="h-12 w-12 mx-auto mb-2 opacity-50" />
-                  <p className="text-sm">Select a task above to view its dependency graph</p>
+                  <p className="text-sm">{t('graph.noSelection')}</p>
                 </div>
               </div>
             )}
@@ -460,39 +464,39 @@ export default function KanbanPage() {
         <div className="flex gap-6 text-sm">
           <div>
             <span className="text-muted-foreground">
-              {hasActiveFilters ? 'Showing: ' : 'Total Tasks: '}
+              {hasActiveFilters ? `${t('stats.showing')}: ` : `${t('stats.totalTasks')}: `}
             </span>
             <span className="font-semibold">
               {hasActiveFilters ? `${filteredTasks.length} / ${tasks.length}` : tasks.length}
             </span>
           </div>
           <div>
-            <span className="text-muted-foreground">In Progress: </span>
+            <span className="text-muted-foreground">{t('stats.inProgress')}: </span>
             <span className="font-semibold text-yellow-600">
-              {filteredTasks.filter((t) => t.status === 'in_progress').length}
+              {filteredTasks.filter((task) => task.status === 'in_progress').length}
             </span>
           </div>
           <div>
-            <span className="text-muted-foreground">Blocked: </span>
+            <span className="text-muted-foreground">{t('stats.blocked')}: </span>
             <span className="font-semibold text-red-600">
-              {filteredTasks.filter((t) => t.status === 'blocked').length}
+              {filteredTasks.filter((task) => task.status === 'blocked').length}
             </span>
           </div>
           <div>
-            <span className="text-muted-foreground">Completed: </span>
+            <span className="text-muted-foreground">{t('stats.completed')}: </span>
             <span className="font-semibold text-green-600">
-              {filteredTasks.filter((t) => t.status === 'completed').length}
+              {filteredTasks.filter((task) => task.status === 'completed').length}
             </span>
           </div>
           <div className="ml-auto flex gap-2">
             {hasActiveFilters && (
               <span className="text-xs text-blue-600 px-2 py-1 bg-blue-100 dark:bg-blue-900/30 rounded">
-                Filtered
+                {t('stats.filtered')}
               </span>
             )}
             {useMockData && (
               <span className="text-xs text-muted-foreground px-2 py-1 bg-muted rounded">
-                Demo Mode
+                {t('stats.demoMode')}
               </span>
             )}
           </div>

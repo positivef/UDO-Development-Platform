@@ -5,6 +5,7 @@ import { Providers } from "@/components/providers";
 import { Navigation } from "@/components/Navigation";
 import { Toaster } from "sonner";
 import { EnvCheckBanner } from "@/components/EnvCheckBanner";
+import { LanguageSwitcher } from "@/components/LanguageSwitcher";
 
 const inter = Inter({ subsets: ["latin"] });
 
@@ -34,6 +35,7 @@ export default function RootLayout({
                 </div>
                 <div className="flex flex-1 items-center justify-between space-x-2 md:justify-end">
                   <Navigation />
+                  <LanguageSwitcher />
                 </div>
               </div>
             </header>

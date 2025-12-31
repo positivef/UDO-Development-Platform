@@ -9,8 +9,10 @@ import { Badge } from '@/components/ui/badge'
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select'
 import { Archive, Clock, CheckCircle2, TrendingUp } from 'lucide-react'
 import type { Phase } from '@/lib/types/kanban'
+import { useTranslations } from 'next-intl'
 
 export default function ArchivePage() {
+  const t = useTranslations('archive')
   const [filters, setFilters] = useState<ArchiveFilter>({
     page: 1,
     page_size: 20,
@@ -29,7 +31,7 @@ export default function ArchivePage() {
   const stats = data?.roi_statistics
 
   if (!mounted) {
-    return <div className="min-h-screen p-8 flex items-center justify-center">Loading...</div>
+    return <div className="min-h-screen p-8 flex items-center justify-center">{t('loading')}</div>
   }
 
   return (
@@ -37,7 +39,7 @@ export default function ArchivePage() {
       <div className="max-w-7xl mx-auto space-y-6">
         <div className="flex items-center gap-3">
           <Archive className="h-8 w-8 text-primary" />
-          <h1 className="text-3xl font-bold">Archive</h1>
+          <h1 className="text-3xl font-bold">{t('title')}</h1>
         </div>
 
         {stats && (
@@ -45,28 +47,28 @@ export default function ArchivePage() {
             <div className="bg-card p-4 rounded-lg border">
               <div className="flex items-center gap-2 text-sm text-muted-foreground">
                 <Archive className="h-4 w-4" />
-                Total Archived
+                {t('totalArchived')}
               </div>
               <div className="text-2xl font-bold mt-1">{stats.total_archived}</div>
             </div>
             <div className="bg-card p-4 rounded-lg border">
               <div className="flex items-center gap-2 text-sm text-muted-foreground">
                 <Clock className="h-4 w-4" />
-                Estimated
+                {t('estimated')}
               </div>
               <div className="text-2xl font-bold mt-1">{stats.total_estimated_hours.toFixed(1)}h</div>
             </div>
             <div className="bg-card p-4 rounded-lg border">
               <div className="flex items-center gap-2 text-sm text-muted-foreground">
                 <CheckCircle2 className="h-4 w-4" />
-                Actual
+                {t('actual')}
               </div>
               <div className="text-2xl font-bold mt-1">{stats.total_actual_hours.toFixed(1)}h</div>
             </div>
             <div className="bg-card p-4 rounded-lg border">
               <div className="flex items-center gap-2 text-sm text-muted-foreground">
                 <TrendingUp className="h-4 w-4" />
-                Efficiency
+                {t('efficiency')}
               </div>
               <div className="text-2xl font-bold mt-1">
                 {stats.total_estimated_hours > 0 ? ((stats.total_actual_hours / stats.total_estimated_hours) * 100).toFixed(0) : 0}%
@@ -83,10 +85,10 @@ export default function ArchivePage() {
             }
           >
             <SelectTrigger className="w-48">
-              <SelectValue placeholder="All Phases" />
+              <SelectValue placeholder={t('allPhases')} />
             </SelectTrigger>
             <SelectContent>
-              <SelectItem value="all">All Phases</SelectItem>
+              <SelectItem value="all">{t('allPhases')}</SelectItem>
               <SelectItem value="ideation">Ideation</SelectItem>
               <SelectItem value="design">Design</SelectItem>
               <SelectItem value="mvp">MVP</SelectItem>
@@ -98,19 +100,19 @@ export default function ArchivePage() {
 
         <div className="bg-card rounded-lg border">
           {isLoading ? (
-            <div className="p-8 text-center text-muted-foreground">Loading...</div>
+            <div className="p-8 text-center text-muted-foreground">{t('loading')}</div>
           ) : !data || !data.items || data.items.length === 0 ? (
-            <div className="p-8 text-center text-muted-foreground">No archived tasks</div>
+            <div className="p-8 text-center text-muted-foreground">{t('noArchivedTasks')}</div>
           ) : (
             <div className="overflow-x-auto">
               <table className="w-full">
                 <thead className="bg-muted/50">
                   <tr>
-                    <th className="px-4 py-3 text-left text-sm font-medium">Title</th>
-                    <th className="px-4 py-3 text-left text-sm font-medium">Phase</th>
-                    <th className="px-4 py-3 text-left text-sm font-medium">Priority</th>
-                    <th className="px-4 py-3 text-right text-sm font-medium">Hours</th>
-                    <th className="px-4 py-3 text-center text-sm font-medium">Obsidian</th>
+                    <th className="px-4 py-3 text-left text-sm font-medium">{t('tableHeaders.title')}</th>
+                    <th className="px-4 py-3 text-left text-sm font-medium">{t('tableHeaders.phase')}</th>
+                    <th className="px-4 py-3 text-left text-sm font-medium">{t('tableHeaders.priority')}</th>
+                    <th className="px-4 py-3 text-right text-sm font-medium">{t('tableHeaders.hours')}</th>
+                    <th className="px-4 py-3 text-center text-sm font-medium">{t('tableHeaders.obsidian')}</th>
                   </tr>
                 </thead>
                 <tbody className="divide-y">
@@ -130,7 +132,7 @@ export default function ArchivePage() {
                       <td className="px-4 py-3 text-right">{task.actual_hours?.toFixed(1) || '0.0'}h</td>
                       <td className="px-4 py-3 text-center">
                         <Badge variant={task.obsidian_synced ? 'default' : 'outline'}>
-                          {task.obsidian_synced ? 'Synced' : 'Not Synced'}
+                          {task.obsidian_synced ? t('synced') : t('notSynced')}
                         </Badge>
                       </td>
                     </tr>

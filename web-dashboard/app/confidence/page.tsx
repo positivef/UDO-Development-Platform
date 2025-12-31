@@ -8,26 +8,54 @@ import { Skeleton } from "@/components/ui/skeleton"
 import { Card, CardHeader, CardTitle, CardContent } from "@/components/ui/card"
 import { Tabs, TabsList, TabsTrigger } from "@/components/ui/tabs"
 import { BayesianConfidence } from "@/components/dashboard/bayesian-confidence"
+import { EvidenceInputModal } from "@/components/confidence/EvidenceInputModal"
+import { EvidenceBreakdown } from "@/components/confidence/EvidenceBreakdown"
+import { ConfidenceTrendChart } from "@/components/confidence/ConfidenceTrendChart"
+import { InteractiveRecommendations } from "@/components/confidence/InteractiveRecommendations"
 import { useConfidence, useConfidenceMutation } from "@/hooks/useConfidence"
+import { useConfidenceWebSocket } from "@/hooks/useConfidenceWebSocket"
 import { toast } from "sonner"
 import { cn } from "@/lib/utils"
-
-const phases = [
-  { value: "ideation", label: "Ideation", threshold: 60 },
-  { value: "design", label: "Design", threshold: 65 },
-  { value: "mvp", label: "MVP", threshold: 65 },
-  { value: "implementation", label: "Implementation", threshold: 70 },
-  { value: "testing", label: "Testing", threshold: 70 },
-]
+import { Wifi, WifiOff } from "lucide-react"
+import { useTranslations } from "next-intl"
 
 export default function ConfidencePage() {
+  const t = useTranslations('confidence')
+
+  const phases = [
+    { value: "ideation", label: t('phases.ideation'), threshold: 60 },
+    { value: "design", label: t('phases.design'), threshold: 65 },
+    { value: "mvp", label: t('phases.mvp'), threshold: 65 },
+    { value: "implementation", label: t('phases.implementation'), threshold: 70 },
+    { value: "testing", label: t('phases.testing'), threshold: 70 },
+  ]
   const [selectedPhase, setSelectedPhase] = useState("implementation")
+  const [showEvidenceModal, setShowEvidenceModal] = useState(false)
   const { data, isLoading, isError, refetch } = useConfidence(selectedPhase)
   const mutation = useConfidenceMutation()
 
+  // WebSocket for real-time updates
+  const { isConnected, connectionStatus, requestRecalculation } = useConfidenceWebSocket({
+    phase: selectedPhase,
+    enabled: true,
+    onConfidenceUpdate: () => {
+      toast.info(t('updatedRealtime'))
+    },
+    onThresholdCrossed: (update) => {
+      if (update.threshold_crossed === 'above') {
+        toast.success(`${t('thresholdCrossedAbove')} ${(update.confidence_score * 100).toFixed(1)}%`)
+      } else {
+        toast.warning(`${t('droppedBelowThreshold')} ${(update.confidence_score * 100).toFixed(1)}%`)
+      }
+    },
+    onDecisionChanged: (update) => {
+      toast.info(`${t('decisionChanged')} ${update.decision.replace(/_/g, ' ')}`)
+    },
+  })
+
   const handleRefresh = () => {
     refetch()
-    toast.success("Confidence data refreshed")
+    toast.success(t('refreshed'))
   }
 
   const handlePhaseChange = (phase: string) => {
@@ -50,13 +78,13 @@ export default function ConfidencePage() {
             <CardContent className="flex items-center justify-center py-12">
               <div className="text-center">
                 <Activity className="h-12 w-12 text-red-500 mx-auto mb-4" />
-                <h2 className="text-xl font-bold text-red-500 mb-2">Confidence API Unavailable</h2>
+                <h2 className="text-xl font-bold text-red-500 mb-2">{t('apiUnavailable')}</h2>
                 <p className="text-muted-foreground mb-4">
-                  Unable to connect to the Bayesian Confidence API.
+                  {t('unableToConnect')}
                 </p>
                 <Button onClick={handleRefresh} variant="outline">
                   <RefreshCw className="h-4 w-4 mr-2" />
-                  Retry
+                  {t('retry')}
                 </Button>
               </div>
             </CardContent>
@@ -79,10 +107,10 @@ export default function ConfidencePage() {
             <div>
               <h1 className="text-3xl font-bold text-white flex items-center gap-3">
                 <Gauge className="h-8 w-8 text-blue-500" />
-                Bayesian Confidence Dashboard
+                {t('title')}
               </h1>
               <p className="text-gray-400 mt-1">
-                Phase-aware confidence scoring with Beta-Binomial inference
+                {t('description')}
               </p>
             </div>
             <div className="flex items-center gap-3">
@@ -96,6 +124,14 @@ export default function ConfidencePage() {
                 </TabsList>
               </Tabs>
               <Button
+                onClick={() => setShowEvidenceModal(true)}
+                variant="outline"
+                className="text-purple-400 border-purple-500/50 hover:bg-purple-500/10"
+              >
+                <Zap className="h-4 w-4 mr-2" />
+                {t('customEvidence')}
+              </Button>
+              <Button
                 onClick={handleRefresh}
                 variant="outline"
                 size="icon"
@@ -103,6 +139,27 @@ export default function ConfidencePage() {
               >
                 <RefreshCw className="h-4 w-4" />
               </Button>
+              {/* WebSocket connection status */}
+              <div
+                className={cn(
+                  "flex items-center gap-1.5 px-2 py-1 rounded-full text-xs",
+                  isConnected
+                    ? "bg-green-500/20 text-green-400"
+                    : connectionStatus === 'connecting'
+                      ? "bg-yellow-500/20 text-yellow-400"
+                      : "bg-red-500/20 text-red-400"
+                )}
+                title={`WebSocket: ${connectionStatus}`}
+              >
+                {isConnected ? (
+                  <Wifi className="h-3 w-3" />
+                ) : (
+                  <WifiOff className="h-3 w-3" />
+                )}
+                <span className="hidden sm:inline">
+                  {isConnected ? t('live') : connectionStatus === 'connecting' ? "..." : t('offline')}
+                </span>
+              </div>
             </div>
           </div>
         </motion.div>
@@ -132,7 +189,7 @@ export default function ConfidencePage() {
                       meetsThreshold ? "text-green-400" : "text-red-400"
                     )} />
                     <div>
-                      <p className="text-sm text-gray-400">Confidence Score</p>
+                      <p className="text-sm text-gray-400">{t('confidenceScore')}</p>
                       <p className={cn(
                         "text-2xl font-bold",
                         meetsThreshold ? "text-green-400" : "text-red-400"
@@ -142,7 +199,7 @@ export default function ConfidencePage() {
                     </div>
                   </div>
                   <p className="text-xs text-gray-500 mt-2">
-                    Threshold: {currentPhase?.threshold}%
+                    {t('threshold')}: {currentPhase?.threshold}%
                   </p>
                 </CardContent>
               </Card>
@@ -162,7 +219,7 @@ export default function ConfidencePage() {
                         data?.decision === "GO_WITH_CHECKPOINTS" ? "text-yellow-400" : "text-red-400"
                     )} />
                     <div>
-                      <p className="text-sm text-gray-400">Decision</p>
+                      <p className="text-sm text-gray-400">{t('decision')}</p>
                       <p className={cn(
                         "text-xl font-bold",
                         data?.decision === "GO" ? "text-green-400" :
@@ -186,7 +243,7 @@ export default function ConfidencePage() {
                           data?.risk_level === "high" ? "text-orange-400" : "text-red-400"
                     )} />
                     <div>
-                      <p className="text-sm text-gray-400">Risk Level</p>
+                      <p className="text-sm text-gray-400">{t('riskLevel')}</p>
                       <p className={cn(
                         "text-xl font-bold capitalize",
                         data?.risk_level === "low" ? "text-green-400" :
@@ -206,9 +263,9 @@ export default function ConfidencePage() {
                   <div className="flex items-center gap-3">
                     <Zap className="h-8 w-8 text-purple-400" />
                     <div>
-                      <p className="text-sm text-gray-400">Actions</p>
+                      <p className="text-sm text-gray-400">{t('actions')}</p>
                       <p className="text-xl font-bold text-purple-400">
-                        {data?.recommendations?.length || 0} Recommended
+                        {data?.recommendations?.length || 0} {t('recommended')}
                       </p>
                     </div>
                   </div>
@@ -228,7 +285,7 @@ export default function ConfidencePage() {
             <CardHeader>
               <CardTitle className="text-white flex items-center gap-2">
                 <TrendingUp className="h-5 w-5 text-blue-400" />
-                Phase Confidence Thresholds
+                {t('phaseThresholds')}
               </CardTitle>
             </CardHeader>
             <CardContent>
@@ -245,7 +302,7 @@ export default function ConfidencePage() {
                           "font-medium",
                           isActive ? "text-blue-400" : "text-gray-400"
                         )}>
-                          {phase.label} {isActive && "(Current)"}
+                          {phase.label} {isActive && `(${t('current')})`}
                         </span>
                         <span className={cn(
                           "font-medium",
@@ -280,6 +337,25 @@ export default function ConfidencePage() {
           </Card>
         </motion.div>
 
+        {/* Evidence Breakdown Chart */}
+        {!isLoading && (
+          <EvidenceBreakdown
+            breakdown={data?.evidence_breakdown}
+            evidenceStrength={data?.evidence_strength}
+            isLoading={isLoading}
+          />
+        )}
+
+        {/* Confidence Trend Chart */}
+        {!isLoading && (
+          <ConfidenceTrendChart
+            currentConfidence={confidenceScore}
+            currentPhase={selectedPhase}
+            phaseThreshold={currentPhase?.threshold || 70}
+            isLoading={isLoading}
+          />
+        )}
+
         {/* Main Bayesian Component */}
         <motion.div
           initial={{ opacity: 0, y: 20 }}
@@ -302,6 +378,22 @@ export default function ConfidencePage() {
             />
           ) : null}
         </motion.div>
+
+        {/* Interactive Recommendations */}
+        {!isLoading && data?.recommendations && (
+          <InteractiveRecommendations
+            recommendations={data.recommendations}
+            currentPhase={selectedPhase}
+            isLoading={isLoading}
+          />
+        )}
+
+        {/* Evidence Input Modal */}
+        <EvidenceInputModal
+          open={showEvidenceModal}
+          onClose={() => setShowEvidenceModal(false)}
+          currentPhase={selectedPhase}
+        />
       </div>
     </div>
   )

@@ -18,19 +18,21 @@ import { useTimeTracking } from "@/lib/hooks/useTimeTracking"
 import { useUncertainty } from "@/hooks/useUncertainty"
 import { format } from "date-fns"
 import { toast } from "sonner"
+import { useTranslations } from "next-intl"
 
 export default function TimeTrackingPage() {
+  const t = useTranslations('timeTracking')
   const [period, setPeriod] = useState<"day" | "week" | "month">("week")
   const { metrics, roi, bottlenecks, trends, summary, isLoading, isError, refetch } = useTimeTracking(period)
   const { data: uncertaintyData, isLoading: uncertaintyLoading, isError: uncertaintyError } = useUncertainty()
 
   const handleRefresh = () => {
     refetch()
-    toast.success("Data refreshed")
+    toast.success(t('refreshed'))
   }
 
   const getDateRange = () => {
-    if (!metrics?.date_range) return "Loading..."
+    if (!metrics?.date_range) return t('loading')
     return `${format(new Date(metrics.date_range.start), "MMM dd")} - ${format(new Date(metrics.date_range.end), "MMM dd, yyyy")}`
   }
 
@@ -45,13 +47,13 @@ export default function TimeTrackingPage() {
           <Card className="border-red-500/50 bg-red-500/10">
             <CardContent className="flex items-center justify-center py-12">
               <div className="text-center">
-                <h2 className="text-xl font-bold text-red-500 mb-2">Failed to Load Data</h2>
+                <h2 className="text-xl font-bold text-red-500 mb-2">{t('failedToLoad')}</h2>
                 <p className="text-muted-foreground mb-4">
-                  Unable to connect to the time tracking API
+                  {t('unableToConnect')}
                 </p>
                 <Button onClick={handleRefresh} variant="outline">
                   <RefreshCw className="h-4 w-4 mr-2" />
-                  Retry
+                  {t('retry')}
                 </Button>
               </div>
             </CardContent>
@@ -74,7 +76,7 @@ export default function TimeTrackingPage() {
             <div>
               <h1 className="text-3xl font-bold text-white flex items-center gap-3">
                 <Clock className="h-8 w-8 text-blue-500" />
-                Time Tracking Dashboard
+                {t('title')}
               </h1>
               <div className="flex items-center gap-2 mt-2 text-gray-400">
                 <Calendar className="h-4 w-4" />
@@ -84,9 +86,9 @@ export default function TimeTrackingPage() {
             <div className="flex items-center gap-3">
               <Tabs value={period} onValueChange={(v) => setPeriod(v as typeof period)}>
                 <TabsList>
-                  <TabsTrigger value="day">Day</TabsTrigger>
-                  <TabsTrigger value="week">Week</TabsTrigger>
-                  <TabsTrigger value="month">Month</TabsTrigger>
+                  <TabsTrigger value="day">{t('periods.day')}</TabsTrigger>
+                  <TabsTrigger value="week">{t('periods.week')}</TabsTrigger>
+                  <TabsTrigger value="month">{t('periods.month')}</TabsTrigger>
                 </TabsList>
               </Tabs>
               <Button
@@ -131,10 +133,10 @@ export default function TimeTrackingPage() {
               <CardContent className="flex items-center justify-center py-8">
                 <div className="text-center">
                   <h3 className="text-lg font-semibold text-yellow-500 mb-2">
-                    Uncertainty Map Unavailable
+                    {t('uncertaintyUnavailable')}
                   </h3>
                   <p className="text-sm text-muted-foreground">
-                    Unable to load uncertainty analysis. Backend may be offline.
+                    {t('uncertaintyOffline')}
                   </p>
                 </div>
               </CardContent>

@@ -2,6 +2,7 @@
 
 import { useState, useEffect, useMemo, lazy, Suspense } from "react"
 import { useQuery } from "@tanstack/react-query"
+import { useTranslations } from "next-intl"
 import { motion, AnimatePresence } from "framer-motion"
 import Link from "next/link"
 import {
@@ -61,6 +62,7 @@ function ChartSkeleton() {
 }
 
 export function Dashboard() {
+  const t = useTranslations()
   const [selectedPhase, setSelectedPhase] = useState<string>("ideation")
   const [isConnected, setIsConnected] = useState(false)
   const [ws, setWs] = useState<WebSocket | null>(null)
@@ -325,10 +327,10 @@ export function Dashboard() {
           <div>
             <h1 className="text-3xl font-bold text-white flex items-center gap-3">
               <Brain className="h-8 w-8 text-blue-500" />
-              UDO Development Platform v3.0
+              {t('dashboard.title')}
             </h1>
             <p className="text-gray-400 mt-2">
-              Intelligent Development Automation & Predictive Analytics
+              {t('dashboard.description')}
             </p>
           </div>
           <div className="flex flex-col gap-4">
@@ -365,61 +367,61 @@ export function Dashboard() {
               <Link href="/">
                 <button className="flex items-center gap-2 px-4 py-3 rounded-lg bg-gray-700/30 text-gray-300 hover:bg-gray-700/50 transition-colors w-full justify-center">
                   <Home className="h-5 w-5" />
-                  <span>Dashboard</span>
+                  <span>{t('navigation.dashboard')}</span>
                 </button>
               </Link>
               <Link href="/kanban">
                 <button className="flex items-center gap-2 px-4 py-3 rounded-lg bg-blue-500/20 text-blue-400 hover:bg-blue-500/30 transition-colors w-full justify-center">
                   <KanbanSquare className="h-5 w-5" />
-                  <span>Kanban</span>
+                  <span>{t('navigation.kanban')}</span>
                 </button>
               </Link>
               <Link href="/archive">
                 <button className="flex items-center gap-2 px-4 py-3 rounded-lg bg-gray-700/30 text-gray-300 hover:bg-gray-700/50 transition-colors w-full justify-center">
                   <Archive className="h-5 w-5" />
-                  <span>Archive</span>
+                  <span>{t('navigation.archive')}</span>
                 </button>
               </Link>
               <Link href="/roi-dashboard">
                 <button className="flex items-center gap-2 px-4 py-3 rounded-lg bg-green-500/20 text-green-400 hover:bg-green-500/30 transition-colors w-full justify-center">
                   <TrendingUp className="h-5 w-5" />
-                  <span>ROI</span>
+                  <span>{t('navigation.roi')}</span>
                 </button>
               </Link>
               <Link href="/uncertainty">
                 <button className="flex items-center gap-2 px-4 py-3 rounded-lg bg-orange-500/20 text-orange-400 hover:bg-orange-500/30 transition-colors w-full justify-center">
                   <AlertTriangle className="h-5 w-5" />
-                  <span>Uncertainty</span>
+                  <span>{t('navigation.uncertainty')}</span>
                 </button>
               </Link>
               <Link href="/confidence">
                 <button className="flex items-center gap-2 px-4 py-3 rounded-lg bg-purple-500/20 text-purple-400 hover:bg-purple-500/30 transition-colors w-full justify-center">
                   <Gauge className="h-5 w-5" />
-                  <span>Confidence</span>
+                  <span>{t('navigation.confidence')}</span>
                 </button>
               </Link>
               <Link href="/quality">
                 <button className="flex items-center gap-2 px-4 py-3 rounded-lg bg-green-500/20 text-green-400 hover:bg-green-500/30 transition-colors w-full justify-center">
                   <BarChart3 className="h-5 w-5" />
-                  <span>Quality</span>
+                  <span>{t('navigation.quality')}</span>
                 </button>
               </Link>
               <Link href="/time-tracking">
                 <button className="flex items-center gap-2 px-4 py-3 rounded-lg bg-cyan-500/20 text-cyan-400 hover:bg-cyan-500/30 transition-colors w-full justify-center">
                   <Clock className="h-5 w-5" />
-                  <span>Time</span>
+                  <span>{t('navigation.timeTracking')}</span>
                 </button>
               </Link>
               <Link href="/gi-formula">
                 <button className="flex items-center gap-2 px-4 py-3 rounded-lg bg-yellow-500/20 text-yellow-400 hover:bg-yellow-500/30 transition-colors w-full justify-center">
                   <Lightbulb className="h-5 w-5" />
-                  <span>GI Formula</span>
+                  <span>{t('navigation.giFormula')}</span>
                 </button>
               </Link>
               <Link href="/ck-theory">
                 <button className="flex items-center gap-2 px-4 py-3 rounded-lg bg-pink-500/20 text-pink-400 hover:bg-pink-500/30 transition-colors w-full justify-center">
                   <Palette className="h-5 w-5" />
-                  <span>C-K Theory</span>
+                  <span>{t('navigation.ckTheory')}</span>
                 </button>
               </Link>
             </div>

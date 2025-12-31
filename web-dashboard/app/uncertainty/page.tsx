@@ -1,24 +1,44 @@
 "use client"
 
-import { useState } from "react"
+import { useState, useEffect } from "react"
 import { motion } from "framer-motion"
-import { AlertTriangle, RefreshCw, Activity, TrendingUp, Shield } from "lucide-react"
+import { AlertTriangle, RefreshCw, Activity, TrendingUp, Shield, Zap, Wifi, WifiOff } from "lucide-react"
 import { Button } from "@/components/ui/button"
 import { Skeleton } from "@/components/ui/skeleton"
 import { Card, CardHeader, CardTitle, CardContent } from "@/components/ui/card"
+import { Badge } from "@/components/ui/badge"
 import { UncertaintyMap } from "@/components/dashboard/uncertainty-map"
 import { UncertaintyPredictionChart } from "@/components/dashboard/uncertainty-prediction-chart"
+import { ContextAnalysisModal } from "@/components/uncertainty/ContextAnalysisModal"
 import { useUncertainty } from "@/hooks/useUncertainty"
+import { useUncertaintyWebSocket } from "@/lib/hooks/useUncertaintyWebSocket"
+import { useWsStatus } from "@/lib/stores/uncertainty-store"
 import { toast } from "sonner"
 import { cn } from "@/lib/utils"
+import { useTranslations } from "next-intl"
 
 export default function UncertaintyPage() {
+  const t = useTranslations('uncertainty')
   const { data: uncertaintyData, isLoading, isError, refetch } = useUncertainty()
   const [isAcking, setIsAcking] = useState(false)
+  const [showContextModal, setShowContextModal] = useState(false)
+
+  // WebSocket connection (currently disabled until backend endpoint is ready)
+  const [wsEnabled, setWsEnabled] = useState(false)
+  const { connect, disconnect, isConnected } = useUncertaintyWebSocket({
+    autoConnect: wsEnabled,
+  })
+  const wsStatus = useWsStatus()
+
+  useEffect(() => {
+    // WebSocket will be enabled when backend endpoint is ready
+    // For now, it's disabled to prevent connection errors
+    // TODO: Enable when /ws/uncertainty endpoint is implemented
+  }, [])
 
   const handleRefresh = () => {
     refetch()
-    toast.success("Uncertainty data refreshed")
+    toast.success(t('refreshed'))
   }
 
   const handleAcknowledge = async (mitigation: any) => {
@@ -41,14 +61,14 @@ export default function UncertaintyPage() {
       }
 
       const result = await response.json()
-      toast.success(`Mitigation "${mitigation.action}" applied successfully!`)
-      toast.info(`Updated state: ${result.updated_state} (confidence: ${Math.round(result.confidence_score * 100)}%)`)
+      toast.success(`"${mitigation.action}" ${t('mitigationApplied')}`)
+      toast.info(`${t('updatedState')}: ${result.updated_state} (${t('confidence')}: ${Math.round(result.confidence_score * 100)}%)`)
 
       // Refetch to get updated uncertainty data
       await refetch()
     } catch (error) {
       console.error('Acknowledgment error:', error)
-      toast.error("Failed to acknowledge mitigation")
+      toast.error(t('ackFailed'))
     } finally {
       setIsAcking(false)
     }
@@ -79,13 +99,13 @@ export default function UncertaintyPage() {
             <CardContent className="flex items-center justify-center py-12">
               <div className="text-center">
                 <AlertTriangle className="h-12 w-12 text-red-500 mx-auto mb-4" />
-                <h2 className="text-xl font-bold text-red-500 mb-2">Uncertainty Map Unavailable</h2>
+                <h2 className="text-xl font-bold text-red-500 mb-2">{t('unavailable')}</h2>
                 <p className="text-muted-foreground mb-4">
-                  Unable to connect to the Uncertainty API. Backend may be offline.
+                  {t('backendOffline')}
                 </p>
                 <Button onClick={handleRefresh} variant="outline">
                   <RefreshCw className="h-4 w-4 mr-2" />
-                  Retry Connection
+                  {t('retryConnection')}
                 </Button>
               </div>
             </CardContent>
@@ -112,20 +132,30 @@ export default function UncertaintyPage() {
             <div>
               <h1 className="text-3xl font-bold text-white flex items-center gap-3">
                 <AlertTriangle className="h-8 w-8 text-yellow-500" />
-                Uncertainty Analysis
+                {t('title')}
               </h1>
               <p className="text-gray-400 mt-1">
-                Predictive uncertainty modeling with 24-hour forecasting
+                {t('description')}
               </p>
             </div>
-            <Button
-              onClick={handleRefresh}
-              variant="outline"
-              className="text-blue-400 border-blue-500/50 hover:bg-blue-500/10"
-            >
-              <RefreshCw className="h-4 w-4 mr-2" />
-              Refresh
-            </Button>
+            <div className="flex gap-2">
+              <Button
+                onClick={() => setShowContextModal(true)}
+                variant="outline"
+                className="text-purple-400 border-purple-500/50 hover:bg-purple-500/10"
+              >
+                <Zap className="h-4 w-4 mr-2" />
+                {t('analyzeContext')}
+              </Button>
+              <Button
+                onClick={handleRefresh}
+                variant="outline"
+                className="text-blue-400 border-blue-500/50 hover:bg-blue-500/10"
+              >
+                <RefreshCw className="h-4 w-4 mr-2" />
+                {t('refresh')}
+              </Button>
+            </div>
           </div>
         </motion.div>
 
@@ -148,7 +178,7 @@ export default function UncertaintyPage() {
                   <div className="flex items-center gap-3">
                     <span className="text-3xl">{stateInfo.icon}</span>
                     <div>
-                      <p className="text-sm text-gray-400">Current State</p>
+                      <p className="text-sm text-gray-400">{t('currentState')}</p>
                       <p className={cn("text-xl font-bold capitalize", stateInfo.color)}>
                         {uncertaintyData?.state || "Unknown"}
                       </p>
@@ -167,7 +197,7 @@ export default function UncertaintyPage() {
                         confidence > 0.4 ? "text-yellow-400" : "text-red-400"
                     )} />
                     <div>
-                      <p className="text-sm text-gray-400">Confidence</p>
+                      <p className="text-sm text-gray-400">{t('confidence')}</p>
                       <p className={cn(
                         "text-xl font-bold",
                         confidence > 0.7 ? "text-green-400" :
@@ -186,7 +216,7 @@ export default function UncertaintyPage() {
                   <div className="flex items-center gap-3">
                     <Activity className="h-8 w-8 text-purple-400" />
                     <div>
-                      <p className="text-sm text-gray-400">Dominant Factor</p>
+                      <p className="text-sm text-gray-400">{t('dominantFactor')}</p>
                       <p className="text-xl font-bold text-purple-400 capitalize">
                         {vector?.dominant_dimension || "N/A"}
                       </p>
@@ -205,7 +235,7 @@ export default function UncertaintyPage() {
                         uncertaintyData?.prediction?.trend === "decreasing" ? "text-red-400" : "text-blue-400"
                     )} />
                     <div>
-                      <p className="text-sm text-gray-400">24h Trend</p>
+                      <p className="text-sm text-gray-400">{t('trend24h')}</p>
                       <p className={cn(
                         "text-xl font-bold capitalize",
                         uncertaintyData?.prediction?.trend === "increasing" ? "text-green-400" :
@@ -232,17 +262,17 @@ export default function UncertaintyPage() {
               <CardHeader>
                 <CardTitle className="text-white flex items-center gap-2">
                   <Activity className="h-5 w-5 text-blue-400" />
-                  Uncertainty Vector Breakdown
+                  {t('vectorBreakdown')}
                 </CardTitle>
               </CardHeader>
               <CardContent>
                 <div className="grid grid-cols-1 md:grid-cols-5 gap-4">
                   {[
-                    { key: "technical", label: "Technical", value: vector.technical },
-                    { key: "market", label: "Market", value: vector.market },
-                    { key: "resource", label: "Resource", value: vector.resource },
-                    { key: "timeline", label: "Timeline", value: vector.timeline },
-                    { key: "quality", label: "Quality", value: vector.quality },
+                    { key: "technical", label: t('dimensions.technical'), value: vector.technical },
+                    { key: "market", label: t('dimensions.market'), value: vector.market },
+                    { key: "resource", label: t('dimensions.resource'), value: vector.resource },
+                    { key: "timeline", label: t('dimensions.timeline'), value: vector.timeline },
+                    { key: "quality", label: t('dimensions.quality'), value: vector.quality },
                   ].map(({ key, label, value }) => (
                     <div key={key} className="space-y-2">
                       <div className="flex justify-between text-sm">
@@ -271,7 +301,7 @@ export default function UncertaintyPage() {
                   ))}
                 </div>
                 <div className="mt-4 pt-4 border-t border-gray-700 flex justify-between text-sm">
-                  <span className="text-gray-400">Total Magnitude</span>
+                  <span className="text-gray-400">{t('totalMagnitude')}</span>
                   <span className={cn(
                     "font-bold",
                     (vector.magnitude || 0) < 0.3 ? "text-green-400" :
@@ -315,6 +345,12 @@ export default function UncertaintyPage() {
             />
           ) : null}
         </motion.div>
+
+        {/* Context Analysis Modal */}
+        <ContextAnalysisModal
+          open={showContextModal}
+          onClose={() => setShowContextModal(false)}
+        />
       </div>
     </div>
   )
