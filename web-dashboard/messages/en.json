@@ -65,7 +65,8 @@
       "todo": "To Do",
       "inProgress": "In Progress",
       "blocked": "Blocked",
-      "done": "Done"
+      "done": "Done",
+      "noTasks": "No tasks"
     },
     "priority": {
       "critical": "Critical",

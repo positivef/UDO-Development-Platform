@@ -9,9 +9,10 @@
  * - Scrollable task list
  * - Status-based color coding
  * - React.memo for performance optimization
+ * - i18n support for column titles
  */
 
-import { memo, useMemo, useCallback } from 'react'
+import { memo, useMemo } from 'react'
 import { useDroppable } from '@dnd-kit/core'
 import { SortableContext, verticalListSortingStrategy } from '@dnd-kit/sortable'
 import { Card } from '@/components/ui/card'
@@ -19,6 +20,7 @@ import { Badge } from '@/components/ui/badge'
 import { TaskCard } from './TaskCard'
 import type { KanbanColumn, KanbanTask } from '@/lib/types/kanban'
 import { cn } from '@/lib/utils'
+import { useTranslations } from 'next-intl'
 
 interface ColumnProps {
   column: KanbanColumn
@@ -40,7 +42,17 @@ const columnBadgeColors = {
   completed: 'bg-green-500/10 text-green-600 border-green-500/20',
 }
 
+// Map column IDs to translation keys
+const columnTitleKeys: Record<string, string> = {
+  pending: 'todo',
+  in_progress: 'inProgress',
+  blocked: 'blocked',
+  completed: 'done',
+}
+
 function ColumnComponent({ column, onTaskClick, onTaskDoubleClick }: ColumnProps) {
+  const t = useTranslations('kanban.columns')
+  const tCommon = useTranslations('common')
   const { setNodeRef, isOver } = useDroppable({
     id: column.id,
   })
@@ -50,6 +62,11 @@ function ColumnComponent({ column, onTaskClick, onTaskDoubleClick }: ColumnProps
     () => column.tasks.map((task) => task.id),
     [column.tasks]
   )
+
+  // Get translated column title
+  const columnTitle = columnTitleKeys[column.id]
+    ? t(columnTitleKeys[column.id] as 'todo' | 'inProgress' | 'blocked' | 'done')
+    : column.title
 
   return (
     <div className="flex-1 min-w-[300px]">
@@ -63,7 +80,7 @@ function ColumnComponent({ column, onTaskClick, onTaskDoubleClick }: ColumnProps
         {/* Column Header */}
         <div className="p-4 border-b">
           <div className="flex items-center justify-between">
-            <h2 className="font-semibold text-lg">{column.title}</h2>
+            <h2 className="font-semibold text-lg">{columnTitle}</h2>
             <Badge
               variant="outline"
               className={cn('text-sm', columnBadgeColors[column.id])}
@@ -81,7 +98,7 @@ function ColumnComponent({ column, onTaskClick, onTaskDoubleClick }: ColumnProps
           <SortableContext items={taskIds} strategy={verticalListSortingStrategy}>
             {column.tasks.length === 0 ? (
               <div className="text-center text-muted-foreground text-sm py-8">
-                No tasks
+                {t('noTasks')}
               </div>
             ) : (
               column.tasks.map((task) => (

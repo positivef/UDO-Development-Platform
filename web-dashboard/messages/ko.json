@@ -65,7 +65,8 @@
       "todo": "할 일",
       "inProgress": "진행 중",
       "blocked": "차단됨",
-      "done": "완료"
+      "done": "완료",
+      "noTasks": "작업 없음"
     },
     "priority": {
       "critical": "긴급",
