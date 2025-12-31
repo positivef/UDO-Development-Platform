@@ -9,7 +9,7 @@ import logging
 import os
 import time
 from datetime import UTC, datetime, timedelta
-from typing import Dict, List, Optional
+from typing import Dict, List
 from uuid import UUID
 
 from anthropic import Anthropic, AsyncAnthropic

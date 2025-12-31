@@ -26,7 +26,7 @@ from functools import wraps
 from threading import Lock
 
 # MED-04: Import log sanitizer for secure logging
-from .log_sanitizer import sanitize_log_message, sanitize_exception
+from .log_sanitizer import sanitize_exception
 
 # Optional bcrypt import with fallback
 try:
@@ -494,8 +494,11 @@ class JWTManager:
         try:
             # CRIT-03 FIX: Check blacklist BEFORE decoding (fast path)
             if check_blacklist and await token_blacklist.is_blacklisted(token):
-                if os.getenv("ENVIRONMENT") == "development":
-                    logger.warning("[DEV] Token blacklisted but ignored in development")
+                dev_bypass_disabled = os.getenv("DISABLE_DEV_AUTH_BYPASS", "").lower() == "true"
+                if os.getenv("ENVIRONMENT") == "development" and not dev_bypass_disabled:
+                    logger.warning(
+                        "[DEV] Token blacklisted but ignored in development (set DISABLE_DEV_AUTH_BYPASS=true to disable)"
+                    )
                 else:
                     logger.warning("Attempted use of blacklisted token")
                     raise HTTPException(
@@ -1116,7 +1119,6 @@ async def get_current_user(credentials: Optional[HTTPAuthorizationCredentials] =
 
 def setup_security(app):
     """FastAPI 앱에 보안 설정"""
-    from fastapi import FastAPI
     from starlette.middleware.base import BaseHTTPMiddleware
 
     # Add security middleware

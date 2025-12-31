@@ -11,13 +11,12 @@ Test Coverage:
 Total: 20 tests
 """
 
-import os
 import pytest
 from datetime import timedelta
 from fastapi import HTTPException
 from fastapi.security import HTTPAuthorizationCredentials
 
-from backend.app.core.security import JWTManager, UserRole, require_role, get_current_user, PasswordHasher
+from backend.app.core.security import JWTManager, UserRole, require_role, PasswordHasher
 from backend.app.services.auth_service import AuthService
 
 

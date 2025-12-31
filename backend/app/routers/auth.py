@@ -5,7 +5,6 @@ Authentication Router
 """
 
 from typing import Dict, Any
-from datetime import timedelta
 from fastapi import APIRouter, HTTPException, Depends, status, Request
 from fastapi.security import HTTPAuthorizationCredentials
 from pydantic import BaseModel, Field
@@ -14,7 +13,6 @@ import logging
 # Security imports
 from app.core.security import (
     JWTManager,
-    PasswordHasher,
     InputValidator,
     SecureUserCreate,
     security,
@@ -264,7 +262,7 @@ async def get_current_user(credentials: HTTPAuthorizationCredentials = Depends(s
 
         # 사용자 정보 조회
         user_email = payload.get("sub")
-        user_id = payload.get("user_id")
+        _ = payload.get("user_id")  # Reserved for future use
 
         user = await auth_service.get_user(user_email)
 

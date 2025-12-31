@@ -16,7 +16,7 @@ import logging
 import time
 from collections import defaultdict, deque
 from datetime import UTC, datetime
-from typing import Dict, List, Optional, Set, Tuple
+from typing import Dict, List, Optional, Set
 from uuid import UUID, uuid4
 
 from app.models.kanban_dependencies import (
@@ -29,7 +29,6 @@ from app.models.kanban_dependencies import (
     DependencyGraphEdge,
     DependencyGraphNode,
     DependencyStatus,
-    DependencyType,
     EmergencyOverride,
     TopologicalSortResult,
 )
@@ -495,7 +494,7 @@ class KanbanDependencyService:
         """
         # Topological sort (measures performance)
         topo_start = time.perf_counter()
-        topo_result = await self.topological_sort(task_ids)
+        await self.topological_sort(task_ids)  # Result validates DAG structure
         topo_time = (time.perf_counter() - topo_start) * 1000
 
         # Cycle detection time (already done during sort)

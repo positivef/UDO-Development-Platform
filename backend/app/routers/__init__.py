@@ -15,14 +15,14 @@ logger = logging.getLogger(__name__)
 # Core Routers (Always Available)
 # ============================================================================
 
-from .ck_theory import router as ck_theory_router
-from .constitutional import router as constitutional_router
-from .gi_formula import router as gi_formula_router
-from .governance import router as governance_router
-from .quality_metrics import router as quality_metrics_router
-from .time_tracking import router as time_tracking_router
-from .uncertainty import router as uncertainty_router
-from .version_history import router as version_history_router
+from .ck_theory import router as ck_theory_router  # noqa: E402
+from .constitutional import router as constitutional_router  # noqa: E402
+from .gi_formula import router as gi_formula_router  # noqa: E402
+from .governance import router as governance_router  # noqa: E402
+from .quality_metrics import router as quality_metrics_router  # noqa: E402
+from .time_tracking import router as time_tracking_router  # noqa: E402
+from .uncertainty import router as uncertainty_router  # noqa: E402
+from .version_history import router as version_history_router  # noqa: E402
 
 # ============================================================================
 # Optional Routers (Loaded with error handling)
