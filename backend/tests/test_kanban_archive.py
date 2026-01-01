@@ -11,10 +11,14 @@ from uuid import uuid4
 import pytest
 import pytest_asyncio
 
-from app.models.kanban_archive import (AISummary, ArchiveFilters,
-                                       ArchiveTaskRequest,
-                                       ArchiveTaskResponse, ROIMetrics,
-                                       TaskNotArchivableError)
+from app.models.kanban_archive import (
+    AISummary,
+    ArchiveFilters,
+    ArchiveTaskRequest,
+    ArchiveTaskResponse,
+    ROIMetrics,
+    TaskNotArchivableError,
+)
 from app.models.kanban_task import PhaseName, Task, TaskStatus
 from app.services.kanban_archive_service import kanban_archive_service
 
@@ -35,6 +39,7 @@ def reset_services():
     to match the import path used by kanban_archive_service.
     """
     from app.services.kanban_task_service import kanban_task_service
+
     kanban_task_service.reset_mock_data(recreate_test_tasks=False)
     kanban_archive_service.reset_mock_data()
     yield
@@ -83,9 +88,7 @@ async def archived_task(sample_completed_task, test_user):
     # Manually add to task service storage for testing
     from app.services.kanban_task_service import kanban_task_service
 
-    kanban_task_service._mock_tasks[sample_completed_task.task_id] = (
-        sample_completed_task
-    )
+    kanban_task_service._mock_tasks[sample_completed_task.task_id] = sample_completed_task
 
     request = ArchiveTaskRequest(
         task_id=sample_completed_task.task_id,
@@ -110,12 +113,9 @@ class TestArchiveTask:
     async def test_archive_task_success(self, sample_completed_task, test_user):
         """Test successful task archiving"""
         # Add task to service storage
-        from app.services.kanban_task_service import \
-            kanban_task_service
+        from app.services.kanban_task_service import kanban_task_service
 
-        kanban_task_service._mock_tasks[sample_completed_task.task_id] = (
-            sample_completed_task
-        )
+        kanban_task_service._mock_tasks[sample_completed_task.task_id] = sample_completed_task
 
         request = ArchiveTaskRequest(
             task_id=sample_completed_task.task_id,
@@ -150,8 +150,7 @@ class TestArchiveTask:
         )
 
         # Add to service storage
-        from app.services.kanban_task_service import \
-            kanban_task_service
+        from app.services.kanban_task_service import kanban_task_service
 
         kanban_task_service._mock_tasks[pending_task.task_id] = pending_task
 
@@ -191,12 +190,9 @@ class TestAISummarization:
     async def test_ai_summary_mock_mode(self, sample_completed_task, test_user):
         """Test AI summary generation in mock mode"""
         # Add task to service storage
-        from app.services.kanban_task_service import \
-            kanban_task_service
+        from app.services.kanban_task_service import kanban_task_service
 
-        kanban_task_service._mock_tasks[sample_completed_task.task_id] = (
-            sample_completed_task
-        )
+        kanban_task_service._mock_tasks[sample_completed_task.task_id] = sample_completed_task
 
         # Archive should be in mock mode (no OPENAI_API_KEY)
         assert kanban_archive_service.mock_mode is True
@@ -245,8 +241,7 @@ class TestAISummarization:
             )
 
             # Add to service storage
-            from app.services.kanban_task_service import \
-                kanban_task_service
+            from app.services.kanban_task_service import kanban_task_service
 
             kanban_task_service._mock_tasks[task.task_id] = task
 
@@ -275,12 +270,9 @@ class TestROIMetrics:
     async def test_roi_metrics_calculation(self, sample_completed_task, test_user):
         """Test ROI metrics are calculated correctly"""
         # Add task to service storage
-        from app.services.kanban_task_service import \
-            kanban_task_service
+        from app.services.kanban_task_service import kanban_task_service
 
-        kanban_task_service._mock_tasks[sample_completed_task.task_id] = (
-            sample_completed_task
-        )
+        kanban_task_service._mock_tasks[sample_completed_task.task_id] = sample_completed_task
 
         request = ArchiveTaskRequest(
             task_id=sample_completed_task.task_id,
@@ -320,8 +312,7 @@ class TestROIMetrics:
         )
 
         # Add to service storage
-        from app.services.kanban_task_service import \
-            kanban_task_service
+        from app.services.kanban_task_service import kanban_task_service
 
         kanban_task_service._mock_tasks[task.task_id] = task
 
@@ -387,8 +378,7 @@ class TestArchiveList:
             )
 
             # Add and archive
-            from app.services.kanban_task_service import \
-                kanban_task_service
+            from app.services.kanban_task_service import kanban_task_service
 
             kanban_task_service._mock_tasks[task.task_id] = task
 
@@ -402,9 +392,7 @@ class TestArchiveList:
 
         # Filter by DESIGN phase
         filters = ArchiveFilters(phase=PhaseName.DESIGN)
-        response = await kanban_archive_service.get_archive_list(
-            filters=filters, page=1, per_page=20
-        )
+        response = await kanban_archive_service.get_archive_list(filters=filters, page=1, per_page=20)
 
         # All results should be DESIGN phase
         for archive in response.data:
@@ -430,8 +418,7 @@ class TestArchiveList:
                 completed_at=datetime.now(UTC),
             )
 
-            from app.services.kanban_task_service import \
-                kanban_task_service
+            from app.services.kanban_task_service import kanban_task_service
 
             kanban_task_service._mock_tasks[task.task_id] = task
             task_ids.append(task.task_id)
@@ -445,16 +432,12 @@ class TestArchiveList:
             )
 
         # Get first page (2 items per page)
-        response_page1 = await kanban_archive_service.get_archive_list(
-            page=1, per_page=2
-        )
+        response_page1 = await kanban_archive_service.get_archive_list(page=1, per_page=2)
         assert len(response_page1.data) == 2
         assert response_page1.has_next is True
 
         # Get second page
-        response_page2 = await kanban_archive_service.get_archive_list(
-            page=2, per_page=2
-        )
+        response_page2 = await kanban_archive_service.get_archive_list(page=2, per_page=2)
         assert len(response_page2.data) == 2
         assert response_page2.has_prev is True
 
@@ -470,12 +453,9 @@ class TestObsidianSync:
     @pytest.mark.asyncio
     async def test_obsidian_sync_disabled(self, sample_completed_task, test_user):
         """Test archiving without Obsidian sync"""
-        from app.services.kanban_task_service import \
-            kanban_task_service
+        from app.services.kanban_task_service import kanban_task_service
 
-        kanban_task_service._mock_tasks[sample_completed_task.task_id] = (
-            sample_completed_task
-        )
+        kanban_task_service._mock_tasks[sample_completed_task.task_id] = sample_completed_task
 
         request = ArchiveTaskRequest(
             task_id=sample_completed_task.task_id,
@@ -519,16 +499,17 @@ class TestObsidianSync:
 
         note_content = kanban_archive_service._generate_obsidian_note(entry, roi)
 
-        # Verify YAML frontmatter structure
+        # Verify YAML frontmatter structure (v3.0 format)
         assert "---" in note_content  # YAML delimiters
         assert sample_completed_task.title in note_content
-        assert "phase/implementation" in note_content  # Hierarchical tag
+        assert "phase: implementation" in note_content  # v3.0 phase field
         assert "kanban-archived" in note_content  # Archive tag
         assert "Learning 1" in note_content
         assert "Insight 1" in note_content
         assert "16.0h" in note_content
         assert "14.5h" in note_content
         assert "efficiency:" in note_content  # YAML metadata
+        assert "schema_version:" in note_content  # v3.0 schema version
 
 
 # ============================================================================
@@ -572,8 +553,7 @@ class TestEdgeCases:
                 completed_at=datetime.now(UTC),
             )
 
-            from app.services.kanban_task_service import \
-                kanban_task_service
+            from app.services.kanban_task_service import kanban_task_service
 
             kanban_task_service._mock_tasks[task.task_id] = task
 

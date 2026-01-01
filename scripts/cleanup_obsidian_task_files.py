@@ -1,262 +1,132 @@
 """
 Obsidian Task Files Cleanup Script
 
-Moves incorrectly placed task files from:
-  개발일지/YYYY-MM-DD_task_*.md
-To correct location:
-  개발일지/YYYY-MM-DD/YYYY-MM-DD_task_*.md
+DELETES meaningless timestamp-format files:
+- YYYY-MM-DD_HHMMSS_*.md (timestamp format)
+- YYYY-MM-DD_task_*.md (UUID task format)
+- Event- *.md (backup events)
 
-This fixes OBSIDIAN_SYNC_RULES.md violations where task files
-were created in the root of 개발일지 instead of date-specific folders.
+KEEPS meaningful commit-message format files:
+- feat(*)- *.md
+- fix(*)- *.md / fix- *.md
+- refactor(*)- *.md
+- docs(*)- *.md
+- *-Daily-Summary-Consolidated.md
+- Multi-Agent-*.md
 """
 
+import argparse
 import os
-import shutil
 import re
 from pathlib import Path
-from collections import defaultdict
 
 # Obsidian vault path from environment or default
-OBSIDIAN_VAULT = os.getenv(
-    "OBSIDIAN_VAULT_PATH",
-    r"C:\Users\user\Documents\Obsidian Vault"
-)
+OBSIDIAN_VAULT = os.getenv("OBSIDIAN_VAULT_PATH", r"C:\Users\user\Documents\Obsidian Vault")
 
 DEV_LOG_DIR = Path(OBSIDIAN_VAULT) / "개발일지"
 
+# Patterns to DELETE (meaningless files)
+DELETE_PATTERNS = [
+    r"^\d{4}-\d{2}-\d{2}_\d{6}_.*\.md$",  # YYYY-MM-DD_HHMMSS_*.md
+    r"^\d{4}-\d{2}-\d{2}_task_[a-f0-9-]+\.md$",  # YYYY-MM-DD_task_UUID.md
+    r"^Event-.*\.md$",  # Event- *.md
+]
 
-def parse_task_filename(filename: str) -> dict:
-    """
-    Parse task filename to extract date.
-
-    Supports multiple formats:
-    - Current: YYYY-MM-DD_HHMMSS_<title>.md (with timestamp for chronological order)
-    - Previous: YYYY-MM-DD_<title>.md (clean, no UUID)
-    - Legacy: YYYY-MM-DD_<title>_<uuid>.md (with UUID)
-    - Old: YYYY-MM-DD_task_<uuid>.md (original format)
-
-    Returns:
-        dict with 'date' and 'filename' keys, or None if not a task file
-    """
-    # Try current format: YYYY-MM-DD_HHMMSS_<title>.md (with timestamp)
-    # This is the best format: chronological order + human-readable + no UUID clutter
-    pattern_timestamp = r"^(\d{4}-\d{2}-\d{2})_(\d{6})_(.+?)\.md$"
-    match = re.match(pattern_timestamp, filename)
-    if match:
-        return {
-            "date": match.group(1),
-            "filename": filename
-        }
-
-    # Try previous format: YYYY-MM-DD_<title>.md (clean, no UUID)
-    pattern_clean = r"^(\d{4}-\d{2}-\d{2})_(.+?)(-\d+)?\.md$"
-    match = re.match(pattern_clean, filename)
-    if match:
-        return {
-            "date": match.group(1),
-            "filename": filename
-        }
-
-    # Try legacy format: YYYY-MM-DD_<title>_<uuid>.md
-    pattern_uuid = r"^(\d{4}-\d{2}-\d{2})_(.+?)_([a-f0-9]{8}-[a-f0-9]{4}-[a-f0-9]{4}-[a-f0-9]{4}-[a-f0-9]{12})\.md$"
-    match = re.match(pattern_uuid, filename)
-    if match:
-        return {
-            "date": match.group(1),
-            "filename": filename
-        }
-
-    # Try old format: YYYY-MM-DD_task_<uuid>.md
-    pattern_old = r"^(\d{4}-\d{2}-\d{2})_task_([a-f0-9\-]+)\.md$"
-    match = re.match(pattern_old, filename)
-    if match:
-        return {
-            "date": match.group(1),
-            "filename": filename
-        }
-
-    return None
+# Patterns to KEEP (meaningful files)
+KEEP_PATTERNS = [
+    r"^feat\(.*\)-.*\.md$",  # feat(*)- *.md
+    r"^fix\(.*\)-.*\.md$",  # fix(*)- *.md
+    r"^fix-.*\.md$",  # fix- *.md
+    r"^refactor\(.*\)-.*\.md$",  # refactor(*)- *.md
+    r"^docs\(.*\)-.*\.md$",  # docs(*)- *.md
+    r"^docs-.*\.md$",  # docs- *.md
+    r"^test\(.*\)-.*\.md$",  # test(*)- *.md
+    r"^archive\(.*\)-.*\.md$",  # archive(*)- *.md (kanban archive)
+    r"^.*-Daily-Summary-Consolidated\.md$",  # Daily summaries
+    r"^Multi-Agent-.*\.md$",  # Multi-Agent files
+]
 
 
-def find_misplaced_task_files() -> dict:
-    """
-    Find all task files in wrong location (root of 개발일지).
+def should_delete(filename: str) -> bool:
+    """Check if file should be deleted."""
+    # First check if it matches KEEP patterns
+    for pattern in KEEP_PATTERNS:
+        if re.match(pattern, filename):
+            return False
 
-    Returns:
-        dict mapping date -> list of task files
-    """
-    if not DEV_LOG_DIR.exists():
-        print(f"[ERROR] Directory not found: {DEV_LOG_DIR}")
-        return {}
+    # Then check if it matches DELETE patterns
+    for pattern in DELETE_PATTERNS:
+        if re.match(pattern, filename):
+            return True
 
-    misplaced = defaultdict(list)
+    return False
 
-    for item in DEV_LOG_DIR.iterdir():
+
+def cleanup_folder(folder_path: Path, dry_run: bool = True) -> tuple:
+    """Clean up a single folder. Returns (deleted_count, kept_count)."""
+    if not folder_path.exists():
+        return 0, 0
+
+    deleted = 0
+    kept = 0
+
+    for item in folder_path.iterdir():
         if item.is_file() and item.suffix == ".md":
-            parsed = parse_task_filename(item.name)
-            if parsed:
-                misplaced[parsed["date"]].append(item)
-
-    return misplaced
-
-
-def move_task_files(dry_run: bool = False) -> dict:
-    """
-    Move task files to correct date folders.
-
-    Args:
-        dry_run: If True, only show what would be moved without actually moving
-
-    Returns:
-        dict with statistics: {'moved': int, 'errors': list}
-    """
-    misplaced = find_misplaced_task_files()
-
-    if not misplaced:
-        print("[OK] No misplaced task files found!")
-        return {"moved": 0, "errors": []}
-
-    stats = {"moved": 0, "errors": []}
-
-    print(f"\n[INFO] Found {sum(len(files) for files in misplaced.values())} misplaced task files")
-    print(f"       across {len(misplaced)} dates\n")
-
-    for date, files in sorted(misplaced.items()):
-        date_folder = DEV_LOG_DIR / date
-
-        print(f"[DATE] {date}: {len(files)} files")
-
-        # Create date folder if it doesn't exist
-        if not dry_run:
-            date_folder.mkdir(exist_ok=True)
-
-        for file_path in files:
-            target_path = date_folder / file_path.name
-
-            try:
+            if should_delete(item.name):
                 if dry_run:
-                    print(f"   [DRY RUN] Would move: {file_path.name}")
+                    print(f"  [DELETE] {item.name}")
                 else:
-                    shutil.move(str(file_path), str(target_path))
-                    print(f"   [OK] Moved: {file_path.name}")
-                    stats["moved"] += 1
-            except Exception as e:
-                error_msg = f"Failed to move {file_path.name}: {str(e)}"
-                print(f"   [ERROR] {error_msg}")
-                stats["errors"].append(error_msg)
+                    item.unlink()
+                    print(f"  [DELETED] {item.name}")
+                deleted += 1
+            else:
+                print(f"  [KEEP] {item.name}")
+                kept += 1
 
-    return stats
-
-
-def create_date_summary(date: str) -> None:
-    """
-    Create a summary document for a specific date's archived tasks.
-
-    Args:
-        date: Date in YYYY-MM-DD format
-    """
-    date_folder = DEV_LOG_DIR / date
-
-    if not date_folder.exists():
-        print(f"[WARN] Date folder not found: {date_folder}")
-        return
-
-    # Count task files in the date folder
-    task_files = list(date_folder.glob("*_task_*.md"))
-
-    if not task_files:
-        return
-
-    summary_path = date_folder / f"{date}_Kanban-Tasks-Archive-Index.md"
-
-    # Don't overwrite if summary already exists
-    if summary_path.exists():
-        print(f"   [INFO] Summary already exists: {summary_path.name}")
-        return
-
-    summary_content = f"""# Kanban Tasks Archive - {date}
-
-#kanban-archive #daily-summary
-
-## 📊 Overview
-
-**Date**: {date}
-**Archived Tasks**: {len(task_files)}
-**Location**: `개발일지/{date}/`
-
-## 📁 Task Files
-
-This folder contains {len(task_files)} archived Kanban tasks from {date}.
-
-Each task file includes:
-- Task Summary (Phase, Archived time, Task ID)
-- Key Learnings
-- Technical Insights
-- ROI Metrics (Estimated, Actual, Time Saved, Efficiency, Quality Score)
-- Constitutional Compliance status
-
-## 🔗 Related
-
-- [[개발일지-MOC]]
-- [[Kanban Archive MOC]]
-
----
-
-*Note: This is an index file. Individual task details are in separate files within this folder.*
-*Generated by: cleanup_obsidian_task_files.py*
-"""
-
-    try:
-        summary_path.write_text(summary_content, encoding="utf-8")
-        print(f"   [OK] Created summary: {summary_path.name}")
-    except Exception as e:
-        print(f"   [ERROR] Failed to create summary: {str(e)}")
+    return deleted, kept
 
 
 def main():
     """Main execution function."""
+    parser = argparse.ArgumentParser(description="Cleanup Obsidian task files")
+    parser.add_argument("--execute", action="store_true", help="Actually delete files (default: dry run)")
+    parser.add_argument("--month", type=str, default="2025-12", help="Month to clean (format: YYYY-MM)")
+    args = parser.parse_args()
+
+    dry_run = not args.execute
+
     print("=" * 70)
-    print("Obsidian Task Files Cleanup")
+    if dry_run:
+        print("DRY RUN MODE - No files will be deleted")
+        print("Use --execute to actually delete files")
+    else:
+        print("EXECUTE MODE - Files will be permanently deleted!")
     print("=" * 70)
-    print(f"\n[INFO] Working directory: {DEV_LOG_DIR}\n")
+    print(f"\n[INFO] Working directory: {DEV_LOG_DIR}")
+    print(f"[INFO] Target month: {args.month}\n")
 
-    # First, show what would be moved (dry run)
-    print("[DRY RUN] Checking files to move...\n")
-    move_task_files(dry_run=True)
+    total_deleted = 0
+    total_kept = 0
 
-    # Ask for confirmation
-    print("\n" + "=" * 70)
-    response = input("\n[CONFIRM] Proceed with moving files? (yes/no): ").strip().lower()
-
-    if response != "yes":
-        print("\n[CANCELLED] Operation cancelled.")
+    # Find all date folders for the specified month
+    if DEV_LOG_DIR.exists():
+        for folder in sorted(DEV_LOG_DIR.iterdir()):
+            if folder.is_dir() and folder.name.startswith(args.month):
+                print(f"\n[{folder.name}]")
+                deleted, kept = cleanup_folder(folder, dry_run)
+                total_deleted += deleted
+                total_kept += kept
+    else:
+        print(f"[ERROR] Devlog directory not found: {DEV_LOG_DIR}")
         return
 
-    # Perform actual move
-    print("\n[STARTING] Moving files...\n")
-    stats = move_task_files(dry_run=False)
-
-    # Create summary documents for each date
-    print("\n[SUMMARIES] Creating date summaries...\n")
-    misplaced = find_misplaced_task_files()
-    for date in sorted(misplaced.keys()):
-        create_date_summary(date)
-
-    # Final report
     print("\n" + "=" * 70)
-    print("[COMPLETE] CLEANUP COMPLETE")
+    print(f"SUMMARY: {total_deleted} files to delete, {total_kept} files to keep")
+    if dry_run:
+        print("Run with --execute to delete these files")
+    else:
+        print(f"Successfully deleted {total_deleted} files")
     print("=" * 70)
-    print(f"\n[STATS] Statistics:")
-    print(f"   - Files moved: {stats['moved']}")
-    print(f"   - Errors: {len(stats['errors'])}")
-
-    if stats["errors"]:
-        print("\n[ERRORS] Errors encountered:")
-        for error in stats["errors"]:
-            print(f"   - {error}")
-
-    print("\n[SUCCESS] All task files are now in correct date folders!")
-    print(f"   Location: {DEV_LOG_DIR}/<YYYY-MM-DD>/")
 
 
 if __name__ == "__main__":

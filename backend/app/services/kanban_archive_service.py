@@ -499,24 +499,26 @@ Generate a comprehensive summary with key learnings, technical insights, and rec
             # Save to Obsidian vault in date-specific folder
             now = datetime.now(UTC)
             date_str = now.strftime("%Y-%m-%d")
-            time_str = now.strftime("%H%M%S")  # HHMMSS format for chronological order
 
             # Sanitize task title for filename (remove special characters)
             # Keep only alphanumeric, spaces, hyphens, and underscores
             safe_title = re.sub(r'[<>:"/\\|?*\x00-\x1f]', "", task.title)
             safe_title = re.sub(r"\s+", "-", safe_title.strip())  # Replace spaces with hyphens
-            safe_title = safe_title[:80]  # Limit length
+            safe_title = safe_title[:50]  # Limit length (consistent with obsidian_auto_sync)
 
             # Create date folder if it doesn't exist
             date_dir = self.obsidian_service.daily_notes_dir / date_str
             date_dir.mkdir(parents=True, exist_ok=True)
 
-            # Format: YYYY-MM-DD_HHMMSS_TaskTitle.md
-            # Timestamp ensures chronological order and prevents conflicts
-            note_filename = f"{date_str}_{time_str}_{safe_title}.md"
+            # Determine action type from task context
+            action_type = self._determine_action_type(task)
+
+            # Format: {action_type}({phase})- {title}.md
+            # Semantic naming for better searchability and Obsidian integration
+            note_filename = f"{action_type}({task.phase_name})- {safe_title}.md"
             note_path = date_dir / note_filename
 
-            # Final path: 개발일지/YYYY-MM-DD/YYYY-MM-DD_HHMMSS_TaskTitle.md
+            # Final path: 개발일지/YYYY-MM-DD/archive(implementation)- Task-Title.md
 
             # Write note to file
             with open(note_path, "w", encoding="utf-8") as f:
@@ -776,96 +778,140 @@ Generate a comprehensive summary with key learnings, technical insights, and rec
         return base_note
 
     def _generate_obsidian_note(self, entry: ObsidianKnowledgeEntry, roi_metrics: ROIMetrics) -> str:
-        """Generate Obsidian markdown note content with YAML frontmatter"""
-        # Hierarchical tags for better organization
-        hierarchical_tags = [
-            f"phase/{entry.phase_name}",
-            "status/completed",
-            f"priority/{entry.tags[1] if len(entry.tags) > 1 else 'medium'}",
-            "type/task",
+        """Generate Obsidian markdown note content with YAML frontmatter (v3.0 format)"""
+        # v3.0 compatible tags
+        tags = [
             "kanban-archived",
+            entry.phase_name,
+            entry.tags[1] if len(entry.tags) > 1 else "medium",  # priority
+            "completed",
         ]
 
-        # Efficiency category for filtering
+        # Efficiency category tag
         eff = roi_metrics.efficiency_percentage
         if eff >= 120:
-            hierarchical_tags.append("efficiency/excellent")
+            tags.append("efficiency-excellent")
         elif eff >= 100:
-            hierarchical_tags.append("efficiency/good")
+            tags.append("efficiency-good")
         elif eff >= 80:
-            hierarchical_tags.append("efficiency/acceptable")
+            tags.append("efficiency-acceptable")
         else:
-            hierarchical_tags.append("efficiency/needs-improvement")
+            tags.append("efficiency-needs-improvement")
 
-        tags_yaml = "\n".join([f"  - {tag}" for tag in hierarchical_tags])
-
-        # YAML frontmatter for AI/MCP integration
+        # v3.0 Frontmatter format (consistent with obsidian_auto_sync.py)
         frontmatter = f"""---
-aliases:
-  - {entry.title}
-tags:
-{tags_yaml}
-created: {entry.created_at.strftime("%Y-%m-%dT%H:%M:%S")}
-archived: {entry.archived_at.strftime("%Y-%m-%dT%H:%M:%S")}
-phase: {entry.phase_name}
+date: {entry.archived_at.strftime("%Y-%m-%d")}
+time: "{entry.archived_at.strftime("%H:%M")}"
+project: UDO-Development-Platform
+topic: {entry.title[:50]}
+type: kanban-archive
 status: completed
+phase: {entry.phase_name}
 task_id: {entry.task_id}
+tags: [{", ".join(tags)}]
 estimated_hours: {roi_metrics.estimated_hours}
 actual_hours: {roi_metrics.actual_hours}
 efficiency: {int(roi_metrics.efficiency_percentage)}
 quality_score: {roi_metrics.quality_score}
 constitutional_compliant: {str(roi_metrics.constitutional_compliance).lower()}
+schema_version: "1.0"
 ---
 """
 
         note = f"""{frontmatter}
 # {entry.title}
 
-## Task Summary
-
-**Phase**: {entry.phase_name}
-**Archived**: {entry.archived_at.strftime("%Y-%m-%d %H:%M")}
-**Task ID**: `{entry.task_id}`
-
-## Summary
-
 {entry.summary}
 
-## Key Learnings
+## 변경 사항
+
+**Phase**: {entry.phase_name}
+**Task ID**: `{entry.task_id}`
+**Archived**: {entry.archived_at.strftime("%Y-%m-%d %H:%M")}
+
+## 💡 배운 점
 
 """
         for learning in entry.key_learnings:
             note += f"- {learning}\n"
 
         note += """
-## Technical Insights
+## 🔧 기술 인사이트
 
 """
         for insight in entry.technical_insights:
             note += f"- {insight}\n"
 
         note += f"""
-## ROI Metrics
+## 📊 ROI 메트릭
 
-| Metric | Value |
-|--------|-------|
-| Estimated | {roi_metrics.estimated_hours}h |
-| Actual | {roi_metrics.actual_hours}h |
-| Time Saved | {roi_metrics.time_saved_hours:+.1f}h |
-| Efficiency | {roi_metrics.efficiency_percentage:.1f}% |
-| Quality Score | {roi_metrics.quality_score}/100 |
-| Constitutional | {"Pass" if roi_metrics.constitutional_compliance else "Fail"} |
+| 지표 | 값 |
+|------|-----|
+| 예상 시간 | {roi_metrics.estimated_hours}h |
+| 실제 시간 | {roi_metrics.actual_hours}h |
+| 절약 시간 | {roi_metrics.time_saved_hours:+.1f}h |
+| 효율성 | {roi_metrics.efficiency_percentage:.1f}% |
+| 품질 점수 | {roi_metrics.quality_score}/100 |
+| 규정 준수 | {"Pass" if roi_metrics.constitutional_compliance else "Fail"} |
 
-## Related
+## 📋 관련 문서
 
 - [[Kanban Archive MOC]]
 - [[{entry.phase_name.capitalize()} Phase]]
 
 ---
 
-*Generated by UDO Platform - Kanban Archive Service*
+**자동 생성**: UDO Platform - Kanban Archive Service v3.0
 """
         return note
+
+    def _determine_action_type(self, task: Task) -> str:
+        """
+        Determine the action type for semantic filename.
+
+        Analyzes task title and tags to determine if it's a:
+        - feat: New feature implementation
+        - fix: Bug fix or issue resolution
+        - docs: Documentation update
+        - refactor: Code refactoring
+        - test: Test implementation
+        - archive: Default for completed tasks
+
+        Args:
+            task: The task to analyze
+
+        Returns:
+            Action type string (feat, fix, docs, refactor, test, or archive)
+        """
+        title_lower = task.title.lower()
+        tags_lower = [t.lower() for t in (task.tags or [])]
+
+        # Check title patterns (priority order)
+        if any(kw in title_lower for kw in ["feat", "feature", "add", "implement", "create"]):
+            return "feat"
+        elif any(kw in title_lower for kw in ["fix", "bug", "resolve", "patch", "hotfix"]):
+            return "fix"
+        elif any(kw in title_lower for kw in ["doc", "readme", "guide", "manual"]):
+            return "docs"
+        elif any(kw in title_lower for kw in ["refactor", "cleanup", "reorganize", "restructure"]):
+            return "refactor"
+        elif any(kw in title_lower for kw in ["test", "spec", "e2e", "unit"]):
+            return "test"
+
+        # Check tags as fallback
+        if any(t in tags_lower for t in ["feature", "enhancement"]):
+            return "feat"
+        elif any(t in tags_lower for t in ["bug", "bugfix", "hotfix"]):
+            return "fix"
+        elif any(t in tags_lower for t in ["documentation", "docs"]):
+            return "docs"
+        elif any(t in tags_lower for t in ["refactor", "tech-debt"]):
+            return "refactor"
+        elif any(t in tags_lower for t in ["test", "testing"]):
+            return "test"
+
+        # Default to archive for completed tasks
+        return "archive"
 
     async def get_archive_list(
         self,
