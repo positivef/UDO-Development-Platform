@@ -2807,12 +2807,13 @@ class ObsidianAutoSync:
         if files_count >= 3:
             return True, f"{files_count} files changed (>=3)"
 
-        # 조건 2: feat:/fix:/docs: 등 커밋 메시지
-        trigger_patterns = [r"^feat:", r"^feature:", r"^fix:", r"^bug:", r"^docs:", r"^refactor:", r"^analyze:", r"^analysis:"]
+        # 조건 2: feat:/fix:/docs: 등 커밋 메시지 (with or without scope)
+        # Supports: "fix: msg", "fix(scope): msg", "feat(api): msg"
+        trigger_pattern = r"^(feat|feature|fix|bug|docs|refactor|analyze|analysis|test|chore)(\([^)]+\))?:"
 
-        for pattern in trigger_patterns:
-            if re.match(pattern, message, re.IGNORECASE):
-                return True, f"Commit message matches: {pattern}"
+        match = re.match(trigger_pattern, message, re.IGNORECASE)
+        if match:
+            return True, f"Commit message matches: {match.group(0)}"
 
         return False, f"No trigger (files: {files_count}, message: {message[:30]}...)"
 
