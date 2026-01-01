@@ -3098,12 +3098,12 @@ files_changed: {len(files)}
 
         return content
 
-    def sync(self, commit_hash: str, version: int = 2) -> bool:
+    def sync(self, commit_hash: str, version: int = 3) -> bool:
         """Obsidian 동기화 실행
 
         Args:
             commit_hash: Git 커밋 해시
-            version: 사용할 버전 (2=v2.0, 3=v3.0)
+            version: 사용할 버전 (2=v2.0, 3=v3.0) - 기본값 v3.0
         """
         try:
             # 1. 커밋 정보 가져오기
@@ -3252,7 +3252,7 @@ def main():
     parser.add_argument("--commit-hash", default="HEAD", help="Commit hash to sync")
     parser.add_argument("--vault", help="Obsidian vault path (optional)")
     parser.add_argument(
-        "--version", type=int, default=2, choices=[2, 3], help="Sync version (2=v2.0, 3=v3.0 with extended frontmatter)"
+        "--version", type=int, default=3, choices=[2, 3], help="Sync version (2=v2.0, 3=v3.0 with extended frontmatter)"
     )
     parser.add_argument("--weekly", action="store_true", help="Generate weekly summary instead of daily log")
     parser.add_argument("--week-offset", type=int, default=0, help="Week offset for weekly summary (0=current, -1=last week)")
