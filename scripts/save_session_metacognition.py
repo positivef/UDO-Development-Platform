@@ -99,6 +99,7 @@ def analyze_git_diff(use_last_commit: bool = False) -> Dict[str, Any]:
             "frontend": [],
             "tests": [],
             "docs": [],
+            "scripts": [],
             "config": [],
         }
         for f in changed_files:
@@ -110,6 +111,8 @@ def analyze_git_diff(use_last_commit: bool = False) -> Dict[str, Any]:
                 categories["tests"].append(f)
             elif f.startswith("docs/") or f.endswith(".md"):
                 categories["docs"].append(f)
+            elif f.startswith("scripts/"):
+                categories["scripts"].append(f)
             else:
                 categories["config"].append(f)
 
@@ -188,6 +191,26 @@ def generate_auto_metacognition(diff_info: Dict[str, Any]) -> Dict[str, Any]:
                 "item": "설정 변경이 다른 환경에 영향?",
                 "change_prob": 45,
                 "expected_effect": "환경별 테스트로 검증",
+            }
+        )
+
+    # 스크립트 변경 시
+    if categories.get("scripts"):
+        scripts_count = len(categories["scripts"])
+        metacognition["areas_to_improve"].append(
+            {
+                "item": f"스크립트 변경 ({scripts_count}개)",
+                "completeness": 70,
+                "urgency": "high" if scripts_count > 3 else "medium",
+                "expected_effect": "자동화 스크립트 동작 검증",
+            }
+        )
+        # 스크립트 변경은 다른 시스템에 영향 가능
+        metacognition["opinion_changers"].append(
+            {
+                "item": "스크립트 변경이 CI/CD 또는 자동화에 영향?",
+                "change_prob": 40,
+                "expected_effect": "파이프라인 테스트로 검증",
             }
         )
 
