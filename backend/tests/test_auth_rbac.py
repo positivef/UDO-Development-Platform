@@ -196,7 +196,7 @@ class TestRBACPermissions:
         token = JWTManager.create_access_token(data)
         credentials = HTTPAuthorizationCredentials(scheme="Bearer", credentials=token)
 
-        # When/Then: Admin 권한 필요 → 403 Forbidden
+        # When/Then: Admin 권한 필요 -> 403 Forbidden
         role_checker = require_role(UserRole.ADMIN)
 
         with pytest.raises(HTTPException) as exc_info:

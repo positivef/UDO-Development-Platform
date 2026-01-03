@@ -5,15 +5,12 @@ Tests all P1-P17 validation logic
 """
 
 import pytest
-import asyncio
 from pathlib import Path
-from datetime import datetime
 
 from app.core.constitutional_guard import (
     ConstitutionalGuard,
     ValidationResult,
     Severity,
-    Action
 )
 
 
@@ -33,40 +30,16 @@ def sample_design():
     return {
         "id": "design_001",
         "risk_assessments": {
-            "existing_system_impact": {
-                "assessed": True,
-                "mitigation": "Backwards compatible API"
-            },
-            "git_conflict_risk": {
-                "assessed": True,
-                "mitigation": "Feature branch strategy"
-            },
-            "multi_session_issue": {
-                "assessed": True,
-                "mitigation": "Redis-based locking"
-            },
-            "performance_impact": {
-                "assessed": True,
-                "mitigation": "Caching layer"
-            },
-            "complexity_increase": {
-                "assessed": True,
-                "mitigation": "Modular design"
-            },
-            "workflow_change": {
-                "assessed": True,
-                "mitigation": "Migration guide"
-            },
-            "rollback_plan": {
-                "assessed": True,
-                "mitigation": "Feature flag + database backup"
-            },
-            "test_method": {
-                "assessed": True,
-                "mitigation": "Unit + integration tests"
-            }
+            "existing_system_impact": {"assessed": True, "mitigation": "Backwards compatible API"},
+            "git_conflict_risk": {"assessed": True, "mitigation": "Feature branch strategy"},
+            "multi_session_issue": {"assessed": True, "mitigation": "Redis-based locking"},
+            "performance_impact": {"assessed": True, "mitigation": "Caching layer"},
+            "complexity_increase": {"assessed": True, "mitigation": "Modular design"},
+            "workflow_change": {"assessed": True, "mitigation": "Migration guide"},
+            "rollback_plan": {"assessed": True, "mitigation": "Feature flag + database backup"},
+            "test_method": {"assessed": True, "mitigation": "Unit + integration tests"},
         },
-        "user_approved": True
+        "user_approved": True,
     }
 
 
@@ -81,20 +54,10 @@ def sample_confidence():
             "level": "HIGH",
             "score": 0.96,
             "rationale": "Official React documentation recommends hooks",
-            "evidence": [
-                "React official docs",
-                "Community best practices",
-                "Performance benchmarks"
-            ]
+            "evidence": ["React official docs", "Community best practices", "Performance benchmarks"],
         },
-        "alternatives": [
-            {
-                "option": "Keep class components",
-                "pros": ["Familiar to team"],
-                "cons": ["Deprecated pattern"]
-            }
-        ],
-        "risks": ["Learning curve for team"]
+        "alternatives": [{"option": "Keep class components", "pros": ["Familiar to team"], "cons": ["Deprecated pattern"]}],
+        "risks": ["Learning curve for team"],
     }
 
 
@@ -104,34 +67,24 @@ def sample_evidence():
     return {
         "id": "claim_001",
         "type": "optimization",
-        "before": {
-            "execution_time": 250,
-            "memory_usage": 150
-        },
-        "after": {
-            "execution_time": 100,
-            "memory_usage": 120
-        },
+        "before": {"execution_time": 250, "memory_usage": 150},
+        "after": {"execution_time": 100, "memory_usage": 120},
         "evidence": {
-            "benchmark_results": {
-                "execution_time": 100,
-                "memory_usage": 120,
-                "cpu_utilization": 45,
-                "database_queries": 5
-            },
+            "benchmark_results": {"execution_time": 100, "memory_usage": 120, "cpu_utilization": 45, "database_queries": 5},
             "ab_test_metrics": {
                 "variant_a": "Old implementation",
                 "variant_b": "New implementation",
                 "sample_size": 150,
-                "statistical_significance": 0.02
-            }
-        }
+                "statistical_significance": 0.02,
+            },
+        },
     }
 
 
-# ═══════════════════════════════════════════════════
+# [*][*][*][*][*][*][*][*][*][*][*][*][*][*][*][*][*][*][*][*][*][*][*][*][*][*][*][*][*][*][*][*][*][*][*][*][*][*][*][*][*][*][*][*][*][*][*][*][*][*][*]
 # P1: Design Review First Tests
-# ═══════════════════════════════════════════════════
+# [*][*][*][*][*][*][*][*][*][*][*][*][*][*][*][*][*][*][*][*][*][*][*][*][*][*][*][*][*][*][*][*][*][*][*][*][*][*][*][*][*][*][*][*][*][*][*][*][*][*][*]
+
 
 @pytest.mark.asyncio
 async def test_p1_valid_design(guard, sample_design):
@@ -193,9 +146,10 @@ async def test_p1_valid_exemption(guard, sample_design):
     assert result.article == "P1_design_review_first"
 
 
-# ═══════════════════════════════════════════════════
+# [*][*][*][*][*][*][*][*][*][*][*][*][*][*][*][*][*][*][*][*][*][*][*][*][*][*][*][*][*][*][*][*][*][*][*][*][*][*][*][*][*][*][*][*][*][*][*][*][*][*][*]
 # P2: Uncertainty Disclosure Tests
-# ═══════════════════════════════════════════════════
+# [*][*][*][*][*][*][*][*][*][*][*][*][*][*][*][*][*][*][*][*][*][*][*][*][*][*][*][*][*][*][*][*][*][*][*][*][*][*][*][*][*][*][*][*][*][*][*][*][*][*][*]
+
 
 @pytest.mark.asyncio
 async def test_p2_valid_high_confidence(guard, sample_confidence):
@@ -226,7 +180,7 @@ async def test_p2_valid_low_confidence(guard, sample_confidence):
     sample_confidence["confidence"]["score"] = 0.65
     sample_confidence["alternatives"] = [
         {"option": "Option 1", "pros": [], "cons": []},
-        {"option": "Option 2", "pros": [], "cons": []}
+        {"option": "Option 2", "pros": [], "cons": []},
     ]
 
     result = await guard.validate_confidence(sample_confidence)
@@ -287,9 +241,7 @@ async def test_p2_low_confidence_insufficient_alternatives(guard, sample_confide
     """Test P2 LOW confidence with only 1 alternative (need 2)"""
     sample_confidence["confidence"]["level"] = "LOW"
     sample_confidence["confidence"]["score"] = 0.60
-    sample_confidence["alternatives"] = [
-        {"option": "Only one", "pros": [], "cons": []}
-    ]
+    sample_confidence["alternatives"] = [{"option": "Only one", "pros": [], "cons": []}]
 
     result = await guard.validate_confidence(sample_confidence)
 
@@ -297,9 +249,10 @@ async def test_p2_low_confidence_insufficient_alternatives(guard, sample_confide
     assert any("2 alternatives" in v for v in result.violations)
 
 
-# ═══════════════════════════════════════════════════
+# [*][*][*][*][*][*][*][*][*][*][*][*][*][*][*][*][*][*][*][*][*][*][*][*][*][*][*][*][*][*][*][*][*][*][*][*][*][*][*][*][*][*][*][*][*][*][*][*][*][*][*]
 # P3: Evidence-Based Decision Tests
-# ═══════════════════════════════════════════════════
+# [*][*][*][*][*][*][*][*][*][*][*][*][*][*][*][*][*][*][*][*][*][*][*][*][*][*][*][*][*][*][*][*][*][*][*][*][*][*][*][*][*][*][*][*][*][*][*][*][*][*][*]
+
 
 @pytest.mark.asyncio
 async def test_p3_valid_optimization(guard, sample_evidence):
@@ -313,11 +266,7 @@ async def test_p3_valid_optimization(guard, sample_evidence):
 @pytest.mark.asyncio
 async def test_p3_non_optimization_skipped(guard):
     """Test P3 skips non-optimization claims"""
-    claim = {
-        "id": "claim_002",
-        "type": "feature",
-        "description": "New feature implementation"
-    }
+    claim = {"id": "claim_002", "type": "feature", "description": "New feature implementation"}
 
     result = await guard.validate_evidence(claim)
 
@@ -370,23 +319,17 @@ async def test_p3_not_statistically_significant(guard, sample_evidence):
     assert any("significant" in w.lower() for w in result.warnings)
 
 
-# ═══════════════════════════════════════════════════
+# [*][*][*][*][*][*][*][*][*][*][*][*][*][*][*][*][*][*][*][*][*][*][*][*][*][*][*][*][*][*][*][*][*][*][*][*][*][*][*][*][*][*][*][*][*][*][*][*][*][*][*]
 # P4: Phase-Aware Compliance Tests
-# ═══════════════════════════════════════════════════
+# [*][*][*][*][*][*][*][*][*][*][*][*][*][*][*][*][*][*][*][*][*][*][*][*][*][*][*][*][*][*][*][*][*][*][*][*][*][*][*][*][*][*][*][*][*][*][*][*][*][*][*]
+
 
 @pytest.mark.asyncio
 async def test_p4_valid_phase_action(guard):
     """Test P4 with valid action in phase"""
-    context = {
-        "quality_score": 0.70,
-        "completed_deliverables": []
-    }
+    context = {"quality_score": 0.70, "completed_deliverables": []}
 
-    result = await guard.validate_phase_compliance(
-        "implementation",
-        "full_implementation",
-        context
-    )
+    result = await guard.validate_phase_compliance("implementation", "full_implementation", context)
 
     assert result.passed is True
 
@@ -394,15 +337,9 @@ async def test_p4_valid_phase_action(guard):
 @pytest.mark.asyncio
 async def test_p4_prohibited_action(guard):
     """Test P4 with prohibited action in phase"""
-    context = {
-        "quality_score": 0.60
-    }
+    context = {"quality_score": 0.60}
 
-    result = await guard.validate_phase_compliance(
-        "testing",
-        "new_features",  # Prohibited in testing phase
-        context
-    )
+    result = await guard.validate_phase_compliance("testing", "new_features", context)  # Prohibited in testing phase
 
     assert result.passed is False
     assert any("prohibited" in v.lower() for v in result.violations)
@@ -411,16 +348,9 @@ async def test_p4_prohibited_action(guard):
 @pytest.mark.asyncio
 async def test_p4_low_quality_score(guard):
     """Test P4 with quality score below threshold"""
-    context = {
-        "quality_score": 0.50,  # Below implementation threshold (0.65)
-        "phase_transition_requested": False
-    }
+    context = {"quality_score": 0.50, "phase_transition_requested": False}  # Below implementation threshold (0.65)
 
-    result = await guard.validate_phase_compliance(
-        "implementation",
-        "full_implementation",
-        context
-    )
+    result = await guard.validate_phase_compliance("implementation", "full_implementation", context)
 
     # Should generate warning
     assert len(result.warnings) > 0
@@ -431,20 +361,11 @@ async def test_p4_phase_transition_success(guard):
     """Test P4 successful phase transition"""
     context = {
         "quality_score": 0.70,
-        "completed_deliverables": [
-            "완전한 기능 구현",
-            "80% 이상 테스트 커버리지",
-            "코드 리뷰 완료",
-            "API 문서"
-        ],
-        "approved": True
+        "completed_deliverables": ["완전한 기능 구현", "80% 이상 테스트 커버리지", "코드 리뷰 완료", "API 문서"],
+        "approved": True,
     }
 
-    result = await guard.validate_phase_transition(
-        "implementation",
-        "testing",
-        context
-    )
+    result = await guard.validate_phase_transition("implementation", "testing", context)
 
     assert result.passed is True
 
@@ -452,17 +373,9 @@ async def test_p4_phase_transition_success(guard):
 @pytest.mark.asyncio
 async def test_p4_phase_transition_missing_deliverables(guard):
     """Test P4 phase transition with missing deliverables"""
-    context = {
-        "quality_score": 0.70,
-        "completed_deliverables": ["완전한 기능 구현"],  # Missing others
-        "approved": True
-    }
+    context = {"quality_score": 0.70, "completed_deliverables": ["완전한 기능 구현"], "approved": True}  # Missing others
 
-    result = await guard.validate_phase_transition(
-        "implementation",
-        "testing",
-        context
-    )
+    result = await guard.validate_phase_transition("implementation", "testing", context)
 
     assert result.passed is False
     assert any("deliverables" in v.lower() for v in result.violations)
@@ -473,48 +386,28 @@ async def test_p4_phase_transition_no_approval(guard):
     """Test P4 phase transition without approval"""
     context = {
         "quality_score": 0.70,
-        "completed_deliverables": [
-            "완전한 기능 구현",
-            "80% 이상 테스트 커버리지",
-            "코드 리뷰 완료",
-            "API 문서"
-        ],
-        "approved": False
+        "completed_deliverables": ["완전한 기능 구현", "80% 이상 테스트 커버리지", "코드 리뷰 완료", "API 문서"],
+        "approved": False,
     }
 
-    result = await guard.validate_phase_transition(
-        "implementation",
-        "testing",
-        context
-    )
+    result = await guard.validate_phase_transition("implementation", "testing", context)
 
     assert result.passed is False
     assert any("approval" in v.lower() for v in result.violations)
 
 
-# ═══════════════════════════════════════════════════
+# [*][*][*][*][*][*][*][*][*][*][*][*][*][*][*][*][*][*][*][*][*][*][*][*][*][*][*][*][*][*][*][*][*][*][*][*][*][*][*][*][*][*][*][*][*][*][*][*][*][*][*]
 # P5: Multi-AI Consistency Tests
-# ═══════════════════════════════════════════════════
+# [*][*][*][*][*][*][*][*][*][*][*][*][*][*][*][*][*][*][*][*][*][*][*][*][*][*][*][*][*][*][*][*][*][*][*][*][*][*][*][*][*][*][*][*][*][*][*][*][*][*][*]
+
 
 @pytest.mark.asyncio
 async def test_p5_unanimous_consensus(guard):
     """Test P5 with unanimous AI consensus"""
     decisions = [
-        {
-            "ai_agent": "claude",
-            "recommendation": "Use TypeScript",
-            "confidence": {"level": "HIGH", "score": 0.95}
-        },
-        {
-            "ai_agent": "codex",
-            "recommendation": "Use TypeScript",
-            "confidence": {"level": "HIGH", "score": 0.92}
-        },
-        {
-            "ai_agent": "gemini",
-            "recommendation": "Use TypeScript",
-            "confidence": {"level": "MEDIUM", "score": 0.88}
-        }
+        {"ai_agent": "claude", "recommendation": "Use TypeScript", "confidence": {"level": "HIGH", "score": 0.95}},
+        {"ai_agent": "codex", "recommendation": "Use TypeScript", "confidence": {"level": "HIGH", "score": 0.92}},
+        {"ai_agent": "gemini", "recommendation": "Use TypeScript", "confidence": {"level": "MEDIUM", "score": 0.88}},
     ]
 
     result, consensus = await guard.validate_ai_consensus(decisions)
@@ -529,21 +422,9 @@ async def test_p5_unanimous_consensus(guard):
 async def test_p5_majority_consensus(guard):
     """Test P5 with 2/3 majority"""
     decisions = [
-        {
-            "ai_agent": "claude",
-            "recommendation": "Use React",
-            "confidence": {"level": "HIGH", "score": 0.95}
-        },
-        {
-            "ai_agent": "codex",
-            "recommendation": "Use React",
-            "confidence": {"level": "MEDIUM", "score": 0.80}
-        },
-        {
-            "ai_agent": "gemini",
-            "recommendation": "Use Vue",
-            "confidence": {"level": "MEDIUM", "score": 0.75}
-        }
+        {"ai_agent": "claude", "recommendation": "Use React", "confidence": {"level": "HIGH", "score": 0.95}},
+        {"ai_agent": "codex", "recommendation": "Use React", "confidence": {"level": "MEDIUM", "score": 0.80}},
+        {"ai_agent": "gemini", "recommendation": "Use Vue", "confidence": {"level": "MEDIUM", "score": 0.75}},
     ]
 
     result, consensus = await guard.validate_ai_consensus(decisions)
@@ -558,21 +439,9 @@ async def test_p5_majority_consensus(guard):
 async def test_p5_no_majority(guard):
     """Test P5 without 2/3 majority"""
     decisions = [
-        {
-            "ai_agent": "claude",
-            "recommendation": "Option A",
-            "confidence": {"level": "MEDIUM", "score": 0.70}
-        },
-        {
-            "ai_agent": "codex",
-            "recommendation": "Option B",
-            "confidence": {"level": "MEDIUM", "score": 0.72}
-        },
-        {
-            "ai_agent": "gemini",
-            "recommendation": "Option C",
-            "confidence": {"level": "MEDIUM", "score": 0.68}
-        }
+        {"ai_agent": "claude", "recommendation": "Option A", "confidence": {"level": "MEDIUM", "score": 0.70}},
+        {"ai_agent": "codex", "recommendation": "Option B", "confidence": {"level": "MEDIUM", "score": 0.72}},
+        {"ai_agent": "gemini", "recommendation": "Option C", "confidence": {"level": "MEDIUM", "score": 0.68}},
     ]
 
     result, consensus = await guard.validate_ai_consensus(decisions)
@@ -585,13 +454,7 @@ async def test_p5_no_majority(guard):
 @pytest.mark.asyncio
 async def test_p5_single_ai(guard):
     """Test P5 with single AI (consensus not required)"""
-    decisions = [
-        {
-            "ai_agent": "claude",
-            "recommendation": "Use Python",
-            "confidence": {"level": "HIGH", "score": 0.95}
-        }
-    ]
+    decisions = [{"ai_agent": "claude", "recommendation": "Use Python", "confidence": {"level": "HIGH", "score": 0.95}}]
 
     result, consensus = await guard.validate_ai_consensus(decisions)
 
@@ -599,9 +462,10 @@ async def test_p5_single_ai(guard):
     assert result.metadata.get("skipped") is not None
 
 
-# ═══════════════════════════════════════════════════
+# [*][*][*][*][*][*][*][*][*][*][*][*][*][*][*][*][*][*][*][*][*][*][*][*][*][*][*][*][*][*][*][*][*][*][*][*][*][*][*][*][*][*][*][*][*][*][*][*][*][*][*]
 # General Tests
-# ═══════════════════════════════════════════════════
+# [*][*][*][*][*][*][*][*][*][*][*][*][*][*][*][*][*][*][*][*][*][*][*][*][*][*][*][*][*][*][*][*][*][*][*][*][*][*][*][*][*][*][*][*][*][*][*][*][*][*][*]
+
 
 def test_guard_initialization(guard):
     """Test ConstitutionalGuard initialization"""
@@ -618,10 +482,7 @@ def test_compliance_score_calculation(guard):
 
     # Add a violation
     guard._log_violation(
-        article="P1_design_review_first",
-        violation_type="test",
-        description="Test violation",
-        severity=Severity.HIGH
+        article="P1_design_review_first", violation_type="test", description="Test violation", severity=Severity.HIGH
     )
 
     # Score should decrease
@@ -633,16 +494,10 @@ def test_violation_filtering(guard):
     """Test violation filtering"""
     # Add violations
     guard._log_violation(
-        article="P1_design_review_first",
-        violation_type="test1",
-        description="Test 1",
-        severity=Severity.CRITICAL
+        article="P1_design_review_first", violation_type="test1", description="Test 1", severity=Severity.CRITICAL
     )
     guard._log_violation(
-        article="P2_uncertainty_disclosure",
-        violation_type="test2",
-        description="Test 2",
-        severity=Severity.HIGH
+        article="P2_uncertainty_disclosure", violation_type="test2", description="Test 2", severity=Severity.HIGH
     )
 
     # Filter by article
@@ -660,10 +515,7 @@ def test_violation_export(guard, tmp_path):
     """Test violation export"""
     # Add a violation
     guard._log_violation(
-        article="P1_design_review_first",
-        violation_type="test",
-        description="Test violation",
-        severity=Severity.HIGH
+        article="P1_design_review_first", violation_type="test", description="Test violation", severity=Severity.HIGH
     )
 
     # Export
@@ -675,15 +527,17 @@ def test_violation_export(guard, tmp_path):
 
     # Verify content
     import json
+
     with open(export_file) as f:
         data = json.load(f)
     assert len(data) == 1
     assert data[0]["article"] == "P1_design_review_first"
 
 
-# ═══════════════════════════════════════════════════
+# [*][*][*][*][*][*][*][*][*][*][*][*][*][*][*][*][*][*][*][*][*][*][*][*][*][*][*][*][*][*][*][*][*][*][*][*][*][*][*][*][*][*][*][*][*][*][*][*][*][*][*]
 # Integration Tests
-# ═══════════════════════════════════════════════════
+# [*][*][*][*][*][*][*][*][*][*][*][*][*][*][*][*][*][*][*][*][*][*][*][*][*][*][*][*][*][*][*][*][*][*][*][*][*][*][*][*][*][*][*][*][*][*][*][*][*][*][*]
+
 
 @pytest.mark.asyncio
 async def test_validate_all_design(guard, sample_design):
@@ -712,9 +566,10 @@ async def test_validate_all_optimization(guard, sample_evidence):
     assert all(isinstance(r, ValidationResult) for r in results)
 
 
-# ═══════════════════════════════════════════════════
+# [*][*][*][*][*][*][*][*][*][*][*][*][*][*][*][*][*][*][*][*][*][*][*][*][*][*][*][*][*][*][*][*][*][*][*][*][*][*][*][*][*][*][*][*][*][*][*][*][*][*][*]
 # Performance Tests
-# ═══════════════════════════════════════════════════
+# [*][*][*][*][*][*][*][*][*][*][*][*][*][*][*][*][*][*][*][*][*][*][*][*][*][*][*][*][*][*][*][*][*][*][*][*][*][*][*][*][*][*][*][*][*][*][*][*][*][*][*]
+
 
 @pytest.mark.asyncio
 async def test_validation_performance(guard, sample_design):

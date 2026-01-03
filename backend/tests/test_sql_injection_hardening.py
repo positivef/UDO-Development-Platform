@@ -69,9 +69,7 @@ def test_api_rejects_invalid_sort_field(async_client):
     Note: Returns 403 if not authenticated, 400 if authenticated with invalid field
     """
     # Attempt SQL injection via sort_by parameter
-    response = async_client.get(
-        "/api/kanban/tasks", params={"sort_by": "DROP TABLE tasks"}
-    )
+    response = async_client.get("/api/kanban/tasks", params={"sort_by": "DROP TABLE tasks"})
 
     # Should reject with 400 (invalid field) or 403 (not authenticated)
     assert response.status_code in [400, 403]
@@ -87,9 +85,7 @@ def test_api_accepts_valid_sort_field(async_client):
 
     Requires: Test client fixture (synchronous TestClient)
     """
-    response = async_client.get(
-        "/api/kanban/tasks", params={"sort_by": "priority", "page": 1, "per_page": 10}
-    )
+    response = async_client.get("/api/kanban/tasks", params={"sort_by": "priority", "page": 1, "per_page": 10})
 
     # Should not raise 400 error for valid field
     assert response.status_code in [200, 401, 403]  # 401/403 if auth required
@@ -101,25 +97,23 @@ def test_api_case_insensitive_sort(async_client):
 
     Requires: Test client fixture (synchronous TestClient)
     """
-    response = async_client.get(
-        "/api/kanban/tasks", params={"sort_by": "PRIORITY", "page": 1}
-    )
+    response = async_client.get("/api/kanban/tasks", params={"sort_by": "PRIORITY", "page": 1})
 
     # Should normalize to lowercase and accept
-    assert response.status_code in [200,401, 403]
+    assert response.status_code in [200, 401, 403]
 
 
 # ============= Test Summary =============
 """
 Test Coverage Summary:
 
-✅ Test 1: Valid sort fields pass validation
-✅ Test 2: Case-insensitive validation
-✅ Test 3: Invalid fields raise ValueError (6 SQL injection patterns)
-✅ Test 4: get_valid_fields() returns whitelist
-✅ Test 5: API rejects SQL injection attempts (400 error)
-✅ Test 6: API accepts valid sort fields (200/401/403)
-✅ Test 7: API handles case-insensitive input
+[OK] Test 1: Valid sort fields pass validation
+[OK] Test 2: Case-insensitive validation
+[OK] Test 3: Invalid fields raise ValueError (6 SQL injection patterns)
+[OK] Test 4: get_valid_fields() returns whitelist
+[OK] Test 5: API rejects SQL injection attempts (400 error)
+[OK] Test 6: API accepts valid sort fields (200/401/403)
+[OK] Test 7: API handles case-insensitive input
 
 Run tests:
     pytest backend/tests/test_sql_injection_hardening.py -v
@@ -128,9 +122,9 @@ Run with coverage:
     pytest backend/tests/test_sql_injection_hardening.py -v --cov=backend.app.models.kanban_task
 
 Security validation:
-    - Whitelist enforcement: ✅
-    - SQL injection prevention: ✅
-    - XSS prevention: ✅
-    - Path traversal prevention: ✅
-    - Command injection prevention: ✅
+    - Whitelist enforcement: [OK]
+    - SQL injection prevention: [OK]
+    - XSS prevention: [OK]
+    - Path traversal prevention: [OK]
+    - Command injection prevention: [OK]
 """

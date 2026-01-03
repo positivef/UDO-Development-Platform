@@ -14,8 +14,7 @@ print("=" * 60)
 # Test 1: Import enable_mock_service
 print("\n1. Importing enable_mock_service...")
 try:
-    from app.services.project_context_service import (
-        enable_mock_service, get_project_context_service)
+    from app.services.project_context_service import enable_mock_service, get_project_context_service
 
     print("   SUCCESS: Functions imported")
 except ImportError as e:
@@ -36,7 +35,7 @@ print("\n3. Getting service instance...")
 try:
     service = get_project_context_service()
     if service:
-        print(f"   SUCCESS: Service instance retrieved")
+        print("   SUCCESS: Service instance retrieved")
         print(f"   Type: {type(service)}")
         print(f"   Class: {service.__class__.__name__}")
         print(f"   Module: {service.__class__.__module__}")
@@ -60,9 +59,9 @@ required_methods = [
 ]
 for method in required_methods:
     if hasattr(service, method):
-        print(f"   [EMOJI] Has method: {method}")
+        print(f"   [OK] Has method: {method}")
     else:
-        print(f"   [EMOJI] Missing method: {method}")
+        print(f"   [MISSING] Missing method: {method}")
 
 # Test 5: Check global variables
 print("\n5. Checking global variables...")

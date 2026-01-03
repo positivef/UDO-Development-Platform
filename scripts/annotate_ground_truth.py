@@ -22,7 +22,7 @@ from typing import Dict, List, Optional
 
 def get_storage_dir() -> Path:
     """Get UDO storage directory"""
-    import os
+    import os  # noqa: E402
 
     env_dir = os.environ.get("UDO_STORAGE_DIR") or os.environ.get("UDO_HOME")
     base_dir = Path(env_dir).expanduser() if env_dir else Path.home() / ".udo"
@@ -77,16 +77,16 @@ def annotate_prediction(prediction_entry: Dict) -> Optional[Dict]:
         dict: Annotated entry with actual observations, or None if skipped
     """
     print(f"\n{'='*70}")
-    print(f"⏰ Prediction made at: {prediction_entry['prediction_timestamp']}")
-    print(f"[EMOJI] Predicted global uncertainty: {prediction_entry['predicted_global_level']:.1%}")
-    print(f"[EMOJI] Predicted trend: {prediction_entry['predicted_global_trend']}")
-    print(f"[EMOJI] Predicted state: {prediction_entry['predicted_global_state']}")
-    print(f"⏳ Hours ahead: {prediction_entry['hours_ahead']}h")
+    print(f"[*] Prediction made at: {prediction_entry['prediction_timestamp']}")
+    print(f"[PREDICT] global uncertainty: {prediction_entry['predicted_global_level']:.1%}")
+    print(f"[PREDICT] trend: {prediction_entry['predicted_global_trend']}")
+    print(f"[PREDICT] state: {prediction_entry['predicted_global_state']}")
+    print(f"[*] Hours ahead: {prediction_entry['hours_ahead']}h")
     print(f"[OK] Validation time: {prediction_entry['validation_timestamp']}")
     print(f"{'='*70}\n")
 
     # Ask annotator to observe actual uncertainty
-    print("[EMOJI] Based on what happened in the last 24 hours:\n")
+    print("[INFO] Based on what happened in the last 24 hours:\n")
 
     print("1. Did unexpected blockers occur? [y/n/s(kip)]")
     blockers_input = input("> ").lower()
@@ -118,7 +118,7 @@ def annotate_prediction(prediction_entry: Dict) -> Optional[Dict]:
     # Clamp to 0-1 range
     actual_level = max(0.0, min(1.0, actual_level))
 
-    print(f"\n[EMOJI] Calculated actual uncertainty: {actual_level:.1%}")
+    print(f"\n[CALC] actual uncertainty: {actual_level:.1%}")
     print("Confirm this value? [y/n] or enter custom value [0-1]:")
     confirm = input("> ")
 
@@ -137,7 +137,7 @@ def annotate_prediction(prediction_entry: Dict) -> Optional[Dict]:
 
     actual_state = level_to_state(actual_level)
 
-    print(f"\n[EMOJI] Annotation Summary:")
+    print("\n[*] Annotation Summary:")
     print(f"   Actual level: {actual_level:.1%}")
     print(f"   Actual trend: {actual_trend}")
     print(f"   Actual state: {actual_state}")
@@ -269,19 +269,19 @@ def main():
         print("  - No predictions logged yet")
         return
 
-    print(f"[EMOJI] Found {len(predictions)} predictions to annotate\n")
+    print(f"[*] Found {len(predictions)} predictions to annotate\n")
 
     # Annotate each
     ground_truth = []
     for i, pred in enumerate(predictions, 1):
         print(f"\n{'#'*70}")
-        print(f"[EMOJI] Annotation {i}/{len(predictions)}")
+        print(f"[*] Annotation {i}/{len(predictions)}")
         print(f"{'#'*70}")
 
         annotated = annotate_prediction(pred)
 
         if annotated is None:
-            print("⏭  Skipped")
+            print("[*]  Skipped")
             continue
 
         ground_truth.append(annotated)
@@ -298,7 +298,7 @@ def main():
 
         print(f"\n{'='*70}")
         print(f"[OK] Saved {len(ground_truth)} ground truth annotations")
-        print(f"[EMOJI] Location: {output_file}")
+        print(f"[*] Location: {output_file}")
         print(f"{'='*70}\n")
     else:
         print("\n[WARN]  No annotations saved (all skipped)")

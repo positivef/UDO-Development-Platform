@@ -90,7 +90,7 @@ class SessionCheckpoint:
             RuntimeError if critical components unavailable
         """
         logger.info("=" * 60)
-        logger.info("[EMOJI] SESSION START CHECKPOINT")
+        logger.info("[*] SESSION START CHECKPOINT")
         logger.info("=" * 60)
 
         self.session_start_time = datetime.now()
@@ -163,7 +163,7 @@ class SessionCheckpoint:
 
         # Summary
         logger.info("")
-        logger.info("[EMOJI] Checkpoint Summary:")
+        logger.info("[*] Checkpoint Summary:")
         logger.info(f"  Total Checks: {len(result.checks)}")
         logger.info(f"  Passed: {sum(result.checks.values())}")
         logger.info(f"  Warnings: {len(result.warnings)}")
@@ -203,11 +203,11 @@ class SessionCheckpoint:
         if self.last_checkpoint_time:
             elapsed = now - self.last_checkpoint_time
             if elapsed < self.checkpoint_interval:
-                logger.debug(f"⏭  Checkpoint not due yet ({elapsed.seconds}s < {self.checkpoint_interval.seconds}s)")
+                logger.debug(f"[*]  Checkpoint not due yet ({elapsed.seconds}s < {self.checkpoint_interval.seconds}s)")
                 return CheckpointResult(success=True, timestamp=now)
 
         logger.info("=" * 60)
-        logger.info("[EMOJI] PERIODIC CHECKPOINT")
+        logger.info("[*] PERIODIC CHECKPOINT")
         logger.info("=" * 60)
 
         self.last_checkpoint_time = now
@@ -228,7 +228,7 @@ class SessionCheckpoint:
             automation_rate = stats.get("automation_rate", 0.0)
             total_errors = stats.get("total_errors", 0)
 
-            logger.info(f"[EMOJI] Progress Report:")
+            logger.info(f"[*] Progress Report:")
             logger.info(f"  Total Errors: {total_errors}")
             logger.info(f"  Automation Rate: {automation_rate * 100:.1f}%")
             logger.info(f"  Tier 1 Hits: {stats.get('tier1_hits', 0)}")
@@ -279,7 +279,7 @@ class SessionCheckpoint:
         - Zero errors encountered (system not tested)
         """
         logger.info("=" * 60)
-        logger.info("[EMOJI] SESSION END CHECKPOINT")
+        logger.info("[*] SESSION END CHECKPOINT")
         logger.info("=" * 60)
 
         now = datetime.now()
@@ -302,7 +302,7 @@ class SessionCheckpoint:
             time_saved = stats.get("time_saved_minutes", 0.0)
 
             logger.info("")
-            logger.info("[EMOJI] FINAL SESSION REPORT:")
+            logger.info("[*] FINAL SESSION REPORT:")
             logger.info(f"  Session Duration: {session_duration:.1f} minutes")
             logger.info(f"  Total Errors: {total_errors}")
             logger.info(f"  Automation Rate: {automation_rate * 100:.1f}%")
@@ -332,7 +332,7 @@ class SessionCheckpoint:
 
                 # Provide remediation suggestions
                 logger.warning("")
-                logger.warning("[EMOJI] Remediation Suggestions:")
+                logger.warning("[*] Remediation Suggestions:")
                 if stats.get("tier3_escalations", 0) > total_errors * 0.1:
                     logger.warning("  - Too many Tier 3 escalations: Review Obsidian documentation coverage")
                 if stats.get("failed_recoveries", 0) > 0:
@@ -361,7 +361,7 @@ class SessionCheckpoint:
 
         # Session summary
         logger.info("")
-        logger.info("[EMOJI] Session Summary:")
+        logger.info("[SESSION] Summary:")
         logger.info(f"  Automation Checks: {self.session_stats['automation_checks']}")
         logger.info(f"  Warnings Issued: {self.session_stats['warnings_issued']}")
         logger.info(f"  Checkpoints Passed: {self.session_stats['checkpoints_passed']}")
@@ -399,7 +399,7 @@ def get_checkpoint() -> SessionCheckpoint:
     global _checkpoint_instance
     if _checkpoint_instance is None:
         _checkpoint_instance = SessionCheckpoint()
-        logger.info("[EMOJI] SessionCheckpoint initialized")
+        logger.info("[SESSION]Checkpoint initialized")
     return _checkpoint_instance
 
 

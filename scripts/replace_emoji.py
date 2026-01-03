@@ -20,45 +20,44 @@ from typing import Dict, List, Tuple
 # Emoji to ASCII mapping
 EMOJI_REPLACEMENTS = {
     # Status indicators
-    "\u2705": "[OK]",  # ✅
-    "\u274c": "[FAIL]",  # ❌
-    "\u2757": "[!]",  # ❗
-    "\u2753": "[?]",  # ❓
-    "\u2714": "[OK]",  # ✔
-    "\u2716": "[X]",  # ✖
+    "\u2705": "[OK]",  # [OK]
+    "\u274c": "[FAIL]",  # [FAIL]
+    "\u2757": "[!]",  # [!]
+    "\u2753": "[?]",  # [?]
+    "\u2714": "[OK]",  # [OK]
+    "\u2716": "[X]",  # [X]
     # Warnings and alerts
-    "\u26a0": "[WARN]",  # ⚠
+    "\u26a0": "[WARN]",  # [WARN]
     "\ufe0f": "",  # Variation selector (remove)
-    "\u2622": "[HAZARD]",  # ☢
-    "\u26d4": "[NO]",  # ⛔
+    "\u2622": "[HAZARD]",  # [HAZARD]
+    "\u26d4": "[NO]",  # [NO]
     # Common symbols
-    "\ud83d\udcca": "[INFO]",  # 📊
-    "\ud83e\uddea": "[TEST]",  # 🧪
-    "\ud83d\udd34": "[RED]",  # 🔴
-    "\ud83d\udfe1": "[YELLOW]",  # 🟡
-    "\ud83d\udfe2": "[GREEN]",  # 🟢
-    "\u2b55": "[O]",  # ⭕
-    "\u274e": "[X]",  # ❎
+    "\ud83d\udcca": "[INFO]",
+    "\ud83e\uddea": "[TEST]",
+    "\ud83d\udd34": "[RED]",
+    "\ud83d\udfe1": "[YELLOW]",
+    "\ud83d\udfe2": "[GREEN]",
+    "\u2b55": "[O]",  # [O]
+    "\u274e": "[X]",  # [X]
     # Development symbols
-    "\ud83d\udd27": "[TOOL]",  # 🔧
-    "\ud83d\udee0": "[BUILD]",  # 🛠
-    "\ud83d\udc1b": "[BUG]",  # 🐛
-    "\ud83d\ude80": "[ROCKET]",  # 🚀
-    "\u2728": "[NEW]",  # ✨
-    "\ud83d\udd25": "[HOT]",  # 🔥
-    # Arrows and directions
-    "\u2192": "->",  # →
-    "\u2190": "<-",  # ←
-    "\u2191": "^",  # ↑
-    "\u2193": "v",  # ↓
-    "\u21d2": "=>",  # ⇒
-    "\u21d0": "<=",  # ⇐
+    "\ud83d\udd27": "[TOOL]",
+    "\ud83d\udee0": "[BUILD]",
+    "\ud83d\udc1b": "[BUG]",
+    "\ud83d\ude80": "[ROCKET]",
+    "\u2728": "[NEW]",  # [NEW]
+    "\ud83d\udd25": "[HOT]",  # Arrows and directions
+    "\u2192": "->",  # ->
+    "\u2190": "<-",  # <-
+    "\u2191": "^",  # ^
+    "\u2193": "v",  # v
+    "\u21d2": "=>",  # =>
+    "\u21d0": "<=",  # <=
     # Other common
-    "\u2022": "*",  # •
-    "\u25cf": "*",  # ●
-    "\u25cb": "o",  # ○
-    "\u25a0": "[#]",  # ■
-    "\u25a1": "[ ]",  # □
+    "\u2022": "*",  # *
+    "\u25cf": "*",  # *
+    "\u25cb": "o",  # o
+    "\u25a0": "[#]",  # [#]
+    "\u25a1": "[ ]",  # [ ]
 }
 
 
@@ -74,23 +73,23 @@ def is_korean_char(char: str) -> bool:
     - D7B0-D7FF: Hangul Jamo Extended-B
 
     Examples:
-    - is_korean_char('가') → True
-    - is_korean_char('개') → True
-    - is_korean_char('발') → True
-    - is_korean_char('일') → True
-    - is_korean_char('지') → True
-    - is_korean_char('✅') → False (emoji)
+    - is_korean_char('가') -> True
+    - is_korean_char('개') -> True
+    - is_korean_char('발') -> True
+    - is_korean_char('일') -> True
+    - is_korean_char('지') -> True
+    - is_korean_char('[OK]') -> False (emoji)
     """
     if not char:
         return False
 
     code = ord(char)
     return (
-        0xAC00 <= code <= 0xD7AF or  # Hangul Syllables
-        0x1100 <= code <= 0x11FF or  # Hangul Jamo
-        0x3130 <= code <= 0x318F or  # Hangul Compatibility Jamo
-        0xA960 <= code <= 0xA97F or  # Hangul Jamo Extended-A
-        0xD7B0 <= code <= 0xD7FF      # Hangul Jamo Extended-B
+        0xAC00 <= code <= 0xD7AF  # Hangul Syllables
+        or 0x1100 <= code <= 0x11FF  # Hangul Jamo
+        or 0x3130 <= code <= 0x318F  # Hangul Compatibility Jamo
+        or 0xA960 <= code <= 0xA97F  # Hangul Jamo Extended-A
+        or 0xD7B0 <= code <= 0xD7FF  # Hangul Jamo Extended-B
     )
 
 
@@ -106,11 +105,11 @@ def is_safe_char(char: str) -> bool:
     - Whitespace and control characters: \\n, \\r, \\t, space
 
     Examples:
-    - is_safe_char('a') → True (ASCII)
-    - is_safe_char('개') → True (Korean)
-    - is_safe_char('発') → True (Japanese)
-    - is_safe_char('日') → True (CJK)
-    - is_safe_char('✅') → False (emoji, should be replaced)
+    - is_safe_char('a') -> True (ASCII)
+    - is_safe_char('개') -> True (Korean)
+    - is_safe_char('発') -> True (Japanese)
+    - is_safe_char('日') -> True (CJK)
+    - is_safe_char('[OK]') -> False (emoji, should be replaced)
     """
     if not char:
         return True
@@ -137,7 +136,7 @@ def is_safe_char(char: str) -> bool:
         return True
 
     # Common whitespace and control characters
-    if char in ['\n', '\r', '\t', ' ']:
+    if char in ["\n", "\r", "\t", " "]:
         return True
 
     return False
@@ -156,12 +155,12 @@ def replace_emoji_in_text(text: str) -> Tuple[str, List[str]]:
     Returns: (modified_text, list_of_changes)
 
     Example:
-    >>> text = "✅ 개발일지 생성 완료"
+    >>> text = "[OK] 개발일지 생성 완료"
     >>> modified, changes = replace_emoji_in_text(text)
     >>> modified
     '[OK] 개발일지 생성 완료'  # Korean preserved!
 
-    >>> text = "🚀 프로젝트 시작"
+    >>> text = "[*] 프로젝트 시작"
     >>> modified, changes = replace_emoji_in_text(text)
     >>> modified
     '[ROCKET] 프로젝트 시작'  # Korean preserved!
@@ -196,14 +195,14 @@ def replace_emoji_in_text(text: str) -> Tuple[str, List[str]]:
             category = unicodedata.category(char)
 
             # Replace emoji and symbols (So=Symbol Other, Sk=Symbol Modifier)
-            if category in ['So', 'Sk']:
-                result.append('[EMOJI]')
+            if category in ["So", "Sk"]:
+                result.append("[*]")
                 emoji_count += 1
                 try:
                     if emoji_count <= 10:  # Limit logging to first 10
-                        emoji_name = unicodedata.name(char, 'UNKNOWN')
+                        emoji_name = unicodedata.name(char, "UNKNOWN")
                         emoji_code = char.encode("unicode-escape").decode("ascii")
-                        changes.append(f"Replaced \\{emoji_code} ({emoji_name}) with [EMOJI]")
+                        changes.append(f"Replaced \\{emoji_code} ({emoji_name}) with [*]")
                 except:
                     pass
             else:
@@ -213,7 +212,7 @@ def replace_emoji_in_text(text: str) -> Tuple[str, List[str]]:
     if emoji_count > 10:
         changes.append(f"... and {emoji_count - 10} more emoji")
 
-    return ''.join(result), changes
+    return "".join(result), changes
 
 
 def process_file(file_path: Path, create_backup: bool = True) -> Dict:

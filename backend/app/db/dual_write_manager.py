@@ -7,10 +7,9 @@ import asyncio
 import json
 import logging
 from datetime import UTC, datetime
-from typing import Any, Dict, List, Optional, Tuple
+from typing import Any, Dict, Optional, Tuple
 
 import asyncpg
-import numpy as np
 from redis import Redis
 
 logger = logging.getLogger(__name__)
@@ -356,7 +355,7 @@ class DualWriteManager:
         # Switch mode
         self.shadow_mode = False
 
-        logger.info("[EMOJI] PostgreSQL promoted to PRIMARY data store!", stats=self.write_stats, consistency=final_check)
+        logger.info("[DB] promoted to PRIMARY data store!", stats=self.write_stats, consistency=final_check)
 
         # TODO: Send notification to team
         # TODO: Update monitoring dashboard

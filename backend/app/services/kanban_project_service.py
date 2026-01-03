@@ -14,10 +14,12 @@ from typing import List, Optional
 from uuid import UUID
 
 from app.models.kanban_task_project import (
-    AddRelatedProjectRequest, MaxRelatedProjectsError,
-    MultiplePrimaryProjectsError, NoPrimaryProjectError,
-    RemoveRelatedProjectRequest, SetPrimaryProjectRequest, TaskProject,
-    TaskProjectAssignment, TaskProjectSummary)
+    MaxRelatedProjectsError,
+    MultiplePrimaryProjectsError,
+    NoPrimaryProjectError,
+    TaskProject,
+    TaskProjectSummary,
+)
 
 
 class KanbanProjectService:
@@ -70,9 +72,7 @@ class KanbanProjectService:
             await self.remove_related_project(task_id, project_id)
 
         # Step 3: Set new primary
-        task_project = TaskProject(
-            task_id=task_id, project_id=project_id, is_primary=True
-        )
+        task_project = TaskProject(task_id=task_id, project_id=project_id, is_primary=True)
 
         if self.db:
             # Database implementation (when DB is available)
@@ -123,9 +123,7 @@ class KanbanProjectService:
             raise ValueError(f"Project {project_id} is already a related project")
 
         # Add as related
-        task_project = TaskProject(
-            task_id=task_id, project_id=project_id, is_primary=False
-        )
+        task_project = TaskProject(task_id=task_id, project_id=project_id, is_primary=False)
 
         if self.db:
             # Database implementation (when DB is available)
@@ -155,10 +153,7 @@ class KanbanProjectService:
         # Check if it's the primary project
         primary = await self._get_primary_project(task_id)
         if primary and primary.project_id == project_id:
-            raise ValueError(
-                f"Cannot remove primary project {project_id}. "
-                "Use set_primary_project() to change primary."
-            )
+            raise ValueError(f"Cannot remove primary project {project_id}. " "Use set_primary_project() to change primary.")
 
         # Remove from related
         if self.db:
@@ -169,9 +164,7 @@ class KanbanProjectService:
             if task_id in self._mock_projects:
                 original_length = len(self._mock_projects[task_id])
                 self._mock_projects[task_id] = [
-                    p
-                    for p in self._mock_projects[task_id]
-                    if not (p.project_id == project_id and not p.is_primary)
+                    p for p in self._mock_projects[task_id] if not (p.project_id == project_id and not p.is_primary)
                 ]
                 # Return True only if something was actually removed
                 return len(self._mock_projects[task_id]) < original_length
@@ -191,9 +184,7 @@ class KanbanProjectService:
         primary = await self._get_primary_project(task_id)
         related = await self._get_related_projects(task_id)
 
-        return TaskProjectSummary(
-            task_id=task_id, primary_project=primary, related_projects=related
-        )
+        return TaskProjectSummary(task_id=task_id, primary_project=primary, related_projects=related)
 
     async def validate_constraints(self, task_id: UUID) -> dict:
         """
@@ -272,9 +263,7 @@ class KanbanProjectService:
         else:
             # Mock implementation
             if task_id in self._mock_projects:
-                self._mock_projects[task_id] = [
-                    p for p in self._mock_projects[task_id] if not p.is_primary
-                ]
+                self._mock_projects[task_id] = [p for p in self._mock_projects[task_id] if not p.is_primary]
 
     async def _validate_single_primary(self, task_id: UUID) -> None:
         """

@@ -10,8 +10,8 @@ from pathlib import Path
 # Add backend to path
 sys.path.insert(0, str(Path(__file__).parent))
 
-from app.db.database import Base, engine, get_db
-from app.db.dual_write_manager import DualWriteManager
+from app.db.database import Base, engine  # noqa: E402
+from app.db.dual_write_manager import DualWriteManager  # noqa: E402
 
 
 async def test_dual_write():
@@ -53,14 +53,12 @@ async def test_dual_write():
         "tasks": ["Test dual-write", "Verify consistency"],
     }
 
-    success, primary = await manager.write_project_context(
-        project_id=test_project_id, data=test_data
-    )
+    success, primary = await manager.write_project_context(project_id=test_project_id, data=test_data)
 
     if success:
         print(f"[OK] Write successful (primary: {primary})")
     else:
-        print(f"[FAIL] Write failed")
+        print("[FAIL] Write failed")
         return False
 
     # Test read operation
@@ -68,12 +66,12 @@ async def test_dual_write():
     result = await manager.read_project_context(project_id=test_project_id)
 
     if result:
-        print(f"[OK] Read successful")
+        print("[OK] Read successful")
         print(f"   Project Name: {result.get('project_name')}")
         print(f"   Phase: {result.get('phase')}")
         print(f"   Confidence: {result.get('confidence')}")
     else:
-        print(f"[FAIL] Read failed")
+        print("[FAIL] Read failed")
         return False
 
     # Check final migration status

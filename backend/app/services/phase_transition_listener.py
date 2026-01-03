@@ -23,9 +23,9 @@ from uuid import UUID, uuid4
 src_dir = Path(__file__).parent.parent.parent.parent / "src"
 sys.path.insert(0, str(src_dir))
 
-from phase_state_manager import Phase, PhaseTransitionEvent
+from phase_state_manager import Phase, PhaseTransitionEvent  # noqa: E402
 
-from ..models.time_tracking import AIModel, TaskType
+from ..models.time_tracking import AIModel, TaskType  # noqa: E402
 
 logger = logging.getLogger(__name__)
 
@@ -90,9 +90,7 @@ class PhaseTransitionListener:
             Exception: If transition handling fails
         """
         try:
-            logger.info(
-                f"Handling phase transition: {from_phase.value if from_phase else 'None'} -> {to_phase.value}"
-            )
+            logger.info(f"Handling phase transition: {from_phase.value if from_phase else 'None'} -> {to_phase.value}")
 
             # 1. End previous phase session (if exists)
             if self.current_session_id and from_phase:
@@ -108,9 +106,7 @@ class PhaseTransitionListener:
                 )
 
             # 2. Record transition in database
-            transition_id = await self._record_transition(
-                from_phase, to_phase, transition_time, duration_seconds, metadata
-            )
+            transition_id = await self._record_transition(from_phase, to_phase, transition_time, duration_seconds, metadata)
 
             logger.info(f"Recorded transition: {transition_id}")
 
@@ -134,9 +130,7 @@ class PhaseTransitionListener:
             self.current_phase = to_phase
 
             # 4. Broadcast real-time update to dashboard
-            await self._broadcast_phase_change(
-                from_phase, to_phase, transition_id, duration_seconds
-            )
+            await self._broadcast_phase_change(from_phase, to_phase, transition_id, duration_seconds)
 
             logger.info(
                 f"[OK] Phase transition completed: {from_phase.value if from_phase else 'None'} -> {to_phase.value} "
@@ -284,9 +278,7 @@ class PhaseTransitionListener:
             Dictionary with current session and phase info
         """
         return {
-            "current_session_id": (
-                str(self.current_session_id) if self.current_session_id else None
-            ),
+            "current_session_id": (str(self.current_session_id) if self.current_session_id else None),
             "current_phase": self.current_phase.value if self.current_phase else None,
         }
 

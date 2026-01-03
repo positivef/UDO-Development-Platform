@@ -7,7 +7,6 @@ Implements 3-Tier Error Resolution (Tier 1: Obsidian past solutions).
 
 import os
 import re
-import json
 import logging
 import asyncio
 from pathlib import Path
@@ -106,9 +105,9 @@ class ObsidianService:
         Multiple events within debounce_window (default 3s) are batched into a single note.
 
         Strategy:
-        - If 3s passed since last sync → flush immediately
-        - Otherwise → queue event and schedule flush after 3s
-        - Multiple events within window → batched into one sync
+        - If 3s passed since last sync -> flush immediately
+        - Otherwise -> queue event and schedule flush after 3s
+        - Multiple events within window -> batched into one sync
 
         Args:
             event_type: Type of event (phase_transition, error_resolution, task_completion, etc.)
@@ -337,7 +336,7 @@ class ObsidianService:
     def _generate_event_title(self, event_type: str, data: Dict[str, Any]) -> str:
         """Generate title for event"""
         event_titles = {
-            "phase_transition": f"Phase Transition: {data.get('from_phase', 'Unknown')} → {data.get('to_phase', 'Unknown')}",
+            "phase_transition": f"Phase Transition: {data.get('from_phase', 'Unknown')} -> {data.get('to_phase', 'Unknown')}",
             "error_resolution": f"Error Resolved: {data.get('error_type', 'Unknown Error')}",
             "task_completion": f"Task Completed: {data.get('task_title', 'Unknown Task')}",
             "architecture_decision": f"ADR: {data.get('decision_title', 'Architecture Decision')}",
@@ -394,7 +393,7 @@ class ObsidianService:
         # Solution section (for error resolutions)
         if "solution" in data:
             content_parts.append("## Solution")
-            content_parts.append(f"```")
+            content_parts.append("```")
             content_parts.append(data["solution"])
             content_parts.append("```")
             content_parts.append("")

@@ -36,7 +36,6 @@ import os
 import re
 import shutil
 import sys
-from collections import defaultdict
 from dataclasses import dataclass, field
 from datetime import datetime
 from pathlib import Path
@@ -544,7 +543,7 @@ def print_report(report: CleanupReport, dry_run: bool = True) -> None:
     print(f"Space freed:         {report.bytes_archived / 1024:.1f} KB")
 
     if report.task_groups:
-        print(f"\nTask Breakdown:")
+        print("\nTask Breakdown:")
         print(f"{'Task Name':<40} {'Versions':<10} {'Duplicates':<10} {'Latest'}")
         print("-" * 75)
 

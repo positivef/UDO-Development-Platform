@@ -13,11 +13,10 @@ import json
 import logging
 from datetime import datetime
 from typing import Any, Dict, Optional, Set
-from uuid import UUID
 
 from app.services.redis_client import RedisKeys, get_redis_client
 from app.services.session_manager import SessionManager, get_session_manager
-from fastapi import APIRouter, Depends, Query, WebSocket, WebSocketDisconnect, status
+from fastapi import APIRouter, Depends, Query, WebSocket, WebSocketDisconnect
 from starlette.websockets import WebSocketState
 
 logger = logging.getLogger(__name__)
@@ -114,7 +113,7 @@ async def websocket_root(websocket: WebSocket, session_manager: SessionManager =
 
     session_id = str(uuid4())
     project_id = None
-    redis_client = None
+    _ = None  # redis_client placeholder for future use
 
     try:
         # Connect WebSocket
@@ -122,7 +121,7 @@ async def websocket_root(websocket: WebSocket, session_manager: SessionManager =
 
         # Get Redis client for pub/sub (optional, may fail)
         try:
-            redis_client = await get_redis_client()
+            await get_redis_client()  # Verify Redis connectivity
         except Exception as e:
             logger.warning(f"Redis not available for WebSocket: {e}")
 
@@ -565,9 +564,7 @@ async def websocket_uncertainty(
                     # Client requests current uncertainty state
                     # Trigger fetch from uncertainty service
                     try:
-                        from app.routers.uncertainty import get_uncertainty_status
-
-                        # Send current state
+                        # Send current state (client should use REST API for full data)
                         await websocket.send_json(
                             {
                                 "type": "uncertainty_update",

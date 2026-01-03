@@ -11,7 +11,6 @@ Test Categories:
 5. Archive Operations (5 tests)
 """
 
-from datetime import datetime
 from uuid import uuid4
 
 import pytest
@@ -24,7 +23,6 @@ from backend.app.models.kanban_task import (
     PhaseName,
     PriorityChangeRequest,
     StatusChangeRequest,
-    Task,
     TaskCreate,
     TaskPriority,
     TaskStatus,
@@ -189,7 +187,7 @@ class TestTaskCRUD:
             ai_suggested=True,
             ai_confidence=0.9,
         )
-        ai_task = await kanban_task_service.create_task(ai_task_data)
+        await kanban_task_service.create_task(ai_task_data)
 
         # Filter by ai_suggested=True
         filters = TaskFilters(ai_suggested=True)

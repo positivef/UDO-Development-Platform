@@ -9,7 +9,7 @@ Validates:
 """
 
 import pytest
-from datetime import datetime, timedelta
+from datetime import datetime, timedelta  # noqa: F401
 from pathlib import Path
 import sys
 import os
@@ -17,7 +17,7 @@ import os
 # Add scripts to path
 sys.path.insert(0, str(Path(__file__).parent.parent / "scripts"))
 
-from check_scheduled_tasks import ScheduledTasksChecker, ScheduledTask
+from check_scheduled_tasks import ScheduledTasksChecker, ScheduledTask  # noqa: E402
 
 
 class TestScheduledTasksChecker:

@@ -9,7 +9,6 @@ from typing import List, Dict, Any, Optional
 from datetime import datetime, UTC
 from enum import Enum
 import uuid
-import json
 import logging
 
 logger = logging.getLogger(__name__)
@@ -17,6 +16,7 @@ logger = logging.getLogger(__name__)
 
 class TaskStatus(Enum):
     """작업 상태"""
+
     PENDING = "pending"
     IN_PROGRESS = "in_progress"
     REVIEW = "review"
@@ -27,6 +27,7 @@ class TaskStatus(Enum):
 
 class TodoStatus(Enum):
     """TODO 항목 상태"""
+
     PENDING = "pending"
     IN_PROGRESS = "in_progress"
     COMPLETED = "completed"
@@ -64,7 +65,6 @@ class TaskService:
             "status": TaskStatus.IN_PROGRESS.value,
             "created_at": datetime.now(UTC).isoformat(),
             "updated_at": datetime.now(UTC).isoformat(),
-
             # TODO 그룹
             "todo_groups": [
                 {
@@ -77,21 +77,21 @@ class TaskService:
                             "id": "todo-1-1",
                             "title": "Review requirements",
                             "status": "completed",
-                            "completed_at": "2025-11-18T10:00:00Z"
+                            "completed_at": "2025-11-18T10:00:00Z",
                         },
                         {
                             "id": "todo-1-2",
                             "title": "Design database schema",
                             "status": "completed",
-                            "completed_at": "2025-11-18T11:00:00Z"
+                            "completed_at": "2025-11-18T11:00:00Z",
                         },
                         {
                             "id": "todo-1-3",
                             "title": "API endpoint design",
                             "status": "completed",
-                            "completed_at": "2025-11-18T12:00:00Z"
-                        }
-                    ]
+                            "completed_at": "2025-11-18T12:00:00Z",
+                        },
+                    ],
                 },
                 {
                     "id": "group-2",
@@ -104,7 +104,7 @@ class TaskService:
                             "title": "User model",
                             "status": "completed",
                             "completed_at": "2025-11-19T09:00:00Z",
-                            "files": ["backend/app/models/user.py"]
+                            "files": ["backend/app/models/user.py"],
                         },
                         {
                             "id": "todo-2-2",
@@ -117,24 +117,13 @@ class TaskService:
                                 "Create JWT config",
                                 "Implement token generation",
                                 "Implement token verification",
-                                "Add to Express middleware chain"
+                                "Add to Express middleware chain",
                             ],
-                            "files": [
-                                "backend/app/middleware/auth.py",
-                                "backend/app/core/security.py"
-                            ]
+                            "files": ["backend/app/middleware/auth.py", "backend/app/core/security.py"],
                         },
-                        {
-                            "id": "todo-2-3",
-                            "title": "Login endpoint",
-                            "status": "pending"
-                        },
-                        {
-                            "id": "todo-2-4",
-                            "title": "Register endpoint",
-                            "status": "pending"
-                        }
-                    ]
+                        {"id": "todo-2-3", "title": "Login endpoint", "status": "pending"},
+                        {"id": "todo-2-4", "title": "Register endpoint", "status": "pending"},
+                    ],
                 },
                 {
                     "id": "group-3",
@@ -150,40 +139,28 @@ class TaskService:
                                 "Test token generation",
                                 "Test token verification",
                                 "Test expired token handling",
-                                "Test invalid token handling"
-                            ]
+                                "Test invalid token handling",
+                            ],
                         },
                         {
                             "id": "todo-3-2",
                             "title": "Integration tests",
                             "status": "pending",
-                            "acceptance_criteria": [
-                                "Test protected routes",
-                                "Test authentication flow",
-                                "Test token refresh"
-                            ]
-                        }
-                    ]
-                }
+                            "acceptance_criteria": ["Test protected routes", "Test authentication flow", "Test token refresh"],
+                        },
+                    ],
+                },
             ],
-
             # 현재 진행 단계
-            "current_step": {
-                "group_index": 1,
-                "item_index": 1,
-                "description": "JWT middleware implementation"
-            },
-
+            "current_step": {"group_index": 1, "item_index": 1, "description": "JWT middleware implementation"},
             # 완성도 점수
             "completeness": 45,
-
             # 시간 추적
             "estimated_hours": 8,
             "actual_hours": 3.5,
-
             # Git 정보
             "git_branch": "feature/jwt-auth",
-            "last_commit": "feat: Add user model and schema"
+            "last_commit": "feat: Add user model and schema",
         }
 
         # Task 1의 컨텍스트
@@ -193,23 +170,20 @@ class TaskService:
                 "backend/app/middleware/auth.py",
                 "backend/app/core/security.py",
                 "backend/app/models/user.py",
-                "tests/middleware/test_auth.py"
+                "tests/middleware/test_auth.py",
             ],
             "git_branch": "feature/jwt-auth",
             "prompt_history": [
                 "Create user model with SQLAlchemy",
                 "Implement JWT token generation function",
-                "Add password hashing with bcrypt"
+                "Add password hashing with bcrypt",
             ],
             "checkpoint": {
                 "step": "Implementing JWT middleware",
                 "next_action": "Create token verification function",
-                "blockers": None
+                "blockers": None,
             },
-            "environment": {
-                "python_version": "3.11",
-                "dependencies": ["fastapi", "pyjwt", "passlib", "sqlalchemy"]
-            }
+            "environment": {"python_version": "3.11", "dependencies": ["fastapi", "pyjwt", "passlib", "sqlalchemy"]},
         }
 
         # Task 2: Task Management UI
@@ -224,7 +198,6 @@ class TaskService:
             "status": TaskStatus.PENDING.value,
             "created_at": datetime.now(UTC).isoformat(),
             "updated_at": datetime.now(UTC).isoformat(),
-
             "todo_groups": [
                 {
                     "id": "group-1",
@@ -232,37 +205,18 @@ class TaskService:
                     "status": "in_progress",
                     "order": 1,
                     "items": [
-                        {
-                            "id": "todo-1-1",
-                            "title": "Component architecture",
-                            "status": "completed"
-                        },
-                        {
-                            "id": "todo-1-2",
-                            "title": "UI mockups",
-                            "status": "in_progress",
-                            "current": True
-                        },
-                        {
-                            "id": "todo-1-3",
-                            "title": "API design",
-                            "status": "pending"
-                        }
-                    ]
+                        {"id": "todo-1-1", "title": "Component architecture", "status": "completed"},
+                        {"id": "todo-1-2", "title": "UI mockups", "status": "in_progress", "current": True},
+                        {"id": "todo-1-3", "title": "API design", "status": "pending"},
+                    ],
                 }
             ],
-
-            "current_step": {
-                "group_index": 0,
-                "item_index": 1,
-                "description": "Creating UI mockups"
-            },
-
+            "current_step": {"group_index": 0, "item_index": 1, "description": "Creating UI mockups"},
             "completeness": 20,
             "estimated_hours": 12,
             "actual_hours": 1,
             "git_branch": "feature/task-ui",
-            "last_commit": None
+            "last_commit": None,
         }
 
         # Task 3: Real-time WebSocket
@@ -277,7 +231,6 @@ class TaskService:
             "status": TaskStatus.BLOCKED.value,
             "created_at": datetime.now(UTC).isoformat(),
             "updated_at": datetime.now(UTC).isoformat(),
-
             "todo_groups": [
                 {
                     "id": "group-1",
@@ -285,17 +238,9 @@ class TaskService:
                     "status": "completed",
                     "order": 1,
                     "items": [
-                        {
-                            "id": "todo-1-1",
-                            "title": "Install WebSocket dependencies",
-                            "status": "completed"
-                        },
-                        {
-                            "id": "todo-1-2",
-                            "title": "Configure WebSocket server",
-                            "status": "completed"
-                        }
-                    ]
+                        {"id": "todo-1-1", "title": "Install WebSocket dependencies", "status": "completed"},
+                        {"id": "todo-1-2", "title": "Configure WebSocket server", "status": "completed"},
+                    ],
                 },
                 {
                     "id": "group-2",
@@ -307,32 +252,23 @@ class TaskService:
                             "id": "todo-2-1",
                             "title": "Event handlers",
                             "status": "blocked",
-                            "blockers": ["Redis not configured", "Need session management"]
+                            "blockers": ["Redis not configured", "Need session management"],
                         }
-                    ]
-                }
+                    ],
+                },
             ],
-
-            "current_step": {
-                "group_index": 1,
-                "item_index": 0,
-                "description": "Blocked on Redis configuration"
-            },
-
+            "current_step": {"group_index": 1, "item_index": 0, "description": "Blocked on Redis configuration"},
             "completeness": 30,
             "estimated_hours": 6,
             "actual_hours": 2,
             "git_branch": "feature/websocket",
-            "last_commit": "chore: Add WebSocket dependencies"
+            "last_commit": "chore: Add WebSocket dependencies",
         }
 
         logger.info(f"Created {len(self.tasks)} default tasks")
 
     async def list_tasks(
-        self,
-        project_id: Optional[str] = None,
-        status: Optional[str] = None,
-        phase: Optional[str] = None
+        self, project_id: Optional[str] = None, status: Optional[str] = None, phase: Optional[str] = None
     ) -> List[Dict[str, Any]]:
         """
         작업 목록 조회
@@ -401,7 +337,7 @@ class TaskService:
                         "group": group["title"],
                         "item": item["title"],
                         "subtasks": item.get("subtasks", []),
-                        "files": item.get("files", [])
+                        "files": item.get("files", []),
                     }
                     break
             if current_todo:
@@ -420,7 +356,7 @@ class TaskService:
             "prompt_history": context.get("prompt_history", []),
             "checkpoint": context.get("checkpoint"),
             "command": self._generate_cli_command(task_id),
-            "updated_at": task["updated_at"]
+            "updated_at": task["updated_at"],
         }
 
     def _generate_cli_command(self, task_id: str) -> str:
@@ -437,11 +373,7 @@ class TaskService:
         # 실제로는 레지스트리 등록이 필요하지만, 현재는 복사 가능한 명령어 제공
         return f"claude-code://continue?task={task_id}"
 
-    async def update_task_progress(
-        self,
-        task_id: str,
-        progress: Dict[str, Any]
-    ) -> bool:
+    async def update_task_progress(self, task_id: str, progress: Dict[str, Any]) -> bool:
         """
         작업 진행 상황 업데이트
 
@@ -510,25 +442,16 @@ class TaskService:
             "status": TaskStatus.PENDING.value,
             "completeness": 0,
             "actual_hours": 0,
-            **task_data
+            **task_data,
         }
 
         self.tasks[task_id] = task
-        self.task_contexts[task_id] = {
-            "task_id": task_id,
-            "files": [],
-            "prompt_history": [],
-            "checkpoint": None
-        }
+        self.task_contexts[task_id] = {"task_id": task_id, "files": [], "prompt_history": [], "checkpoint": None}
 
         logger.info(f"Created new task: {task_id}")
         return task_id
 
-    async def save_task_context(
-        self,
-        task_id: str,
-        context: Dict[str, Any]
-    ) -> bool:
+    async def save_task_context(self, task_id: str, context: Dict[str, Any]) -> bool:
         """
         작업 컨텍스트 저장
 
@@ -545,7 +468,7 @@ class TaskService:
         self.task_contexts[task_id] = {
             **self.task_contexts.get(task_id, {}),
             **context,
-            "updated_at": datetime.now(UTC).isoformat()
+            "updated_at": datetime.now(UTC).isoformat(),
         }
 
         logger.info(f"Saved task context: {task_id}")
@@ -582,24 +505,18 @@ class TaskService:
     def get_active_task_count(self) -> int:
         """활성 작업 수 반환"""
         return sum(
-            1 for task in self.tasks.values()
-            if task.get("status") in [
-                TaskStatus.IN_PROGRESS.value,
-                TaskStatus.REVIEW.value,
-                TaskStatus.TESTING.value
-            ]
+            1
+            for task in self.tasks.values()
+            if task.get("status") in [TaskStatus.IN_PROGRESS.value, TaskStatus.REVIEW.value, TaskStatus.TESTING.value]
         )
 
     def get_blocked_task_count(self) -> int:
         """차단된 작업 수 반환"""
-        return sum(
-            1 for task in self.tasks.values()
-            if task.get("status") == TaskStatus.BLOCKED.value
-        )
+        return sum(1 for task in self.tasks.values() if task.get("status") == TaskStatus.BLOCKED.value)
 
 
 # Create singleton instance
 task_service = TaskService()
 
 # Export
-__all__ = ['TaskService', 'task_service', 'TaskStatus', 'TodoStatus']
+__all__ = ["TaskService", "task_service", "TaskStatus", "TodoStatus"]

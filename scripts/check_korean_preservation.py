@@ -3,7 +3,7 @@
 """
 Korean Preservation Check (Pre-commit Hook)
 
-Checks that Korean text has not been accidentally replaced with [EMOJI] placeholders.
+Checks that Korean text has not been accidentally replaced with [*] placeholders.
 This prevents the same issue that broke obsidian_auto_sync.py from happening again.
 
 Usage:
@@ -12,7 +12,7 @@ Usage:
 
 Exit codes:
   0 - All checks passed
-  1 - [EMOJI] placeholders found (critical error)
+  1 - [*] placeholders found (critical error)
   2 - Warnings found (can proceed with caution)
 """
 
@@ -32,10 +32,7 @@ def get_staged_python_files() -> List[Path]:
             text=True,
             check=True,
         )
-        files = [
-            Path(f) for f in result.stdout.strip().split('\n')
-            if f and f.endswith('.py')
-        ]
+        files = [Path(f) for f in result.stdout.strip().split("\n") if f and f.endswith(".py")]
         return files
     except subprocess.CalledProcessError:
         return []
@@ -56,20 +53,20 @@ def get_all_python_files() -> List[Path]:
 
 def check_file_for_emoji_placeholders(file_path: Path) -> Tuple[bool, List[int], List[str]]:
     """
-    Check if a file contains [EMOJI] placeholders.
+    Check if a file contains [*] placeholders.
 
     Returns:
         (has_placeholders, line_numbers, sample_lines)
     """
     try:
-        with open(file_path, 'r', encoding='utf-8') as f:
+        with open(file_path, "r", encoding="utf-8") as f:
             lines = f.readlines()
 
         line_numbers = []
         sample_lines = []
 
         for i, line in enumerate(lines, 1):
-            if "[EMOJI]" in line:
+            if "[*]" in line:
                 line_numbers.append(i)
                 # Store sample (first 5 occurrences)
                 if len(sample_lines) < 5:
@@ -86,7 +83,7 @@ def check_file_for_critical_korean_paths(file_path: Path) -> Tuple[bool, List[st
     """
     Check if a file contains critical Korean folder paths like "개발일지".
 
-    These paths MUST contain Korean text, not [EMOJI].
+    These paths MUST contain Korean text, not [*].
 
     Returns:
         (is_correct, warnings)
@@ -98,7 +95,7 @@ def check_file_for_critical_korean_paths(file_path: Path) -> Tuple[bool, List[st
     ]
 
     try:
-        with open(file_path, 'r', encoding='utf-8') as f:
+        with open(file_path, "r", encoding="utf-8") as f:
             content = f.read()
 
         warnings = []
@@ -106,11 +103,10 @@ def check_file_for_critical_korean_paths(file_path: Path) -> Tuple[bool, List[st
         for korean_name, var_name, description in critical_paths:
             # Check if the file should have this path
             if var_name in content or description.lower() in file_path.name.lower():
-                # Make sure it has Korean text, not [EMOJI]
-                if korean_name not in content and "[EMOJI]" in content:
+                # Make sure it has Korean text, not [*]
+                if korean_name not in content and "[*]" in content:
                     warnings.append(
-                        f"  [WARN] {file_path}: Missing '{korean_name}' but has [EMOJI] - "
-                        f"Korean text may have been replaced!"
+                        f"  [WARN] {file_path}: Missing '{korean_name}' but has [*] - " f"Korean text may have been replaced!"
                     )
 
         return len(warnings) == 0, warnings
@@ -125,9 +121,9 @@ def main():
     parser.add_argument("--all", action="store_true", help="Check all files instead of just staged")
     args = parser.parse_args()
 
-    print("\n" + "="*60)
+    print("\n" + "=" * 60)
     print("[SAFETY CHECK] Korean Text Preservation Verification")
-    print("="*60 + "\n")
+    print("=" * 60 + "\n")
 
     # Get files to check
     if args.all:
@@ -145,7 +141,7 @@ def main():
     files_with_warnings = []
 
     for file_path in files:
-        # Check for [EMOJI] placeholders
+        # Check for [*] placeholders
         has_emoji, line_numbers, sample_lines = check_file_for_emoji_placeholders(file_path)
 
         if has_emoji:
@@ -158,16 +154,16 @@ def main():
             files_with_warnings.extend(warnings)
 
     # Report results
-    print("\n" + "="*60)
+    print("\n" + "=" * 60)
 
     if files_with_emoji:
-        print("[CRITICAL ERROR] [EMOJI] placeholders found!\n")
-        print("The following files contain [EMOJI] instead of Korean text:")
+        print("[CRITICAL ERROR] [*] placeholders found!\n")
+        print("The following files contain [*] instead of Korean text:")
         print("This indicates Korean characters were mistakenly replaced.\n")
 
         for file_path, line_numbers, sample_lines in files_with_emoji:
             print(f"[FAIL] {file_path}")
-            print(f"  Found [EMOJI] on {len(line_numbers)} line(s): {line_numbers[:10]}")
+            print(f"  Found [*] on {len(line_numbers)} line(s): {line_numbers[:10]}")
             if len(line_numbers) > 10:
                 print(f"  ... and {len(line_numbers) - 10} more lines")
             print("\n  Sample occurrences:")
@@ -191,7 +187,7 @@ def main():
         return 2
 
     print("[SUCCESS] All Korean text preservation checks passed!")
-    print("[OK] No [EMOJI] placeholders found")
+    print("[OK] No [*] placeholders found")
     print("[OK] Critical Korean paths verified")
     return 0
 

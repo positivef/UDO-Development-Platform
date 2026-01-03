@@ -26,11 +26,11 @@ from pydantic import BaseModel, Field
 # Add src to path for imports
 sys.path.insert(0, str(Path(__file__).parent.parent.parent.parent))
 
-from src.rl_knowledge_optimizer import (
+from src.rl_knowledge_optimizer import (  # noqa: E402
     KnowledgePattern,
     RLKnowledgeOptimizer,
 )
-from src.uncertainty_map_v3 import UncertaintyWithTokenPrior
+from src.uncertainty_map_v3 import UncertaintyWithTokenPrior  # noqa: E402
 
 router = APIRouter(prefix="/api/rl", tags=["rl-knowledge"])
 

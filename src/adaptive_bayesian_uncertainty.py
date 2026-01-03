@@ -2,7 +2,6 @@
 # -*- coding: utf-8 -*-
 """
 Adaptive Bayesian Uncertainty System v1.0
-[EMOJI]
 
 Real-time Bayesian Learning for Uncertainty Prediction Enhancement
 
@@ -31,27 +30,29 @@ Date: 2025-11-20
 Version: 1.0.0
 """
 
-import hashlib
 import json
 import logging
 import math
 import os
 import pickle
 import sys
-from collections import defaultdict, deque
+from collections import deque
 from dataclasses import asdict, dataclass, field
-from datetime import datetime, timedelta
-from enum import Enum
+from datetime import datetime
 from pathlib import Path
 from typing import Any, Deque, Dict, List, Optional, Tuple
 
 import numpy as np
 
+# Type import for type hints (forward reference defined later)
+from typing import TYPE_CHECKING
+
+if TYPE_CHECKING:
+    from uncertainty_map_v3 import UncertaintyVector
+
 # Advanced statistical libraries
 try:
     from scipy import stats
-    from scipy.optimize import minimize
-    from scipy.special import beta as beta_func
 
     SCIPY_AVAILABLE = True
 except ImportError:
@@ -82,9 +83,7 @@ class BayesianBelief:
     observations: int  # Number of observations backing this belief
     last_updated: datetime  # Last update timestamp
 
-    def update_with_observation(
-        self, observed_value: float, learning_rate: float = 0.1
-    ):
+    def update_with_observation(self, observed_value: float, learning_rate: float = 0.1):
         """
         Update belief using Bayesian update rule with Beta-Binomial conjugate prior
         """
@@ -99,9 +98,7 @@ class BayesianBelief:
         if error <= 0.25:  # Within 25% is considered accurate
             # Good prediction - increase alpha (success count)
             # Scale the update by how accurate we were
-            accuracy_factor = max(
-                0.1, 1 - (error / 0.25)
-            )  # Ensure at least 0.1 increase
+            accuracy_factor = max(0.1, 1 - (error / 0.25))  # Ensure at least 0.1 increase
             self.alpha += learning_rate * accuracy_factor
         else:
             # Poor prediction - increase beta (failure count)
@@ -109,21 +106,15 @@ class BayesianBelief:
 
         # Update mean and variance from Beta distribution
         self.mean = self.alpha / (self.alpha + self.beta)
-        self.variance = (self.alpha * self.beta) / (
-            (self.alpha + self.beta) ** 2 * (self.alpha + self.beta + 1)
-        )
+        self.variance = (self.alpha * self.beta) / ((self.alpha + self.beta) ** 2 * (self.alpha + self.beta + 1))
 
         # Update confidence based on observation count
         self.observations += 1
-        self.confidence = min(
-            1.0, math.log10(self.observations + 1) / 3
-        )  # Logarithmic confidence growth
+        self.confidence = min(1.0, math.log10(self.observations + 1) / 3)  # Logarithmic confidence growth
 
         self.last_updated = datetime.now()
 
-    def get_confidence_interval(
-        self, confidence_level: float = 0.95
-    ) -> Tuple[float, float]:
+    def get_confidence_interval(self, confidence_level: float = 0.95) -> Tuple[float, float]:
         """
         Get confidence interval for the uncertainty prediction
         """
@@ -158,9 +149,7 @@ class BiasProfile:
         """
         Update bias profile with new prediction vs actual
         """
-        error = (
-            predicted - actual
-        )  # Positive = we predicted higher than actual (optimistic)
+        error = predicted - actual  # Positive = we predicted higher than actual (optimistic)
         self.error_history.append(error)
         self.total_error += abs(error)
 
@@ -236,9 +225,7 @@ class AdaptiveBayesianUncertainty:
         self._initialize_beliefs()
 
         # Bias tracking for each phase
-        self.bias_profiles: Dict[str, BiasProfile] = {
-            phase: BiasProfile() for phase in self.beliefs.keys()
-        }
+        self.bias_profiles: Dict[str, BiasProfile] = {phase: BiasProfile() for phase in self.beliefs.keys()}
 
         # Historical observations for pattern learning
         self.observation_history: List[Dict] = []
@@ -310,8 +297,7 @@ class AdaptiveBayesianUncertainty:
                 alpha, beta = prior_beliefs[dimension][phase]
                 self.beliefs[phase][dimension] = BayesianBelief(
                     mean=alpha / (alpha + beta),
-                    variance=(alpha * beta)
-                    / ((alpha + beta) ** 2 * (alpha + beta + 1)),
+                    variance=(alpha * beta) / ((alpha + beta) ** 2 * (alpha + beta + 1)),
                     alpha=alpha,
                     beta=beta,
                     confidence=0.1,  # Low initial confidence
@@ -360,9 +346,7 @@ class AdaptiveBayesianUncertainty:
             base_prediction = belief.mean
 
             # Apply Kalman filtering for smooth prediction
-            filtered_prediction = self._kalman_filter_update(
-                current_value, base_prediction
-            )
+            filtered_prediction = self._kalman_filter_update(current_value, base_prediction)
 
             # Get bias correction
             bias_correction = self.bias_profiles[phase].get_correction_factor()
@@ -378,27 +362,19 @@ class AdaptiveBayesianUncertainty:
                 "predicted": final_prediction,
                 "confidence_interval": (lower, upper),
                 "confidence": belief.confidence,
-                "trend": self._calculate_trend(
-                    current_value, final_prediction, horizon_hours
-                ),
+                "trend": self._calculate_trend(current_value, final_prediction, horizon_hours),
             }
 
         # Calculate aggregate predictions
         current_magnitude = current_vector.magnitude()
         predicted_values = [p["predicted"] for p in dimension_predictions.values()]
-        predicted_magnitude = math.sqrt(
-            sum(v**2 for v in predicted_values)
-        ) / math.sqrt(5)
+        predicted_magnitude = math.sqrt(sum(v**2 for v in predicted_values)) / math.sqrt(5)
 
         # Determine overall trend
-        overall_trend = self._determine_overall_trend(
-            current_magnitude, predicted_magnitude, dimension_predictions
-        )
+        overall_trend = self._determine_overall_trend(current_magnitude, predicted_magnitude, dimension_predictions)
 
         # Calculate prediction confidence
-        avg_confidence = np.mean(
-            [p["confidence"] for p in dimension_predictions.values()]
-        )
+        avg_confidence = np.mean([p["confidence"] for p in dimension_predictions.values()])
 
         # Determine quantum state transition
         current_state = self._classify_quantum_state(current_magnitude)
@@ -418,17 +394,13 @@ class AdaptiveBayesianUncertainty:
             "quantum_state": {
                 "current": current_state,
                 "predicted": predicted_state,
-                "transition_probability": self._calculate_transition_probability(
-                    current_state, predicted_state
-                ),
+                "transition_probability": self._calculate_transition_probability(current_state, predicted_state),
             },
             "bias_profile": {
                 "type": self.bias_profiles[phase].get_bias_type(),
                 "correction_applied": self.bias_profiles[phase].get_correction_factor(),
             },
-            "recommendations": self._generate_recommendations(
-                dimension_predictions, overall_trend, avg_confidence
-            ),
+            "recommendations": self._generate_recommendations(dimension_predictions, overall_trend, avg_confidence),
         }
 
         # Update metrics
@@ -480,24 +452,16 @@ class AdaptiveBayesianUncertainty:
         if len(self.metrics["accuracy_history"]) > 10:
             recent_avg = np.mean(list(self.metrics["accuracy_history"])[-10:])
             older_avg = (
-                np.mean(list(self.metrics["accuracy_history"])[-20:-10])
-                if len(self.metrics["accuracy_history"]) > 20
-                else 0.5
+                np.mean(list(self.metrics["accuracy_history"])[-20:-10]) if len(self.metrics["accuracy_history"]) > 20 else 0.5
             )
-            self.metrics["improvement_rate"] = (recent_avg - older_avg) / max(
-                older_avg, 0.01
-            )
+            self.metrics["improvement_rate"] = (recent_avg - older_avg) / max(older_avg, 0.01)
 
         # Store observation for pattern learning
         observation = {
             "timestamp": datetime.now().isoformat(),
             "phase": phase,
             "predicted": predicted,
-            "observed": (
-                asdict(observed_vector)
-                if hasattr(observed_vector, "__dict__")
-                else observed_values
-            ),
+            "observed": (asdict(observed_vector) if hasattr(observed_vector, "__dict__") else observed_values),
             "outcome_success": outcome_success,
             "accuracy": accuracy,
         }
@@ -555,9 +519,7 @@ class AdaptiveBayesianUncertainty:
         else:
             return "decreasing"
 
-    def _determine_overall_trend(
-        self, current_mag: float, predicted_mag: float, dimension_predictions: Dict
-    ) -> str:
+    def _determine_overall_trend(self, current_mag: float, predicted_mag: float, dimension_predictions: Dict) -> str:
         """
         Determine overall trend considering all dimensions
         """
@@ -594,9 +556,7 @@ class AdaptiveBayesianUncertainty:
         else:
             return "void"
 
-    def _calculate_transition_probability(
-        self, current_state: str, predicted_state: str
-    ) -> float:
+    def _calculate_transition_probability(self, current_state: str, predicted_state: str) -> float:
         """
         Calculate probability of quantum state transition
         """
@@ -641,20 +601,14 @@ class AdaptiveBayesianUncertainty:
 
         return transitions.get(current_state, {}).get(predicted_state, 0.1)
 
-    def _generate_recommendations(
-        self, dimension_predictions: Dict, trend: str, confidence: float
-    ) -> List[Dict]:
+    def _generate_recommendations(self, dimension_predictions: Dict, trend: str, confidence: float) -> List[Dict]:
         """
         Generate actionable recommendations based on predictions
         """
         recommendations = []
 
         # Find highest uncertainty dimensions
-        high_uncertainty = [
-            (dim, pred)
-            for dim, pred in dimension_predictions.items()
-            if pred["predicted"] > 0.7
-        ]
+        high_uncertainty = [(dim, pred) for dim, pred in dimension_predictions.items() if pred["predicted"] > 0.7]
         high_uncertainty.sort(key=lambda x: x[1]["predicted"], reverse=True)
 
         for dim, pred in high_uncertainty[:2]:  # Top 2 problematic dimensions
@@ -782,18 +736,13 @@ class AdaptiveBayesianUncertainty:
             else:
                 self.kalman_state["Q"] = max(0.001, self.kalman_state["Q"] * 0.98)
 
-            logger.debug(
-                f"Model parameters optimized - R: {self.kalman_state['R']:.3f}, Q: {self.kalman_state['Q']:.3f}"
-            )
+            logger.debug(f"Model parameters optimized - R: {self.kalman_state['R']:.3f}, Q: {self.kalman_state['Q']:.3f}")
 
     def get_performance_report(self) -> Dict[str, Any]:
         """
         Get comprehensive performance report of the Bayesian system
         """
-        accuracy_rate = (
-            self.metrics["successful_predictions"]
-            / max(self.metrics["predictions_made"], 1)
-        ) * 100
+        accuracy_rate = (self.metrics["successful_predictions"] / max(self.metrics["predictions_made"], 1)) * 100
 
         phase_biases = {}
         for phase, profile in self.bias_profiles.items():
@@ -803,9 +752,7 @@ class AdaptiveBayesianUncertainty:
                 "accuracy_rate": (
                     profile.accurate_count
                     / max(
-                        profile.accurate_count
-                        + profile.optimistic_count
-                        + profile.pessimistic_count,
+                        profile.accurate_count + profile.optimistic_count + profile.pessimistic_count,
                         1,
                     )
                 )
@@ -813,9 +760,7 @@ class AdaptiveBayesianUncertainty:
             }
 
         recent_accuracy = (
-            np.mean(list(self.metrics["accuracy_history"])[-10:]) * 100
-            if self.metrics["accuracy_history"]
-            else 0
+            np.mean(list(self.metrics["accuracy_history"])[-10:]) * 100 if self.metrics["accuracy_history"] else 0
         )
 
         return {
@@ -855,9 +800,7 @@ class AdaptiveBayesianUncertainty:
         state = {
             "beliefs": self.beliefs,
             "bias_profiles": self.bias_profiles,
-            "observation_history": self.observation_history[
-                -1000:
-            ],  # Keep last 1000 observations
+            "observation_history": self.observation_history[-1000:],  # Keep last 1000 observations
             "kalman_state": self.kalman_state,
             "metrics": dict(self.metrics),
         }
@@ -888,18 +831,12 @@ class AdaptiveBayesianUncertainty:
                 # Restore metrics
                 metrics = state.get("metrics", {})
                 self.metrics["predictions_made"] = metrics.get("predictions_made", 0)
-                self.metrics["successful_predictions"] = metrics.get(
-                    "successful_predictions", 0
-                )
+                self.metrics["successful_predictions"] = metrics.get("successful_predictions", 0)
                 if "accuracy_history" in metrics:
-                    self.metrics["accuracy_history"] = deque(
-                        metrics["accuracy_history"], maxlen=100
-                    )
+                    self.metrics["accuracy_history"] = deque(metrics["accuracy_history"], maxlen=100)
                 self.metrics["improvement_rate"] = metrics.get("improvement_rate", 0.0)
 
-                logger.info(
-                    f"Bayesian state loaded - {self.metrics['predictions_made']} historical predictions"
-                )
+                logger.info(f"Bayesian state loaded - {self.metrics['predictions_made']} historical predictions")
             except Exception as e:
                 logger.warning(f"Could not load previous state: {e}")
 
@@ -918,7 +855,7 @@ def demonstrate_bayesian_learning():
     # Initialize Bayesian system
     bayesian = AdaptiveBayesianUncertainty("test-project")
 
-    print("\n[EMOJI] Initial System State:")
+    print("\n[INFO] Initial System State:")
     print(f"  * Predictions made: {bayesian.metrics['predictions_made']}")
     print(f"  * Learning status: {bayesian._get_learning_status()}")
 
@@ -927,40 +864,32 @@ def demonstrate_bayesian_learning():
         {
             "phase": "ideation",
             "current": UncertaintyVector(0.8, 0.9, 0.5, 0.4, 0.3),
-            "observed": UncertaintyVector(
-                0.75, 0.85, 0.52, 0.45, 0.35
-            ),  # Slightly better than predicted
+            "observed": UncertaintyVector(0.75, 0.85, 0.52, 0.45, 0.35),  # Slightly better than predicted
             "description": "Early ideation with high uncertainty",
         },
         {
             "phase": "design",
             "current": UncertaintyVector(0.6, 0.7, 0.4, 0.5, 0.4),
-            "observed": UncertaintyVector(
-                0.65, 0.68, 0.38, 0.55, 0.42
-            ),  # Mixed results
+            "observed": UncertaintyVector(0.65, 0.68, 0.38, 0.55, 0.42),  # Mixed results
             "description": "Design phase with moderate uncertainty",
         },
         {
             "phase": "implementation",
             "current": UncertaintyVector(0.4, 0.3, 0.5, 0.7, 0.6),
-            "observed": UncertaintyVector(
-                0.35, 0.25, 0.48, 0.72, 0.58
-            ),  # Better technical, worse timeline
+            "observed": UncertaintyVector(0.35, 0.25, 0.48, 0.72, 0.58),  # Better technical, worse timeline
             "description": "Implementation with timeline pressure",
         },
     ]
 
-    print("\n[EMOJI] Running Learning Cycles...\n")
+    print("\n[INFO] Running Learning Cycles...\n")
 
     for i, scenario in enumerate(test_scenarios, 1):
         print(f"\n--- Cycle {i}: {scenario['description']} ---")
 
         # Make prediction
-        prediction = bayesian.predict_uncertainty(
-            scenario["current"], scenario["phase"], horizon_hours=24
-        )
+        prediction = bayesian.predict_uncertainty(scenario["current"], scenario["phase"], horizon_hours=24)
 
-        print(f"\n[EMOJI] Current State:")
+        print(f"\n[INFO] Current State:")
         print(f"  * Phase: {scenario['phase']}")
         print(f"  * Current magnitude: {scenario['current'].magnitude():.2%}")
         print(f"  * Predicted magnitude: {prediction['predicted_magnitude']:.2%}")
@@ -971,24 +900,20 @@ def demonstrate_bayesian_learning():
         # Show top recommendation
         if prediction["recommendations"]:
             top_rec = prediction["recommendations"][0]
-            print(f"\n[EMOJI] Top Recommendation:")
+            print(f"\n[TIP] Top Recommendation:")
             print(f"  * Action: {top_rec['action']}")
             print(f"  * Urgency: {top_rec['urgency']}")
             print(f"  * Expected impact: {top_rec['expected_impact']:.1%}")
 
         # Simulate observation and update
-        print(f"\n[EMOJI] Observed Outcome:")
+        print(f"\n[RESULT] Observed Outcome:")
         print(f"  * Actual magnitude: {scenario['observed'].magnitude():.2%}")
 
         # Update Bayesian beliefs
-        bayesian.update_with_observation(
-            scenario["phase"], prediction, scenario["observed"], outcome_success=True
-        )
+        bayesian.update_with_observation(scenario["phase"], prediction, scenario["observed"], outcome_success=True)
 
         # Show learning progress
-        accuracy = 1.0 - abs(
-            prediction["predicted_magnitude"] - scenario["observed"].magnitude()
-        )
+        accuracy = 1.0 - abs(prediction["predicted_magnitude"] - scenario["observed"].magnitude())
         print(f"  * Prediction accuracy: {accuracy:.1%}")
         print(f"  * Improvement rate: {bayesian.metrics['improvement_rate']:.1%}")
 
@@ -998,24 +923,20 @@ def demonstrate_bayesian_learning():
 
     report = bayesian.get_performance_report()
 
-    print(f"\n[EMOJI] Overall Performance:")
+    print(f"\n[RESULT] Overall Performance:")
     print(f"  * Total predictions: {report['total_predictions']}")
     print(f"  * Overall accuracy: {report['overall_accuracy']:.1f}%")
     print(f"  * Recent accuracy: {report['recent_accuracy']:.1f}%")
     print(f"  * Improvement rate: {report['improvement_rate']:.1f}%")
     print(f"  * Learning status: {report['learning_status']}")
 
-    print(f"\n[EMOJI] Phase-Specific Biases:")
+    print(f"\n[INFO] Phase-Specific Biases:")
     for phase, bias_info in report["phase_biases"].items():
         if bias_info["mean_error"] != 0:  # Only show phases with data
-            print(
-                f"  * {phase}: {bias_info['bias_type']} (error: {bias_info['mean_error']:.3f})"
-            )
+            print(f"  * {phase}: {bias_info['bias_type']} (error: {bias_info['mean_error']:.3f})")
 
-    print(f"\n[EMOJI] Kalman Filter Parameters (auto-optimized):")
-    print(
-        f"  * Measurement noise (R): {report['kalman_parameters']['measurement_noise']:.3f}"
-    )
+    print(f"\n[INFO] Kalman Filter Parameters (auto-optimized):")
+    print(f"  * Measurement noise (R): {report['kalman_parameters']['measurement_noise']:.3f}")
     print(f"  * Process noise (Q): {report['kalman_parameters']['process_noise']:.3f}")
 
     print("\n[OK] Bayesian Learning System Successfully Demonstrated!")

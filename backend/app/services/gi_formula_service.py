@@ -16,7 +16,6 @@ import asyncio
 import hashlib
 from datetime import datetime
 from typing import Dict, List, Optional, Any
-from pathlib import Path
 
 from ..models.gi_formula import (
     StageType,
@@ -35,20 +34,16 @@ class GIFormulaService:
     Service for generating insights using Genius Insight Formula
 
     Features:
-    - 5-stage insight generation (O → C → P → S → B)
+    - 5-stage insight generation (O -> C -> P -> S -> B)
     - Sequential MCP integration for structured reasoning
-    - 3-tier caching (Memory → Redis → SQLite)
+    - 3-tier caching (Memory -> Redis -> SQLite)
     - Obsidian auto-save
     - Performance target: <30 seconds
     - Graceful degradation on MCP failures
     """
 
     def __init__(
-        self,
-        sequential_mcp=None,
-        obsidian_service=None,
-        cache_service=None,
-        config: Optional[Dict[str, Any]] = None
+        self, sequential_mcp=None, obsidian_service=None, cache_service=None, config: Optional[Dict[str, Any]] = None
     ):
         """
         Initialize GI Formula Service
@@ -94,10 +89,7 @@ class GIFormulaService:
 
         logger.info("GIFormulaService initialized")
 
-    async def generate_insight(
-        self,
-        request: GIFormulaRequest
-    ) -> GIFormulaResult:
+    async def generate_insight(self, request: GIFormulaRequest) -> GIFormulaResult:
         """
         Generate insight using 5-stage GI Formula
 
@@ -117,7 +109,7 @@ class GIFormulaService:
             # Generate insight ID
             insight_id = self._generate_insight_id(request.problem)
 
-            # Check cache (3-tier: Memory → Redis → SQLite)
+            # Check cache (3-tier: Memory -> Redis -> SQLite)
             cached_result = await self._get_cached_insight(insight_id)
             if cached_result:
                 logger.info(f"Cache hit for insight {insight_id}")
@@ -130,33 +122,20 @@ class GIFormulaService:
 
             # Stage 1: Observation
             stages["observation"] = await self._execute_stage(
-                StageType.OBSERVATION,
-                problem=request.problem,
-                context=request.context or {}
+                StageType.OBSERVATION, problem=request.problem, context=request.context or {}
             )
 
             # Stage 2: Connection
-            stages["connection"] = await self._execute_stage(
-                StageType.CONNECTION,
-                observations=stages["observation"].content
-            )
+            stages["connection"] = await self._execute_stage(StageType.CONNECTION, observations=stages["observation"].content)
 
             # Stage 3: Pattern
-            stages["pattern"] = await self._execute_stage(
-                StageType.PATTERN,
-                connections=stages["connection"].content
-            )
+            stages["pattern"] = await self._execute_stage(StageType.PATTERN, connections=stages["connection"].content)
 
             # Stage 4: Synthesis
-            stages["synthesis"] = await self._execute_stage(
-                StageType.SYNTHESIS,
-                patterns=stages["pattern"].content
-            )
+            stages["synthesis"] = await self._execute_stage(StageType.SYNTHESIS, patterns=stages["pattern"].content)
 
             # Stage 5: Bias Check
-            bias_check_result = await self._execute_bias_check(
-                insight=stages["synthesis"].content
-            )
+            bias_check_result = await self._execute_bias_check(insight=stages["synthesis"].content)
 
             stages["bias_check"] = StageResult(
                 stage=StageType.BIAS_CHECK,
@@ -173,8 +152,8 @@ class GIFormulaService:
             total_duration_ms = int((end_time - start_time).total_seconds() * 1000)
 
             # Update bias check duration
-            stages["bias_check"].duration_ms = (
-                total_duration_ms - sum(s.duration_ms for s in stages.values() if s.stage != StageType.BIAS_CHECK)
+            stages["bias_check"].duration_ms = total_duration_ms - sum(
+                s.duration_ms for s in stages.values() if s.stage != StageType.BIAS_CHECK
             )
 
             # Build result
@@ -189,11 +168,8 @@ class GIFormulaService:
                 project=request.project,
                 metadata={
                     "context": request.context,
-                    "stage_durations": {
-                        stage_type: stage.duration_ms
-                        for stage_type, stage in stages.items()
-                    },
-                }
+                    "stage_durations": {stage_type: stage.duration_ms for stage_type, stage in stages.items()},
+                },
             )
 
             # Cache result (async, don't wait)
@@ -229,12 +205,7 @@ class GIFormulaService:
             logger.error(f"Failed to retrieve insight {insight_id}: {e}")
             return None
 
-    async def list_insights(
-        self,
-        project: Optional[str] = None,
-        limit: int = 10,
-        offset: int = 0
-    ) -> List[GIInsightSummary]:
+    async def list_insights(self, project: Optional[str] = None, limit: int = 10, offset: int = 0) -> List[GIInsightSummary]:
         """
         List recent insights
 
@@ -258,7 +229,7 @@ class GIFormulaService:
             insights.sort(key=lambda x: x.created_at, reverse=True)
 
             # Paginate
-            insights = insights[offset:offset + limit]
+            insights = insights[offset : offset + limit]
 
             # Convert to summaries
             summaries = [
@@ -308,11 +279,7 @@ class GIFormulaService:
 
     # Private helper methods
 
-    async def _execute_stage(
-        self,
-        stage_type: StageType,
-        **kwargs
-    ) -> StageResult:
+    async def _execute_stage(self, stage_type: StageType, **kwargs) -> StageResult:
         """
         Execute a single GI Formula stage
 
@@ -332,10 +299,7 @@ class GIFormulaService:
 
             # Execute with Sequential MCP if available
             if self.sequential_mcp:
-                content = await self._execute_with_sequential(
-                    prompt=prompt,
-                    timeout=config["timeout"]
-                )
+                content = await self._execute_with_sequential(prompt=prompt, timeout=config["timeout"])
             else:
                 # Graceful degradation: use fallback logic
                 content = await self._execute_fallback(stage_type, kwargs)
@@ -363,11 +327,7 @@ class GIFormulaService:
                 timestamp=start_time,
             )
 
-    async def _execute_with_sequential(
-        self,
-        prompt: str,
-        timeout: int
-    ) -> str:
+    async def _execute_with_sequential(self, prompt: str, timeout: int) -> str:
         """
         Execute reasoning with Sequential MCP
 
@@ -380,10 +340,7 @@ class GIFormulaService:
         """
         try:
             # Call Sequential MCP (placeholder - actual implementation depends on MCP client)
-            result = await asyncio.wait_for(
-                self.sequential_mcp.reason(prompt),
-                timeout=timeout / 1000.0
-            )
+            result = await asyncio.wait_for(self.sequential_mcp.reason(prompt), timeout=timeout / 1000.0)
             return result.get("content", "")
         except asyncio.TimeoutError:
             logger.warning(f"Sequential MCP timeout after {timeout}ms")
@@ -392,11 +349,7 @@ class GIFormulaService:
             logger.error(f"Sequential MCP error: {e}")
             raise RuntimeError(f"Sequential MCP error: {str(e)}") from e
 
-    async def _execute_fallback(
-        self,
-        stage_type: StageType,
-        kwargs: Dict[str, Any]
-    ) -> str:
+    async def _execute_fallback(self, stage_type: StageType, kwargs: Dict[str, Any]) -> str:
         """
         Fallback logic when Sequential MCP unavailable
 
@@ -413,16 +366,16 @@ class GIFormulaService:
             return f"Key facts: {problem}. No additional observations (fallback mode)."
 
         elif stage_type == StageType.CONNECTION:
-            observations = kwargs.get("observations", "")
-            return f"Connections: Based on observations. (fallback mode)"
+            _ = kwargs.get("observations", "")  # observations unused in fallback
+            return "Connections: Based on observations. (fallback mode)"
 
         elif stage_type == StageType.PATTERN:
-            connections = kwargs.get("connections", "")
-            return f"Patterns: Recurring themes identified. (fallback mode)"
+            _ = kwargs.get("connections", "")  # connections unused in fallback
+            return "Patterns: Recurring themes identified. (fallback mode)"
 
         elif stage_type == StageType.SYNTHESIS:
-            patterns = kwargs.get("patterns", "")
-            return f"Insight: Synthesized from patterns. (fallback mode)"
+            _ = kwargs.get("patterns", "")  # patterns unused in fallback
+            return "Insight: Synthesized from patterns. (fallback mode)"
 
         else:
             return "Stage completed (fallback mode)"
@@ -442,8 +395,7 @@ class GIFormulaService:
                 # Use Sequential MCP for bias detection
                 prompt = f"Analyze this insight for cognitive biases: {insight}"
                 result = await self._execute_with_sequential(
-                    prompt=prompt,
-                    timeout=self._stage_configs[StageType.BIAS_CHECK]["timeout"]
+                    prompt=prompt, timeout=self._stage_configs[StageType.BIAS_CHECK]["timeout"]
                 )
 
                 # Parse result (simplified - actual parsing depends on MCP response format)
@@ -543,18 +495,13 @@ class GIFormulaService:
 
             # Evict oldest if cache full
             if len(self._memory_cache) > self._max_memory_cache:
-                oldest_id = min(
-                    self._memory_cache.keys(),
-                    key=lambda k: self._memory_cache[k].created_at
-                )
+                oldest_id = min(self._memory_cache.keys(), key=lambda k: self._memory_cache[k].created_at)
                 del self._memory_cache[oldest_id]
 
             # Tier 2 & 3: External cache
             if self.cache_service:
                 await self.cache_service.set(
-                    f"gi:{insight_id}",
-                    result.dict(),
-                    ttl=self.config.get("cache_ttl", 86400)  # 24 hours
+                    f"gi:{insight_id}", result.dict(), ttl=self.config.get("cache_ttl", 86400)  # 24 hours
                 )
 
         except Exception as e:
@@ -579,10 +526,7 @@ class GIFormulaService:
             content = self._format_obsidian_note(result)
 
             # Save to Obsidian
-            await self.obsidian_service.create_note(
-                path=obsidian_path,
-                content=content
-            )
+            await self.obsidian_service.create_note(path=obsidian_path, content=content)
 
             # Update result with Obsidian path
             result.obsidian_path = obsidian_path
@@ -614,11 +558,11 @@ tags: [gi-formula, insight, {result.project}]
 
 # GI Insight: {result.problem}
 
-## 🎯 Problem Statement
+## [*] Problem Statement
 
 {result.problem}
 
-## 🔍 5-Stage Analysis
+## [*] 5-Stage Analysis
 
 ### 1. Observation
 {result.stages["observation"].content}
@@ -647,17 +591,17 @@ tags: [gi-formula, insight, {result.project}]
 
 **Duration**: {result.stages["bias_check"].duration_ms}ms
 
-## 💡 Final Insight
+## [RESULT] Insight
 
 {result.final_insight}
 
-## 📊 Metadata
+## [*] Metadata
 
 - **Total Duration**: {result.total_duration_ms}ms ({result.total_duration_ms / 1000:.1f}s)
 - **Created**: {result.created_at.strftime("%Y-%m-%d %H:%M:%S")}
 - **Project**: {result.project}
 
-## 🔗 Related
+## [*] Related
 
 - [[GI Formula Framework]]
 - [[Insight Patterns]]

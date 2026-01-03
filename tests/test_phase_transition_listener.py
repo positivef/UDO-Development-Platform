@@ -10,7 +10,7 @@ import pytest
 import sys
 from pathlib import Path
 from datetime import datetime
-from unittest.mock import AsyncMock, MagicMock, patch
+from unittest.mock import AsyncMock, MagicMock, patch  # noqa: F401
 from uuid import uuid4, UUID
 
 # Add backend and src to path
@@ -19,8 +19,8 @@ src_dir = Path(__file__).parent.parent / "src"
 sys.path.insert(0, str(backend_dir))
 sys.path.insert(0, str(src_dir))
 
-from app.services.phase_transition_listener import PhaseTransitionListener, create_listener_callback
-from phase_state_manager import Phase, PhaseTransitionEvent
+from app.services.phase_transition_listener import PhaseTransitionListener, create_listener_callback  # noqa: E402
+from phase_state_manager import Phase, PhaseTransitionEvent  # noqa: E402
 
 
 # Module-level fixtures for all test classes

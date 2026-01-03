@@ -18,12 +18,12 @@ import argparse
 import subprocess
 from pathlib import Path
 from datetime import datetime
-from typing import Dict, List, Optional, Tuple
+from typing import Dict, List, Tuple
 
 
 def get_storage_dir() -> Path:
     """Get UDO storage directory"""
-    import os
+    import os  # noqa: E402
 
     env_dir = os.environ.get("UDO_STORAGE_DIR") or os.environ.get("UDO_HOME")
     base_dir = Path(env_dir).expanduser() if env_dir else Path.home() / ".udo"
@@ -39,7 +39,7 @@ def run_coverage_test() -> Tuple[float, Dict[str, float]]:
         tuple: (total_coverage_percent, module_coverage_dict)
     """
     try:
-        import sys
+        import sys  # noqa: E402
 
         # Run pytest with coverage using current Python executable
         result = subprocess.run(
@@ -228,9 +228,9 @@ def generate_coverage_report() -> str:
     # Targets
     report_lines.append("TARGETS:")
     report_lines.append(f"  Week 0 Baseline: {latest_coverage:.1f}%")
-    report_lines.append(f"  Prototype Target: 65%")
-    report_lines.append(f"  Beta Target: 75%")
-    report_lines.append(f"  Production Target: 85%")
+    report_lines.append("  Prototype Target: 65%")
+    report_lines.append("  Beta Target: 75%")
+    report_lines.append("  Production Target: 85%")
     report_lines.append("")
 
     report_lines.append("=" * 70)
@@ -260,13 +260,13 @@ def check_regression(threshold: float = 2.0) -> bool:
     delta = current_coverage - prev_coverage
 
     if delta < -threshold:
-        print(f"REGRESSION DETECTED!")
+        print("REGRESSION DETECTED!")
         print(f"  Previous: {prev_coverage:.1f}%")
         print(f"  Current:  {current_coverage:.1f}%")
         print(f"  Change:   {delta:.1f}% (threshold: -{threshold}%)")
         return True
     else:
-        print(f"No regression detected")
+        print("No regression detected")
         print(f"  Previous: {prev_coverage:.1f}%")
         print(f"  Current:  {current_coverage:.1f}%")
         print(f"  Change:   {delta:+.1f}%")

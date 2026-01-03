@@ -12,7 +12,7 @@ from pathlib import Path
 # Add scripts directory to path
 sys.path.insert(0, str(Path(__file__).parent.parent / "scripts"))
 
-from replace_emoji_safe import (
+from replace_emoji_safe import (  # noqa: E402
     is_korean_char,
     is_safe_char,
     replace_emoji_in_text,
@@ -22,25 +22,25 @@ from replace_emoji_safe import (
 def test_is_korean_char():
     """Test Korean character detection"""
     # Hangul Syllables
-    assert is_korean_char('가') == True
-    assert is_korean_char('개') == True
-    assert is_korean_char('발') == True
-    assert is_korean_char('일') == True
-    assert is_korean_char('지') == True
-    assert is_korean_char('한') == True
-    assert is_korean_char('글') == True
+    assert is_korean_char("가") == True
+    assert is_korean_char("개") == True
+    assert is_korean_char("발") == True
+    assert is_korean_char("일") == True
+    assert is_korean_char("지") == True
+    assert is_korean_char("한") == True
+    assert is_korean_char("글") == True
 
     # Hangul Compatibility Jamo
-    assert is_korean_char('ㄱ') == True
-    assert is_korean_char('ㅏ') == True
+    assert is_korean_char("ㄱ") == True
+    assert is_korean_char("ㅏ") == True
 
     # NOT Korean
-    assert is_korean_char('a') == False
-    assert is_korean_char('A') == False
-    assert is_korean_char('1') == False
-    assert is_korean_char('✅') == False
-    assert is_korean_char('🚀') == False
-    assert is_korean_char('日') == False  # Japanese/Chinese
+    assert is_korean_char("a") == False
+    assert is_korean_char("A") == False
+    assert is_korean_char("1") == False
+    assert is_korean_char("[OK]") == False
+    assert is_korean_char("[*]") == False
+    assert is_korean_char("日") == False  # Japanese/Chinese
 
     print("[OK] test_is_korean_char passed")
 
@@ -48,27 +48,27 @@ def test_is_korean_char():
 def test_is_safe_char():
     """Test safe character detection"""
     # ASCII
-    assert is_safe_char('a') == True
-    assert is_safe_char('Z') == True
-    assert is_safe_char('0') == True
-    assert is_safe_char(' ') == True
-    assert is_safe_char('\n') == True
+    assert is_safe_char("a") == True
+    assert is_safe_char("Z") == True
+    assert is_safe_char("0") == True
+    assert is_safe_char(" ") == True
+    assert is_safe_char("\n") == True
 
     # Korean
-    assert is_safe_char('개') == True
-    assert is_safe_char('발') == True
-    assert is_safe_char('일') == True
-    assert is_safe_char('지') == True
+    assert is_safe_char("개") == True
+    assert is_safe_char("발") == True
+    assert is_safe_char("일") == True
+    assert is_safe_char("지") == True
 
     # CJK/Japanese
-    assert is_safe_char('日') == True
-    assert is_safe_char('本') == True
-    assert is_safe_char('発') == True
+    assert is_safe_char("日") == True
+    assert is_safe_char("本") == True
+    assert is_safe_char("発") == True
 
     # Emoji (NOT safe, should be replaced)
-    assert is_safe_char('✅') == False
-    assert is_safe_char('🚀') == False
-    assert is_safe_char('❌') == False
+    assert is_safe_char("[OK]") == False
+    assert is_safe_char("[*]") == False
+    assert is_safe_char("[FAIL]") == False
 
     print("[OK] test_is_safe_char passed")
 
@@ -81,8 +81,8 @@ def test_korean_text_preservation():
         ("자동으로 분석", "자동으로 분석", "Korean sentence"),
         ("트리거 조건", "트리거 조건", "Technical term"),
         ("시간대별 작업", "시간대별 작업", "Work description"),
-        ("✅ 테스트 통과", "[OK] 테스트 통과", "Emoji + Korean"),
-        ("🚀 프로젝트 시작", "[ROCKET] 프로젝트 시작", "Emoji + Korean"),
+        ("[OK] 테스트 통과", "[OK] 테스트 통과", "Emoji + Korean"),
+        ("[*] 프로젝트 시작", "[ROCKET] 프로젝트 시작", "Emoji + Korean"),
         ("개발일지/2025-12-25/", "개발일지/2025-12-25/", "Path with Korean"),
         ("AI 인사이트 자동 생성", "AI 인사이트 자동 생성", "Mixed text"),
     ]
@@ -90,7 +90,7 @@ def test_korean_text_preservation():
     for input_text, expected, description in test_cases:
         result, changes = replace_emoji_in_text(input_text)
         assert result == expected, f"FAILED: {description}\n  Input: {input_text}\n  Expected: {expected}\n  Got: {result}"
-        print(f"[OK] {description}: '{input_text}' → '{result}'")
+        print(f"[OK] {description}: '{input_text}' -> '{result}'")
 
     print("[OK] test_korean_text_preservation passed")
 
@@ -98,18 +98,18 @@ def test_korean_text_preservation():
 def test_emoji_replacement():
     """Test that emoji are correctly replaced"""
     test_cases = [
-        ("✅ Success", "[OK] Success", "Check mark"),
-        ("❌ Failed", "[FAIL] Failed", "Cross mark"),
-        ("⚠️ Warning", "[WARN] Warning", "Warning sign"),
-        ("🚀 Launch", "[ROCKET] Launch", "Rocket"),
-        ("🔧 Fix", "[TOOL] Fix", "Wrench"),
-        ("→ Arrow", "-> Arrow", "Arrow"),
+        ("[OK] Success", "[OK] Success", "Check mark"),
+        ("[FAIL] Failed", "[FAIL] Failed", "Cross mark"),
+        ("[WARN] Warning", "[WARN] Warning", "Warning sign"),
+        ("[*] Launch", "[ROCKET] Launch", "Rocket"),
+        ("[*] Fix", "[TOOL] Fix", "Wrench"),
+        ("-> Arrow", "-> Arrow", "Arrow"),
     ]
 
     for input_text, expected, description in test_cases:
         result, changes = replace_emoji_in_text(input_text)
         assert result == expected, f"FAILED: {description}\n  Expected: {expected}\n  Got: {result}"
-        print(f"[OK] {description}: '{input_text}' → '{result}'")
+        print(f"[OK] {description}: '{input_text}' -> '{result}'")
 
     print("[OK] test_emoji_replacement passed")
 
@@ -117,21 +117,9 @@ def test_emoji_replacement():
 def test_mixed_content():
     """Test mixed Korean + emoji content"""
     test_cases = [
-        (
-            "✅ 개발일지 생성 완료 🚀",
-            "[OK] 개발일지 생성 완료 [ROCKET]",
-            "Start/end emoji with Korean"
-        ),
-        (
-            "트리거 ✅ 조건 🔧 자동",
-            "트리거 [OK] 조건 [TOOL] 자동",
-            "Interspersed emoji/Korean"
-        ),
-        (
-            "# ✅ 완료\n## 🚀 시작\n개발일지",
-            "# [OK] 완료\n## [ROCKET] 시작\n개발일지",
-            "Markdown with Korean"
-        ),
+        ("[OK] 개발일지 생성 완료 [*]", "[OK] 개발일지 생성 완료 [ROCKET]", "Start/end emoji with Korean"),
+        ("트리거 [OK] 조건 [*] 자동", "트리거 [OK] 조건 [TOOL] 자동", "Interspersed emoji/Korean"),
+        ("# [OK] 완료\n## [*] 시작\n개발일지", "# [OK] 완료\n## [ROCKET] 시작\n개발일지", "Markdown with Korean"),
     ]
 
     for input_text, expected, description in test_cases:
@@ -162,9 +150,9 @@ def test_no_replacement_needed():
 
 def main():
     """Run all tests"""
-    print("\n" + "="*60)
+    print("\n" + "=" * 60)
     print("Testing Safe Emoji Replacement (Korean Preservation)")
-    print("="*60 + "\n")
+    print("=" * 60 + "\n")
 
     tests = [
         test_is_korean_char,
@@ -186,13 +174,13 @@ def main():
             print(f"[ERROR] {test.__name__}: {e}")
             failed += 1
 
-    print("\n" + "="*60)
+    print("\n" + "=" * 60)
     if failed == 0:
-        print("[SUCCESS] All tests passed! ✅")
+        print("[SUCCESS] All tests passed! [OK]")
         print("Korean text preservation: VERIFIED")
         return 0
     else:
-        print(f"[FAILURE] {failed} test(s) failed ❌")
+        print(f"[FAILURE] {failed} test(s) failed [FAIL]")
         return 1
 
 

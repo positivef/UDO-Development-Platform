@@ -7,22 +7,26 @@ Provides real-time uncertainty status, predictions, and mitigation strategies
 
 import logging
 from datetime import datetime
-from typing import Optional, Tuple
+from typing import Tuple
 
 from app.core.circuit_breaker import CircuitBreaker, SimpleTTLCache
-from app.models.uncertainty import (BayesianConfidenceRequest,
-                                    BayesianConfidenceResponse,
-                                    ContextAnalysisRequest,
-                                    MitigationAckRequest,
-                                    MitigationAckResponse,
-                                    MitigationStrategyResponse,
-                                    PredictiveModelResponse,
-                                    UncertaintyStateEnum,
-                                    UncertaintyStatusResponse,
-                                    UncertaintyVectorResponse)
+from app.models.uncertainty import (
+    BayesianConfidenceRequest,
+    BayesianConfidenceResponse,
+    ContextAnalysisRequest,
+    MitigationAckRequest,
+    MitigationAckResponse,
+    MitigationStrategyResponse,
+    PredictiveModelResponse,
+    UncertaintyStateEnum,
+    UncertaintyStatusResponse,
+    UncertaintyVectorResponse,
+)
 from app.models.uncertainty_time_integration import (
-    AdjustedBaselineResponse, CorrelationAnalysisResponse,
-    UncertaintyAwareTrackingRequest, UncertaintyAwareTrackingResponse)
+    AdjustedBaselineResponse,
+    UncertaintyAwareTrackingRequest,
+    UncertaintyAwareTrackingResponse,
+)
 from app.services.bayesian_confidence import calculate_bayesian_confidence
 from app.services.session_manager_v2 import get_session_manager
 from fastapi import APIRouter, Depends, HTTPException
@@ -77,9 +81,7 @@ def get_uncertainty_map():
 
     uncertainty_map = udo_system.components.get("uncertainty")
     if not uncertainty_map:
-        raise HTTPException(
-            status_code=503, detail="Uncertainty Map component not initialized"
-        )
+        raise HTTPException(status_code=503, detail="Uncertainty Map component not initialized")
 
     return uncertainty_map
 
@@ -129,9 +131,7 @@ async def get_uncertainty_status(uncertainty_map=Depends(get_uncertainty_map)):
         current_phase, context = _build_context()
 
         vector, state = uncertainty_map.analyze_context(context)
-        prediction_model = uncertainty_map.predict_evolution(
-            vector, phase=current_phase, hours=24
-        )
+        prediction_model = uncertainty_map.predict_evolution(vector, phase=current_phase, hours=24)
         mitigations = uncertainty_map.generate_mitigations(vector, state)
         mitigations.sort(key=lambda m: m.roi(), reverse=True)
 
@@ -188,9 +188,7 @@ async def get_uncertainty_status(uncertainty_map=Depends(get_uncertainty_map)):
 
     except Exception as e:
         logger.error(f"Failed to get uncertainty status: {e}")
-        raise HTTPException(
-            status_code=500, detail=f"Failed to get uncertainty status: {str(e)}"
-        )
+        raise HTTPException(status_code=500, detail=f"Failed to get uncertainty status: {str(e)}")
 
 
 @router.post("/ack/{mitigation_id}", response_model=MitigationAckResponse)
@@ -219,57 +217,25 @@ async def acknowledge_mitigation(
 
         target = next((m for m in mitigations if m.id == target_id), None)
         if not target:
-            raise HTTPException(
-                status_code=404, detail=f"Mitigation {mitigation_id} not found"
-            )
+            raise HTTPException(status_code=404, detail=f"Mitigation {mitigation_id} not found")
 
-        applied_impact = (
-            request.applied_impact
-            if request.applied_impact is not None
-            else target.estimated_impact
-        )
-        dimension = (
-            request.dimension or target.dominant_dimension
-            if hasattr(target, "dominant_dimension")
-            else None
-        )
+        applied_impact = request.applied_impact if request.applied_impact is not None else target.estimated_impact
+        dimension = request.dimension or target.dominant_dimension if hasattr(target, "dominant_dimension") else None
         if not dimension:
             dimension = vector.dominant_dimension()
 
         # Apply impact to chosen dimension (work with dataclass then convert)
         adjusted_vector = type(vector)(
-            technical=(
-                max(0.0, vector.technical - applied_impact)
-                if dimension == "technical"
-                else vector.technical
-            ),
-            market=(
-                max(0.0, vector.market - applied_impact)
-                if dimension == "market"
-                else vector.market
-            ),
-            resource=(
-                max(0.0, vector.resource - applied_impact)
-                if dimension == "resource"
-                else vector.resource
-            ),
-            timeline=(
-                max(0.0, vector.timeline - applied_impact)
-                if dimension == "timeline"
-                else vector.timeline
-            ),
-            quality=(
-                max(0.0, vector.quality - applied_impact)
-                if dimension == "quality"
-                else vector.quality
-            ),
+            technical=(max(0.0, vector.technical - applied_impact) if dimension == "technical" else vector.technical),
+            market=(max(0.0, vector.market - applied_impact) if dimension == "market" else vector.market),
+            resource=(max(0.0, vector.resource - applied_impact) if dimension == "resource" else vector.resource),
+            timeline=(max(0.0, vector.timeline - applied_impact) if dimension == "timeline" else vector.timeline),
+            quality=(max(0.0, vector.quality - applied_impact) if dimension == "quality" else vector.quality),
         )
 
         magnitude = adjusted_vector.magnitude()
         dominant_dim = adjusted_vector.dominant_dimension()
-        updated_state_enum = UncertaintyStateEnum(
-            uncertainty_map.classify_state(magnitude).value
-        )
+        updated_state_enum = UncertaintyStateEnum(uncertainty_map.classify_state(magnitude).value)
         confidence_score = 1.0 - magnitude
 
         updated_vector = UncertaintyVectorResponse(
@@ -312,15 +278,11 @@ async def acknowledge_mitigation(
         raise
     except Exception as e:
         logger.error(f"Failed to acknowledge mitigation {mitigation_id}: {e}")
-        raise HTTPException(
-            status_code=500, detail=f"Failed to acknowledge mitigation: {str(e)}"
-        )
+        raise HTTPException(status_code=500, detail=f"Failed to acknowledge mitigation: {str(e)}")
 
 
 @router.post("/analyze", response_model=UncertaintyStatusResponse)
-async def analyze_context(
-    request: ContextAnalysisRequest, uncertainty_map=Depends(get_uncertainty_map)
-):
+async def analyze_context(request: ContextAnalysisRequest, uncertainty_map=Depends(get_uncertainty_map)):
     """
     Analyze a specific context and generate uncertainty assessment
 
@@ -347,9 +309,7 @@ async def analyze_context(
         vector, state = uncertainty_map.analyze_context(context)
 
         # Get prediction (24 hours ahead)
-        prediction_model = uncertainty_map.predict_evolution(
-            vector, phase=request.phase, hours=24
-        )
+        prediction_model = uncertainty_map.predict_evolution(vector, phase=request.phase, hours=24)
 
         # Generate mitigation strategies
         mitigations = uncertainty_map.generate_mitigations(vector, state)
@@ -405,9 +365,7 @@ async def analyze_context(
 
     except Exception as e:
         logger.error(f"Failed to analyze context: {e}")
-        raise HTTPException(
-            status_code=500, detail=f"Failed to analyze context: {str(e)}"
-        )
+        raise HTTPException(status_code=500, detail=f"Failed to analyze context: {str(e)}")
 
 
 @router.get("/health")
@@ -435,8 +393,7 @@ async def uncertainty_health_check():
         return {
             "status": "available",
             "project_name": uncertainty_map.project_name,
-            "ml_available": hasattr(uncertainty_map, "is_trained")
-            and uncertainty_map.is_trained,
+            "ml_available": hasattr(uncertainty_map, "is_trained") and uncertainty_map.is_trained,
             "message": "Uncertainty Map v3.0 operational",
         }
 
@@ -538,9 +495,7 @@ async def start_uncertainty_aware_tracking(
             risk_factors.append(f"Quality uncertainty ({vector.quality:.0%})")
 
         if state.value in ["quantum", "chaotic", "void"]:
-            risk_factors.append(
-                f"{state.value.capitalize()} state - multiple possible outcomes"
-            )
+            risk_factors.append(f"{state.value.capitalize()} state - multiple possible outcomes")
 
         if not risk_factors:
             risk_factors.append("Low uncertainty - task should complete smoothly")
@@ -577,14 +532,10 @@ async def start_uncertainty_aware_tracking(
 
     except Exception as e:
         logger.error(f"Failed to start uncertainty-aware tracking: {e}")
-        raise HTTPException(
-            status_code=500, detail=f"Failed to start tracking: {str(e)}"
-        )
+        raise HTTPException(status_code=500, detail=f"Failed to start tracking: {str(e)}")
 
 
-@router.post(
-    "/adjusted-baseline/{task_type}/{phase}", response_model=AdjustedBaselineResponse
-)
+@router.post("/adjusted-baseline/{task_type}/{phase}", response_model=AdjustedBaselineResponse)
 async def get_adjusted_baseline(
     task_type: str,
     phase: str,
@@ -669,18 +620,12 @@ async def get_adjusted_baseline(
 
         # Explain adjustment factors
         adjustment_factors = []
-        adjustment_factors.append(
-            f"{state.value.capitalize()} uncertainty state (+{(multiplier-1)*100:.0f}%)"
-        )
+        adjustment_factors.append(f"{state.value.capitalize()} uncertainty state (+{(multiplier - 1) * 100:.0f}%)")
 
         if vector.dominant_dimension() == "timeline":
-            adjustment_factors.append(
-                f"Timeline uncertainty dominant (+{vector.timeline*100:.0f}%)"
-            )
+            adjustment_factors.append(f"Timeline uncertainty dominant (+{vector.timeline * 100:.0f}%)")
         if vector.dominant_dimension() == "technical":
-            adjustment_factors.append(
-                f"Technical uncertainty dominant (+{vector.technical*100:.0f}%)"
-            )
+            adjustment_factors.append(f"Technical uncertainty dominant (+{vector.technical * 100:.0f}%)")
 
         if phase == "implementation":
             adjustment_factors.append("Implementation phase complexity factor applied")
@@ -711,9 +656,7 @@ async def get_adjusted_baseline(
 
     except Exception as e:
         logger.error(f"Failed to get adjusted baseline: {e}")
-        raise HTTPException(
-            status_code=500, detail=f"Failed to calculate adjusted baseline: {str(e)}"
-        )
+        raise HTTPException(status_code=500, detail=f"Failed to calculate adjusted baseline: {str(e)}")
 
 
 # ============================================================================
@@ -763,11 +706,11 @@ async def calculate_confidence(request: BayesianConfidenceRequest):
     - Full mode: 10-20ms (includes credible intervals)
 
     **Uncertainty States:**
-    - 🟢 DETERMINISTIC (<10%): High confidence, proceed normally
-    - [EMOJI] PROBABILISTIC (10-30%): Good confidence, standard checkpoints
-    - 🟠 QUANTUM (30-60%): Moderate uncertainty, increase monitoring
-    - [EMOJI] CHAOTIC (60-90%): High uncertainty, proceed with caution
-    - [EMOJI] VOID (>90%): Extreme uncertainty, do not proceed
+    - [*] DETERMINISTIC (<10%): High confidence, proceed normally
+    - [BLUE] PROBABILISTIC (10-30%): Good confidence, standard checkpoints
+    - [*] QUANTUM (30-60%): Moderate uncertainty, increase monitoring
+    - [RED] CHAOTIC (60-90%): High uncertainty, proceed with caution
+    - [BLACK] VOID (>90%): Extreme uncertainty, do not proceed
     """
     try:
         # Call Bayesian service
@@ -794,6 +737,4 @@ async def calculate_confidence(request: BayesianConfidenceRequest):
     except Exception as e:
         # Handle unexpected errors
         logger.error(f"Failed to calculate Bayesian confidence: {e}")
-        raise HTTPException(
-            status_code=500, detail=f"Failed to calculate confidence: {str(e)}"
-        )
+        raise HTTPException(status_code=500, detail=f"Failed to calculate confidence: {str(e)}")

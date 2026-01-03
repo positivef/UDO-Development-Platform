@@ -11,9 +11,8 @@ Tests:
 Performance Target: p95 <50ms for all operations with 1,000 tasks
 """
 
-import asyncio
 import time
-from typing import List, Tuple
+from typing import List
 from uuid import uuid4
 
 import pytest
@@ -31,9 +30,7 @@ class MockDAGDatabase:
         self.tasks = {}  # task_id -> task_data
 
         # Simulate kanban.dependencies table with indexes
-        self.dependencies = (
-            []
-        )  # List[(source_task_id, target_task_id, dependency_type)]
+        self.dependencies = []  # List[(source_task_id, target_task_id, dependency_type)]
         self.dependencies_by_source = {}  # source_task_id -> [target_task_ids]
         self.dependencies_by_target = {}  # target_task_id -> [source_task_ids]
 
@@ -64,9 +61,7 @@ class MockDAGDatabase:
         """
         # Cycle detection (simulates kanban.validate_dag() trigger)
         if await self._has_cycle(source_task_id, target_task_id):
-            raise ValueError(
-                f"Circular dependency detected: {source_task_id} -> {target_task_id}"
-            )
+            raise ValueError(f"Circular dependency detected: {source_task_id} -> {target_task_id}")
 
         # Insert dependency
         self.dependencies.append((source_task_id, target_task_id, dependency_type))
@@ -151,9 +146,7 @@ class TestDAGPerformance:
             task_id = str(uuid4())
 
             start = time.time()
-            await db.insert_task(
-                task_id=task_id, title=f"Task {i}", phase_name="implementation"
-            )
+            await db.insert_task(task_id=task_id, title=f"Task {i}", phase_name="implementation")
             elapsed = (time.time() - start) * 1000  # Convert to ms
             times.append(elapsed)
 
@@ -169,9 +162,7 @@ class TestDAGPerformance:
         print(f"  - p99: {times_sorted[int(len(times_sorted)*0.99)]:.2f}ms")
         print(f"  - Max: {max(times):.2f}ms")
 
-        assert (
-            p95_time < 50
-        ), f"p95 task insertion time {p95_time:.2f}ms exceeds 50ms threshold"
+        assert p95_time < 50, f"p95 task insertion time {p95_time:.2f}ms exceeds 50ms threshold"
 
     @pytest.mark.asyncio
     async def test_dependency_insertion_performance(self):
@@ -189,9 +180,7 @@ class TestDAGPerformance:
         # Insert dependencies (create a chain: task0 -> task1 -> task2 -> ...)
         for i in range(999):
             start = time.time()
-            await db.insert_dependency(
-                source_task_id=task_ids[i], target_task_id=task_ids[i + 1]
-            )
+            await db.insert_dependency(source_task_id=task_ids[i], target_task_id=task_ids[i + 1])
             elapsed = (time.time() - start) * 1000  # Convert to ms
             times.append(elapsed)
 
@@ -199,18 +188,14 @@ class TestDAGPerformance:
         times_sorted = sorted(times)
         p95_time = times_sorted[int(len(times_sorted) * 0.95)]
 
-        print(
-            f"\n[PERF] Dependency Insertion Performance (999 dependencies with cycle detection):"
-        )
+        print(f"\n[PERF] Dependency Insertion Performance (999 dependencies with cycle detection):")
         print(f"  - Average: {sum(times)/len(times):.2f}ms")
         print(f"  - p50: {times_sorted[len(times_sorted)//2]:.2f}ms")
         print(f"  - p95: {p95_time:.2f}ms")
         print(f"  - p99: {times_sorted[int(len(times_sorted)*0.99)]:.2f}ms")
         print(f"  - Max: {max(times):.2f}ms")
 
-        assert (
-            p95_time < 50
-        ), f"p95 dependency insertion time {p95_time:.2f}ms exceeds 50ms threshold"
+        assert p95_time < 50, f"p95 dependency insertion time {p95_time:.2f}ms exceeds 50ms threshold"
 
     @pytest.mark.asyncio
     async def test_cycle_detection_performance(self):
@@ -237,9 +222,7 @@ class TestDAGPerformance:
         print(f"\n[PERF] Cycle Detection Performance (100-task chain):")
         print(f"  - Detection time: {elapsed:.2f}ms")
 
-        assert (
-            elapsed < 50
-        ), f"Cycle detection time {elapsed:.2f}ms exceeds 50ms threshold"
+        assert elapsed < 50, f"Cycle detection time {elapsed:.2f}ms exceeds 50ms threshold"
 
     @pytest.mark.asyncio
     async def test_dependency_query_performance(self):
@@ -281,9 +264,7 @@ class TestDAGPerformance:
         print(f"  - p95: {p95_time:.2f}ms")
         print(f"  - Max: {max(times):.2f}ms")
 
-        assert (
-            p95_time < 50
-        ), f"p95 dependency query time {p95_time:.2f}ms exceeds 50ms threshold"
+        assert p95_time < 50, f"p95 dependency query time {p95_time:.2f}ms exceeds 50ms threshold"
 
     @pytest.mark.asyncio
     async def test_reverse_dependency_query_performance(self):
@@ -306,9 +287,7 @@ class TestDAGPerformance:
         # Query "which tasks depend on me?" for 100 random tasks
         import random
 
-        sample_tasks = random.sample(
-            task_ids[:100], 50
-        )  # Query early tasks (most dependents)
+        sample_tasks = random.sample(task_ids[:100], 50)  # Query early tasks (most dependents)
 
         for task_id in sample_tasks:
             start = time.time()
@@ -326,9 +305,7 @@ class TestDAGPerformance:
         print(f"  - p95: {p95_time:.2f}ms")
         print(f"  - Max: {max(times):.2f}ms")
 
-        assert (
-            p95_time < 50
-        ), f"p95 reverse query time {p95_time:.2f}ms exceeds 50ms threshold"
+        assert p95_time < 50, f"p95 reverse query time {p95_time:.2f}ms exceeds 50ms threshold"
 
     @pytest.mark.asyncio
     async def test_full_dag_workflow_performance(self):
@@ -373,27 +350,17 @@ class TestDAGPerformance:
         query_p95 = sorted(query_times)[int(len(query_times) * 0.95)]
 
         print(f"  Phase 1 - Inserts (1,000 tasks):")
-        print(
-            f"    p95: {insert_p95:.2f}ms, target: <50ms {'[PASS]' if insert_p95 < 50 else '[FAIL]'}"
-        )
+        print(f"    p95: {insert_p95:.2f}ms, target: <50ms {'[PASS]' if insert_p95 < 50 else '[FAIL]'}")
         print(f"  Phase 2 - Dependencies (900 edges):")
-        print(
-            f"    p95: {dependency_p95:.2f}ms, target: <50ms {'[PASS]' if dependency_p95 < 50 else '[FAIL]'}"
-        )
+        print(f"    p95: {dependency_p95:.2f}ms, target: <50ms {'[PASS]' if dependency_p95 < 50 else '[FAIL]'}")
         print(f"  Phase 3 - Queries (200 lookups):")
-        print(
-            f"    p95: {query_p95:.2f}ms, target: <50ms {'[PASS]' if query_p95 < 50 else '[FAIL]'}"
-        )
+        print(f"    p95: {query_p95:.2f}ms, target: <50ms {'[PASS]' if query_p95 < 50 else '[FAIL]'}")
 
         assert insert_p95 < 50, f"Task insertion p95 {insert_p95:.2f}ms exceeds 50ms"
-        assert (
-            dependency_p95 < 50
-        ), f"Dependency insertion p95 {dependency_p95:.2f}ms exceeds 50ms"
+        assert dependency_p95 < 50, f"Dependency insertion p95 {dependency_p95:.2f}ms exceeds 50ms"
         assert query_p95 < 50, f"Query p95 {query_p95:.2f}ms exceeds 50ms"
 
-        print(
-            f"\n[SUCCESS] All DAG operations meet <50ms performance target at 1,000 task scale"
-        )
+        print(f"\n[SUCCESS] All DAG operations meet <50ms performance target at 1,000 task scale")
 
 
 class TestIndexEffectiveness:
@@ -417,14 +384,12 @@ class TestIndexEffectiveness:
 
         # Query with indexes (should use idx_dependencies_source)
         start = time.time()
-        deps = await db.get_task_dependencies(task_ids[0])
+        _ = await db.get_task_dependencies(task_ids[0])
         with_index_time = (time.time() - start) * 1000
 
         # Simulate query without index (linear scan)
         start = time.time()
-        deps_no_index = [
-            (s, t, dt) for (s, t, dt) in db.dependencies if s == task_ids[0]
-        ]
+        _ = [(s, t, dt) for (s, t, dt) in db.dependencies if s == task_ids[0]]
         without_index_time = (time.time() - start) * 1000
 
         print(f"\n[PERF] Index Effectiveness:")
@@ -433,9 +398,7 @@ class TestIndexEffectiveness:
         print(f"  - Speedup: {without_index_time / with_index_time:.1f}x")
 
         # Index should be at least 2x faster (in practice, much more)
-        assert (
-            with_index_time < without_index_time / 2
-        ), "Index should provide significant speedup"
+        assert with_index_time < without_index_time / 2, "Index should provide significant speedup"
 
 
 # Run tests

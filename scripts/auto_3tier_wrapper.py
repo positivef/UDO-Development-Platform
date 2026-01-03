@@ -96,7 +96,7 @@ class Auto3TierWrapper:
                 elapsed = (datetime.now() - self.circuit_breaker["last_failure_time"]).seconds
                 if elapsed > 60:  # 1 minute cooldown
                     self.circuit_breaker["state"] = "HALF_OPEN"
-                    logger.info("[EMOJI] Circuit breaker: HALF_OPEN (testing recovery)")
+                    logger.info("[*] Circuit breaker: HALF_OPEN (testing recovery)")
                     return True
             return False
 
@@ -154,7 +154,7 @@ class Auto3TierWrapper:
         Returns:
             Result of retried function or raises exception
         """
-        logger.info(f"[EMOJI] Applying solution: {solution[:100]}")
+        logger.info(f"[*] Applying solution: {solution[:100]}")
 
         # Execute solution as bash command
         try:
@@ -207,9 +207,7 @@ class Auto3TierWrapper:
 
             if self.circuit_breaker["consecutive_failures"] >= self.circuit_breaker["threshold"]:
                 self.circuit_breaker["state"] = "OPEN"
-                logger.error(
-                    f"[EMOJI] Circuit breaker OPEN: {self.circuit_breaker['consecutive_failures']} consecutive failures"
-                )
+                logger.error(f"[*] Circuit breaker OPEN: {self.circuit_breaker['consecutive_failures']} consecutive failures")
         else:
             self.circuit_breaker["consecutive_failures"] = 0
             if self.circuit_breaker["state"] == "HALF_OPEN":
@@ -232,7 +230,7 @@ class Auto3TierWrapper:
 
             # Skip if disabled or circuit breaker open
             if not self.is_enabled():
-                logger.debug(f"⏭  Auto-resolution disabled for {func.__name__}")
+                logger.debug(f"[*]  Auto-resolution disabled for {func.__name__}")
                 return func(*args, **kwargs)
 
             try:
@@ -250,7 +248,7 @@ class Auto3TierWrapper:
                         logger.warning("[WARN]  UnifiedErrorResolver not available, skipping auto-resolution")
                         return result
 
-                    # [EMOJI] AUTOMATIC 3-TIER CASCADE
+                    # [*] AUTOMATIC 3-TIER CASCADE
                     start_time = time.time()
 
                     context = {
@@ -347,7 +345,7 @@ class Auto3TierWrapper:
         for key in self.statistics:
             if isinstance(self.statistics[key], (int, float)):
                 self.statistics[key] = 0
-        logger.info("[EMOJI] Statistics reset")
+        logger.info("[*] Statistics reset")
 
     def enable(self):
         """Enable auto-resolution"""
@@ -357,7 +355,7 @@ class Auto3TierWrapper:
     def disable(self):
         """Disable auto-resolution"""
         self.enabled = False
-        logger.info("⏸  Auto-resolution DISABLED")
+        logger.info("[*]  Auto-resolution DISABLED")
 
 
 # Global singleton instance
@@ -369,7 +367,7 @@ def get_wrapper() -> Auto3TierWrapper:
     global _wrapper_instance
     if _wrapper_instance is None:
         _wrapper_instance = Auto3TierWrapper()
-        logger.info("[EMOJI] Auto3TierWrapper initialized")
+        logger.info("[*] Auto3TierWrapper initialized")
     return _wrapper_instance
 
 
@@ -432,6 +430,6 @@ if __name__ == "__main__":
 
     # Print statistics
     stats = get_statistics()
-    print(f"\n[EMOJI] Statistics:")
+    print(f"\n[*] Statistics:")
     for key, value in stats.items():
         print(f"  {key}: {value}")

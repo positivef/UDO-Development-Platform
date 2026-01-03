@@ -253,13 +253,13 @@ class ScheduledTasksChecker:
         """
         lines = []
         lines.append("=" * 60)
-        lines.append("📅 SCHEDULED TASKS CHECK")
+        lines.append("[*] SCHEDULED TASKS CHECK")
         lines.append(f"Checked: {datetime.now().strftime('%Y-%m-%d %H:%M')}")
         lines.append("=" * 60)
 
         # Overdue tasks (critical)
         if overdue:
-            lines.append("\n🚨 OVERDUE TASKS:")
+            lines.append("\n[*] OVERDUE TASKS:")
             lines.append("-" * 60)
             for task in overdue:
                 days_late = abs(task.days_until_due) if task.days_until_due else 0
@@ -269,11 +269,11 @@ class ScheduledTasksChecker:
                     lines.append(f"      Context: {task.context}")
                 lines.append("")
         else:
-            lines.append("\n✅ No overdue tasks")
+            lines.append("\n[OK] No overdue tasks")
 
         # This week tasks
         if this_week:
-            lines.append("\n📌 THIS WEEK (7 days):")
+            lines.append("\n[*] THIS WEEK (7 days):")
             lines.append("-" * 60)
             for task in this_week:
                 days_left = task.days_until_due if task.days_until_due else 0
@@ -286,11 +286,11 @@ class ScheduledTasksChecker:
                         lines.append(f"      Estimated: {task.estimated_time}")
                 lines.append("")
         else:
-            lines.append("\n✅ No tasks due this week")
+            lines.append("\n[OK] No tasks due this week")
 
         # Upcoming tasks
         if upcoming:
-            lines.append(f"\n📋 UPCOMING (next 2 weeks):")
+            lines.append("\n[*] UPCOMING (next 2 weeks):")
             lines.append("-" * 60)
             for task in upcoming:
                 days_left = task.days_until_due if task.days_until_due else 0

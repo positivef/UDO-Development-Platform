@@ -30,9 +30,12 @@ else:
 # Add backend to path
 sys.path.insert(0, str(Path(__file__).parent))
 
-from app.services.project_context_service import ProjectContextService
-from async_database import (async_db, close_async_database,
-                            initialize_async_database)
+from app.services.project_context_service import ProjectContextService  # noqa: E402
+from async_database import (  # noqa: E402
+    async_db,
+    close_async_database,
+    initialize_async_database,
+)
 
 
 async def test_database_connection():
@@ -84,7 +87,7 @@ async def test_list_projects():
 
         result = await service.list_projects(limit=10)
 
-        print(f"[OK] Projects listed successfully")
+        print("[OK] Projects listed successfully")
         print(f"   Total projects: {result['total']}")
         print(f"   Projects returned: {len(result['projects'])}")
         print(f"   Current project ID: {result['current_project_id']}")
@@ -129,22 +132,22 @@ async def test_save_and_load_context():
         ]
 
         # Save context
-        print(f"\n[EMOJI] Saving context for project {project_id}")
+        print(f"\n[SAVE] context for project {project_id}")
         saved = await service.save_context(
             project_id=project_id,
             udo_state=test_udo_state,
             ml_models=test_ml_models,
             recent_executions=test_executions,
         )
-        print(f"[OK] Context saved successfully")
+        print("[OK] Context saved successfully")
         print(f"   Saved at: {saved['saved_at']}")
 
         # Load context
-        print(f"\n[EMOJI] Loading context for project {project_id}")
+        print(f"\n[LOAD] context for project {project_id}")
         loaded = await service.load_context(project_id)
 
         if loaded:
-            print(f"[OK] Context loaded successfully")
+            print("[OK] Context loaded successfully")
             print(f"   Loaded at: {loaded['loaded_at']}")
             print(f"   UDO state phase: {loaded['udo_state'].get('phase')}")
             print(f"   ML models: {list(loaded['ml_models'].keys())}")
@@ -182,12 +185,10 @@ async def test_switch_project():
         # Use existing test project ID
         target_project_id = UUID("22222222-2222-2222-2222-222222222222")
 
-        print(f"\n[EMOJI] Switching to project {target_project_id}")
-        result = await service.switch_project(
-            target_project_id=target_project_id, auto_save_current=False
-        )
+        print(f"\n[SWITCH] to project {target_project_id}")
+        result = await service.switch_project(target_project_id=target_project_id, auto_save_current=False)
 
-        print(f"[OK] Project switched successfully")
+        print("[OK] Project switched successfully")
         print(f"   Project name: {result['project_name']}")
         print(f"   Context loaded: {result['context_loaded']}")
         print(f"   Message: {result['message']}")
@@ -240,7 +241,7 @@ async def main():
         print(f"{status}: {test_name}")
 
     print("\n" + "=" * 60)
-    print(f"Results: {passed}/{total} tests passed ({passed/total*100:.1f}%)")
+    print(f"Results: {passed}/{total} tests passed ({passed / total * 100:.1f}%)")
     print("=" * 60)
 
     return passed == total

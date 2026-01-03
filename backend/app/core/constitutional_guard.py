@@ -7,7 +7,6 @@ Ensures consistent governance across Claude, Codex, and Gemini.
 
 import json
 import logging
-import os
 from datetime import datetime
 from enum import Enum
 from pathlib import Path
@@ -146,9 +145,7 @@ class ConstitutionalGuard:
         self.violation_log.append(violation)
         logger.warning(f"Constitutional violation: [{article}] {description}")
 
-    # [EMOJI]
-    # P1: Design Review First
-    # [EMOJI]
+        # P1: Design Review First
 
     async def validate_design(self, design: Dict[str, Any]) -> ValidationResult:
         """
@@ -168,7 +165,7 @@ class ConstitutionalGuard:
             return ValidationResult(False, article, ["Constitution not loaded"])
 
         p1 = self.constitution.get(article, {})
-        risk_checks = p1.get("risk_checks", {})
+        _ = p1.get("risk_checks", {})  # Reserved for future use
 
         # Check all 8 required risks
         required_risks = [
@@ -224,9 +221,7 @@ class ConstitutionalGuard:
             metadata={"design_id": design.get("id"), "risks_checked": len(design.get("risk_assessments", {}))},
         )
 
-    # [EMOJI]
-    # P2: Uncertainty Disclosure
-    # [EMOJI]
+        # P2: Uncertainty Disclosure
 
     async def validate_confidence(self, response: Dict[str, Any]) -> ValidationResult:
         """
@@ -324,9 +319,7 @@ class ConstitutionalGuard:
             },
         )
 
-    # [EMOJI]
-    # P3: Evidence-Based Decision
-    # [EMOJI]
+        # P3: Evidence-Based Decision
 
     async def validate_evidence(self, claim: Dict[str, Any]) -> ValidationResult:
         """
@@ -356,7 +349,7 @@ class ConstitutionalGuard:
         # Check for required evidence
         has_benchmark = "benchmark_results" in claim.get("evidence", {})
         has_ab_test = "ab_test_metrics" in claim.get("evidence", {})
-        has_automated_tests = "automated_tests" in claim.get("evidence", {})
+        _ = "automated_tests" in claim.get("evidence", {})  # Reserved for future use
 
         if not (has_benchmark or has_ab_test):
             violations.append("Optimization claims require benchmark_results or ab_test_metrics")
@@ -420,9 +413,7 @@ class ConstitutionalGuard:
             metadata={"claim_type": claim.get("type"), "has_evidence": has_benchmark or has_ab_test},
         )
 
-    # [EMOJI]
-    # P4: Phase-Aware Compliance
-    # [EMOJI]
+        # P4: Phase-Aware Compliance
 
     async def validate_phase_compliance(self, current_phase: str, action: str, context: Dict[str, Any]) -> ValidationResult:
         """
@@ -573,9 +564,7 @@ class ConstitutionalGuard:
             },
         )
 
-    # [EMOJI]
-    # P5: Multi-AI Consistency
-    # [EMOJI]
+        # P5: Multi-AI Consistency
 
     async def validate_ai_consensus(self, decisions: List[Dict[str, Any]]) -> Tuple[ValidationResult, Dict[str, Any]]:
         """
@@ -663,9 +652,7 @@ class ConstitutionalGuard:
             consensus_decision,
         )
 
-    # [EMOJI]
-    # General Validation
-    # [EMOJI]
+        # General Validation
 
     async def validate_all(
         self, operation: str, data: Dict[str, Any], context: Dict[str, Any] = None

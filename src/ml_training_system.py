@@ -24,11 +24,11 @@ import joblib
 from filelock import FileLock
 
 # Windows Unicode 인코딩 문제 해결
-if sys.platform == 'win32':
-    os.environ['PYTHONIOENCODING'] = 'utf-8'
-    if hasattr(sys.stdout, 'reconfigure'):
-        sys.stdout.reconfigure(encoding='utf-8')
-        sys.stderr.reconfigure(encoding='utf-8')
+if sys.platform == "win32":
+    os.environ["PYTHONIOENCODING"] = "utf-8"
+    if hasattr(sys.stdout, "reconfigure"):
+        sys.stdout.reconfigure(encoding="utf-8")
+        sys.stderr.reconfigure(encoding="utf-8")
 
 # 로깅 설정
 logging.basicConfig(level=logging.INFO)
@@ -36,8 +36,8 @@ logger = logging.getLogger(__name__)
 
 
 def _resolve_model_dir(custom_dir: Optional[Any] = None) -> Path:
-    base = custom_dir if custom_dir is not None else os.environ.get('UDO_MODEL_DIR')
-    target = Path(base).expanduser() if base is not None else Path.home() / '.udo' / 'models'
+    base = custom_dir if custom_dir is not None else os.environ.get("UDO_MODEL_DIR")
+    target = Path(base).expanduser() if base is not None else Path.home() / ".udo" / "models"
     target.mkdir(parents=True, exist_ok=True)
     return target
 
@@ -45,6 +45,7 @@ def _resolve_model_dir(custom_dir: Optional[Any] = None) -> Path:
 @dataclass
 class TrainingData:
     """훈련 데이터 구조"""
+
     features: np.ndarray
     labels: np.ndarray
     metadata: Dict[str, Any]
@@ -58,6 +59,7 @@ class TrainingData:
 @dataclass
 class ModelMetrics:
     """모델 성능 메트릭"""
+
     accuracy: float
     mse: float
     r2: float
@@ -83,27 +85,16 @@ class MLTrainingSystem:
     def _initialize_models(self):
         """기본 모델 초기화"""
         # 불확실성 예측 모델
-        self.models['uncertainty_predictor'] = RandomForestRegressor(
-            n_estimators=100,
-            max_depth=10,
-            min_samples_split=5,
-            min_samples_leaf=2,
-            random_state=42
+        self.models["uncertainty_predictor"] = RandomForestRegressor(
+            n_estimators=100, max_depth=10, min_samples_split=5, min_samples_leaf=2, random_state=42
         )
 
         # Phase 분류 모델
-        self.models['phase_classifier'] = RandomForestClassifier(
-            n_estimators=100,
-            max_depth=10,
-            random_state=42
-        )
+        self.models["phase_classifier"] = RandomForestClassifier(n_estimators=100, max_depth=10, random_state=42)
 
         # 신뢰도 예측 모델
-        self.models['confidence_predictor'] = RandomForestRegressor(
-            n_estimators=150,
-            max_depth=15,
-            min_samples_split=3,
-            random_state=42
+        self.models["confidence_predictor"] = RandomForestRegressor(
+            n_estimators=150, max_depth=15, min_samples_split=3, random_state=42
         )
 
         # 각 모델용 스케일러
@@ -117,49 +108,50 @@ class MLTrainingSystem:
         features = []
 
         # Phase 인코딩
-        phase_mapping = {
-            'ideation': 0, 'design': 1, 'mvp': 2,
-            'implementation': 3, 'testing': 4
-        }
-        features.append(phase_mapping.get(raw_data.get('phase', 'ideation'), 0))
+        phase_mapping = {"ideation": 0, "design": 1, "mvp": 2, "implementation": 3, "testing": 4}
+        features.append(phase_mapping.get(raw_data.get("phase", "ideation"), 0))
 
         # 시간적 특징
-        features.append(raw_data.get('timeline_weeks', 12))
-        features.append(raw_data.get('team_size', 5))
-        features.append(raw_data.get('budget', 50000) / 10000)  # 스케일링
+        features.append(raw_data.get("timeline_weeks", 12))
+        features.append(raw_data.get("team_size", 5))
+        features.append(raw_data.get("budget", 50000) / 10000)  # 스케일링
 
         # 불확실성 차원들
-        features.append(raw_data.get('technical_uncertainty', 0.5))
-        features.append(raw_data.get('market_uncertainty', 0.5))
-        features.append(raw_data.get('resource_uncertainty', 0.3))
-        features.append(raw_data.get('timeline_uncertainty', 0.3))
-        features.append(raw_data.get('quality_uncertainty', 0.4))
+        features.append(raw_data.get("technical_uncertainty", 0.5))
+        features.append(raw_data.get("market_uncertainty", 0.5))
+        features.append(raw_data.get("resource_uncertainty", 0.3))
+        features.append(raw_data.get("timeline_uncertainty", 0.3))
+        features.append(raw_data.get("quality_uncertainty", 0.4))
 
         # 기타 메트릭
-        features.append(raw_data.get('code_complexity', 0.5))
-        features.append(raw_data.get('test_coverage', 0.0))
-        features.append(raw_data.get('architecture_quality', 0.7))
-        features.append(len(raw_data.get('files', [])))
-        features.append(len(raw_data.get('dependencies', [])))
+        features.append(raw_data.get("code_complexity", 0.5))
+        features.append(raw_data.get("test_coverage", 0.0))
+        features.append(raw_data.get("architecture_quality", 0.7))
+        features.append(len(raw_data.get("files", [])))
+        features.append(len(raw_data.get("dependencies", [])))
 
         # Feature names 저장 (첫 번째 호출시만)
         if not self.feature_names:
             self.feature_names = [
-                'phase', 'timeline_weeks', 'team_size', 'budget_scaled',
-                'tech_uncertainty', 'market_uncertainty', 'resource_uncertainty',
-                'timeline_uncertainty', 'quality_uncertainty',
-                'code_complexity', 'test_coverage', 'architecture_quality',
-                'file_count', 'dependency_count'
+                "phase",
+                "timeline_weeks",
+                "team_size",
+                "budget_scaled",
+                "tech_uncertainty",
+                "market_uncertainty",
+                "resource_uncertainty",
+                "timeline_uncertainty",
+                "quality_uncertainty",
+                "code_complexity",
+                "test_coverage",
+                "architecture_quality",
+                "file_count",
+                "dependency_count",
             ]
 
         return np.array(features).reshape(1, -1)
 
-    def train_model(
-        self,
-        model_name: str,
-        training_data: TrainingData,
-        test_size: float = 0.2
-    ) -> ModelMetrics:
+    def train_model(self, model_name: str, training_data: TrainingData, test_size: float = 0.2) -> ModelMetrics:
         """모델 훈련"""
         if model_name not in self.models:
             raise ValueError(f"Unknown model: {model_name}")
@@ -169,10 +161,7 @@ class MLTrainingSystem:
 
         # 데이터 분할
         X_train, X_test, y_train, y_test = train_test_split(
-            training_data.features,
-            training_data.labels,
-            test_size=test_size,
-            random_state=42
+            training_data.features, training_data.labels, test_size=test_size, random_state=42
         )
 
         # 스케일링
@@ -186,7 +175,7 @@ class MLTrainingSystem:
         y_pred = self.models[model_name].predict(X_test_scaled)
 
         # 메트릭 계산
-        if hasattr(self.models[model_name], 'predict_proba'):
+        if hasattr(self.models[model_name], "predict_proba"):
             # 분류 모델
             accuracy = accuracy_score(y_test, y_pred)
             mse = mean_squared_error(y_test, y_pred)
@@ -198,18 +187,13 @@ class MLTrainingSystem:
             r2 = r2_score(y_test, y_pred)
 
         # 교차 검증
-        cv_scores = cross_val_score(
-            self.models[model_name],
-            X_train_scaled,
-            y_train,
-            cv=5
-        )
+        cv_scores = cross_val_score(self.models[model_name], X_train_scaled, y_train, cv=5)
 
         # 특징 중요도
         feature_importance = {}
-        if hasattr(self.models[model_name], 'feature_importances_'):
+        if hasattr(self.models[model_name], "feature_importances_"):
             importances = self.models[model_name].feature_importances_
-            for i, name in enumerate(self.feature_names[:len(importances)]):
+            for i, name in enumerate(self.feature_names[: len(importances)]):
                 feature_importance[name] = float(importances[i])
 
         # 훈련 시간
@@ -222,26 +206,24 @@ class MLTrainingSystem:
             r2=r2,
             cross_val_scores=cv_scores.tolist(),
             feature_importance=feature_importance,
-            training_time=training_time
+            training_time=training_time,
         )
 
         # 히스토리 저장
-        self.training_history.append({
-            'model': model_name,
-            'timestamp': datetime.now().isoformat(),
-            'metrics': asdict(metrics),
-            'data_size': len(training_data.features)
-        })
+        self.training_history.append(
+            {
+                "model": model_name,
+                "timestamp": datetime.now().isoformat(),
+                "metrics": asdict(metrics),
+                "data_size": len(training_data.features),
+            }
+        )
 
         logger.info(f"Training completed: R2={r2:.3f}, MSE={mse:.3f}")
 
         return metrics
 
-    def predict(
-        self,
-        model_name: str,
-        input_data: Dict
-    ) -> Tuple[float, Dict]:
+    def predict(self, model_name: str, input_data: Dict) -> Tuple[float, Dict]:
         """예측 수행"""
         if model_name not in self.models:
             raise ValueError(f"Unknown model: {model_name}")
@@ -264,16 +246,16 @@ class MLTrainingSystem:
 
         # 예측 확률 (분류 모델의 경우)
         probabilities = {}
-        if hasattr(self.models[model_name], 'predict_proba'):
+        if hasattr(self.models[model_name], "predict_proba"):
             proba = self.models[model_name].predict_proba(features_scaled)[0]
             probabilities = {i: float(p) for i, p in enumerate(proba)}
 
         # 메타데이터
         metadata = {
-            'model': model_name,
-            'timestamp': datetime.now().isoformat(),
-            'features_used': self.feature_names,
-            'probabilities': probabilities
+            "model": model_name,
+            "timestamp": datetime.now().isoformat(),
+            "features_used": self.feature_names,
+            "probabilities": probabilities,
         }
 
         return float(prediction), metadata
@@ -305,11 +287,9 @@ class MLTrainingSystem:
             deps = np.random.randint(0, 50)
 
             # 특징 벡터
-            feature_vector = np.concatenate([
-                [phase, timeline, team_size, budget],
-                uncertainties,
-                [complexity, coverage, quality, files, deps]
-            ])
+            feature_vector = np.concatenate(
+                [[phase, timeline, team_size, budget], uncertainties, [complexity, coverage, quality, files, deps]]
+            )
             features.append(feature_vector)
 
             # 레이블 (신뢰도 - 간단한 규칙 기반)
@@ -320,11 +300,7 @@ class MLTrainingSystem:
             confidence = np.clip(confidence, 0, 1)
             labels.append(confidence)
 
-        return TrainingData(
-            features=np.array(features),
-            labels=np.array(labels),
-            metadata={'synthetic': True, 'size': size}
-        )
+        return TrainingData(features=np.array(features), labels=np.array(labels), metadata={"synthetic": True, "size": size})
 
     def save_models(self, directory: Optional[Any] = None) -> Dict[str, Path]:
         """모든 모델 저장"""
@@ -332,21 +308,21 @@ class MLTrainingSystem:
         saved_paths: Dict[str, Path] = {}
         for model_name, model in self.models.items():
             model_path = target_dir / f"{model_name}.pkl"
-            lock = FileLock(str(model_path) + '.lock')
+            lock = FileLock(str(model_path) + ".lock")
             with lock:
                 joblib.dump(model, model_path)
             saved_paths[model_name] = model_path
 
             if model_name in self.scalers:
                 scaler_path = target_dir / f"{model_name}_scaler.pkl"
-                scaler_lock = FileLock(str(scaler_path) + '.lock')
+                scaler_lock = FileLock(str(scaler_path) + ".lock")
                 with scaler_lock:
                     joblib.dump(self.scalers[model_name], scaler_path)
 
         history_path = target_dir / "training_history.json"
-        history_lock = FileLock(str(history_path) + '.lock')
+        history_lock = FileLock(str(history_path) + ".lock")
         with history_lock:
-            with open(history_path, 'w', encoding='utf-8') as f:
+            with open(history_path, "w", encoding="utf-8") as f:
                 json.dump(self.training_history, f, indent=2)
 
         logger.info("Saved %d models to %s", len(self.models), target_dir)
@@ -370,28 +346,24 @@ class MLTrainingSystem:
         # 훈련 히스토리 로드
         history_path = self.model_dir / "training_history.json"
         if history_path.exists():
-            with open(history_path, 'r') as f:
+            with open(history_path, "r") as f:
                 self.training_history = json.load(f)
 
         logger.info(f"Loaded {loaded} models from {self.model_dir}")
 
     def get_model_report(self) -> Dict:
         """모델 상태 보고서"""
-        report = {
-            'models': {},
-            'training_history': len(self.training_history),
-            'last_training': None
-        }
+        report = {"models": {}, "training_history": len(self.training_history), "last_training": None}
 
         for model_name, model in self.models.items():
-            report['models'][model_name] = {
-                'type': model.__class__.__name__,
-                'trained': hasattr(model, 'n_features_in_'),
-                'features': getattr(model, 'n_features_in_', 0)
+            report["models"][model_name] = {
+                "type": model.__class__.__name__,
+                "trained": hasattr(model, "n_features_in_"),
+                "features": getattr(model, "n_features_in_", 0),
             }
 
         if self.training_history:
-            report['last_training'] = self.training_history[-1]
+            report["last_training"] = self.training_history[-1]
 
         return report
 
@@ -411,7 +383,7 @@ def demo():
     logger.info("Generated %d samples", len(training_data.features))
 
     # 각 모델 훈련
-    models_to_train = ['uncertainty_predictor', 'confidence_predictor']
+    models_to_train = ["uncertainty_predictor", "confidence_predictor"]
 
     for model_name in models_to_train:
         logger.info("Training %s", model_name)
@@ -423,11 +395,7 @@ def demo():
 
         # Top 3 중요 특징
         if metrics.feature_importance:
-            sorted_features = sorted(
-                metrics.feature_importance.items(),
-                key=lambda x: x[1],
-                reverse=True
-            )[:3]
+            sorted_features = sorted(metrics.feature_importance.items(), key=lambda x: x[1], reverse=True)[:3]
             logger.info("Top features:")
             for feat, imp in sorted_features:
                 logger.info("%s: %.3f", feat, imp)
@@ -435,15 +403,15 @@ def demo():
     # 예측 테스트
     logger.info("Testing predictions...")
     test_input = {
-        'phase': 'ideation',
-        'timeline_weeks': 12,
-        'team_size': 5,
-        'budget': 50000,
-        'technical_uncertainty': 0.7,
-        'market_uncertainty': 0.6,
-        'resource_uncertainty': 0.3,
-        'timeline_uncertainty': 0.4,
-        'quality_uncertainty': 0.5
+        "phase": "ideation",
+        "timeline_weeks": 12,
+        "team_size": 5,
+        "budget": 50000,
+        "technical_uncertainty": 0.7,
+        "market_uncertainty": 0.6,
+        "resource_uncertainty": 0.3,
+        "timeline_uncertainty": 0.4,
+        "quality_uncertainty": 0.5,
     }
 
     for model_name in models_to_train:
@@ -457,9 +425,9 @@ def demo():
     # 상태 보고
     logger.info("Model report:")
     report = ml_system.get_model_report()
-    for model_name, info in report['models'].items():
-        status = "✅ Trained" if info['trained'] else "⚠️ Not trained"
-        logger.info("%s: %s (%s)", model_name, status, info['type'])
+    for model_name, info in report["models"].items():
+        status = "[OK] Trained" if info["trained"] else "[WARN] Not trained"
+        logger.info("%s: %s (%s)", model_name, status, info["type"])
 
     logger.info("%s", "=" * 60)
     logger.info("Demo completed!")

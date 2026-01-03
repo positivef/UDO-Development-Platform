@@ -217,7 +217,10 @@
       "Bash(cmd.exe /c \"taskkill /F /IM node.exe 2>nul & echo Killed node\")",
       "Bash(cmd.exe /c \"taskkill /F /PID 378444\")",
       "Bash(.venvScriptspython.exe -c \"from backend.app.routers.rl_knowledge import router; print\\(''SUCCESS: rl_knowledge router imports correctly''\\)\")",
-      "Bash(cmd.exe /c \"taskkill /F /PID 399088 & taskkill /F /PID 404712 & taskkill /F /PID 410688 & taskkill /F /PID 405084 & taskkill /F /PID 253944 & taskkill /F /PID 258928 & taskkill /F /PID 411864 & taskkill /F /PID 408064\")"
+      "Bash(cmd.exe /c \"taskkill /F /PID 399088 & taskkill /F /PID 404712 & taskkill /F /PID 410688 & taskkill /F /PID 405084 & taskkill /F /PID 253944 & taskkill /F /PID 258928 & taskkill /F /PID 411864 & taskkill /F /PID 408064\")",
+      "Bash(del:*)",
+      "Bash(.venvScriptspython.exe -m flake8 backend/app --select=F401,F541,E226,E402,F841 --show-source)",
+      "Bash(.venv\\\\Scripts\\\\python.exe -m flake8:*)"
     ],
     "deny": [],
     "ask": []

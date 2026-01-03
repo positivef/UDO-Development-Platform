@@ -11,9 +11,8 @@ Validates:
 """
 
 import sys
-from datetime import datetime, timedelta
+from datetime import datetime
 from pathlib import Path
-from typing import List
 
 import pytest
 
@@ -21,16 +20,16 @@ import pytest
 backend_dir = Path(__file__).parent.parent
 sys.path.insert(0, str(backend_dir))
 
-from app.models.uncertainty import (BayesianConfidenceRequest,
-                                    BayesianConfidenceResponse,
-                                    UncertaintyStateEnum)
-from app.services.bayesian_confidence import (PHASE_PRIORS,
-                                              OptimizedBayesianScorer,
-                                              _calculate_monitoring_level,
-                                              _calculate_risk_level,
-                                              _generate_recommendations,
-                                              calculate_bayesian_confidence,
-                                              classify_uncertainty_state)
+from app.models.uncertainty import BayesianConfidenceRequest, UncertaintyStateEnum  # noqa: E402
+from app.services.bayesian_confidence import (
+    PHASE_PRIORS,  # noqa: E402
+    OptimizedBayesianScorer,
+    _calculate_monitoring_level,
+    _calculate_risk_level,
+    _generate_recommendations,
+    calculate_bayesian_confidence,
+    classify_uncertainty_state,
+)
 
 # ============================================================================
 # Unit Tests for Core Bayesian Calculations
@@ -105,15 +104,11 @@ class TestOptimizedBayesianScorer:
         context = {"has_code": True}
 
         # All successes should give high likelihood
-        high_likelihood = scorer.calculate_likelihood(
-            context, [True, True, True, True, True]
-        )
+        high_likelihood = scorer.calculate_likelihood(context, [True, True, True, True, True])
         assert high_likelihood > 0.8
 
         # All failures should give low likelihood
-        low_likelihood = scorer.calculate_likelihood(
-            context, [False, False, False, False, False]
-        )
+        low_likelihood = scorer.calculate_likelihood(context, [False, False, False, False, False])
         assert low_likelihood < 0.3
 
     def test_likelihood_context_adjustments(self):
@@ -153,9 +148,7 @@ class TestOptimizedBayesianScorer:
         likelihood = 0.8
         evidence_strength = 10
 
-        post_alpha, post_beta = scorer.calculate_posterior(
-            prior_alpha, prior_beta, likelihood, evidence_strength
-        )
+        post_alpha, post_beta = scorer.calculate_posterior(prior_alpha, prior_beta, likelihood, evidence_strength)
 
         # Posterior should shift toward evidence
         prior_mean = scorer._beta_mean(prior_alpha, prior_beta)
@@ -385,9 +378,7 @@ class TestRecommendationsGeneration:
         )
 
         assert len(recs) >= 5
-        assert any(
-            "DO NOT PROCEED" in rec or "Extreme uncertainty" in rec for rec in recs
-        )
+        assert any("DO NOT PROCEED" in rec or "Extreme uncertainty" in rec for rec in recs)
 
 
 # ============================================================================

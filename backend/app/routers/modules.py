@@ -4,30 +4,24 @@ Module Management API Router
 Standard 레벨 모듈 점유 관리 API
 """
 
-from fastapi import APIRouter, HTTPException, Depends, Query
+from fastapi import APIRouter, HTTPException, Query
 from typing import List, Optional, Dict, Any
 from datetime import datetime
 from pydantic import BaseModel, Field
 
-from app.services.module_ownership_manager import (
-    get_module_manager,
-    ModuleStatus,
-    CompletionCriteria
-)
-from app.services.session_manager_v2 import get_session_manager
+from app.services.module_ownership_manager import get_module_manager, ModuleStatus
 
-router = APIRouter(
-    prefix="/api/modules",
-    tags=["modules"]
-)
+router = APIRouter(prefix="/api/modules", tags=["modules"])
 
 
 # ========================
 # Request/Response Models
 # ========================
 
+
 class ClaimModuleRequest(BaseModel):
     """모듈 점유 요청"""
+
     module_id: str = Field(..., description="모듈 ID (예: auth/login)")
     session_id: str = Field(..., description="세션 ID")
     developer_name: str = Field(..., description="개발자 이름")
@@ -36,6 +30,7 @@ class ClaimModuleRequest(BaseModel):
 
 class UpdateModuleStatusRequest(BaseModel):
     """모듈 상태 업데이트 요청"""
+
     session_id: str = Field(..., description="세션 ID")
     new_status: str = Field(..., description="새로운 상태")
     progress: Optional[int] = Field(None, ge=0, le=100, description="진행률")
@@ -44,12 +39,14 @@ class UpdateModuleStatusRequest(BaseModel):
 
 class ReleaseModuleRequest(BaseModel):
     """모듈 해제 요청"""
+
     session_id: str = Field(..., description="세션 ID")
     reason: Optional[str] = Field(None, description="해제 사유")
 
 
 class ModuleAvailabilityResponse(BaseModel):
     """모듈 가용성 응답"""
+
     available: bool
     reason: Optional[str] = None
     owner: Optional[str] = None
@@ -62,6 +59,7 @@ class ModuleAvailabilityResponse(BaseModel):
 
 class ModuleOwnershipResponse(BaseModel):
     """모듈 점유 정보 응답"""
+
     module_id: str
     owner_session: str
     developer_name: str
@@ -78,6 +76,7 @@ class ModuleOwnershipResponse(BaseModel):
 
 class ModuleStatusBoardResponse(BaseModel):
     """모듈 현황판 응답"""
+
     active: List[Dict[str, Any]]
     available: List[Dict[str, Any]]
     blocked: List[Dict[str, Any]]
@@ -87,6 +86,7 @@ class ModuleStatusBoardResponse(BaseModel):
 # ========================
 # API Endpoints
 # ========================
+
 
 @router.get("/status-board", response_model=ModuleStatusBoardResponse)
 async def get_module_status_board():
@@ -107,7 +107,7 @@ async def get_module_status_board():
 async def check_module_availability(
     module_id: str,
     session_id: str = Query(..., description="세션 ID"),
-    developer_name: str = Query(..., description="개발자 이름")
+    developer_name: str = Query(..., description="개발자 이름"),
 ):
     """
     모듈 개발 가능 여부 확인
@@ -118,9 +118,7 @@ async def check_module_availability(
     try:
         manager = await get_module_manager()
         availability = await manager.check_module_availability(
-            module_id=module_id,
-            session_id=session_id,
-            developer_name=developer_name
+            module_id=module_id, session_id=session_id, developer_name=developer_name
         )
 
         return ModuleAvailabilityResponse(
@@ -131,17 +129,14 @@ async def check_module_availability(
             estimated_available=availability.estimated_available,
             alternatives=availability.alternatives,
             warnings=availability.warnings,
-            can_override=availability.can_override
+            can_override=availability.can_override,
         )
     except Exception as e:
         raise HTTPException(status_code=500, detail=str(e))
 
 
 @router.post("/{module_id:path}/claim", response_model=ModuleOwnershipResponse)
-async def claim_module(
-    module_id: str,
-    request: ClaimModuleRequest
-):
+async def claim_module(module_id: str, request: ClaimModuleRequest):
     """
     모듈 점유
 
@@ -159,7 +154,7 @@ async def claim_module(
             module_id=module_id,
             session_id=request.session_id,
             developer_name=request.developer_name,
-            estimated_hours=request.estimated_hours
+            estimated_hours=request.estimated_hours,
         )
 
         if not success:
@@ -177,7 +172,7 @@ async def claim_module(
             blockers=ownership.blockers,
             warnings=ownership.warnings,
             progress=ownership.progress,
-            commits=ownership.commits
+            commits=ownership.commits,
         )
     except ValueError as e:
         raise HTTPException(status_code=400, detail=str(e))
@@ -186,15 +181,12 @@ async def claim_module(
 
 
 @router.put("/{module_id:path}/status")
-async def update_module_status(
-    module_id: str,
-    request: UpdateModuleStatusRequest
-):
+async def update_module_status(module_id: str, request: UpdateModuleStatusRequest):
     """
     모듈 상태 업데이트
 
     모듈의 개발 상태를 업데이트합니다.
-    (planning → coding → testing → review → completed)
+    (planning -> coding -> testing -> review -> completed)
     """
     try:
         manager = await get_module_manager()
@@ -207,7 +199,7 @@ async def update_module_status(
             session_id=request.session_id,
             new_status=new_status,
             progress=request.progress,
-            commit_hash=request.commit_hash
+            commit_hash=request.commit_hash,
         )
 
         if not success:
@@ -222,10 +214,7 @@ async def update_module_status(
 
 
 @router.post("/{module_id:path}/release")
-async def release_module(
-    module_id: str,
-    request: ReleaseModuleRequest
-):
+async def release_module(module_id: str, request: ReleaseModuleRequest):
     """
     모듈 점유 해제
 
@@ -234,11 +223,7 @@ async def release_module(
     try:
         manager = await get_module_manager()
 
-        success = await manager.release_module(
-            module_id=module_id,
-            session_id=request.session_id,
-            reason=request.reason
-        )
+        success = await manager.release_module(module_id=module_id, session_id=request.session_id, reason=request.reason)
 
         if not success:
             raise HTTPException(status_code=404, detail="Module not found or not owned")
@@ -278,7 +263,7 @@ async def get_module_ownership(module_id: str):
             blockers=ownership.blockers,
             warnings=ownership.warnings,
             progress=ownership.progress,
-            commits=ownership.commits
+            commits=ownership.commits,
         )
 
     except Exception as e:
@@ -297,20 +282,22 @@ async def get_active_modules():
 
         active_modules = []
         for module_id, ownership in manager.active_ownerships.items():
-            active_modules.append(ModuleOwnershipResponse(
-                module_id=ownership.module_id,
-                owner_session=ownership.owner_session,
-                developer_name=ownership.developer_name,
-                status=ownership.status.value,
-                started_at=ownership.started_at,
-                estimated_completion=ownership.estimated_completion,
-                actual_completion=ownership.actual_completion,
-                completion_criteria=[c.value for c in ownership.completion_criteria],
-                blockers=ownership.blockers,
-                warnings=ownership.warnings,
-                progress=ownership.progress,
-                commits=ownership.commits
-            ))
+            active_modules.append(
+                ModuleOwnershipResponse(
+                    module_id=ownership.module_id,
+                    owner_session=ownership.owner_session,
+                    developer_name=ownership.developer_name,
+                    status=ownership.status.value,
+                    started_at=ownership.started_at,
+                    estimated_completion=ownership.estimated_completion,
+                    actual_completion=ownership.actual_completion,
+                    completion_criteria=[c.value for c in ownership.completion_criteria],
+                    blockers=ownership.blockers,
+                    warnings=ownership.warnings,
+                    progress=ownership.progress,
+                    commits=ownership.commits,
+                )
+            )
 
         return active_modules
 
@@ -319,10 +306,7 @@ async def get_active_modules():
 
 
 @router.post("/check-rules")
-async def check_standard_rules(
-    action: str = Query(..., description="체크할 액션"),
-    context: Dict[str, Any] = {}
-):
+async def check_standard_rules(action: str = Query(..., description="체크할 액션"), context: Dict[str, Any] = {}):
     """
     Standard 레벨 규칙 체크
 
@@ -333,11 +317,7 @@ async def check_standard_rules(
 
         allowed, warnings = await manager.check_standard_rules(action, context)
 
-        return {
-            "allowed": allowed,
-            "warnings": warnings,
-            "level": "Standard"
-        }
+        return {"allowed": allowed, "warnings": warnings, "level": "Standard"}
 
     except Exception as e:
         raise HTTPException(status_code=500, detail=str(e))

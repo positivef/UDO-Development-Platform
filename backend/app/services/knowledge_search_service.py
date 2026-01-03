@@ -35,11 +35,8 @@ Benchmarking:
 """
 
 import re
-from datetime import datetime, timedelta, timezone
 from pathlib import Path
 from typing import Dict, List, Optional, Tuple
-
-import yaml
 
 
 class SearchResult:
@@ -150,18 +147,12 @@ class KnowledgeSearchService:
                     continue
 
                 # Pattern: Debug-{normalized_keyword}-*.md (case-insensitive)
-                pattern = re.compile(
-                    rf"Debug-{re.escape(normalized_keyword)}-.*\.md$", re.IGNORECASE
-                )
+                pattern = re.compile(rf"Debug-{re.escape(normalized_keyword)}-.*\.md$", re.IGNORECASE)
 
                 # Find matching files
                 for file_path in obsidian_files:
                     # Extract filename from path
-                    filename = (
-                        Path(file_path).name
-                        if isinstance(file_path, str)
-                        else file_path
-                    )
+                    filename = Path(file_path).name if isinstance(file_path, str) else file_path
 
                     if pattern.search(str(filename)):
                         results.append((file_path, score_weight))
@@ -236,9 +227,7 @@ class KnowledgeSearchService:
 
         return results
 
-    def _build_frontmatter_query(
-        self, keywords: List[str], error_type: Optional[str] = None
-    ) -> Dict:
+    def _build_frontmatter_query(self, keywords: List[str], error_type: Optional[str] = None) -> Dict:
         """
         Build JsonLogic query for frontmatter search
 
@@ -384,13 +373,7 @@ class KnowledgeSearchService:
             freshness_bonus = 0.0
 
         # Final score calculation
-        final_score = (
-            tier1_score * 10
-            + tier2_score * 5
-            + tier3_score * 1
-            + freshness_bonus * 2
-            + usefulness_score * 3
-        )
+        final_score = tier1_score * 10 + tier2_score * 5 + tier3_score * 1 + freshness_bonus * 2 + usefulness_score * 3
 
         return final_score
 
@@ -495,18 +478,12 @@ class KnowledgeSearchService:
             )
 
             result.freshness_bonus = (
-                5.0
-                if freshness_days < 7
-                else 3.0 if freshness_days < 30 else 1.0 if freshness_days < 90 else 0.0
+                5.0 if freshness_days < 7 else 3.0 if freshness_days < 30 else 1.0 if freshness_days < 90 else 0.0
             )
             result.usefulness_score = usefulness_score
 
         # Filter by minimum score
-        filtered_results = [
-            result
-            for result in all_results.values()
-            if result.relevance_score >= min_score
-        ]
+        filtered_results = [result for result in all_results.values() if result.relevance_score >= min_score]
 
         # Sort by relevance score (descending)
         filtered_results.sort(key=lambda r: r.relevance_score, reverse=True)
@@ -563,9 +540,7 @@ class KnowledgeSearchService:
 
         # Filter stop words and short words
         keywords = [
-            word.strip(".,;:!?\"'()[]{}").strip()
-            for word in words
-            if word.lower() not in stop_words and len(word) >= 3
+            word.strip(".,;:!?\"'()[]{}").strip() for word in words if word.lower() not in stop_words and len(word) >= 3
         ]
 
         return keywords

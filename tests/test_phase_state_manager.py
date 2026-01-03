@@ -15,7 +15,7 @@ from time import sleep
 src_dir = Path(__file__).parent.parent / "src"
 sys.path.insert(0, str(src_dir))
 
-from phase_state_manager import (
+from phase_state_manager import (  # noqa: E402
     PhaseStateManager,
     PhaseTransitionEvent,
     Phase,

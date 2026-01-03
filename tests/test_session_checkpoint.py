@@ -10,9 +10,9 @@ Tests:
 """
 
 import pytest
-from unittest.mock import Mock, patch, MagicMock
+from unittest.mock import Mock, patch, MagicMock  # noqa: F401
 from datetime import datetime, timedelta
-import time
+import time  # noqa: F401
 
 # Import the module to test
 from scripts.session_checkpoint import SessionCheckpoint, CheckpointResult, get_checkpoint, session_checkpoint

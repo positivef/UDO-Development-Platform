@@ -5,14 +5,12 @@ Week 3 Day 3: AI Task Suggestion with Claude Sonnet 4.5.
 Tests Q2: AI Hybrid (suggest + approve) workflow.
 """
 
-from datetime import datetime, timedelta
 from uuid import uuid4
 
 import pytest
 import pytest_asyncio
 
 from app.models.kanban_ai import (
-    ConstitutionalViolationError,
     InvalidSuggestionError,
     PhaseName,
     RateLimitExceededError,

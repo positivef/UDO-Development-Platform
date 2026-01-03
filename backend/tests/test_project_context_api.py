@@ -9,27 +9,18 @@ Comprehensive tests for project context management APIs including:
 - Mock database strategy
 """
 
-import json
 import sys
 import uuid
 from datetime import UTC, datetime
 from pathlib import Path
 from typing import Any, Dict, Optional
-from unittest.mock import AsyncMock, MagicMock, Mock, patch
 
 # Add backend to path
 sys.path.insert(0, str(Path(__file__).parent.parent))
 
-import pytest
-# Import models
-from app.models.project_context import (AIPreferences, EditorState,
-                                        ExecutionRecord, MLModelsState,
-                                        ProjectContextCreate,
-                                        ProjectContextResponse,
-                                        ProjectContextUpdate,
-                                        ProjectSwitchRequest, UDOState)
-from fastapi import status
-from fastapi.testclient import TestClient
+import pytest  # noqa: E402
+from fastapi import status  # noqa: E402
+from fastapi.testclient import TestClient  # noqa: E402
 
 
 class MockProjectContextService:
@@ -54,9 +45,7 @@ class MockProjectContextService:
             "project_id": str(project_id),
             "udo_state": udo_state or {},
             "ml_models": ml_models or {},
-            "recent_executions": (
-                recent_executions[:10] if recent_executions else []
-            ),  # FIFO limit
+            "recent_executions": (recent_executions[:10] if recent_executions else []),  # FIFO limit
             "ai_preferences": ai_preferences or {},
             "editor_state": editor_state or {},
             "saved_at": datetime.now(UTC).isoformat(),
@@ -72,9 +61,7 @@ class MockProjectContextService:
             context["loaded_at"] = datetime.now(UTC).isoformat()
         return context
 
-    async def update_context(
-        self, project_id: uuid.UUID, context_update: Dict[str, Any]
-    ) -> Optional[Dict[str, Any]]:
+    async def update_context(self, project_id: uuid.UUID, context_update: Dict[str, Any]) -> Optional[Dict[str, Any]]:
         """Mock update context (partial update)"""
         if str(project_id) not in self.contexts:
             return None
@@ -86,9 +73,7 @@ class MockProjectContextService:
         current["saved_at"] = datetime.now(UTC).isoformat()
         return current
 
-    async def merge_context(
-        self, project_id: uuid.UUID, partial_context: Dict[str, Any]
-    ) -> Dict[str, Any]:
+    async def merge_context(self, project_id: uuid.UUID, partial_context: Dict[str, Any]) -> Dict[str, Any]:
         """Mock merge context (partial update with return)"""
         if str(project_id) not in self.contexts:
             # Create new context if doesn't exist
@@ -112,21 +97,13 @@ class MockProjectContextService:
             return True
         return False
 
-    async def switch_project(
-        self, target_project_id: uuid.UUID, auto_save_current: bool = True
-    ) -> Dict[str, Any]:
+    async def switch_project(self, target_project_id: uuid.UUID, auto_save_current: bool = True) -> Dict[str, Any]:
         """Mock project switch - returns ProjectSwitchResponse format"""
         previous_project_id = self.current_project_id
 
         # Auto-save current context if exists
-        if (
-            auto_save_current
-            and previous_project_id
-            and str(previous_project_id) in self.contexts
-        ):
-            self.contexts[str(previous_project_id)]["saved_at"] = datetime.now(
-                UTC
-            ).isoformat()
+        if auto_save_current and previous_project_id and str(previous_project_id) in self.contexts:
+            self.contexts[str(previous_project_id)]["saved_at"] = datetime.now(UTC).isoformat()
 
         # Load new context
         self.current_project_id = target_project_id
@@ -134,18 +111,14 @@ class MockProjectContextService:
 
         # Return format matching ProjectSwitchResponse
         return {
-            "previous_project_id": (
-                str(previous_project_id) if previous_project_id else None
-            ),
+            "previous_project_id": (str(previous_project_id) if previous_project_id else None),
             "new_project_id": str(target_project_id),
             "context_loaded": new_context is not None,
             "context": new_context,
             "message": f"Switched to project {target_project_id}",
         }
 
-    async def list_projects(
-        self, include_archived: bool = False, limit: int = 100, offset: int = 0
-    ) -> Dict[str, Any]:
+    async def list_projects(self, include_archived: bool = False, limit: int = 100, offset: int = 0) -> Dict[str, Any]:
         """Mock list projects - returns ProjectsListResponse format"""
         # Mock project list matching ProjectListResponse format
         projects = [
@@ -176,9 +149,7 @@ class MockProjectContextService:
         return {
             "projects": projects[offset : offset + limit],
             "total": len(projects),
-            "current_project_id": (
-                str(self.current_project_id) if self.current_project_id else None
-            ),
+            "current_project_id": (str(self.current_project_id) if self.current_project_id else None),
         }
 
     async def get_current_project(self) -> Optional[Dict[str, Any]]:
@@ -320,9 +291,7 @@ class TestProjectContextAPI:
 
         # Update only UDO state
         update_data = {"udo_state": {"last_decision": "NO_GO", "confidence": 0.3}}
-        response = client.patch(
-            f"/api/project-context/update/{project_id}", json=update_data
-        )
+        response = client.patch(f"/api/project-context/update/{project_id}", json=update_data)
 
         assert response.status_code == status.HTTP_200_OK
         data = response.json()

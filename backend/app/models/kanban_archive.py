@@ -11,8 +11,6 @@ from uuid import UUID
 
 from pydantic import BaseModel, Field
 
-from app.models.kanban_task import PhaseName, Task
-
 # ============================================================================
 # AI Summarization Models (GPT-4o)
 # ============================================================================

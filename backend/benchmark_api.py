@@ -1,6 +1,5 @@
 #!/usr/bin/env python3
 """API Performance Benchmark"""
-import os
 import sys
 import time
 from pathlib import Path
@@ -16,7 +15,7 @@ print("=" * 60)
 # Test 1: Import time
 print("\n1. Import Performance:")
 start = time.time()
-from integrated_udo_system import IntegratedUDOSystem
+from integrated_udo_system import IntegratedUDOSystem  # noqa: E402
 
 import_time = time.time() - start
 print(f"   Import time: {import_time:.3f}s")
@@ -34,7 +33,7 @@ for i in range(5):
     start = time.time()
     report = udo_system.get_system_report()
     report_time = time.time() - start
-    print(f"   Attempt {i+1}: {report_time:.3f}s")
+    print(f"   Attempt {i + 1}: {report_time:.3f}s")
 
 # Test 4: Individual component reports
 print("\n4. Component Report Performance:")
@@ -54,5 +53,5 @@ if udo_system.components.get("ml_system"):
 print("\n" + "=" * 60)
 print("Summary:")
 print(f"  Total startup: {import_time + init_time:.3f}s")
-print(f"  First report: needs to be measured above")
+print("  First report: needs to be measured above")
 print("=" * 60)

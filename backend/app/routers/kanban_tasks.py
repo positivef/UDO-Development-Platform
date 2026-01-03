@@ -66,7 +66,7 @@ def get_kanban_service():
         db_pool = async_db.get_pool()
         logger.debug(f"[DEBUG] Database pool obtained: {db_pool}")
         return KanbanTaskService(db_pool=db_pool)
-    except RuntimeError as e:
+    except RuntimeError:
         logger.exception("[KANBAN] Database not available, using MockKanbanTaskService")
         return MockKanbanTaskService()
 

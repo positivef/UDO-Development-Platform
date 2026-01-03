@@ -9,22 +9,20 @@ Endpoints:
 - GET /api/knowledge/documents/{doc_id}/score - Get document usefulness score
 
 Benchmarking:
-- Notion AI: Explicit [EMOJI]/[EMOJI] feedback
+- Notion AI: Explicit thumbs-up/thumbs-down feedback
 - Linear: Confidence-based accuracy tracking
 - GitHub Copilot: Acceptance rate metrics
 """
 
-from datetime import datetime, timezone
+from datetime import datetime
 from typing import List, Optional
-from uuid import UUID, uuid4
 
 from fastapi import APIRouter, Depends, HTTPException
 from pydantic import BaseModel, Field
 from sqlalchemy.orm import Session
 
 from app.db.database import get_db
-from app.services.knowledge_feedback_service import \
-    KnowledgeFeedbackService
+from app.services.knowledge_feedback_service import KnowledgeFeedbackService
 
 router = APIRouter(prefix="/api/knowledge", tags=["knowledge-feedback"])
 
@@ -46,15 +44,9 @@ class FeedbackCreate(BaseModel):
     document_id: str = Field(..., description="Obsidian document ID or filename")
     search_query: str = Field(..., description="User's original search query")
     is_helpful: bool = Field(..., description="Explicit feedback: helpful or not")
-    reason: Optional[str] = Field(
-        None, description="Optional reason for negative feedback"
-    )
-    session_id: Optional[str] = Field(
-        None, description="Session identifier for tracking"
-    )
-    implicit_accept: Optional[bool] = Field(
-        None, description="Implicit signal (copy/dismiss)"
-    )
+    reason: Optional[str] = Field(None, description="Optional reason for negative feedback")
+    session_id: Optional[str] = Field(None, description="Session identifier for tracking")
+    implicit_accept: Optional[bool] = Field(None, description="Implicit signal (copy/dismiss)")
 
 
 class FeedbackResponse(BaseModel):
@@ -97,18 +89,12 @@ class KnowledgeMetrics(BaseModel):
 
     search_accuracy: float = Field(..., description="Percentage of helpful searches")
     acceptance_rate: float = Field(..., description="Percentage of accepted solutions")
-    false_positive_rate: float = Field(
-        ..., description="Percentage of unhelpful searches"
-    )
+    false_positive_rate: float = Field(..., description="Percentage of unhelpful searches")
     total_searches: int
     total_feedback_count: int
     avg_resolution_time_minutes: Optional[float] = None
-    top_documents: List[DocumentScore] = Field(
-        default_factory=list, description="Top 10 useful documents"
-    )
-    low_quality_documents: List[str] = Field(
-        default_factory=list, description="Documents needing improvement"
-    )
+    top_documents: List[DocumentScore] = Field(default_factory=list, description="Top 10 useful documents")
+    low_quality_documents: List[str] = Field(default_factory=list, description="Documents needing improvement")
     period_start: datetime
     period_end: datetime
 
@@ -136,7 +122,7 @@ async def submit_feedback(feedback: FeedbackCreate, db: Session = Depends(get_db
     4. Return confirmation
 
     Benchmarking:
-    - Notion AI: Simple [EMOJI]/[EMOJI] submission
+    - Notion AI: Simple thumbs-up/thumbs-down submission
     - Linear: Feedback with confidence tracking
     """
     service = KnowledgeFeedbackService(db)
@@ -197,9 +183,7 @@ async def get_document_score(document_id: str, db: Session = Depends(get_db)):
     doc_score = service.get_document_score(document_id)
 
     if not doc_score:
-        raise HTTPException(
-            status_code=404, detail=f"No feedback data for document: {document_id}"
-        )
+        raise HTTPException(status_code=404, detail=f"No feedback data for document: {document_id}")
 
     return DocumentScore(
         document_id=doc_score.document_id,

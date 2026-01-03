@@ -9,7 +9,7 @@ import pytest
 import tempfile
 import os
 from pathlib import Path
-from unittest.mock import Mock, patch, MagicMock
+from unittest.mock import Mock, patch, MagicMock  # noqa: F401
 
 from scripts.tool_wrappers import (
     bash_with_recovery,

@@ -23,7 +23,7 @@ class StandardGitHooksInstaller:
 
     def install_all(self):
         """모든 Git hooks 설치"""
-        print("🔧 Installing Standard Level Git Hooks...")
+        print("[*] Installing Standard Level Git Hooks...")
 
         # hooks 디렉토리 생성
         self.scripts_dir.mkdir(parents=True, exist_ok=True)
@@ -33,8 +33,8 @@ class StandardGitHooksInstaller:
         self.install_pre_push()
         self.install_post_commit()
 
-        print("✅ Standard Git Hooks installed successfully!")
-        print("\n📋 Installed hooks:")
+        print("[OK] Standard Git Hooks installed successfully!")
+        print("\n[*] Installed hooks:")
         print("  - pre-commit: 브랜치 이름, 모듈 점유 체크")
         print("  - pre-push: 테스트 실행 확인")
         print("  - post-commit: 모듈 상태 자동 업데이트")
@@ -126,7 +126,7 @@ def check_commit_message():
     return True, None
 
 def main():
-    print("🔍 Standard Level Pre-commit checks...")
+    print("[*] Standard Level Pre-commit checks...")
 
     # 1. 브랜치 이름 체크
     branch = get_current_branch()
@@ -137,23 +137,23 @@ def main():
         for module_id in modules:
             expected_branch = f"feature/{module_id.replace('/', '-')}"
             if not branch.startswith(expected_branch):
-                print(f"⚠️  WARNING: 브랜치 이름 '{expected_branch}'를 권장합니다 (현재: {branch})")
+                print(f"[WARN]  WARNING: 브랜치 이름 '{expected_branch}'를 권장합니다 (현재: {branch})")
 
     # 2. 모듈 점유 체크
     for module_id in modules:
         owned, owner = check_module_ownership(module_id)
         if not owned:
-            print(f"❌ ERROR: 모듈 '{module_id}'은(는) {owner}님이 개발 중입니다!")
+            print(f"[FAIL] ERROR: 모듈 '{module_id}'은(는) {owner}님이 개발 중입니다!")
             print("   먼저 모듈을 점유하거나 완료를 기다려주세요.")
             return 1
 
     # 3. 커밋 메시지 체크
     msg_valid, msg_error = check_commit_message()
     if not msg_valid:
-        print(f"❌ ERROR: {msg_error}")
+        print(f"[FAIL] ERROR: {msg_error}")
         return 1
 
-    print("✅ Pre-commit checks passed!")
+    print("[OK] Pre-commit checks passed!")
     return 0
 
 if __name__ == "__main__":
@@ -180,7 +180,7 @@ from pathlib import Path
 
 def run_tests():
     """테스트 실행"""
-    print("🧪 Running tests before push (Standard Level requirement)...")
+    print("[RUN] tests before push (Standard Level requirement)...")
 
     # Python 테스트 실행
     if Path("pytest.ini").exists() or Path("setup.cfg").exists():
@@ -191,7 +191,7 @@ def run_tests():
         )
 
         if result.returncode != 0:
-            print("❌ Tests failed! Fix tests before pushing.")
+            print("[FAIL] Tests failed! Fix tests before pushing.")
             print(result.stdout)
             return False
 
@@ -208,7 +208,7 @@ def run_tests():
             )
 
             if result.returncode != 0:
-                print("❌ JavaScript tests failed!")
+                print("[FAIL] JavaScript tests failed!")
                 print(result.stdout)
                 return False
 
@@ -231,22 +231,22 @@ def check_test_coverage():
                 if len(parts) >= 4:
                     coverage = int(parts[-1].replace("%", ""))
                     if coverage < 60:
-                        print(f"⚠️  WARNING: Test coverage is {coverage}% (recommend >60%)")
+                        print(f"[WARN]  WARNING: Test coverage is {coverage}% (recommend >60%)")
     except:
         pass
 
 def main():
-    print("🚀 Standard Level Pre-push checks...")
+    print("[*] Standard Level Pre-push checks...")
 
     # Standard 레벨: 테스트는 필수
     if not run_tests():
-        print("\\n❌ Push blocked: Tests must pass (Standard Level requirement)")
+        print("\\n[FAIL] Push blocked: Tests must pass (Standard Level requirement)")
         return 1
 
     # 커버리지 체크 (경고만)
     check_test_coverage()
 
-    print("✅ Pre-push checks passed!")
+    print("[OK] Pre-push checks passed!")
     return 0
 
 if __name__ == "__main__":
@@ -346,7 +346,7 @@ def main():
 
     if module_id:
         status = update_module_status(module_id, commit_info)
-        print(f"📊 Module '{module_id}' status updated:")
+        print(f"[*] Module '{module_id}' status updated:")
         print(f"   Status: {status['status']}")
         print(f"   Progress: {status['progress']}%")
         print(f"   Commits: {len(status['commits'])}")
@@ -362,7 +362,7 @@ if __name__ == "__main__":
         """Hook 파일 작성 및 실행 권한 설정"""
         path.write_text(content)
         path.chmod(0o755)
-        print(f"  ✓ Installed: {path.name}")
+        print(f"  [*] Installed: {path.name}")
 
     def uninstall_all(self):
         """모든 Git hooks 제거"""
@@ -372,28 +372,18 @@ if __name__ == "__main__":
             hook_path = self.git_hooks_dir / hook
             if hook_path.exists():
                 hook_path.unlink()
-                print(f"  ✓ Removed: {hook}")
+                print(f"  [*] Removed: {hook}")
 
-        print("✅ Standard Git Hooks uninstalled")
+        print("[OK] Standard Git Hooks uninstalled")
 
 
 def main():
     """메인 함수"""
     import argparse
 
-    parser = argparse.ArgumentParser(
-        description="Standard Level Git Hooks Installer"
-    )
-    parser.add_argument(
-        "--uninstall",
-        action="store_true",
-        help="Uninstall hooks"
-    )
-    parser.add_argument(
-        "--project-root",
-        type=str,
-        help="Project root directory"
-    )
+    parser = argparse.ArgumentParser(description="Standard Level Git Hooks Installer")
+    parser.add_argument("--uninstall", action="store_true", help="Uninstall hooks")
+    parser.add_argument("--project-root", type=str, help="Project root directory")
 
     args = parser.parse_args()
 

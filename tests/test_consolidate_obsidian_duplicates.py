@@ -18,9 +18,9 @@ Date: 2025-12-28
 import json
 import shutil
 import tempfile
-from datetime import datetime
+from datetime import datetime  # noqa: F401
 from pathlib import Path
-from unittest.mock import patch
+from unittest.mock import patch  # noqa: F401
 
 import pytest
 
@@ -29,7 +29,7 @@ import sys
 
 sys.path.insert(0, str(Path(__file__).parent.parent / "scripts"))
 
-from consolidate_obsidian_duplicates import (
+from consolidate_obsidian_duplicates import (  # noqa: E402
     parse_filename,
     compute_content_hash,
     scan_date_folder,

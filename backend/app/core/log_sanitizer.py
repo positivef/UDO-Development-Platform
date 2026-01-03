@@ -172,11 +172,7 @@ def sanitize_dict(data: dict, mask_emails: bool = False) -> dict:
                 (
                     sanitize_log_message(v, mask_emails=mask_emails)
                     if isinstance(v, str)
-                    else (
-                        sanitize_dict(v, mask_emails=mask_emails)
-                        if isinstance(v, dict)
-                        else v
-                    )
+                    else (sanitize_dict(v, mask_emails=mask_emails) if isinstance(v, dict) else v)
                 )
                 for v in value
             ]
@@ -271,7 +267,7 @@ def secure_log_args(func):
     @wraps(func)
     def wrapper(*args, **kwargs):
         # Sanitize keyword arguments for any logging
-        sanitized_kwargs = sanitize_dict(kwargs)
+        _ = sanitize_dict(kwargs)  # Reserved for future logging use
         return func(*args, **kwargs)
 
     return wrapper

@@ -7,7 +7,7 @@ Prometheus 기반 메트릭 수집 및 모니터링 시스템입니다.
 import time
 import psutil
 import logging
-from typing import Dict, Any, Optional, Callable
+from typing import Dict, Any, Callable
 from functools import wraps
 from datetime import datetime, UTC
 import asyncio
@@ -22,59 +22,35 @@ logger = logging.getLogger(__name__)
 # =====================
 
 # Request metrics
-request_count = Counter(
-    'http_requests_total',
-    'Total HTTP requests',
-    ['method', 'endpoint', 'status']
-)
+request_count = Counter("http_requests_total", "Total HTTP requests", ["method", "endpoint", "status"])
 
-request_duration = Histogram(
-    'http_request_duration_seconds',
-    'HTTP request latency',
-    ['method', 'endpoint']
-)
+request_duration = Histogram("http_request_duration_seconds", "HTTP request latency", ["method", "endpoint"])
 
 # System metrics
-cpu_usage_gauge = Gauge('system_cpu_usage_percent', 'CPU usage percentage')
-memory_usage_gauge = Gauge('system_memory_usage_percent', 'Memory usage percentage')
-disk_usage_gauge = Gauge('system_disk_usage_percent', 'Disk usage percentage')
+cpu_usage_gauge = Gauge("system_cpu_usage_percent", "CPU usage percentage")
+memory_usage_gauge = Gauge("system_memory_usage_percent", "Memory usage percentage")
+disk_usage_gauge = Gauge("system_disk_usage_percent", "Disk usage percentage")
 
 # Application metrics
-active_connections = Gauge('app_active_connections', 'Number of active connections')
-task_queue_size = Gauge('app_task_queue_size', 'Size of task queue')
-error_rate = Counter('app_errors_total', 'Total application errors', ['error_type'])
+active_connections = Gauge("app_active_connections", "Number of active connections")
+task_queue_size = Gauge("app_task_queue_size", "Size of task queue")
+error_rate = Counter("app_errors_total", "Total application errors", ["error_type"])
 
 # UDO specific metrics
-udo_execution_count = Counter(
-    'udo_executions_total',
-    'Total UDO executions',
-    ['phase', 'decision']
-)
+udo_execution_count = Counter("udo_executions_total", "Total UDO executions", ["phase", "decision"])
 
-udo_confidence_histogram = Histogram(
-    'udo_confidence_score',
-    'UDO confidence scores distribution',
-    ['phase']
-)
+udo_confidence_histogram = Histogram("udo_confidence_score", "UDO confidence scores distribution", ["phase"])
 
-uncertainty_level_gauge = Gauge(
-    'udo_uncertainty_level',
-    'Current uncertainty level',
-    ['phase']
-)
+uncertainty_level_gauge = Gauge("udo_uncertainty_level", "Current uncertainty level", ["phase"])
 
 # Database metrics
-db_connection_pool_size = Gauge('db_connection_pool_size', 'Database connection pool size')
-db_query_duration = Histogram(
-    'db_query_duration_seconds',
-    'Database query duration',
-    ['operation']
-)
+db_connection_pool_size = Gauge("db_connection_pool_size", "Database connection pool size")
+db_query_duration = Histogram("db_query_duration_seconds", "Database query duration", ["operation"])
 
 # Cache metrics
-cache_hits = Counter('cache_hits_total', 'Total cache hits')
-cache_misses = Counter('cache_misses_total', 'Total cache misses')
-cache_size = Gauge('cache_size_bytes', 'Current cache size in bytes')
+cache_hits = Counter("cache_hits_total", "Total cache hits")
+cache_misses = Counter("cache_misses_total", "Total cache misses")
+cache_size = Gauge("cache_size_bytes", "Current cache size in bytes")
 
 
 class PerformanceMonitor:
@@ -107,14 +83,10 @@ class PerformanceMonitor:
             memory_usage_gauge.set(memory.percent)
 
             # Disk usage
-            disk = psutil.disk_usage('/')
+            disk = psutil.disk_usage("/")
             disk_usage_gauge.set(disk.percent)
 
-            return {
-                "cpu_percent": cpu_percent,
-                "memory_percent": memory.percent,
-                "disk_percent": disk.percent
-            }
+            return {"cpu_percent": cpu_percent, "memory_percent": memory.percent, "disk_percent": disk.percent}
         except Exception as e:
             logger.error(f"Failed to collect system metrics: {e}")
             return {}
@@ -139,28 +111,15 @@ class PerformanceMonitor:
             raise
         finally:
             duration = time.time() - start_time
-            request_count.labels(
-                method=method,
-                endpoint=endpoint,
-                status=str(status_code)
-            ).inc()
-            request_duration.labels(
-                method=method,
-                endpoint=endpoint
-            ).observe(duration)
+            request_count.labels(method=method, endpoint=endpoint, status=str(status_code)).inc()
+            request_duration.labels(method=method, endpoint=endpoint).observe(duration)
 
             # Store for internal analytics
             self.request_times.append(duration)
             if len(self.request_times) > 1000:
                 self.request_times = self.request_times[-1000:]
 
-    def track_udo_execution(
-        self,
-        phase: str,
-        decision: str,
-        confidence: float,
-        uncertainty: float
-    ):
+    def track_udo_execution(self, phase: str, decision: str, confidence: float, uncertainty: float):
         """
         UDO 실행 메트릭 추적
 
@@ -235,7 +194,7 @@ class PerformanceMonitor:
             "cache_hit_rate": cache_hit_rate,
             "active_connections": active_connections._value.get(),
             "task_queue_size": task_queue_size._value.get(),
-            "timestamp": datetime.now(UTC).isoformat()
+            "timestamp": datetime.now(UTC).isoformat(),
         }
 
     def get_prometheus_metrics(self) -> bytes:
@@ -262,6 +221,7 @@ def monitor_performance(func: Callable) -> Callable:
     Returns:
         래핑된 함수
     """
+
     @wraps(func)
     async def async_wrapper(*args, **kwargs):
         start_time = time.time()
@@ -329,16 +289,9 @@ class RequestTracker:
             duration = time.time() - start_time
 
             # Track metrics
-            request_count.labels(
-                method=method,
-                endpoint=path,
-                status=str(status_code)
-            ).inc()
+            request_count.labels(method=method, endpoint=path, status=str(status_code)).inc()
 
-            request_duration.labels(
-                method=method,
-                endpoint=path
-            ).observe(duration)
+            request_duration.labels(method=method, endpoint=path).observe(duration)
 
             # Log slow requests
             if duration > 1.0:
@@ -356,7 +309,6 @@ def setup_monitoring(app):
     Args:
         app: FastAPI 애플리케이션 인스턴스
     """
-    from fastapi import FastAPI
     from starlette.middleware.base import BaseHTTPMiddleware
     from fastapi.responses import Response
 
@@ -375,10 +327,4 @@ def setup_monitoring(app):
 
 
 # Export key components
-__all__ = [
-    'performance_monitor',
-    'monitor_performance',
-    'setup_monitoring',
-    'PerformanceMonitor',
-    'RequestTracker'
-]
+__all__ = ["performance_monitor", "monitor_performance", "setup_monitoring", "PerformanceMonitor", "RequestTracker"]

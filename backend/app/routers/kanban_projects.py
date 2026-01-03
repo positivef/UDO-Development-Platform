@@ -7,15 +7,19 @@ Implements Q5 (1 Primary + max 3 Related projects per task).
 
 from uuid import UUID
 
-from fastapi import APIRouter, Depends, HTTPException, status
+from fastapi import APIRouter, Depends, status
 from fastapi.responses import JSONResponse
 
 from app.core.security import UserRole, get_current_user, require_role
 from app.models.kanban_task_project import (
-    AddRelatedProjectRequest, MaxRelatedProjectsError,
-    MultiplePrimaryProjectsError, NoPrimaryProjectError,
-    RemoveRelatedProjectRequest, SetPrimaryProjectRequest, TaskProject,
-    TaskProjectSummary)
+    AddRelatedProjectRequest,
+    MaxRelatedProjectsError,
+    MultiplePrimaryProjectsError,
+    RemoveRelatedProjectRequest,
+    SetPrimaryProjectRequest,
+    TaskProject,
+    TaskProjectSummary,
+)
 from app.services.kanban_project_service import kanban_project_service
 
 router = APIRouter(prefix="/api/kanban/projects", tags=["Kanban Multi-Project"])
@@ -55,9 +59,7 @@ def error_response(code: str, message: str, status_code: int, details: dict = No
     summary="Set primary project for task",
     description="Set task's primary project (Q5: 1 Primary required)",
 )
-async def set_primary_project(
-    request: SetPrimaryProjectRequest, current_user: dict = Depends(get_current_user)
-):
+async def set_primary_project(request: SetPrimaryProjectRequest, current_user: dict = Depends(get_current_user)):
     """
     Set primary project for a task (atomic operation).
 
@@ -72,9 +74,7 @@ async def set_primary_project(
     4. Validate exactly 1 primary exists
     """
     try:
-        task_project = await kanban_project_service.set_primary_project(
-            request.task_id, request.project_id
-        )
+        task_project = await kanban_project_service.set_primary_project(request.task_id, request.project_id)
         return task_project
 
     except MultiplePrimaryProjectsError as e:
@@ -99,9 +99,7 @@ async def set_primary_project(
     summary="Add related project to task",
     description="Add related project (Q5: max 3 related projects)",
 )
-async def add_related_project(
-    request: AddRelatedProjectRequest, current_user: dict = Depends(get_current_user)
-):
+async def add_related_project(request: AddRelatedProjectRequest, current_user: dict = Depends(get_current_user)):
     """
     Add related project to task.
 
@@ -110,9 +108,7 @@ async def add_related_project(
     **Validation**: Cannot be same as primary, no duplicates.
     """
     try:
-        task_project = await kanban_project_service.add_related_project(
-            request.task_id, request.project_id
-        )
+        task_project = await kanban_project_service.add_related_project(request.task_id, request.project_id)
         return task_project
 
     except MaxRelatedProjectsError as e:
@@ -147,9 +143,7 @@ async def add_related_project(
     summary="Remove related project from task",
     description="Remove related project (cannot remove primary)",
 )
-async def remove_related_project(
-    request: RemoveRelatedProjectRequest, current_user: dict = Depends(get_current_user)
-):
+async def remove_related_project(request: RemoveRelatedProjectRequest, current_user: dict = Depends(get_current_user)):
     """
     Remove related project from task.
 
@@ -157,9 +151,7 @@ async def remove_related_project(
     **Q5**: Cannot remove primary project (use set-primary to change it).
     """
     try:
-        removed = await kanban_project_service.remove_related_project(
-            request.task_id, request.project_id
-        )
+        removed = await kanban_project_service.remove_related_project(request.task_id, request.project_id)
 
         if not removed:
             return error_response(
@@ -205,9 +197,7 @@ async def remove_related_project(
     summary="Get task's project relationships",
     description="Get primary and related projects for task (Q5 summary)",
 )
-async def get_task_projects(
-    task_id: UUID, current_user: dict = Depends(get_current_user)
-):
+async def get_task_projects(task_id: UUID, current_user: dict = Depends(get_current_user)):
     """
     Get all project relationships for a task.
 
@@ -233,9 +223,7 @@ async def get_task_projects(
     summary="Validate task's project constraints",
     description="Validate Q5 constraints (1 Primary + max 3 Related)",
 )
-async def validate_task_projects(
-    task_id: UUID, current_user: dict = Depends(get_current_user)
-):
+async def validate_task_projects(task_id: UUID, current_user: dict = Depends(get_current_user)):
     """
     Validate all multi-project constraints for a task.
 

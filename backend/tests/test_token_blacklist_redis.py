@@ -144,7 +144,7 @@ async def test_revoke_all_user_tokens(token_blacklist, mock_redis):
 @pytest.mark.asyncio
 async def test_blacklist_token_extracts_expiry(sample_token):
     """Test 5: JWTManager.blacklist_token extracts TTL from token"""
-    with patch.object(TokenBlacklist, 'add', new_callable=AsyncMock) as mock_add:
+    with patch.object(TokenBlacklist, "add", new_callable=AsyncMock) as mock_add:
         await JWTManager.blacklist_token(sample_token)
 
         # Verify add was called with extracted expiry
@@ -165,7 +165,7 @@ async def test_blacklist_token_handles_invalid_token():
     """Test 6: JWTManager.blacklist_token handles decode failures gracefully"""
     invalid_token = "invalid.token.here"
 
-    with patch.object(TokenBlacklist, 'add', new_callable=AsyncMock) as mock_add:
+    with patch.object(TokenBlacklist, "add", new_callable=AsyncMock) as mock_add:
         # Should not raise exception
         await JWTManager.blacklist_token(invalid_token)
 
@@ -239,7 +239,7 @@ async def test_performance_1000_tokens(token_blacklist, mock_redis):
 @pytest.mark.asyncio
 async def test_decode_token_checks_blacklist(sample_token):
     """Test 10: JWTManager.decode_token checks blacklist before decoding"""
-    with patch.object(TokenBlacklist, 'is_blacklisted', new_callable=AsyncMock) as mock_check:
+    with patch.object(TokenBlacklist, "is_blacklisted", new_callable=AsyncMock) as mock_check:
         # Test 10a: Token not blacklisted - should decode successfully
         mock_check.return_value = False
 
@@ -306,7 +306,7 @@ async def test_real_redis_persistence():
         is_still_blacklisted = await blacklist2.is_blacklisted(test_token)
         assert is_still_blacklisted is True
 
-        print("\n[INTEGRATION] ✅ Token persisted across restart simulation")
+        print("\n[INTEGRATION] [OK] Token persisted across restart simulation")
 
         # Cleanup
         await redis_client.disconnect()
@@ -351,7 +351,7 @@ async def test_real_redis_ttl_expiry():
         # Should no longer be blacklisted
         assert await blacklist.is_blacklisted(test_token) is False
 
-        print("\n[INTEGRATION] ✅ Token auto-expired after TTL")
+        print("\n[INTEGRATION] [OK] Token auto-expired after TTL")
 
         await redis_client.disconnect()
 
@@ -363,20 +363,20 @@ async def test_real_redis_ttl_expiry():
 """
 Test Coverage Summary:
 
-✅ Test 1: Add token with TTL
-✅ Test 2: Check blacklisted token (found)
-✅ Test 3: Check blacklisted token (not found)
-✅ Test 4: User-level revocation
-✅ Test 5: Extract expiry from JWT
-✅ Test 6: Handle invalid token gracefully
-✅ Test 7: Expired token handling
-✅ Test 8: Connection initialization
-✅ Test 9: Performance (1,000 tokens/second)
-✅ Test 10: Integration with decode_token
+[OK] Test 1: Add token with TTL
+[OK] Test 2: Check blacklisted token (found)
+[OK] Test 3: Check blacklisted token (not found)
+[OK] Test 4: User-level revocation
+[OK] Test 5: Extract expiry from JWT
+[OK] Test 6: Handle invalid token gracefully
+[OK] Test 7: Expired token handling
+[OK] Test 8: Connection initialization
+[OK] Test 9: Performance (1,000 tokens/second)
+[OK] Test 10: Integration with decode_token
 
 Integration Tests (require Redis server):
-✅ Test 11: Persistence across restarts
-✅ Test 12: TTL auto-expiry
+[OK] Test 11: Persistence across restarts
+[OK] Test 12: TTL auto-expiry
 
 Run all tests:
     pytest backend/tests/test_token_blacklist_redis.py -v

@@ -27,7 +27,7 @@ def check_emoji_usage(file_path):
         "\U0001F1E0-\U0001F1FF"  # flags
         "\U00002702-\U000027B0"  # dingbats
         "\U000024C2-\U0001F251"  # enclosed characters
-        "\u2600-\u26FF"  # misc symbols ([WARN], [OK], [FAIL], [EMOJI])
+        "\u2600-\u26FF"  # misc symbols ([WARN], [OK], [FAIL], [*])
         "]+",
         flags=re.UNICODE,
     )

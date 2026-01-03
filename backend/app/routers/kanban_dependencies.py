@@ -6,24 +6,24 @@ Week 3 Day 1-2: 10 API endpoints (added topological-sort, statistics).
 Implements Q7 (Hard Block dependencies with emergency override).
 """
 
-from typing import Optional
 from uuid import UUID
 
-from fastapi import APIRouter, Depends, HTTPException, Query, status
+from fastapi import APIRouter, Depends, Query, status
 from fastapi.responses import JSONResponse
 
 from app.core.security import UserRole, get_current_user, require_role
-from app.models.kanban_dependencies import (CircularDependencyError,
-                                                    DAGStatistics, Dependency,
-                                                    DependencyAudit,
-                                                    DependencyCreate,
-                                                    DependencyGraph,
-                                                    EmergencyOverride,
-                                                    TopologicalSortResult)
-from app.services.kanban_dependency_service import \
-    kanban_dependency_service
-from app.services.kanban_task_service import (KanbanTaskService,
-                                                      get_kanban_task_service)
+from app.models.kanban_dependencies import (
+    CircularDependencyError,
+    DAGStatistics,
+    Dependency,
+    DependencyAudit,
+    DependencyCreate,
+    DependencyGraph,
+    EmergencyOverride,
+    TopologicalSortResult,
+)
+from app.services.kanban_dependency_service import kanban_dependency_service
+from app.services.kanban_task_service import KanbanTaskService, get_kanban_task_service
 
 router = APIRouter(prefix="/api/kanban/dependencies", tags=["Kanban Dependencies"])
 
@@ -91,9 +91,7 @@ async def create_dependency(
         available_task_ids = {task.task_id for task in task_list.data}
 
         # Create dependency with cycle detection
-        dependency = await kanban_dependency_service.create_dependency(
-            dependency_data, available_task_ids
-        )
+        dependency = await kanban_dependency_service.create_dependency(dependency_data, available_task_ids)
         return dependency
 
     except CircularDependencyError as e:
@@ -104,9 +102,7 @@ async def create_dependency(
             details={"cycle": [str(task_id) for task_id in e.cycle]},
         )
     except ValueError as e:
-        return error_response(
-            code="TASK_NOT_FOUND", message=str(e), status_code=status.HTTP_404_NOT_FOUND
-        )
+        return error_response(code="TASK_NOT_FOUND", message=str(e), status_code=status.HTTP_404_NOT_FOUND)
     except Exception as e:
         return error_response(
             code="DEPENDENCY_CREATE_FAILED",
@@ -122,9 +118,7 @@ async def create_dependency(
     summary="Get dependency details",
     description="Get dependency by ID (requires viewer role)",
 )
-async def get_dependency(
-    dependency_id: UUID, current_user: dict = Depends(get_current_user)
-):
+async def get_dependency(dependency_id: UUID, current_user: dict = Depends(get_current_user)):
     """
     Get dependency by ID.
 
@@ -155,9 +149,7 @@ async def get_dependency(
     summary="Delete dependency",
     description="Delete dependency (requires developer role or higher)",
 )
-async def delete_dependency(
-    dependency_id: UUID, current_user: dict = Depends(get_current_user)
-):
+async def delete_dependency(dependency_id: UUID, current_user: dict = Depends(get_current_user)):
     """
     Delete dependency.
 
@@ -222,9 +214,7 @@ async def get_audit_log(
     summary="Get task dependencies (upstream/predecessors)",
     description="Get all dependencies for a task (tasks this task depends on)",
 )
-async def get_task_dependencies(
-    task_id: UUID, current_user: dict = Depends(get_current_user)
-):
+async def get_task_dependencies(task_id: UUID, current_user: dict = Depends(get_current_user)):
     """
     Get all dependencies for a task (upstream/predecessors).
 
@@ -249,9 +239,7 @@ async def get_task_dependencies(
     summary="Get task dependents (downstream/successors)",
     description="Get all dependents for a task (tasks that depend on this task)",
 )
-async def get_task_dependents(
-    task_id: UUID, current_user: dict = Depends(get_current_user)
-):
+async def get_task_dependents(task_id: UUID, current_user: dict = Depends(get_current_user)):
     """
     Get all dependents for a task (downstream/successors).
 
@@ -278,9 +266,7 @@ async def get_task_dependents(
 )
 async def get_dependency_graph(
     task_id: UUID,
-    depth: int = Query(
-        3, ge=1, le=10, description="Maximum depth to traverse (default: 3)"
-    ),
+    depth: int = Query(3, ge=1, le=10, description="Maximum depth to traverse (default: 3)"),
     current_user: dict = Depends(get_current_user),
 ):
     """
@@ -439,13 +425,9 @@ async def emergency_override(
             )
 
         # Set overridden_by from current user
-        override_request.overridden_by = current_user.get(
-            "username", current_user.get("email")
-        )
+        override_request.overridden_by = current_user.get("username", current_user.get("email"))
 
-        dependency = await kanban_dependency_service.emergency_override(
-            override_request
-        )
+        dependency = await kanban_dependency_service.emergency_override(override_request)
         return dependency
 
     except ValueError as e:

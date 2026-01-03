@@ -15,15 +15,8 @@ import pytest
 import tempfile
 import shutil
 from pathlib import Path
-from unittest.mock import Mock, patch, MagicMock
 
-from scripts.unified_error_resolver import (
-    UnifiedErrorResolver,
-    ResolutionResult,
-    resolve_error,
-    get_statistics,
-    reset_statistics
-)
+from scripts.unified_error_resolver import UnifiedErrorResolver, resolve_error, get_statistics, reset_statistics  # noqa: F401
 
 
 class TestUnifiedErrorResolver:
@@ -46,10 +39,9 @@ class TestUnifiedErrorResolver:
         assert self.resolver.circuit_breaker["state"] == "CLOSED"
 
     def test_tier2_module_not_found_high_confidence(self):
-        """Test Tier 2: ModuleNotFoundError → HIGH confidence → Auto-apply"""
+        """Test Tier 2: ModuleNotFoundError -> HIGH confidence -> Auto-apply"""
         solution = self.resolver.resolve_error(
-            "ModuleNotFoundError: No module named 'pandas'",
-            context={"tool": "Python", "file": "analyzer.py"}
+            "ModuleNotFoundError: No module named 'pandas'", context={"tool": "Python", "file": "analyzer.py"}
         )
 
         # Should return solution (HIGH confidence)
@@ -64,10 +56,10 @@ class TestUnifiedErrorResolver:
         assert stats["automation_rate"] == 1.0
 
     def test_tier2_permission_error_high_confidence(self):
-        """Test Tier 2: PermissionError → HIGH confidence → Auto-apply"""
+        """Test Tier 2: PermissionError -> HIGH confidence -> Auto-apply"""
         solution = self.resolver.resolve_error(
             "PermissionError: [Errno 13] Permission denied: '/path/to/file.py'",
-            context={"tool": "Read", "file": "/path/to/file.py"}
+            context={"tool": "Read", "file": "/path/to/file.py"},
         )
 
         # Should return chmod solution
@@ -79,10 +71,9 @@ class TestUnifiedErrorResolver:
         assert stats["tier2_auto"] == 1
 
     def test_tier2_file_not_found_high_confidence(self):
-        """Test Tier 2: FileNotFoundError → HIGH confidence → Auto-apply"""
+        """Test Tier 2: FileNotFoundError -> HIGH confidence -> Auto-apply"""
         solution = self.resolver.resolve_error(
-            "FileNotFoundError: [Errno 2] No such file or directory: '/path/to/missing/file.txt'",
-            context={"tool": "Read"}
+            "FileNotFoundError: [Errno 2] No such file or directory: '/path/to/missing/file.txt'", context={"tool": "Read"}
         )
 
         # Should return mkdir solution
@@ -90,10 +81,9 @@ class TestUnifiedErrorResolver:
         assert "mkdir" in solution or "touch" in solution
 
     def test_tier3_unknown_error_no_solution(self):
-        """Test Tier 3: Unknown error → No solution → User escalation"""
+        """Test Tier 3: Unknown error -> No solution -> User escalation"""
         solution = self.resolver.resolve_error(
-            "CustomBusinessError: Payment processing failed",
-            context={"tool": "API", "endpoint": "/payment"}
+            "CustomBusinessError: Payment processing failed", context={"tool": "API", "endpoint": "/payment"}
         )
 
         # Should return None (user intervention needed)
@@ -107,9 +97,7 @@ class TestUnifiedErrorResolver:
     def test_confidence_calculation_high(self):
         """Test confidence calculation for HIGH patterns"""
         confidence = self.resolver._calculate_confidence(
-            "ModuleNotFoundError: No module named 'pandas'",
-            "ModuleNotFoundError",
-            ["module", "pandas"]
+            "ModuleNotFoundError: No module named 'pandas'", "ModuleNotFoundError", ["module", "pandas"]
         )
 
         # Whitelisted pattern + common error type + keywords
@@ -117,11 +105,7 @@ class TestUnifiedErrorResolver:
 
     def test_confidence_calculation_medium(self):
         """Test confidence calculation for MEDIUM patterns"""
-        confidence = self.resolver._calculate_confidence(
-            "SomeError: Something went wrong",
-            "SomeError",
-            ["something"]
-        )
+        confidence = self.resolver._calculate_confidence("SomeError: Something went wrong", "SomeError", ["something"])
 
         # Base confidence only
         assert 0.50 <= confidence < 0.95
@@ -207,12 +191,7 @@ class TestUnifiedErrorResolver:
 
     def test_safety_allows_safe_commands(self):
         """Test safety check allows safe commands"""
-        solutions = [
-            "pip install pandas",
-            "npm install react",
-            "chmod +r file.txt",
-            "mkdir -p /path/to/dir"
-        ]
+        solutions = ["pip install pandas", "npm install react", "chmod +r file.txt", "mkdir -p /path/to/dir"]
 
         for solution in solutions:
             safe = self.resolver._check_safety(solution)
@@ -239,7 +218,7 @@ class TestUnifiedErrorResolver:
         assert len(md_files) == 1
 
         # Verify content
-        with open(md_files[0], 'r', encoding='utf-8') as f:
+        with open(md_files[0], "r", encoding="utf-8") as f:
             content = f.read()
 
         assert "CustomError" in content
@@ -254,7 +233,7 @@ class TestUnifiedErrorResolver:
             ("ImportError: cannot import", "ImportError"),
             ("PermissionError: denied", "PermissionError"),
             ("FileNotFoundError: no file", "FileNotFoundError"),
-            ("ValueError: invalid value", "ValueError")
+            ("ValueError: invalid value", "ValueError"),
         ]
 
         for error_msg, expected_type in test_cases:
@@ -266,7 +245,7 @@ class TestUnifiedErrorResolver:
         test_cases = [
             ("HTTP 404 Not Found", "HTTP404"),
             ("401 Unauthorized", "HTTP401"),
-            ("500 Internal Server Error", "HTTP500")
+            ("500 Internal Server Error", "HTTP500"),
         ]
 
         for error_msg, expected_type in test_cases:
@@ -281,7 +260,7 @@ class TestUnifiedErrorResolver:
             ("PermissionError", "permission"),
             ("FileNotFoundError", "file-not-found"),
             ("UnicodeDecodeError", "encoding"),
-            ("UnknownError", "general")
+            ("UnknownError", "general"),
         ]
 
         for error_type, expected_category in test_cases:
@@ -290,9 +269,7 @@ class TestUnifiedErrorResolver:
 
     def test_extract_keywords(self):
         """Test keyword extraction from error messages"""
-        keywords = self.resolver._extract_keywords(
-            "ModuleNotFoundError: No module named 'pandas' in the system"
-        )
+        keywords = self.resolver._extract_keywords("ModuleNotFoundError: No module named 'pandas' in the system")
 
         # Should extract meaningful keywords
         assert "module" in keywords or "pandas" in keywords or "modulen otfounderror" in keywords
@@ -301,10 +278,7 @@ class TestUnifiedErrorResolver:
     def test_generate_solution_module_not_found(self):
         """Test solution generation for ModuleNotFoundError"""
         solution = self.resolver._generate_solution(
-            "ModuleNotFoundError: No module named 'pandas'",
-            "ModuleNotFoundError",
-            ["pandas"],
-            {}
+            "ModuleNotFoundError: No module named 'pandas'", "ModuleNotFoundError", ["pandas"], {}
         )
 
         assert solution == "pip install pandas"
@@ -312,10 +286,7 @@ class TestUnifiedErrorResolver:
     def test_generate_solution_import_error(self):
         """Test solution generation for ImportError"""
         solution = self.resolver._generate_solution(
-            "ImportError: cannot import name 'DataFrame' from 'pandas'",
-            "ImportError",
-            ["pandas"],
-            {}
+            "ImportError: cannot import name 'DataFrame' from 'pandas'", "ImportError", ["pandas"], {}
         )
 
         assert solution == "pip install pandas"
@@ -326,7 +297,7 @@ class TestUnifiedErrorResolver:
             "PermissionError: [Errno 13] Permission denied: '/path/file.txt'",
             "PermissionError",
             ["permission"],
-            {"tool": "Read"}
+            {"tool": "Read"},
         )
 
         assert solution == "chmod +r /path/file.txt"
@@ -337,7 +308,7 @@ class TestUnifiedErrorResolver:
             "PermissionError: [Errno 13] Permission denied: '/path/file.txt'",
             "PermissionError",
             ["permission"],
-            {"tool": "Write"}
+            {"tool": "Write"},
         )
 
         assert solution == "chmod +w /path/file.txt"
@@ -345,10 +316,7 @@ class TestUnifiedErrorResolver:
     def test_generate_solution_file_not_found_directory(self):
         """Test solution generation for FileNotFoundError (directory)"""
         solution = self.resolver._generate_solution(
-            "FileNotFoundError: [Errno 2] No such file or directory: '/path/to/file.txt'",
-            "FileNotFoundError",
-            [],
-            {}
+            "FileNotFoundError: [Errno 2] No such file or directory: '/path/to/file.txt'", "FileNotFoundError", [], {}
         )
 
         assert "mkdir" in solution
@@ -419,10 +387,7 @@ class TestConvenienceFunctions:
         # Reset global instance
         reset_statistics()
 
-        solution = resolve_error(
-            "ModuleNotFoundError: No module named 'pandas'",
-            context={"tool": "Python"}
-        )
+        solution = resolve_error("ModuleNotFoundError: No module named 'pandas'", context={"tool": "Python"})
 
         # Should return solution (either Tier 1 or Tier 2)
         assert solution is not None
@@ -465,9 +430,10 @@ class TestTier1ObsidianIntegration:
 
         # Create test file for Tier 1 hit
         test_file = self.dev_log / "Debug-ModuleNotFound-pandas.md"
-        test_file.write_text("""# ModuleNotFoundError 해결
+        test_file.write_text(
+            """# ModuleNotFoundError 해결
 
-## ✅ 최종 해결 방법
+## [OK] 최종 해결 방법
 
 pip install pandas로 해결했습니다.
 
@@ -476,7 +442,9 @@ pip install pandas
 ```
 
 성공!
-""", encoding='utf-8')
+""",
+            encoding="utf-8",
+        )
 
         self.resolver = UnifiedErrorResolver(vault_path=self.temp_vault)
 
@@ -486,10 +454,7 @@ pip install pandas
 
     def test_tier1_obsidian_hit_with_past_solution(self):
         """Test Tier 1 hits Obsidian past solution"""
-        solution = self.resolver.resolve_error(
-            "ModuleNotFoundError: No module named 'pandas'",
-            context={"tool": "Python"}
-        )
+        solution = self.resolver.resolve_error("ModuleNotFoundError: No module named 'pandas'", context={"tool": "Python"})
 
         # Should hit Tier 1 (Obsidian)
         assert solution is not None
@@ -515,11 +480,8 @@ class TestConfidenceBasedDecision:
         shutil.rmtree(self.temp_vault)
 
     def test_high_confidence_auto_apply(self):
-        """Test HIGH confidence (≥95%) → Auto-apply"""
-        solution = self.resolver.resolve_error(
-            "ModuleNotFoundError: No module named 'pandas'",
-            {}
-        )
+        """Test HIGH confidence (≥95%) -> Auto-apply"""
+        solution = self.resolver.resolve_error("ModuleNotFoundError: No module named 'pandas'", {})
 
         # Should return solution (auto-apply)
         assert solution is not None
@@ -528,7 +490,7 @@ class TestConfidenceBasedDecision:
         assert stats["tier2_auto"] == 1
 
     def test_medium_confidence_user_confirmation(self):
-        """Test MEDIUM confidence (70-95%) → User confirmation needed
+        """Test MEDIUM confidence (70-95%) -> User confirmation needed
 
         Note: This is simulated behavior. In real implementation,
         Context7 MCP would return MEDIUM confidence solutions.
@@ -536,10 +498,7 @@ class TestConfidenceBasedDecision:
         # For this test, we simulate a scenario that would trigger MEDIUM
 
         # LOW confidence pattern (will trigger Tier 3)
-        solution = self.resolver.resolve_error(
-            "UnknownCustomError: Something went wrong in business logic",
-            {}
-        )
+        solution = self.resolver.resolve_error("UnknownCustomError: Something went wrong in business logic", {})
 
         # Should return None (user confirmation needed)
         assert solution is None
@@ -557,12 +516,15 @@ def temp_vault_with_solution():
 
     # Create past solution file
     solution_file = dev_log / "Debug-ModuleNotFound-pandas.md"
-    solution_file.write_text("""## ✅ 최종 해결 방법
+    solution_file.write_text(
+        """## [OK] 최종 해결 방법
 
 pip install pandas
 
 성공!
-""", encoding='utf-8')
+""",
+        encoding="utf-8",
+    )
 
     yield str(temp_vault)
 
@@ -575,10 +537,7 @@ def test_integration_full_3tier_cascade(temp_vault_with_solution):
     resolver = UnifiedErrorResolver(vault_path=temp_vault_with_solution)
 
     # Test 1: Tier 1 hit (past solution in Obsidian)
-    solution1 = resolver.resolve_error(
-        "ModuleNotFoundError: No module named 'pandas'",
-        {"tool": "Python"}
-    )
+    solution1 = resolver.resolve_error("ModuleNotFoundError: No module named 'pandas'", {"tool": "Python"})
 
     assert solution1 is not None
     assert "pip install pandas" in solution1
@@ -587,20 +546,14 @@ def test_integration_full_3tier_cascade(temp_vault_with_solution):
     # Note: The test vault already has a pandas solution from Test 1,
     # so searching for numpy will match the ModuleNotFoundError pattern
     # and find the pandas solution (correct Tier 1 behavior)
-    solution2 = resolver.resolve_error(
-        "ModuleNotFoundError: No module named 'scipy'",
-        {"tool": "Python"}
-    )
+    solution2 = resolver.resolve_error("ModuleNotFoundError: No module named 'scipy'", {"tool": "Python"})
 
     # Should hit Tier 1 and find pandas solution (most recent matching file)
     assert solution2 is not None
     assert "pip install" in solution2
 
     # Test 3: Tier 3 escalation (unknown error)
-    solution3 = resolver.resolve_error(
-        "CustomBusinessError: Payment failed",
-        {"tool": "API"}
-    )
+    solution3 = resolver.resolve_error("CustomBusinessError: Payment failed", {"tool": "API"})
 
     assert solution3 is None
 

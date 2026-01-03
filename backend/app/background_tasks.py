@@ -5,7 +5,7 @@ Handles automatic Obsidian sync every 1-2 hours
 
 import asyncio
 import logging
-from datetime import datetime, timedelta
+from datetime import datetime
 from pathlib import Path
 from typing import Optional
 import subprocess
@@ -48,7 +48,7 @@ class BackgroundSyncTask:
 
         self.running = True
         self.task = asyncio.create_task(self._sync_loop())
-        logger.info(f"✅ Background sync started (interval: {self.sync_interval_hours}h)")
+        logger.info(f"[OK] Background sync started (interval: {self.sync_interval_hours}h)")
 
     async def stop(self):
         """Stop the background sync task"""
@@ -62,7 +62,7 @@ class BackgroundSyncTask:
                 await self.task
             except asyncio.CancelledError:
                 pass
-        logger.info("⏹️ Background sync stopped")
+        logger.info("[*] Background sync stopped")
 
     async def _sync_loop(self):
         """Main sync loop - runs every N hours"""
@@ -82,7 +82,7 @@ class BackgroundSyncTask:
     async def _perform_sync(self):
         """Perform the actual sync operation"""
         try:
-            logger.info("🔄 Periodic sync triggered...")
+            logger.info("[*] Periodic sync triggered...")
 
             # Check if there are uncommitted changes
             has_changes = await self._check_git_changes()
@@ -95,7 +95,7 @@ class BackgroundSyncTask:
             await self._create_temp_devlog()
 
             self.last_sync = datetime.now()
-            logger.info(f"✅ Periodic sync completed at {self.last_sync.strftime('%H:%M:%S')}")
+            logger.info(f"[OK] Periodic sync completed at {self.last_sync.strftime('%H:%M:%S')}")
 
         except Exception as e:
             logger.error(f"Failed to perform sync: {e}")
@@ -146,7 +146,7 @@ class BackgroundSyncTask:
                 # Flush immediately (don't wait for debouncing)
                 await obsidian_service.force_flush()
 
-                logger.info("📝 Temporary devlog created via ObsidianService")
+                logger.info("[*] Temporary devlog created via ObsidianService")
 
             except ImportError:
                 logger.warning("ObsidianService not available, using direct MCP call")

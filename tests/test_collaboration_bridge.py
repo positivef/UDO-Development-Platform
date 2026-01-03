@@ -10,16 +10,17 @@ from pathlib import Path
 import unittest
 
 # Windows Unicode 인코딩 문제 근본 해결
-if sys.platform == 'win32':
-    os.environ['PYTHONIOENCODING'] = 'utf-8'
-    if hasattr(sys.stdout, 'reconfigure'):
-        sys.stdout.reconfigure(encoding='utf-8')
-        sys.stderr.reconfigure(encoding='utf-8')
+if sys.platform == "win32":
+    os.environ["PYTHONIOENCODING"] = "utf-8"
+    if hasattr(sys.stdout, "reconfigure"):
+        sys.stdout.reconfigure(encoding="utf-8")
+        sys.stderr.reconfigure(encoding="utf-8")
 
 # 경로 추가
 sys.path.append(str(Path(__file__).parent.parent / "src"))
 
-from src.collaboration_bridge import ThreeAICollaborationBridge
+from src.collaboration_bridge import ThreeAICollaborationBridge  # noqa: E402
+
 
 class TestThreeAICollaborationBridge(unittest.TestCase):
 
@@ -30,8 +31,8 @@ class TestThreeAICollaborationBridge(unittest.TestCase):
     def test_initialization(self):
         """Test that the bridge can be initialized."""
         self.assertIsNotNone(self.bridge)
-        self.assertTrue(hasattr(self.bridge, 'codex'))
-        self.assertTrue(hasattr(self.bridge, 'gemini'))
+        self.assertTrue(hasattr(self.bridge, "codex"))
+        self.assertTrue(hasattr(self.bridge, "gemini"))
 
     def test_collaboration_implementation_pattern(self):
         """Test the collaboration with the implementation pattern."""
@@ -40,9 +41,9 @@ class TestThreeAICollaborationBridge(unittest.TestCase):
         result = self.bridge.collaborate(task, pattern)
 
         self.assertIsNotNone(result)
-        self.assertEqual(result['collaboration_pattern'], pattern)
-        self.assertIn('status', result)
-        self.assertIn('overall_confidence', result)
+        self.assertEqual(result["collaboration_pattern"], pattern)
+        self.assertIn("status", result)
+        self.assertIn("overall_confidence", result)
 
     def test_collaboration_ideation_pattern(self):
         """Test the collaboration with the ideation pattern."""
@@ -51,9 +52,10 @@ class TestThreeAICollaborationBridge(unittest.TestCase):
         result = self.bridge.collaborate(task, pattern)
 
         self.assertIsNotNone(result)
-        self.assertEqual(result['collaboration_pattern'], pattern)
-        self.assertIn('status', result)
-        self.assertIn('overall_confidence', result)
+        self.assertEqual(result["collaboration_pattern"], pattern)
+        self.assertIn("status", result)
+        self.assertIn("overall_confidence", result)
 
-if __name__ == '__main__':
+
+if __name__ == "__main__":
     unittest.main()

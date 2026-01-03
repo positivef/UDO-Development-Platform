@@ -8,28 +8,27 @@ Codex MCP, Claude, Gemini 통합
 import sys
 import os
 import json
-import asyncio
-from typing import Dict, List, Optional, Any, Tuple
+from typing import Dict, Optional, Any
 from dataclasses import dataclass, asdict
 from datetime import datetime
 from enum import Enum
-import subprocess
 import logging
 
 # Windows Unicode 인코딩 문제 해결
-if sys.platform == 'win32':
-    os.environ['PYTHONIOENCODING'] = 'utf-8'
-    if hasattr(sys.stdout, 'reconfigure'):
-        sys.stdout.reconfigure(encoding='utf-8')
-        sys.stderr.reconfigure(encoding='utf-8')
+if sys.platform == "win32":
+    os.environ["PYTHONIOENCODING"] = "utf-8"
+    if hasattr(sys.stdout, "reconfigure"):
+        sys.stdout.reconfigure(encoding="utf-8")
+        sys.stderr.reconfigure(encoding="utf-8")
 
 # 로깅 설정
-logging.basicConfig(level=logging.INFO, format='%(asctime)s - %(levelname)s - %(message)s')
+logging.basicConfig(level=logging.INFO, format="%(asctime)s - %(levelname)s - %(message)s")
 logger = logging.getLogger(__name__)
 
 
 class AIService(Enum):
     """AI 서비스 타입"""
+
     CLAUDE = "claude"
     CODEX = "codex"
     GEMINI = "gemini"
@@ -39,6 +38,7 @@ class AIService(Enum):
 @dataclass
 class AIRequest:
     """AI 요청 데이터 클래스"""
+
     service: AIService
     prompt: str
     context: Dict[str, Any]
@@ -50,6 +50,7 @@ class AIRequest:
 @dataclass
 class AIResponse:
     """AI 응답 데이터 클래스"""
+
     service: AIService
     content: str
     metadata: Dict[str, Any]
@@ -84,25 +85,13 @@ class CodexMCPConnector:
                 raise ConnectionError("Codex MCP not available")
 
             # MCP를 통한 Codex 실행
-            params = {
-                "prompt": prompt,
-                "context": context or {},
-                "mode": "development"
-            }
+            params = {"prompt": prompt, "context": context or {}, "mode": "development"}
 
             result = self._execute_mcp_command("codex", params)
-            return {
-                "success": True,
-                "content": result.get("output", ""),
-                "metadata": result.get("metadata", {})
-            }
+            return {"success": True, "content": result.get("output", ""), "metadata": result.get("metadata", {})}
         except Exception as e:
             logger.error(f"Codex execution failed: {e}")
-            return {
-                "success": False,
-                "content": "",
-                "error": str(e)
-            }
+            return {"success": False, "content": "", "error": str(e)}
 
     def _execute_mcp_command(self, command: str, params: Dict) -> Optional[Dict]:
         """MCP 명령 실행 (시뮬레이션)"""
@@ -114,10 +103,7 @@ class CodexMCPConnector:
             # Codex 실행 시뮬레이션
             return {
                 "output": f"# Codex Analysis\n{params.get('prompt', '')}",
-                "metadata": {
-                    "service": "codex-mcp",
-                    "timestamp": datetime.now().isoformat()
-                }
+                "metadata": {"service": "codex-mcp", "timestamp": datetime.now().isoformat()},
             }
         return None
 
@@ -151,18 +137,11 @@ class GeminiAPIConnector:
             return {
                 "success": True,
                 "content": f"[Gemini Response]\n{prompt[:100]}...",
-                "metadata": {
-                    "model": "gemini-pro",
-                    "timestamp": datetime.now().isoformat()
-                }
+                "metadata": {"model": "gemini-pro", "timestamp": datetime.now().isoformat()},
             }
         except Exception as e:
             logger.error(f"Gemini generation failed: {e}")
-            return {
-                "success": False,
-                "content": "",
-                "error": str(e)
-            }
+            return {"success": False, "content": "", "error": str(e)}
 
 
 class AICollaborationConnector:
@@ -183,19 +162,19 @@ class AICollaborationConnector:
 
         # Codex MCP 확인
         self.services_status[AIService.CODEX] = self.codex.ping()
-        logger.info(f"Codex MCP: {'✅ Connected' if self.services_status[AIService.CODEX] else '❌ Not available'}")
+        logger.info(f"Codex MCP: {'[OK] Connected' if self.services_status[AIService.CODEX] else '[FAIL] Not available'}")
 
         # Gemini API 확인
         self.services_status[AIService.GEMINI] = self.gemini.validate_connection()
-        logger.info(f"Gemini API: {'✅ Connected' if self.services_status[AIService.GEMINI] else '❌ Not available'}")
+        logger.info(f"Gemini API: {'[OK] Connected' if self.services_status[AIService.GEMINI] else '[FAIL] Not available'}")
 
         # Claude는 현재 컨텍스트에서 항상 사용 가능
         self.services_status[AIService.CLAUDE] = True
-        logger.info(f"Claude: ✅ Available (current context)")
+        logger.info(f"Claude: [OK] Available (current context)")
 
         # Local 실행은 항상 가능
         self.services_status[AIService.LOCAL] = True
-        logger.info(f"Local: ✅ Available")
+        logger.info(f"Local: [OK] Available")
 
     def execute_request(self, request: AIRequest) -> AIResponse:
         """AI 요청 실행"""
@@ -222,7 +201,7 @@ class AICollaborationConnector:
                 metadata=result.get("metadata", {}),
                 execution_time=execution_time,
                 success=result.get("success", False),
-                error=result.get("error")
+                error=result.get("error"),
             )
 
             # 히스토리 저장
@@ -238,7 +217,7 @@ class AICollaborationConnector:
                 metadata={},
                 execution_time=(datetime.now() - start_time).total_seconds(),
                 success=False,
-                error=str(e)
+                error=str(e),
             )
 
     def _execute_codex(self, request: AIRequest) -> Dict:
@@ -261,25 +240,19 @@ class AICollaborationConnector:
         return {
             "success": True,
             "content": f"[Claude would process]: {request.prompt[:100]}...",
-            "metadata": {"context": "current"}
+            "metadata": {"context": "current"},
         }
 
     def _execute_local(self, request: AIRequest) -> Dict:
         """로컬 실행 (폴백)"""
         # 간단한 로컬 처리
-        return {
-            "success": True,
-            "content": f"[Local processing]: {request.prompt[:50]}...",
-            "metadata": {"fallback": True}
-        }
+        return {"success": True, "content": f"[Local processing]: {request.prompt[:50]}...", "metadata": {"fallback": True}}
 
     def _save_to_history(self, request: AIRequest, response: AIResponse):
         """실행 히스토리 저장"""
-        self.execution_history.append({
-            "timestamp": datetime.now().isoformat(),
-            "request": asdict(request),
-            "response": asdict(response)
-        })
+        self.execution_history.append(
+            {"timestamp": datetime.now().isoformat(), "request": asdict(request), "response": asdict(response)}
+        )
 
         # 최대 100개 유지
         if len(self.execution_history) > 100:
@@ -309,16 +282,12 @@ class AICollaborationConnector:
         # 각 서비스 실행
         for service in services:
             if self.services_status.get(service, False):
-                request = AIRequest(
-                    service=service,
-                    prompt=task,
-                    context={"phase": phase}
-                )
+                request = AIRequest(service=service, prompt=task, context={"phase": phase})
                 response = self.execute_request(request)
                 results[service.value] = {
                     "content": response.content,
                     "success": response.success,
-                    "time": response.execution_time
+                    "time": response.execution_time,
                 }
 
         # 종합 결과 생성
@@ -327,21 +296,18 @@ class AICollaborationConnector:
             "task": task,
             "services_used": [s.value for s in services],
             "results": results,
-            "timestamp": datetime.now().isoformat()
+            "timestamp": datetime.now().isoformat(),
         }
 
     def get_status_report(self) -> Dict:
         """서비스 상태 보고서"""
         return {
             "services": {
-                service.value: {
-                    "available": status,
-                    "status": "✅ Connected" if status else "❌ Not available"
-                }
+                service.value: {"available": status, "status": "[OK] Connected" if status else "[FAIL] Not available"}
                 for service, status in self.services_status.items()
             },
             "history_count": len(self.execution_history),
-            "last_execution": self.execution_history[-1] if self.execution_history else None
+            "last_execution": self.execution_history[-1] if self.execution_history else None,
         }
 
 
@@ -358,22 +324,19 @@ def demo():
     logger.info("Service status:")
     status = connector.get_status_report()
     for service, info in status["services"].items():
-        logger.info("%s: %s", service, info['status'])
+        logger.info("%s: %s", service, info["status"])
 
     # Phase별 협업 테스트
     phases = ["ideation", "design", "implementation", "testing"]
 
     for phase in phases:
         logger.info("Testing %s phase", phase.upper())
-        result = connector.orchestrate_collaboration(
-            task=f"Test task for {phase}",
-            phase=phase
-        )
+        result = connector.orchestrate_collaboration(task=f"Test task for {phase}", phase=phase)
 
-        logger.info("Services used: %s", ', '.join(result['services_used']))
-        for service, res in result['results'].items():
-            status = "✅" if res['success'] else "❌"
-            logger.info("%s: %s (%.2fs)", service, status, res['time'])
+        logger.info("Services used: %s", ", ".join(result["services_used"]))
+        for service, res in result["results"].items():
+            status = "[OK]" if res["success"] else "[FAIL]"
+            logger.info("%s: %s (%.2fs)", service, status, res["time"])
 
     logger.info("%s", "=" * 60)
     logger.info("Demo completed!")

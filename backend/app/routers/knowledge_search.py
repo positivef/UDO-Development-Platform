@@ -14,25 +14,21 @@ Integration:
 """
 
 import os
-from datetime import datetime, timezone
-from typing import Any, Dict, List, Optional
+from typing import Dict, List, Optional
 
 # Import search service
-from app.services.knowledge_search_service import (KnowledgeSearchService,
-                                                   SearchResult)
+from app.services.knowledge_search_service import KnowledgeSearchService
 from fastapi import APIRouter, Depends, HTTPException, Query
 from pydantic import BaseModel, Field
 from sqlalchemy.orm import Session
 
 # Import database and service
 from app.db.database import get_db
-from app.services.knowledge_feedback_service import \
-    KnowledgeFeedbackService
+from app.services.knowledge_feedback_service import KnowledgeFeedbackService
 
 # Import MCP tools (will be available in backend runtime)
 # Note: These are injected by the MCP server at runtime
 # For type hints, we'll define them as we use them
-
 
 
 router = APIRouter(prefix="/api/knowledge", tags=["knowledge-search"])
@@ -73,9 +69,7 @@ class SearchResponse(BaseModel):
     total_results: int
     results: List[SearchResultResponse]
     search_time_ms: float
-    tier_breakdown: Dict[str, int] = Field(
-        description="Count of results from each tier"
-    )
+    tier_breakdown: Dict[str, int] = Field(description="Count of results from each tier")
 
 
 class SearchStats(BaseModel):

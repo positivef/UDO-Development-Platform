@@ -13,9 +13,9 @@ Usage:
 
     # Automatic 3-stage cascade
     result = search_obsidian_solutions("ModuleNotFoundError: pandas")
-    # → Stage 1: Searches "Debug-ModuleNotFound-*.md"
-    # → Stage 2: Searches frontmatter error_type=="ModuleNotFoundError"
-    # → Stage 3: Full-text search as fallback
+    # -> Stage 1: Searches "Debug-ModuleNotFound-*.md"
+    # -> Stage 2: Searches frontmatter error_type=="ModuleNotFoundError"
+    # -> Stage 3: Full-text search as fallback
 
     if result["found"]:
         print(f"Solution: {result['solution']}")
@@ -29,7 +29,7 @@ import time
 import re
 from typing import Dict, Any, List, Optional
 from pathlib import Path
-from dataclasses import dataclass, field
+from dataclasses import dataclass
 import json
 
 logger = logging.getLogger(__name__)
@@ -226,16 +226,16 @@ class Obsidian3StageSearch:
         Token usage: 100
 
         Examples:
-            "ModuleNotFoundError: pandas" → Debug-ModuleNotFound-*.md
-            "401 Unauthorized" → Debug-401-*.md
-            "WebSocket connection failed" → WebSocket-*.md
+            "ModuleNotFoundError: pandas" -> Debug-ModuleNotFound-*.md
+            "401 Unauthorized" -> Debug-401-*.md
+            "WebSocket connection failed" -> WebSocket-*.md
         """
         logger.debug("Stage 1: Filename pattern search")
 
         # Extract error pattern
         for pattern, filename_glob in self.error_patterns.items():
             if pattern.lower() in error_msg.lower():
-                logger.debug(f"Pattern matched: {pattern} → {filename_glob}")
+                logger.debug(f"Pattern matched: {pattern} -> {filename_glob}")
 
                 # Search for matching files
                 matching_files = list(self.dev_log_path.rglob(filename_glob))
@@ -245,7 +245,7 @@ class Obsidian3StageSearch:
                     matching_files.sort(key=lambda p: p.stat().st_mtime, reverse=True)
                     recent_file = matching_files[0]
 
-                    logger.info(f"📄 Found: {recent_file.name}")
+                    logger.info(f"[*] Found: {recent_file.name}")
 
                     # Read solution from file
                     solution = self._extract_solution(recent_file)
@@ -307,7 +307,7 @@ class Obsidian3StageSearch:
 
                 # Check for matching error_type
                 if f'error_type: "{error_type}"' in frontmatter or f"error_type: {error_type}" in frontmatter:
-                    logger.info(f"📄 Frontmatter match: {md_file.name}")
+                    logger.info(f"[*] Frontmatter match: {md_file.name}")
 
                     solution = self._extract_solution(md_file)
 
@@ -370,7 +370,7 @@ class Obsidian3StageSearch:
 
         # Require at least 50% keyword match
         if best_match and best_score >= len(keywords) * 0.5:
-            logger.info(f"📄 Full-text match: {best_match.name} (score: {best_score}/{len(keywords)})")
+            logger.info(f"[*] Full-text match: {best_match.name} (score: {best_score}/{len(keywords)})")
 
             solution = self._extract_solution(best_match)
 
@@ -394,7 +394,7 @@ class Obsidian3StageSearch:
         Extract solution from markdown file
 
         Looks for sections:
-        - ## ✅ 최종 해결 방법
+        - ## [OK] 최종 해결 방법
         - ## 해결
         - ## Solution
         """
@@ -404,7 +404,7 @@ class Obsidian3StageSearch:
 
             # Look for solution markers
             solution_patterns = [
-                r"## ✅ 최종 해결 방법\n(.*?)(?=\n##|\Z)",
+                r"## [OK] 최종 해결 방법\n(.*?)(?=\n##|\Z)",
                 r"## 해결\n(.*?)(?=\n##|\Z)",
                 r"## Solution\n(.*?)(?=\n##|\Z)",
                 r"## Fix\n(.*?)(?=\n##|\Z)",
@@ -594,11 +594,11 @@ def check_scheduled_tasks_on_session_start(verbose: bool = False) -> Dict[str, A
         return {
             "found_tasks": False,
             "error": "Scheduled tasks file not found. Run setup first.",
-            "summary": "⚠️ Scheduled tasks file not configured.",
+            "summary": "[WARN] Scheduled tasks file not configured.",
         }
     except Exception as e:
         logger.error(f"Failed to check scheduled tasks: {e}")
-        return {"found_tasks": False, "error": str(e), "summary": f"❌ Error checking scheduled tasks: {e}"}
+        return {"found_tasks": False, "error": str(e), "summary": f"[FAIL] Error checking scheduled tasks: {e}"}
 
 
 if __name__ == "__main__":

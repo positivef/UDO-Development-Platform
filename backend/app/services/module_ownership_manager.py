@@ -9,14 +9,13 @@ Standard 레벨 모듈 개발 조정 시스템
 """
 
 import json
-import asyncio
 from datetime import datetime, timedelta
-from typing import Dict, List, Optional, Set, Tuple, Any
+from typing import Dict, List, Optional, Tuple, Any
 from enum import Enum
 from dataclasses import dataclass, asdict, field
 import logging
 
-from app.services.redis_client import get_redis_client, RedisKeys
+from app.services.redis_client import get_redis_client
 from app.services.session_manager_v2 import get_session_manager
 
 logger = logging.getLogger(__name__)
@@ -24,40 +23,44 @@ logger = logging.getLogger(__name__)
 
 class ModuleStatus(Enum):
     """모듈 개발 상태"""
-    AVAILABLE = "available"        # 개발 가능
-    PLANNING = "planning"          # 계획 중
-    CODING = "coding"             # 코딩 중
-    TESTING = "testing"           # 테스트 중
-    REVIEW = "review"             # 리뷰 중
-    COMPLETED = "completed"       # 완료
-    BLOCKED = "blocked"           # 차단됨
+
+    AVAILABLE = "available"  # 개발 가능
+    PLANNING = "planning"  # 계획 중
+    CODING = "coding"  # 코딩 중
+    TESTING = "testing"  # 테스트 중
+    REVIEW = "review"  # 리뷰 중
+    COMPLETED = "completed"  # 완료
+    BLOCKED = "blocked"  # 차단됨
 
 
 class CompletionCriteria(Enum):
     """Standard 레벨 완료 기준"""
-    COMMIT = "commit"             # 커밋 완료
-    PUSH = "push"                 # 푸시 완료
-    TESTS_PASS = "tests_pass"     # 테스트 통과
-    USER_CONFIRM = "user_confirm" # 사용자 확인
+
+    COMMIT = "commit"  # 커밋 완료
+    PUSH = "push"  # 푸시 완료
+    TESTS_PASS = "tests_pass"  # 테스트 통과
+    USER_CONFIRM = "user_confirm"  # 사용자 확인
 
 
 @dataclass
 class ModuleDefinition:
     """모듈 정의"""
-    id: str                           # 예: "auth/login"
-    name: str                         # 표시명
-    description: str                  # 설명
-    type: str                        # feature, bugfix, refactor
-    dependencies: List[str]          # 의존 모듈들
-    estimated_hours: float           # 예상 시간
-    priority: str                    # high, medium, low
-    files: List[str]                # 관련 파일들
-    test_files: List[str]           # 테스트 파일들
+
+    id: str  # 예: "auth/login"
+    name: str  # 표시명
+    description: str  # 설명
+    type: str  # feature, bugfix, refactor
+    dependencies: List[str]  # 의존 모듈들
+    estimated_hours: float  # 예상 시간
+    priority: str  # high, medium, low
+    files: List[str]  # 관련 파일들
+    test_files: List[str]  # 테스트 파일들
 
 
 @dataclass
 class ModuleOwnership:
     """모듈 점유 정보"""
+
     module_id: str
     owner_session: str
     developer_name: str
@@ -73,30 +76,29 @@ class ModuleOwnership:
 
     def to_dict(self) -> dict:
         data = asdict(self)
-        data['status'] = self.status.value
-        data['started_at'] = self.started_at.isoformat()
-        data['estimated_completion'] = self.estimated_completion.isoformat()
+        data["status"] = self.status.value
+        data["started_at"] = self.started_at.isoformat()
+        data["estimated_completion"] = self.estimated_completion.isoformat()
         if self.actual_completion:
-            data['actual_completion'] = self.actual_completion.isoformat()
-        data['completion_criteria'] = [c.value for c in self.completion_criteria]
+            data["actual_completion"] = self.actual_completion.isoformat()
+        data["completion_criteria"] = [c.value for c in self.completion_criteria]
         return data
 
     @classmethod
-    def from_dict(cls, data: dict) -> 'ModuleOwnership':
-        data['status'] = ModuleStatus(data['status'])
-        data['started_at'] = datetime.fromisoformat(data['started_at'])
-        data['estimated_completion'] = datetime.fromisoformat(data['estimated_completion'])
-        if data.get('actual_completion'):
-            data['actual_completion'] = datetime.fromisoformat(data['actual_completion'])
-        data['completion_criteria'] = [
-            CompletionCriteria(c) for c in data.get('completion_criteria', [])
-        ]
+    def from_dict(cls, data: dict) -> "ModuleOwnership":
+        data["status"] = ModuleStatus(data["status"])
+        data["started_at"] = datetime.fromisoformat(data["started_at"])
+        data["estimated_completion"] = datetime.fromisoformat(data["estimated_completion"])
+        if data.get("actual_completion"):
+            data["actual_completion"] = datetime.fromisoformat(data["actual_completion"])
+        data["completion_criteria"] = [CompletionCriteria(c) for c in data.get("completion_criteria", [])]
         return cls(**data)
 
 
 @dataclass
 class ModuleAvailability:
     """모듈 가용성 정보"""
+
     available: bool
     reason: Optional[str] = None
     owner: Optional[str] = None
@@ -136,7 +138,7 @@ class ModuleOwnershipManager:
             await self._recover_active_ownerships()
 
             self._initialized = True
-            logger.info("✅ ModuleOwnershipManager initialized (Standard Level)")
+            logger.info("[OK] ModuleOwnershipManager initialized (Standard Level)")
 
         except Exception as e:
             logger.error(f"Failed to initialize ModuleOwnershipManager: {e}")
@@ -157,7 +159,7 @@ class ModuleOwnershipManager:
                 estimated_hours=4,
                 priority="high",
                 files=["backend/auth/login.py", "backend/auth/validators.py"],
-                test_files=["tests/auth/test_login.py"]
+                test_files=["tests/auth/test_login.py"],
             ),
             "auth/register": ModuleDefinition(
                 id="auth/register",
@@ -168,7 +170,7 @@ class ModuleOwnershipManager:
                 estimated_hours=6,
                 priority="high",
                 files=["backend/auth/register.py", "backend/auth/validators.py"],
-                test_files=["tests/auth/test_register.py"]
+                test_files=["tests/auth/test_register.py"],
             ),
             "payment/checkout": ModuleDefinition(
                 id="payment/checkout",
@@ -179,11 +181,11 @@ class ModuleOwnershipManager:
                 estimated_hours=8,
                 priority="medium",
                 files=["backend/payment/checkout.py", "backend/payment/gateway.py"],
-                test_files=["tests/payment/test_checkout.py"]
-            )
+                test_files=["tests/payment/test_checkout.py"],
+            ),
         }
 
-        logger.info(f"📚 Loaded {len(self.module_definitions)} module definitions")
+        logger.info(f"[*] Loaded {len(self.module_definitions)} module definitions")
 
     async def _recover_active_ownerships(self):
         """Redis에서 활성 점유 복구"""
@@ -201,27 +203,19 @@ class ModuleOwnershipManager:
                     ownership = ModuleOwnership.from_dict(json.loads(data))
                     self.active_ownerships[ownership.module_id] = ownership
 
-            logger.info(f"🔄 Recovered {len(self.active_ownerships)} active ownerships")
+            logger.info(f"[*] Recovered {len(self.active_ownerships)} active ownerships")
 
         except Exception as e:
             logger.error(f"Failed to recover ownerships: {e}")
 
-    async def check_module_availability(
-        self,
-        module_id: str,
-        session_id: str,
-        developer_name: str
-    ) -> ModuleAvailability:
+    async def check_module_availability(self, module_id: str, session_id: str, developer_name: str) -> ModuleAvailability:
         """
         모듈 개발 가능 여부 체크 (Standard 레벨)
         """
 
         # 1. 모듈 정의 확인
         if module_id not in self.module_definitions:
-            return ModuleAvailability(
-                available=False,
-                reason=f"모듈 '{module_id}'이 정의되지 않음"
-            )
+            return ModuleAvailability(available=False, reason=f"모듈 '{module_id}'이 정의되지 않음")
 
         module_def = self.module_definitions[module_id]
 
@@ -231,11 +225,7 @@ class ModuleOwnershipManager:
 
             if ownership.owner_session == session_id:
                 # 이미 본인이 점유
-                return ModuleAvailability(
-                    available=True,
-                    reason="이미 점유 중인 모듈",
-                    warnings=["중복 점유 요청"]
-                )
+                return ModuleAvailability(available=True, reason="이미 점유 중인 모듈", warnings=["중복 점유 요청"])
 
             # 다른 사람이 점유 중
             return ModuleAvailability(
@@ -245,7 +235,7 @@ class ModuleOwnershipManager:
                 status=ownership.status,
                 estimated_available=ownership.estimated_completion,
                 alternatives=await self._suggest_alternatives(module_id),
-                can_override=False  # Standard 레벨은 override 불가
+                can_override=False,  # Standard 레벨은 override 불가
             )
 
         # 3. 의존성 체크
@@ -261,7 +251,7 @@ class ModuleOwnershipManager:
                 available=False,
                 reason="의존 모듈이 아직 개발 중",
                 warnings=[f"대기 중: {', '.join(blocked_by)}"],
-                estimated_available=await self._estimate_availability(module_id)
+                estimated_available=await self._estimate_availability(module_id),
             )
 
         # 4. 경고 체크 (Standard 레벨은 경고만, 차단 안함)
@@ -277,27 +267,17 @@ class ModuleOwnershipManager:
             warnings.append("늦은 시간 작업 - 충분한 테스트 권장")
 
         # 5. 개발 가능
-        return ModuleAvailability(
-            available=True,
-            warnings=warnings,
-            alternatives=await self._suggest_alternatives(module_id)
-        )
+        return ModuleAvailability(available=True, warnings=warnings, alternatives=await self._suggest_alternatives(module_id))
 
     async def claim_module(
-        self,
-        module_id: str,
-        session_id: str,
-        developer_name: str,
-        estimated_hours: Optional[float] = None
+        self, module_id: str, session_id: str, developer_name: str, estimated_hours: Optional[float] = None
     ) -> Tuple[bool, ModuleOwnership]:
         """
         모듈 점유 (Standard 레벨)
         """
 
         # 가용성 체크
-        availability = await self.check_module_availability(
-            module_id, session_id, developer_name
-        )
+        availability = await self.check_module_availability(module_id, session_id, developer_name)
 
         if not availability.available:
             raise ValueError(f"모듈 점유 불가: {availability.reason}")
@@ -314,21 +294,15 @@ class ModuleOwnershipManager:
             status=ModuleStatus.PLANNING,
             started_at=datetime.now(),
             estimated_completion=datetime.now() + timedelta(hours=hours),
-            completion_criteria=[
-                CompletionCriteria.COMMIT,
-                CompletionCriteria.TESTS_PASS,
-                CompletionCriteria.PUSH
-            ],
-            warnings=availability.warnings
+            completion_criteria=[CompletionCriteria.COMMIT, CompletionCriteria.TESTS_PASS, CompletionCriteria.PUSH],
+            warnings=availability.warnings,
         )
 
         # Redis에 저장
         if self.redis_client:
             key = f"udo:module:ownership:{module_id}"
             await self.redis_client._client.set(
-                key,
-                json.dumps(ownership.to_dict()),
-                ex=int(hours * 3600 * 2)  # 예상 시간의 2배로 TTL 설정
+                key, json.dumps(ownership.to_dict()), ex=int(hours * 3600 * 2)  # 예상 시간의 2배로 TTL 설정
             )
 
             # 이벤트 브로드캐스트
@@ -338,8 +312,8 @@ class ModuleOwnershipManager:
                     "type": "module_claimed",
                     "module_id": module_id,
                     "developer": developer_name,
-                    "estimated_completion": ownership.estimated_completion.isoformat()
-                }
+                    "estimated_completion": ownership.estimated_completion.isoformat(),
+                },
             )
 
         # 로컬 저장
@@ -347,10 +321,10 @@ class ModuleOwnershipManager:
 
         # 파일 락 획득 (Standard 레벨은 경고만, 강제 락은 안함)
         for file_path in module_def.files:
-            logger.info(f"📝 File '{file_path}' associated with module '{module_id}'")
+            logger.info(f"[*] File '{file_path}' associated with module '{module_id}'")
 
         logger.info(
-            f"✅ Module '{module_id}' claimed by {developer_name} "
+            f"[OK] Module '{module_id}' claimed by {developer_name} "
             f"(until {ownership.estimated_completion.strftime('%H:%M')})"
         )
 
@@ -362,7 +336,7 @@ class ModuleOwnershipManager:
         session_id: str,
         new_status: ModuleStatus,
         progress: Optional[int] = None,
-        commit_hash: Optional[str] = None
+        commit_hash: Optional[str] = None,
     ) -> bool:
         """
         모듈 상태 업데이트
@@ -393,17 +367,14 @@ class ModuleOwnershipManager:
                 ModuleStatus.CODING: 50,
                 ModuleStatus.TESTING: 70,
                 ModuleStatus.REVIEW: 90,
-                ModuleStatus.COMPLETED: 100
+                ModuleStatus.COMPLETED: 100,
             }
             ownership.progress = status_progress.get(new_status, ownership.progress)
 
         # Redis 업데이트
         if self.redis_client:
             key = f"udo:module:ownership:{module_id}"
-            await self.redis_client._client.set(
-                key,
-                json.dumps(ownership.to_dict())
-            )
+            await self.redis_client._client.set(key, json.dumps(ownership.to_dict()))
 
             # 상태 변경 이벤트
             await self.redis_client.publish(
@@ -413,26 +384,19 @@ class ModuleOwnershipManager:
                     "module_id": module_id,
                     "new_status": new_status.value,
                     "progress": ownership.progress,
-                    "developer": ownership.developer_name
-                }
+                    "developer": ownership.developer_name,
+                },
             )
 
         # 완료 처리
         if new_status == ModuleStatus.COMPLETED:
             await self._complete_module(module_id)
 
-        logger.info(
-            f"📊 Module '{module_id}' status: {new_status.value} ({ownership.progress}%)"
-        )
+        logger.info(f"[*] Module '{module_id}' status: {new_status.value} ({ownership.progress}%)")
 
         return True
 
-    async def release_module(
-        self,
-        module_id: str,
-        session_id: str,
-        reason: Optional[str] = None
-    ) -> bool:
+    async def release_module(self, module_id: str, session_id: str, reason: Optional[str] = None) -> bool:
         """
         모듈 점유 해제
         """
@@ -458,8 +422,8 @@ class ModuleOwnershipManager:
                     "type": "module_released",
                     "module_id": module_id,
                     "developer": ownership.developer_name,
-                    "reason": reason or "manual release"
-                }
+                    "reason": reason or "manual release",
+                },
             )
 
         # 로컬에서 삭제
@@ -468,7 +432,7 @@ class ModuleOwnershipManager:
         # 대기 중인 개발자에게 알림
         await self._notify_waiting_developers(module_id)
 
-        logger.info(f"🔓 Module '{module_id}' released by {ownership.developer_name}")
+        logger.info(f"[*] Module '{module_id}' released by {ownership.developer_name}")
 
         return True
 
@@ -493,7 +457,7 @@ class ModuleOwnershipManager:
             if module_id in other_def.dependencies:
                 await self._notify_module_available(other_module_id, module_id)
 
-        logger.info(f"🎉 Module '{module_id}' completed!")
+        logger.info(f"[*] Module '{module_id}' completed!")
 
     async def _suggest_alternatives(self, module_id: str) -> List[str]:
         """
@@ -512,8 +476,7 @@ class ModuleOwnershipManager:
                 if other_def.type == module_def.type:
                     # 의존성 체크
                     deps_available = all(
-                        dep not in self.active_ownerships or
-                        self.active_ownerships[dep].status == ModuleStatus.COMPLETED
+                        dep not in self.active_ownerships or self.active_ownerships[dep].status == ModuleStatus.COMPLETED
                         for dep in other_def.dependencies
                     )
 
@@ -565,8 +528,8 @@ class ModuleOwnershipManager:
                 {
                     "type": "module_available",
                     "module_id": module_id,
-                    "message": f"모듈 '{module_id}'을(를) 이제 개발할 수 있습니다!"
-                }
+                    "message": f"모듈 '{module_id}'을(를) 이제 개발할 수 있습니다!",
+                },
             )
 
     async def _notify_module_available(self, module_id: str, completed_dependency: str):
@@ -581,8 +544,8 @@ class ModuleOwnershipManager:
                     "type": "dependency_completed",
                     "module_id": module_id,
                     "completed": completed_dependency,
-                    "message": f"'{completed_dependency}' 완료로 '{module_id}' 개발 가능"
-                }
+                    "message": f"'{completed_dependency}' 완료로 '{module_id}' 개발 가능",
+                },
             )
 
     async def get_module_status_board(self) -> Dict[str, Any]:
@@ -590,53 +553,46 @@ class ModuleOwnershipManager:
         모듈 현황판 데이터
         """
 
-        board = {
-            "active": [],
-            "available": [],
-            "blocked": [],
-            "completed": []
-        }
+        board = {"active": [], "available": [], "blocked": [], "completed": []}
 
         for module_id, module_def in self.module_definitions.items():
             if module_id in self.active_ownerships:
                 ownership = self.active_ownerships[module_id]
-                board["active"].append({
-                    "module_id": module_id,
-                    "name": module_def.name,
-                    "developer": ownership.developer_name,
-                    "status": ownership.status.value,
-                    "progress": ownership.progress,
-                    "estimated_completion": ownership.estimated_completion.isoformat()
-                })
+                board["active"].append(
+                    {
+                        "module_id": module_id,
+                        "name": module_def.name,
+                        "developer": ownership.developer_name,
+                        "status": ownership.status.value,
+                        "progress": ownership.progress,
+                        "estimated_completion": ownership.estimated_completion.isoformat(),
+                    }
+                )
 
             elif module_id in self.completion_queue:
-                board["completed"].append({
-                    "module_id": module_id,
-                    "name": module_def.name
-                })
+                board["completed"].append({"module_id": module_id, "name": module_def.name})
 
             else:
                 # 가용성 체크
                 deps_blocked = any(
-                    dep in self.active_ownerships and
-                    self.active_ownerships[dep].status != ModuleStatus.COMPLETED
+                    dep in self.active_ownerships and self.active_ownerships[dep].status != ModuleStatus.COMPLETED
                     for dep in module_def.dependencies
                 )
 
                 if deps_blocked:
-                    board["blocked"].append({
-                        "module_id": module_id,
-                        "name": module_def.name,
-                        "blocked_by": module_def.dependencies
-                    })
+                    board["blocked"].append(
+                        {"module_id": module_id, "name": module_def.name, "blocked_by": module_def.dependencies}
+                    )
                 else:
-                    board["available"].append({
-                        "module_id": module_id,
-                        "name": module_def.name,
-                        "type": module_def.type,
-                        "priority": module_def.priority,
-                        "estimated_hours": module_def.estimated_hours
-                    })
+                    board["available"].append(
+                        {
+                            "module_id": module_id,
+                            "name": module_def.name,
+                            "type": module_def.type,
+                            "priority": module_def.priority,
+                            "estimated_hours": module_def.estimated_hours,
+                        }
+                    )
 
         return board
 

@@ -11,16 +11,12 @@ import os
 os.environ.setdefault("JWT_SECRET_KEY", "test-secret-key-for-jwt-token-validation-32chars")
 os.environ.setdefault("DISABLE_DEV_AUTH_BYPASS", "true")
 
-import asyncio
-import json
 from datetime import UTC, datetime, timedelta
-from unittest.mock import AsyncMock, MagicMock, patch
+from unittest.mock import AsyncMock
 
 import jwt
 import pytest
-import pytest_asyncio
-from fastapi import WebSocketDisconnect
-from starlette.websockets import WebSocketState
+from starlette.websockets import WebSocketDisconnect, WebSocketState
 
 from backend.app.core.security import ALGORITHM, SECRET_KEY, JWTManager
 from backend.app.routers.kanban_websocket import kanban_manager
@@ -133,7 +129,6 @@ async def test_invalid_signature_rejected(invalid_token):
 async def test_blacklisted_token_rejected(valid_access_token):
     """Test 4: Blacklisted token is rejected"""
     # Blacklist the token
-    exp_datetime = datetime.now(UTC) + timedelta(hours=1)
     await JWTManager.blacklist_token(valid_access_token)
 
     # Should raise HTTPException when check_blacklist=True
@@ -325,20 +320,20 @@ def test_websocket_with_invalid_token(async_client, invalid_token):
 """
 Test Coverage Summary:
 
-✅ Test 1: Valid token allows connection (decode logic)
-✅ Test 2: Expired token rejected
-✅ Test 3: Invalid signature rejected
-✅ Test 4: Blacklisted token rejected
-✅ Test 5: Non-blacklisted token accepted
-✅ Test 6: Connection manager stores user info
-✅ Test 7: Token missing user_id detected
-✅ Test 8: Token missing sub detected
-✅ Test 9: Malformed token rejected (4 patterns)
+[OK] Test 1: Valid token allows connection (decode logic)
+[OK] Test 2: Expired token rejected
+[OK] Test 3: Invalid signature rejected
+[OK] Test 4: Blacklisted token rejected
+[OK] Test 5: Non-blacklisted token accepted
+[OK] Test 6: Connection manager stores user info
+[OK] Test 7: Token missing user_id detected
+[OK] Test 8: Token missing sub detected
+[OK] Test 9: Malformed token rejected (4 patterns)
 
 Integration Tests (require FastAPI test client):
-✅ Test 10: WebSocket requires token parameter (422)
-✅ Test 11: WebSocket accepts valid token
-✅ Test 12: WebSocket rejects invalid token (1008)
+[OK] Test 10: WebSocket requires token parameter (422)
+[OK] Test 11: WebSocket accepts valid token
+[OK] Test 12: WebSocket rejects invalid token (1008)
 
 Run unit tests:
     pytest backend/tests/test_websocket_jwt_auth.py -v -m "not integration"
@@ -347,9 +342,9 @@ Run integration tests (requires test client):
     pytest backend/tests/test_websocket_jwt_auth.py -v -m integration
 
 Security validation:
-    - JWT signature verification: ✅
-    - Token expiration checking: ✅
-    - Blacklist integration: ✅
-    - Payload validation: ✅
-    - WebSocket close code 1008: ✅
+    - JWT signature verification: [OK]
+    - Token expiration checking: [OK]
+    - Blacklist integration: [OK]
+    - Payload validation: [OK]
+    - WebSocket close code 1008: [OK]
 """

@@ -6,16 +6,17 @@ API endpoints for Obsidian vault integration and knowledge management.
 
 import logging
 from datetime import datetime
-from typing import Optional
 
-from app.models.obsidian_sync import (ObsidianAutoSyncRequest,
-                                      ObsidianErrorResolutionRequest,
-                                      ObsidianRecentNotesResponse,
-                                      ObsidianSearchRequest,
-                                      ObsidianSearchResponse,
-                                      ObsidianSearchResult,
-                                      ObsidianSyncResponse,
-                                      ObsidianSyncStatisticsResponse)
+from app.models.obsidian_sync import (
+    ObsidianAutoSyncRequest,
+    ObsidianErrorResolutionRequest,
+    ObsidianRecentNotesResponse,
+    ObsidianSearchRequest,
+    ObsidianSearchResponse,
+    ObsidianSearchResult,
+    ObsidianSyncResponse,
+    ObsidianSyncStatisticsResponse,
+)
 from app.services.obsidian_service import obsidian_service
 from fastapi import APIRouter, HTTPException, Query
 
@@ -49,9 +50,7 @@ async def manual_sync(request: ObsidianAutoSyncRequest) -> ObsidianSyncResponse:
         logger.info(f"Manual sync requested: {request.event_type}")
 
         # Perform sync
-        success = await obsidian_service.auto_sync(
-            event_type=request.event_type, data=request.data
-        )
+        success = await obsidian_service.auto_sync(event_type=request.event_type, data=request.data)
 
         if success:
             return ObsidianSyncResponse(
@@ -59,15 +58,11 @@ async def manual_sync(request: ObsidianAutoSyncRequest) -> ObsidianSyncResponse:
                 message=f"Successfully synced {request.event_type} to Obsidian",
             )
         else:
-            return ObsidianSyncResponse(
-                success=False, message="Sync failed - check logs for details"
-            )
+            return ObsidianSyncResponse(success=False, message="Sync failed - check logs for details")
 
     except Exception as e:
         logger.error(f"Manual sync failed: {e}", exc_info=True)
-        raise HTTPException(
-            status_code=500, detail=f"Failed to sync to Obsidian: {str(e)}"
-        )
+        raise HTTPException(status_code=500, detail=f"Failed to sync to Obsidian: {str(e)}")
 
 
 @router.post(
@@ -100,9 +95,7 @@ async def auto_sync_event(request: ObsidianAutoSyncRequest) -> ObsidianSyncRespo
         start_time = datetime.now()
         logger.info(f"Auto-sync triggered: {request.event_type}")
 
-        success = await obsidian_service.auto_sync(
-            event_type=request.event_type, data=request.data
-        )
+        success = await obsidian_service.auto_sync(event_type=request.event_type, data=request.data)
 
         elapsed = (datetime.now() - start_time).total_seconds()
 
@@ -115,9 +108,7 @@ async def auto_sync_event(request: ObsidianAutoSyncRequest) -> ObsidianSyncRespo
                 message=f"Auto-synced {request.event_type} in {elapsed:.2f}s",
             )
         else:
-            return ObsidianSyncResponse(
-                success=False, message="Auto-sync failed - check logs"
-            )
+            return ObsidianSyncResponse(success=False, message="Auto-sync failed - check logs")
 
     except Exception as e:
         logger.error(f"Auto-sync failed: {e}", exc_info=True)
@@ -155,9 +146,7 @@ async def search_knowledge(request: ObsidianSearchRequest) -> ObsidianSearchResp
         logger.info(f"Searching Obsidian vault: '{request.query}'")
 
         # Perform search
-        results = await obsidian_service.search_knowledge(
-            query=request.query, max_results=request.max_results
-        )
+        results = await obsidian_service.search_knowledge(query=request.query, max_results=request.max_results)
 
         elapsed = (datetime.now() - start_time).total_seconds() * 1000  # ms
 
@@ -235,15 +224,11 @@ async def get_recent_notes(
 
         logger.info(f"Retrieved {len(notes)} notes")
 
-        return ObsidianRecentNotesResponse(
-            notes=notes, days=days, total_found=len(notes)
-        )
+        return ObsidianRecentNotesResponse(notes=notes, days=days, total_found=len(notes))
 
     except Exception as e:
         logger.error(f"Failed to get recent notes: {e}", exc_info=True)
-        raise HTTPException(
-            status_code=500, detail=f"Failed to get recent notes: {str(e)}"
-        )
+        raise HTTPException(status_code=500, detail=f"Failed to get recent notes: {str(e)}")
 
 
 @router.post(
@@ -284,15 +269,11 @@ async def save_error_resolution(
                 message="Error resolution saved to Obsidian for future reuse",
             )
         else:
-            return ObsidianSyncResponse(
-                success=False, message="Failed to save error resolution"
-            )
+            return ObsidianSyncResponse(success=False, message="Failed to save error resolution")
 
     except Exception as e:
         logger.error(f"Failed to save error resolution: {e}", exc_info=True)
-        raise HTTPException(
-            status_code=500, detail=f"Failed to save error resolution: {str(e)}"
-        )
+        raise HTTPException(status_code=500, detail=f"Failed to save error resolution: {str(e)}")
 
 
 @router.get(
@@ -308,9 +289,7 @@ async def save_error_resolution(
     Returns solution if found in Obsidian vault, None otherwise.
     """,
 )
-async def resolve_error_tier1(
-    error: str = Query(..., min_length=1, description="Error message to resolve")
-) -> dict:
+async def resolve_error_tier1(error: str = Query(..., min_length=1, description="Error message to resolve")) -> dict:
     """
     Attempt Tier 1 error resolution
 
@@ -349,9 +328,7 @@ async def resolve_error_tier1(
 
     except Exception as e:
         logger.error(f"Tier 1 resolution failed: {e}", exc_info=True)
-        raise HTTPException(
-            status_code=500, detail=f"Tier 1 resolution failed: {str(e)}"
-        )
+        raise HTTPException(status_code=500, detail=f"Tier 1 resolution failed: {str(e)}")
 
 
 @router.get(
@@ -382,9 +359,7 @@ async def get_sync_statistics() -> ObsidianSyncStatisticsResponse:
 
     except Exception as e:
         logger.error(f"Failed to get statistics: {e}", exc_info=True)
-        raise HTTPException(
-            status_code=500, detail=f"Failed to get statistics: {str(e)}"
-        )
+        raise HTTPException(status_code=500, detail=f"Failed to get statistics: {str(e)}")
 
 
 @router.get(
@@ -402,20 +377,10 @@ async def health_check() -> dict:
     return {
         "status": "healthy" if obsidian_service.vault_available else "degraded",
         "vault_available": obsidian_service.vault_available,
-        "vault_path": (
-            str(obsidian_service.vault_path) if obsidian_service.vault_path else None
-        ),
-        "daily_notes_dir": (
-            str(obsidian_service.daily_notes_dir)
-            if obsidian_service.daily_notes_dir
-            else None
-        ),
+        "vault_path": (str(obsidian_service.vault_path) if obsidian_service.vault_path else None),
+        "daily_notes_dir": (str(obsidian_service.daily_notes_dir) if obsidian_service.daily_notes_dir else None),
         "pending_events": len(obsidian_service.pending_events),
-        "message": (
-            "Obsidian vault accessible"
-            if obsidian_service.vault_available
-            else "Obsidian vault not found"
-        ),
+        "message": ("Obsidian vault accessible" if obsidian_service.vault_available else "Obsidian vault not found"),
     }
 
 
@@ -448,9 +413,7 @@ async def queue_event(request: ObsidianAutoSyncRequest) -> ObsidianSyncResponse:
     try:
         logger.info(f"Queueing event: {request.event_type}")
 
-        success = await obsidian_service.sync_event(
-            event_type=request.event_type, data=request.data
-        )
+        success = await obsidian_service.sync_event(event_type=request.event_type, data=request.data)
 
         pending = len(obsidian_service.pending_events)
 
@@ -460,9 +423,7 @@ async def queue_event(request: ObsidianAutoSyncRequest) -> ObsidianSyncResponse:
                 message=f"Event queued ({pending} pending, will flush in {obsidian_service.debounce_window}s or on immediate trigger)",
             )
         else:
-            return ObsidianSyncResponse(
-                success=False, message="Failed to queue event - check logs"
-            )
+            return ObsidianSyncResponse(success=False, message="Failed to queue event - check logs")
 
     except Exception as e:
         logger.error(f"Failed to queue event: {e}", exc_info=True)
@@ -494,9 +455,7 @@ async def force_flush() -> ObsidianSyncResponse:
 
         events_flushed = await obsidian_service.force_flush()
 
-        return ObsidianSyncResponse(
-            success=True, message=f"Flushed {events_flushed} pending event(s)"
-        )
+        return ObsidianSyncResponse(success=True, message=f"Flushed {events_flushed} pending event(s)")
 
     except Exception as e:
         logger.error(f"Force flush failed: {e}", exc_info=True)

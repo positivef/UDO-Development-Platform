@@ -30,7 +30,6 @@ Environment:
 """
 
 import os
-import sys
 import json
 import argparse
 from pathlib import Path
@@ -134,7 +133,7 @@ class SessionManager:
 
         if is_orphaned and not force:
             return (
-                f"⚠️  ORPHANED SESSION DETECTED\n"
+                f"[WARN]  ORPHANED SESSION DETECTED\n"
                 f"    Reason: {reason}\n"
                 f"\n"
                 f"    Options:\n"
@@ -146,7 +145,7 @@ class SessionManager:
 
         if self.state.get("active") and not force:
             return (
-                f"⚠️  Session already active (started: {self.state.get('start_time')})\n"
+                f"[WARN]  Session already active (started: {self.state.get('start_time')})\n"
                 f"    Use 'checkpoint' to save progress or 'end' to finish."
             )
 
@@ -171,7 +170,7 @@ class SessionManager:
         self._update_current_md(status="Session Started", notes=f"New session started at {now.strftime('%Y-%m-%d %H:%M')}")
 
         return (
-            f"✅ Session started at {now.strftime('%Y-%m-%d %H:%M')}\n"
+            f"[OK] Session started at {now.strftime('%Y-%m-%d %H:%M')}\n"
             f"\n"
             f"   Remember to:\n"
             f"   - Run 'checkpoint' periodically (every {AUTO_CHECKPOINT_MINUTES}min)\n"
@@ -183,7 +182,7 @@ class SessionManager:
     def checkpoint(self, notes: str = "") -> str:
         """Create a checkpoint (crash recovery point)."""
         if not self.state.get("active"):
-            return "⚠️  No active session. Run 'start' first."
+            return "[WARN]  No active session. Run 'start' first."
 
         now = datetime.now()
 
@@ -203,7 +202,7 @@ class SessionManager:
         checkpoint_count = len(self.state["checkpoints"])
 
         return (
-            f"✅ Checkpoint #{checkpoint_count} created at {now.strftime('%H:%M')}\n"
+            f"[OK] Checkpoint #{checkpoint_count} created at {now.strftime('%H:%M')}\n"
             f"   Notes: {notes if notes else '(none)'}\n"
             f"   Git status saved for recovery"
         )
@@ -211,7 +210,7 @@ class SessionManager:
     def end_session(self, summary: str = "") -> str:
         """End session and generate handoff."""
         if not self.state.get("active"):
-            return "⚠️  No active session to end."
+            return "[WARN]  No active session to end."
 
         now = datetime.now()
         start_time = datetime.fromisoformat(self.state["start_time"])
@@ -231,7 +230,7 @@ class SessionManager:
         self._save_state()
 
         return (
-            f"✅ Session ended successfully\n"
+            f"[OK] Session ended successfully\n"
             f"   Duration: {duration}\n"
             f"   Handoff: {handoff_path.name}\n"
             f"   Synced to Obsidian"
@@ -244,7 +243,7 @@ class SessionManager:
         This generates an emergency handoff from saved checkpoints.
         """
         if not self.state.get("active"):
-            return "ℹ️  No orphaned session to recover."
+            return "ℹ  No orphaned session to recover."
 
         if not self.state.get("checkpoints"):
             # No checkpoints, but session was active - generate minimal handoff
@@ -281,7 +280,7 @@ class SessionManager:
         self._save_state()
 
         return (
-            f"✅ Session recovered successfully\n"
+            f"[OK] Session recovered successfully\n"
             f"   Checkpoints recovered: {checkpoint_count}\n"
             f"   Emergency handoff: {handoff_path.name}\n"
             f"   Synced to Obsidian\n"
@@ -294,15 +293,15 @@ class SessionManager:
         is_orphaned, reason = self._check_orphaned_session()
 
         if not self.state.get("active"):
-            return "ℹ️  No active session"
+            return "ℹ  No active session"
 
         start_time = datetime.fromisoformat(self.state["start_time"])
         duration = datetime.now() - start_time
         checkpoint_count = len(self.state.get("checkpoints", []))
 
         status_lines = [
-            f"📊 Session Status",
-            f"   Active: Yes",
+            "[SESSION] Status",
+            "   Active: Yes",
             f"   Duration: {duration}",
             f"   Checkpoints: {checkpoint_count}",
         ]
@@ -310,10 +309,10 @@ class SessionManager:
         if is_orphaned:
             status_lines.extend(
                 [
-                    f"",
-                    f"   ⚠️  WARNING: Session may be orphaned",
+                    "",
+                    "   [WARN]  WARNING: Session may be orphaned",
                     f"   Reason: {reason}",
-                    f"   Run 'recover' to generate emergency handoff",
+                    "   Run 'recover' to generate emergency handoff",
                 ]
             )
 
@@ -324,7 +323,7 @@ class SessionManager:
             status_lines.append(f"   Last checkpoint: {since_cp} ago")
 
             if since_cp > timedelta(minutes=AUTO_CHECKPOINT_MINUTES):
-                status_lines.append(f"   💡 Recommendation: Create a checkpoint now")
+                status_lines.append("   [*] Recommendation: Create a checkpoint now")
 
         return "\n".join(status_lines)
 
@@ -387,7 +386,7 @@ class SessionManager:
         recovery_notice = ""
         if is_recovery:
             recovery_notice = """
-> ⚠️ **RECOVERY HANDOFF**
+> [WARN] **RECOVERY HANDOFF**
 > This handoff was generated from saved checkpoints after session interruption.
 > Some information may be incomplete.
 
@@ -532,11 +531,11 @@ def safe_print(text: str):
         import re
 
         clean_text = re.sub(r"[^\x00-\x7F]+", "", text)
-        clean_text = clean_text.replace("✅", "[OK]")
-        clean_text = clean_text.replace("⚠️", "[WARN]")
-        clean_text = clean_text.replace("ℹ️", "[INFO]")
-        clean_text = clean_text.replace("📊", "[STATUS]")
-        clean_text = clean_text.replace("💡", "[TIP]")
+        clean_text = clean_text.replace("[OK]", "[OK]")
+        clean_text = clean_text.replace("[WARN]", "[WARN]")
+        clean_text = clean_text.replace("ℹ", "[INFO]")
+        clean_text = clean_text.replace("[*]", "[STATUS]")
+        clean_text = clean_text.replace("[*]", "[TIP]")
         print(clean_text)
 
 
@@ -554,10 +553,10 @@ Examples:
   %(prog)s status                   Show session status
 
 Recovery Scenarios:
-  - Computer crash     → Run 'recover' on restart
-  - CMD window closed  → Run 'recover' in new window
-  - Claude terminated  → Run 'recover' in next session
-  - Context limit      → Auto-detected on next 'start'
+  - Computer crash     -> Run 'recover' on restart
+  - CMD window closed  -> Run 'recover' in new window
+  - Claude terminated  -> Run 'recover' in next session
+  - Context limit      -> Auto-detected on next 'start'
         """,
     )
     parser.add_argument("action", choices=["start", "checkpoint", "end", "status", "recover"], help="Session action")

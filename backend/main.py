@@ -5,19 +5,16 @@ UDO Dashboard Backend API
 FastAPI server for real-time system monitoring and control
 """
 
-import asyncio
-import json
 import logging
 import os
-import secrets
 import sys
-from datetime import datetime
+from datetime import datetime, timedelta
 from pathlib import Path
-from typing import Any, Dict, List, Optional
+from typing import Dict, List, Optional
 
 # Load environment variables from .env file
 from dotenv import load_dotenv
-from fastapi import FastAPI, HTTPException, Request, Response, WebSocket, WebSocketDisconnect
+from fastapi import FastAPI, HTTPException, Request, WebSocket
 from fastapi.middleware.cors import CORSMiddleware
 from pydantic import BaseModel
 from starlette.middleware.base import BaseHTTPMiddleware
@@ -54,7 +51,7 @@ except ImportError:
 # NOTE: Mock service will be enabled in startup_event if database fails
 # Do NOT enable it unconditionally here, let database connection try first
 # ============================================================
-logger.info("✅ Mock service will be enabled ONLY if database connection fails")
+logger.info("[OK] Mock service will be enabled ONLY if database connection fails")
 
 # Import routers
 try:
@@ -263,7 +260,7 @@ except ImportError as e:
 
 # Import async database and project context service
 try:
-    from app.services.project_context_service import enable_mock_service, init_project_context_service
+    from app.services.project_context_service import init_project_context_service
 
     from backend.async_database import async_db, close_async_database, initialize_async_database
 
@@ -298,7 +295,7 @@ except ImportError as e:
 
 # Import security components
 try:
-    from app.core.security import JWTManager, PasswordHasher, SecureProjectCreate, SecureUserCreate, security, setup_security
+    from app.core.security import setup_security
 
     SECURITY_AVAILABLE = True
 except ImportError as e:
@@ -307,7 +304,7 @@ except ImportError as e:
 
 # Import monitoring components
 try:
-    from app.core.monitoring import monitor_performance, performance_monitor, setup_monitoring
+    from app.core.monitoring import setup_monitoring
 
     MONITORING_AVAILABLE = True
 except ImportError as e:
@@ -464,8 +461,6 @@ logger.info("[OK] Security headers middleware ENABLED (XSS/CSRF protection)")
 # ============================================================
 # Adaptive cache for expensive operations (uncertainty-aware TTL)
 # ============================================================
-from datetime import timedelta
-
 _cache = {
     "status": {"data": None, "expires": datetime.now()},
     "metrics": {"data": None, "expires": datetime.now()},
@@ -764,7 +759,7 @@ def get_udo_system():
     if UDO_AVAILABLE:
         try:
             _udo_initialization_lock = True
-            logger.info("✅ Initializing UDO system (first request)...")
+            logger.info("[OK] Initializing UDO system (first request)...")
             _udo_system_instance = IntegratedUDOSystem(project_name="UDO-Dashboard")
             # Expose as module-level alias for routers that resolve via main.udo_system
             udo_system = _udo_system_instance
@@ -787,10 +782,8 @@ udo_system = None
 phase_state_manager = None
 phase_transition_listener = None
 
-# TEST: Minimal WebSocket endpoint
-from fastapi import WebSocket
 
-
+# TEST: Minimal WebSocket endpoint (WebSocket already imported at top)
 @app.websocket("/ws/test")
 async def test_websocket(websocket: WebSocket):
     """Minimal WebSocket endpoint for testing"""
@@ -862,7 +855,7 @@ async def startup_event():
             logger.info("[OK] Project context service initialized")
         except Exception as e:
             logger.warning(f"[WARN]  Database not available, falling back to mock service: {e}")
-            logger.info("✅ To enable database features, ensure PostgreSQL is running and database is created")
+            logger.info("[OK] To enable database features, ensure PostgreSQL is running and database is created")
             # Enable mock service as fallback
             from app.services.project_context_service import enable_mock_service, get_project_context_service
 
@@ -881,7 +874,7 @@ async def startup_event():
     # Required for uncertainty router and WebSocket broadcasting
     if UDO_AVAILABLE:
         try:
-            logger.info("✅ Initializing UDO system (startup)...")
+            logger.info("[OK] Initializing UDO system (startup)...")
             from src.integrated_udo_system import IntegratedUDOSystem
 
             udo_system = IntegratedUDOSystem(project_name="UDO-Dashboard")
@@ -933,13 +926,13 @@ async def startup_event():
                     logger.info("[OK] PhaseTransitionListener initialized and registered")
                 except Exception as e:
                     logger.warning(f"[WARN] Phase Transition with database failed: {e}")
-                    logger.info("✅ Phase transitions will not auto-track time without database")
+                    logger.info("[OK] Phase transitions will not auto-track time without database")
             else:
-                logger.info("✅ Phase Transition System requires database for time tracking")
+                logger.info("[OK] Phase Transition System requires database for time tracking")
         except Exception as e:
             logger.error(f"[FAIL] Failed to initialize Phase Transition System: {e}")
     else:
-        logger.info("✅ Phase Transition System not available")
+        logger.info("[OK] Phase Transition System not available")
 
     # Start background Obsidian sync (periodic backup every 1-2 hours)
     try:
@@ -1019,7 +1012,7 @@ if ERROR_HANDLER_AVAILABLE:
 
 # Health check
 @app.get("/api/health")
-async def health_check():
+async def api_health_check():
     """Comprehensive health check for all services"""
     health_status = {
         "status": "healthy",

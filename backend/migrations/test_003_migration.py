@@ -9,9 +9,7 @@ import sys
 from pathlib import Path
 
 # Configure logging
-logging.basicConfig(
-    level=logging.INFO, format="%(asctime)s - %(levelname)s - %(message)s"
-)
+logging.basicConfig(level=logging.INFO, format="%(asctime)s - %(levelname)s - %(message)s")
 logger = logging.getLogger(__name__)
 
 
@@ -84,9 +82,7 @@ class MigrationTester:
 
             # Basic syntax checks
             assert "CREATE TABLE" in migration_sql, "Missing CREATE TABLE statement"
-            assert (
-                "phase_transitions" in migration_sql
-            ), "Missing phase_transitions table"
+            assert "phase_transitions" in migration_sql, "Missing phase_transitions table"
             assert "ALTER TABLE" in migration_sql, "Missing ALTER TABLE statement"
             assert "task_sessions" in migration_sql, "Missing task_sessions reference"
             assert "CREATE INDEX" in migration_sql, "Missing CREATE INDEX statements"
@@ -94,9 +90,7 @@ class MigrationTester:
             # Rollback checks
             assert "DROP TABLE" in rollback_sql, "Missing DROP TABLE in rollback"
             assert "DROP INDEX" in rollback_sql, "Missing DROP INDEX in rollback"
-            assert (
-                "phase_transitions" in rollback_sql
-            ), "Missing table reference in rollback"
+            assert "phase_transitions" in rollback_sql, "Missing table reference in rollback"
 
             logger.info("[OK] SQL syntax validation passed")
             return True
@@ -268,9 +262,7 @@ class MigrationTester:
                 if expected_idx in indexes:
                     logger.info(f"   [OK] Index: {expected_idx}")
                 else:
-                    logger.warning(
-                        f"   [WARN]  Missing index: {expected_idx} (optional)"
-                    )
+                    logger.warning(f"   [WARN]  Missing index: {expected_idx} (optional)")
 
             return True
 
@@ -284,9 +276,7 @@ class MigrationTester:
 
         if self.mock_mode:
             logger.info("[OK] Mock mode - skipping data operations")
-            logger.info(
-                "   Would test: INSERT, SELECT, UPDATE, DELETE on phase_transitions"
-            )
+            logger.info("   Would test: INSERT, SELECT, UPDATE, DELETE on phase_transitions")
             return True
 
         try:
@@ -318,7 +308,7 @@ class MigrationTester:
             assert row[0] == "IDEATION", "from_phase mismatch"
             assert row[1] == "DESIGN", "to_phase mismatch"
             assert row[2] == 3600, "duration_seconds mismatch"
-            logger.info(f"   [OK] SELECT: Retrieved transition data")
+            logger.info("   [OK] SELECT: Retrieved transition data")
 
             # Test UPDATE
             cursor.execute(
@@ -329,7 +319,7 @@ class MigrationTester:
             """,
                 (transition_id,),
             )
-            logger.info(f"   [OK] UPDATE: Updated metadata")
+            logger.info("   [OK] UPDATE: Updated metadata")
 
             # Test DELETE
             cursor.execute(
@@ -339,7 +329,7 @@ class MigrationTester:
             """,
                 (transition_id,),
             )
-            logger.info(f"   [OK] DELETE: Removed test transition")
+            logger.info("   [OK] DELETE: Removed test transition")
 
             self.conn.commit()
             return True

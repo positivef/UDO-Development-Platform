@@ -32,9 +32,7 @@ class SimpleBayesianIntegration:
 
         print("[OK] Bayesian-Enhanced Uncertainty System Initialized")
 
-    def predict_with_learning(
-        self, phase: str = "implementation", hours_ahead: int = 24
-    ) -> Dict[str, Any]:
+    def predict_with_learning(self, phase: str = "implementation", hours_ahead: int = 24) -> Dict[str, Any]:
         """
         Make predictions using both systems and combine intelligently
 
@@ -51,9 +49,7 @@ class SimpleBayesianIntegration:
         current_vector, current_state = self.uncertainty_map.analyze_context(context)
 
         # Step 2: Get predictive model from UncertaintyMapV3
-        predictive_model = self.uncertainty_map.predict_evolution(
-            current_vector, phase, hours_ahead
-        )
+        predictive_model = self.uncertainty_map.predict_evolution(current_vector, phase, hours_ahead)
 
         # Step 3: Get Bayesian predictions
         current_dict = {
@@ -83,9 +79,7 @@ class SimpleBayesianIntegration:
         base_prediction = predictive_model.predict_future(hours_ahead)
         bayes_prediction = bayesian_pred.get("predicted_magnitude", base_prediction)
 
-        combined_magnitude = (
-            base_weight * base_prediction + bayes_weight * bayes_prediction
-        )
+        combined_magnitude = base_weight * base_prediction + bayes_weight * bayes_prediction
 
         # Apply bias correction if available
         if abs(bayesian_pred.get("correction_factor", 0)) > 0.05:
@@ -110,9 +104,7 @@ class SimpleBayesianIntegration:
             },
             "bayesian_insights": {
                 "confidence": bayesian_confidence,
-                "bias_detected": bayesian_pred.get("bias_profile", {}).get(
-                    "type", "unbiased"
-                ),
+                "bias_detected": bayesian_pred.get("bias_profile", {}).get("type", "unbiased"),
                 "correction_applied": bayesian_pred.get("correction_factor", 0),
                 "recommendations": bayesian_pred.get("recommendations", []),
             },
@@ -135,9 +127,7 @@ class SimpleBayesianIntegration:
 
         # Scale dimensions based on actual vs predicted magnitude
         scale_factor = (
-            actual_magnitude / prediction["prediction"]["magnitude"]
-            if prediction["prediction"]["magnitude"] > 0
-            else 1.0
+            actual_magnitude / prediction["prediction"]["magnitude"] if prediction["prediction"]["magnitude"] > 0 else 1.0
         )
 
         # Create actual observation as UncertaintyVector
@@ -163,8 +153,7 @@ class SimpleBayesianIntegration:
             phase=prediction["phase"],
             predicted=bayesian_pred,
             observed_vector=actual_vector,
-            outcome_success=actual_magnitude
-            < prediction["prediction"]["magnitude"],  # Success if uncertainty decreased
+            outcome_success=actual_magnitude < prediction["prediction"]["magnitude"],  # Success if uncertainty decreased
         )
 
         print(
@@ -186,7 +175,7 @@ def demo():
     system = SimpleBayesianIntegration()
 
     # Phase 1: Make initial predictions
-    print("\n[EMOJI] Phase 1: Initial Predictions")
+    print("\n[*] Phase 1: Initial Predictions")
     predictions = []
     phases = ["ideation", "design", "mvp", "implementation", "testing"]
 
@@ -199,16 +188,14 @@ def demo():
         )
 
     # Phase 2: Simulate learning from outcomes
-    print("\n[EMOJI] Phase 2: Learning from Outcomes")
+    print("\n[*] Phase 2: Learning from Outcomes")
     for pred in predictions:
         # Simulate actual outcome (slightly different from prediction)
-        actual_magnitude = (
-            pred["prediction"]["magnitude"] * 0.9
-        )  # Actual was 10% better
+        actual_magnitude = pred["prediction"]["magnitude"] * 0.9  # Actual was 10% better
         system.learn_from_outcome(pred, actual_magnitude)
 
     # Phase 3: Make improved predictions
-    print("\n[EMOJI] Phase 3: Improved Predictions (After Learning)")
+    print("\n[*] Phase 3: Improved Predictions (After Learning)")
     for phase in phases:
         pred = system.predict_with_learning(phase=phase, hours_ahead=24)
         print(
@@ -218,7 +205,7 @@ def demo():
         )
 
     # Phase 4: Show performance metrics
-    print("\n[EMOJI] Phase 4: Performance Metrics")
+    print("\n[*] Phase 4: Performance Metrics")
     metrics = system.get_performance_metrics()
     print(f"   Total predictions: {metrics.get('predictions_made', 0)}")
     print(f"   Average confidence: {metrics.get('average_confidence', 0):.1%}")
@@ -227,7 +214,7 @@ def demo():
 
     # Save state for persistence
     system.bayesian_system.save_state()
-    print("\n[EMOJI] Learning state saved for future sessions")
+    print("\n[LEARN] state saved for future sessions")
 
     print("\n" + "=" * 60)
     print("[OK] DEMONSTRATION COMPLETE")

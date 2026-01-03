@@ -12,14 +12,14 @@ from fastapi import APIRouter, Depends, Query, status
 from fastapi.responses import JSONResponse
 
 from app.core.security import UserRole, get_current_user, require_role
-from app.models.kanban_archive import (AISummaryGenerationError,
-                                               ArchivedTaskWithMetrics,
-                                               ArchiveFilters,
-                                               ArchiveListResponse,
-                                               ArchiveTaskRequest,
-                                               ArchiveTaskResponse,
-                                               ObsidianSyncError,
-                                               TaskNotArchivableError)
+from app.models.kanban_archive import (
+    ArchivedTaskWithMetrics,
+    ArchiveFilters,
+    ArchiveListResponse,
+    ArchiveTaskRequest,
+    ArchiveTaskResponse,
+    TaskNotArchivableError,
+)
 from app.services.kanban_archive_service import kanban_archive_service
 
 router = APIRouter(prefix="/api/kanban/archive", tags=["Kanban Archive"])
@@ -60,9 +60,7 @@ def error_response(code: str, message: str, status_code: int, details: dict = No
     summary="Archive completed task",
     description="Archive completed task with AI summarization and Obsidian sync (Q6: Done-End)",
 )
-async def archive_task(
-    request: ArchiveTaskRequest, current_user: dict = Depends(get_current_user)
-):
+async def archive_task(request: ArchiveTaskRequest, current_user: dict = Depends(get_current_user)):
     """
     Archive a completed Kanban task with AI summarization and knowledge extraction.
 
@@ -130,12 +128,8 @@ async def get_archive_list(
     phase: Optional[str] = Query(None, description="Filter by phase"),
     archived_by: Optional[str] = Query(None, description="Filter by archiver"),
     ai_suggested: Optional[bool] = Query(None, description="Filter by AI suggestion"),
-    obsidian_synced: Optional[bool] = Query(
-        None, description="Filter by Obsidian sync status"
-    ),
-    min_quality_score: Optional[int] = Query(
-        None, ge=0, le=100, description="Minimum quality score"
-    ),
+    obsidian_synced: Optional[bool] = Query(None, description="Filter by Obsidian sync status"),
+    min_quality_score: Optional[int] = Query(None, ge=0, le=100, description="Minimum quality score"),
     page: int = Query(1, ge=1, description="Page number (1-indexed)"),
     per_page: int = Query(20, ge=1, le=100, description="Items per page (max 100)"),
     current_user: dict = Depends(get_current_user),
@@ -168,9 +162,7 @@ async def get_archive_list(
             min_quality_score=min_quality_score,
         )
 
-        response = await kanban_archive_service.get_archive_list(
-            filters=filters, page=page, per_page=per_page
-        )
+        response = await kanban_archive_service.get_archive_list(filters=filters, page=page, per_page=per_page)
 
         return response
 
@@ -194,9 +186,7 @@ async def get_archive_list(
     summary="Get specific archived task",
     description="Get detailed information about a specific archived task",
 )
-async def get_archived_task(
-    task_id: UUID, current_user: dict = Depends(get_current_user)
-):
+async def get_archived_task(task_id: UUID, current_user: dict = Depends(get_current_user)):
     """
     Get detailed information about a specific archived task.
 

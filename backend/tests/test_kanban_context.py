@@ -5,7 +5,6 @@ Tests Week 2 Day 5: Context operations (upload, download, load tracking)
 Q4: Double-click auto-load tracking
 """
 
-from datetime import datetime
 from uuid import uuid4
 
 import pytest
@@ -16,7 +15,6 @@ from app.models.kanban_context import (
     ContextNotFoundError,
     ContextSizeLimitExceeded,
     ContextUploadRequest,
-    InvalidContextFiles,
 )
 from app.services.kanban_context_service import kanban_context_service
 
@@ -71,11 +69,9 @@ class TestContextUpload:
         """Test upload with empty files list (caught by Pydantic validation)"""
         from pydantic_core import ValidationError
 
-        task_id = uuid4()
-
         # Pydantic validates min_length=1, so this will fail at model creation
         with pytest.raises(ValidationError):
-            upload_request = ContextUploadRequest(files=[])
+            ContextUploadRequest(files=[])
 
     @pytest.mark.asyncio
     async def test_upload_context_size_limit_exceeded(self):

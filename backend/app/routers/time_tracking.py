@@ -5,19 +5,25 @@ FastAPI endpoints for time tracking and ROI measurement.
 """
 
 import logging
-from datetime import UTC, date
+from datetime import date
 from typing import List, Optional
 from uuid import UUID
 
 from fastapi import APIRouter, Depends, HTTPException, Query
 
 from ..core.dependencies import get_time_tracking_service
-from ..models.time_tracking import (Bottleneck, EndTrackingRequest,
-                                    EndTrackingResponse, PauseTrackingResponse,
-                                    ResumeTrackingResponse, ROIReport,
-                                    StartTrackingRequest,
-                                    StartTrackingResponse, TaskMetrics,
-                                    WeeklyReport)
+from ..models.time_tracking import (
+    Bottleneck,
+    EndTrackingRequest,
+    EndTrackingResponse,
+    PauseTrackingResponse,
+    ResumeTrackingResponse,
+    ROIReport,
+    StartTrackingRequest,
+    StartTrackingResponse,
+    TaskMetrics,
+    WeeklyReport,
+)
 from ..services.time_tracking_service import TimeTrackingService
 
 logger = logging.getLogger(__name__)
@@ -122,9 +128,7 @@ async def end_tracking(
 
 
 @router.post("/pause/{session_id}", response_model=PauseTrackingResponse)
-async def pause_tracking(
-    session_id: UUID, service: TimeTrackingService = Depends(get_time_tracking_service)
-):
+async def pause_tracking(session_id: UUID, service: TimeTrackingService = Depends(get_time_tracking_service)):
     """
     Pause task tracking
 
@@ -142,9 +146,7 @@ async def pause_tracking(
                 detail="Failed to pause task (not active or already paused)",
             )
 
-        return PauseTrackingResponse(
-            success=True, message="Task tracking paused", paused_at=datetime.now(UTC)
-        )
+        return PauseTrackingResponse(success=True, message="Task tracking paused", paused_at=datetime.now(UTC))
 
     except HTTPException:
         raise
@@ -154,9 +156,7 @@ async def pause_tracking(
 
 
 @router.post("/resume/{session_id}", response_model=ResumeTrackingResponse)
-async def resume_tracking(
-    session_id: UUID, service: TimeTrackingService = Depends(get_time_tracking_service)
-):
+async def resume_tracking(session_id: UUID, service: TimeTrackingService = Depends(get_time_tracking_service)):
     """
     Resume paused task tracking
 
@@ -169,13 +169,9 @@ async def resume_tracking(
         success = await service.resume_task(session_id)
 
         if not success:
-            raise HTTPException(
-                status_code=400, detail="Failed to resume task (not paused)"
-            )
+            raise HTTPException(status_code=400, detail="Failed to resume task (not paused)")
 
-        return ResumeTrackingResponse(
-            success=True, message="Task tracking resumed", resumed_at=datetime.now(UTC)
-        )
+        return ResumeTrackingResponse(success=True, message="Task tracking resumed", resumed_at=datetime.now(UTC))
 
     except HTTPException:
         raise
@@ -185,9 +181,7 @@ async def resume_tracking(
 
 
 @router.get("/metrics/{task_id}", response_model=TaskMetrics)
-async def get_task_metrics(
-    task_id: str, service: TimeTrackingService = Depends(get_time_tracking_service)
-):
+async def get_task_metrics(task_id: str, service: TimeTrackingService = Depends(get_time_tracking_service)):
     """
     Get metrics for a specific task
 
@@ -197,9 +191,7 @@ async def get_task_metrics(
         metrics = await service.get_task_metrics(task_id)
 
         if metrics is None:
-            raise HTTPException(
-                status_code=404, detail=f"No metrics found for task {task_id}"
-            )
+            raise HTTPException(status_code=404, detail=f"No metrics found for task {task_id}")
 
         return metrics
 
@@ -239,9 +231,7 @@ async def get_roi(
     Optionally specify `start_date` and `end_date` for custom period.
     """
     try:
-        roi_report = await service.calculate_roi(
-            period=period, start_date=start_date, end_date=end_date
-        )
+        roi_report = await service.calculate_roi(period=period, start_date=start_date, end_date=end_date)
 
         return roi_report
 
@@ -284,9 +274,7 @@ async def get_bottlenecks(
     ```
     """
     try:
-        bottlenecks = await service.get_bottlenecks(
-            start_date=start_date, end_date=end_date
-        )
+        bottlenecks = await service.get_bottlenecks(start_date=start_date, end_date=end_date)
 
         return bottlenecks
 
@@ -350,7 +338,7 @@ async def get_trends(
     ```
     """
     try:
-        from datetime import UTC, timedelta
+        from datetime import timedelta
 
         end_date = date.today()
         start_date = end_date - timedelta(days=days)
@@ -383,14 +371,10 @@ async def get_trends(
         for task_date, stats in sorted(daily_stats.items()):
             time_saved_hours = stats["time_saved_seconds"] / 3600
             roi_percentage = (
-                (stats["time_saved_seconds"] / stats["duration_seconds"] * 100)
-                if stats["duration_seconds"] > 0
-                else 0
+                (stats["time_saved_seconds"] / stats["duration_seconds"] * 100) if stats["duration_seconds"] > 0 else 0
             )
             efficiency_percentage = (
-                (stats["time_saved_seconds"] / stats["baseline_seconds"] * 100)
-                if stats["baseline_seconds"] > 0
-                else 0
+                (stats["time_saved_seconds"] / stats["baseline_seconds"] * 100) if stats["baseline_seconds"] > 0 else 0
             )
 
             data_points.append(
@@ -408,16 +392,8 @@ async def get_trends(
             first_half = data_points[: len(data_points) // 2]
             second_half = data_points[len(data_points) // 2 :]
 
-            avg_first = (
-                sum(d["time_saved_hours"] for d in first_half) / len(first_half)
-                if first_half
-                else 0
-            )
-            avg_second = (
-                sum(d["time_saved_hours"] for d in second_half) / len(second_half)
-                if second_half
-                else 0
-            )
+            avg_first = sum(d["time_saved_hours"] for d in first_half) / len(first_half) if first_half else 0
+            avg_second = sum(d["time_saved_hours"] for d in second_half) / len(second_half) if second_half else 0
 
             if avg_second > avg_first * 1.1:
                 overall_trend = "improving"

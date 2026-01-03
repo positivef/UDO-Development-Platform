@@ -11,13 +11,9 @@ import pytest
 import tempfile
 import shutil
 from pathlib import Path
-from unittest.mock import Mock, patch
+from unittest.mock import Mock, patch  # noqa: F401
 
-from scripts.obsidian_3stage_search import (
-    Obsidian3StageSearch,
-    SearchResult,
-    search_obsidian_solutions
-)
+from scripts.obsidian_3stage_search import Obsidian3StageSearch, SearchResult, search_obsidian_solutions
 
 
 class TestObsidian3StageSearch:
@@ -43,9 +39,10 @@ class TestObsidian3StageSearch:
         """Create test markdown files"""
         # File 1: ModuleNotFoundError (for Stage 1 filename match)
         module_error_file = self.dev_log / "Debug-ModuleNotFound-pandas.md"
-        module_error_file.write_text("""# ModuleNotFoundError 디버깅
+        module_error_file.write_text(
+            """# ModuleNotFoundError 디버깅
 
-## ✅ 최종 해결 방법
+## [OK] 최종 해결 방법
 
 pip install pandas로 해결했습니다.
 
@@ -54,11 +51,14 @@ pip install pandas
 ```
 
 성공!
-""", encoding='utf-8')
+""",
+            encoding="utf-8",
+        )
 
         # File 2: Permission error with frontmatter (for Stage 2)
         perm_error_file = self.dev_log / "Permission-Debug-2025.md"
-        perm_error_file.write_text("""---
+        perm_error_file.write_text(
+            """---
 error_type: "PermissionError"
 error_category: "permission"
 tags: [debug, permission]
@@ -69,11 +69,14 @@ tags: [debug, permission]
 ## 해결
 
 chmod +r로 읽기 권한 부여했습니다.
-""", encoding='utf-8')
+""",
+            encoding="utf-8",
+        )
 
         # File 3: Generic file for Stage 3 full-text search
         generic_file = self.dev_log / "General-Notes.md"
-        generic_file.write_text("""# 일반 개발 노트
+        generic_file.write_text(
+            """# 일반 개발 노트
 
 여기서는 timeout 문제를 다룹니다.
 network connection timeout 해결 방법:
@@ -81,13 +84,16 @@ network connection timeout 해결 방법:
 - 타임아웃 늘리기
 
 성공했습니다.
-""", encoding='utf-8')
+""",
+            encoding="utf-8",
+        )
 
         # File 4: WebSocket debugging (recent)
         websocket_file = self.dev_log / "WebSocket-Debugging-Complete.md"
-        websocket_file.write_text("""# WebSocket 404 오류 디버깅
+        websocket_file.write_text(
+            """# WebSocket 404 오류 디버깅
 
-## ✅ 최종 해결 방법
+## [OK] 최종 해결 방법
 
 main.py의 중복 엔드포인트를 제거했습니다.
 
@@ -96,7 +102,9 @@ Line 534-562 삭제:
 - 새 라우터가 동작하도록 수정
 
 성공!
-""", encoding='utf-8')
+""",
+            encoding="utf-8",
+        )
 
     def test_initialization(self):
         """Test Obsidian3StageSearch initializes correctly"""
@@ -179,7 +187,7 @@ Line 534-562 삭제:
             stage=1,
             search_time_ms=5.2,
             token_usage=100,
-            confidence=0.95
+            confidence=0.95,
         )
 
         assert result.found is True
@@ -199,12 +207,15 @@ class TestConvenienceFunction:
 
         # Create a simple test file
         test_file = self.dev_log / "Debug-404-NotFound.md"
-        test_file.write_text("""# 404 오류
+        test_file.write_text(
+            """# 404 오류
 
 ## Solution
 
 엔드포인트 경로 확인했습니다.
-""", encoding='utf-8')
+""",
+            encoding="utf-8",
+        )
 
     def teardown_method(self):
         """Clean up"""
@@ -213,7 +224,7 @@ class TestConvenienceFunction:
     def test_search_obsidian_solutions(self):
         """Test convenience function search_obsidian_solutions()"""
         # Mock the global instance
-        with patch('scripts.obsidian_3stage_search.get_search_instance') as mock_get:
+        with patch("scripts.obsidian_3stage_search.get_search_instance") as mock_get:
             searcher = Obsidian3StageSearch(self.temp_vault)
             mock_get.return_value = searcher
 
@@ -241,12 +252,15 @@ class TestPerformance:
             # Create 10 files per folder
             for j in range(10):
                 file = date_folder / f"Debug-Test-{i}-{j}.md"
-                file.write_text(f"""# Debug {i}-{j}
+                file.write_text(
+                    f"""# Debug {i}-{j}
 
 ## Solution
 
 Test solution {i}-{j}
-""", encoding='utf-8')
+""",
+                    encoding="utf-8",
+                )
 
         self.searcher = Obsidian3StageSearch(self.temp_vault)
 
@@ -291,13 +305,16 @@ def mock_vault_with_files(tmp_path):
 
     # Create test file
     test_file = dev_log / "Debug-ModuleNotFound-test.md"
-    test_file.write_text("""## ✅ Solution
+    test_file.write_text(
+        """## [OK] Solution
 
 Install the module:
 ```bash
 pip install test-module
 ```
-""", encoding='utf-8')
+""",
+        encoding="utf-8",
+    )
 
     return str(vault)
 

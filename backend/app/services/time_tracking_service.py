@@ -5,7 +5,6 @@ Comprehensive time tracking and ROI measurement system for UDO Development Platf
 Tracks task execution time, calculates ROI, identifies bottlenecks, and generates reports.
 """
 
-import asyncio
 import logging
 from datetime import UTC, date, datetime, timedelta
 from pathlib import Path
@@ -14,10 +13,16 @@ from uuid import UUID
 
 import yaml
 
-from ..models.time_tracking import (AIModel, Bottleneck, Phase, ROIReport,
-                                    TaskMetrics, TaskSession,
-                                    TaskSessionCreate, TaskSessionUpdate,
-                                    TaskType, TimeMetrics, WeeklyReport)
+from ..models.time_tracking import (
+    AIModel,
+    Bottleneck,
+    Phase,
+    ROIReport,
+    TaskMetrics,
+    TaskSessionCreate,
+    TaskType,
+    WeeklyReport,
+)
 
 logger = logging.getLogger(__name__)
 
@@ -36,9 +41,7 @@ class TimeTrackingService:
     - Obsidian integration
     """
 
-    def __init__(
-        self, pool=None, obsidian_service=None, config_path: Optional[Path] = None
-    ):
+    def __init__(self, pool=None, obsidian_service=None, config_path: Optional[Path] = None):
         """
         Initialize Time Tracking Service
 
@@ -52,9 +55,7 @@ class TimeTrackingService:
 
         # Load baseline configuration
         if config_path is None:
-            config_path = (
-                Path(__file__).parent.parent.parent / "config" / "baseline_times.yaml"
-            )
+            config_path = Path(__file__).parent.parent.parent / "config" / "baseline_times.yaml"
 
         self.config = self._load_config(config_path)
         self.baseline_times: Dict[str, int] = self._extract_baseline_times()
@@ -136,7 +137,7 @@ class TimeTrackingService:
 
             # Create session
             start_time = datetime.now(UTC)
-            session_create = TaskSessionCreate(
+            _ = TaskSessionCreate(
                 task_id=task_id,
                 task_type=task_type,
                 phase=phase,
@@ -144,7 +145,7 @@ class TimeTrackingService:
                 baseline_seconds=baseline_seconds,
                 metadata=metadata,
                 project_id=project_id,
-            )
+            )  # session_create object for type validation, actual values used in query
 
             # Insert into database
             query = """
@@ -291,9 +292,7 @@ class TimeTrackingService:
             )
 
             # Trigger uncertainty adjustment if we overran baseline significantly
-            ratio = (
-                active_duration_seconds / baseline_seconds if baseline_seconds else 0
-            )
+            ratio = active_duration_seconds / baseline_seconds if baseline_seconds else 0
             if ratio > 1.2:
                 await self._handle_uncertainty_overrun(
                     task_id=task_id,
@@ -387,9 +386,7 @@ class TimeTrackingService:
             # Remove from paused sessions
             del self.paused_sessions[session_key]
 
-            logger.info(
-                f"Resumed task session {session_id} (paused for {pause_duration}s)"
-            )
+            logger.info(f"Resumed task session {session_id} (paused for {pause_duration}s)")
             return True
 
         except Exception as e:
@@ -448,14 +445,10 @@ class TimeTrackingService:
         time_saved_hours = time_saved_seconds / 3600
 
         # Efficiency percentage: how much time was saved relative to baseline
-        efficiency_percentage = (
-            (time_saved_seconds / baseline_seconds * 100) if baseline_seconds > 0 else 0
-        )
+        efficiency_percentage = (time_saved_seconds / baseline_seconds * 100) if baseline_seconds > 0 else 0
 
         # ROI percentage: return on investment (saved time / actual time spent)
-        roi_percentage = (
-            (time_saved_seconds / duration_seconds * 100) if duration_seconds > 0 else 0
-        )
+        roi_percentage = (time_saved_seconds / duration_seconds * 100) if duration_seconds > 0 else 0
 
         return TaskMetrics(
             task_id=task_id,
@@ -508,12 +501,8 @@ class TimeTrackingService:
             time_saved_hours = total_saved / 3600
 
             # Calculate ROI
-            roi_percentage = (
-                (total_saved / total_duration * 100) if total_duration > 0 else 0
-            )
-            efficiency_gain = (
-                (total_saved / total_baseline * 100) if total_baseline > 0 else 0
-            )
+            roi_percentage = (total_saved / total_duration * 100) if total_duration > 0 else 0
+            efficiency_gain = (total_saved / total_baseline * 100) if total_baseline > 0 else 0
 
             # Calculate success rate
             successful_tasks = sum(1 for t in tasks if t["success"])
@@ -559,9 +548,7 @@ class TimeTrackingService:
             logger.error(f"Failed to calculate ROI: {e}")
             raise
 
-    async def get_bottlenecks(
-        self, start_date: Optional[date] = None, end_date: Optional[date] = None
-    ) -> List[Bottleneck]:
+    async def get_bottlenecks(self, start_date: Optional[date] = None, end_date: Optional[date] = None) -> List[Bottleneck]:
         """
         Identify bottlenecks (tasks taking longer than baseline)
 
@@ -596,21 +583,13 @@ class TimeTrackingService:
             )
 
             for task_type, task_list in task_type_stats.items():
-                avg_duration = sum(t["duration_seconds"] for t in task_list) / len(
-                    task_list
-                )
-                avg_baseline = sum(t["baseline_seconds"] for t in task_list) / len(
-                    task_list
-                )
+                avg_duration = sum(t["duration_seconds"] for t in task_list) / len(task_list)
+                avg_baseline = sum(t["baseline_seconds"] for t in task_list) / len(task_list)
 
                 # Only consider if actually slower than baseline
                 if avg_duration > avg_baseline:
                     overhead_seconds = int(avg_duration - avg_baseline)
-                    overhead_percentage = (
-                        (overhead_seconds / avg_baseline * 100)
-                        if avg_baseline > 0
-                        else 0
-                    )
+                    overhead_percentage = (overhead_seconds / avg_baseline * 100) if avg_baseline > 0 else 0
 
                     # Determine severity
                     if overhead_percentage >= thresholds.get("critical", 100):
@@ -636,9 +615,7 @@ class TimeTrackingService:
 
             # Sort by severity and overhead
             severity_order = {"critical": 0, "high": 1, "medium": 2, "low": 3}
-            bottlenecks.sort(
-                key=lambda b: (severity_order[b.severity], -b.overhead_seconds)
-            )
+            bottlenecks.sort(key=lambda b: (severity_order[b.severity], -b.overhead_seconds))
 
             return bottlenecks
 
@@ -665,9 +642,7 @@ class TimeTrackingService:
             # Calculate trends (compare to previous week)
             prev_week_start = week_start - timedelta(days=7)
             prev_week_end = week_start - timedelta(days=1)
-            prev_roi = await self.calculate_roi(
-                "weekly", prev_week_start, prev_week_end
-            )
+            prev_roi = await self.calculate_roi("weekly", prev_week_start, prev_week_end)
 
             trends = self._calculate_trends(roi_report, prev_roi)
 
@@ -733,9 +708,7 @@ class TimeTrackingService:
             week_end = week_start + timedelta(days=6)
             return week_start, week_end
 
-    async def _get_tasks_for_period(
-        self, start_date: date, end_date: date
-    ) -> List[Dict[str, Any]]:
+    async def _get_tasks_for_period(self, start_date: date, end_date: date) -> List[Dict[str, Any]]:
         """Get completed tasks for a period"""
         if not self.pool:
             return []
@@ -783,15 +756,11 @@ class TimeTrackingService:
 
             ai_stats[ai_model]["tasks"] += 1
             ai_stats[ai_model]["time_saved_seconds"] += task["time_saved_seconds"]
-            ai_stats[ai_model]["time_saved_hours"] = (
-                ai_stats[ai_model]["time_saved_seconds"] / 3600
-            )
+            ai_stats[ai_model]["time_saved_hours"] = ai_stats[ai_model]["time_saved_seconds"] / 3600
 
         return ai_stats
 
-    def _calculate_phase_breakdown(
-        self, tasks: List[Dict]
-    ) -> Dict[str, Dict[str, Any]]:
+    def _calculate_phase_breakdown(self, tasks: List[Dict]) -> Dict[str, Dict[str, Any]]:
         """Calculate performance breakdown by phase"""
         phase_stats: Dict[str, Dict[str, Any]] = {}
 
@@ -806,15 +775,11 @@ class TimeTrackingService:
 
             phase_stats[phase]["tasks"] += 1
             phase_stats[phase]["time_saved_seconds"] += task["time_saved_seconds"]
-            phase_stats[phase]["time_saved_hours"] = (
-                phase_stats[phase]["time_saved_seconds"] / 3600
-            )
+            phase_stats[phase]["time_saved_hours"] = phase_stats[phase]["time_saved_seconds"] / 3600
 
         return phase_stats
 
-    def _calculate_top_time_savers(
-        self, tasks: List[Dict], top_n: int = 5
-    ) -> List[Dict[str, Any]]:
+    def _calculate_top_time_savers(self, tasks: List[Dict], top_n: int = 5) -> List[Dict[str, Any]]:
         """Calculate top time-saving task types"""
         task_type_stats: Dict[str, Dict[str, Any]] = {}
 
@@ -829,12 +794,8 @@ class TimeTrackingService:
                 }
 
             task_type_stats[task_type]["tasks"] += 1
-            task_type_stats[task_type]["time_saved_seconds"] += task[
-                "time_saved_seconds"
-            ]
-            task_type_stats[task_type]["time_saved_hours"] = (
-                task_type_stats[task_type]["time_saved_seconds"] / 3600
-            )
+            task_type_stats[task_type]["time_saved_seconds"] += task["time_saved_seconds"]
+            task_type_stats[task_type]["time_saved_hours"] = task_type_stats[task_type]["time_saved_seconds"] / 3600
 
         # Sort by time saved and return top N
         sorted_stats = sorted(
@@ -848,14 +809,10 @@ class TimeTrackingService:
     def _project_annual(self, time_saved_hours: float, period: str) -> float:
         """Project annual time savings based on period"""
         if period == "daily":
-            work_days_per_year = (
-                self.config.get("roi_settings", {}).get("work_weeks_per_year", 48) * 5
-            )
+            work_days_per_year = self.config.get("roi_settings", {}).get("work_weeks_per_year", 48) * 5
             return time_saved_hours * work_days_per_year
         elif period == "weekly":
-            work_weeks_per_year = self.config.get("roi_settings", {}).get(
-                "work_weeks_per_year", 48
-            )
+            work_weeks_per_year = self.config.get("roi_settings", {}).get("work_weeks_per_year", 48)
             return time_saved_hours * work_weeks_per_year
         elif period == "monthly":
             return time_saved_hours * 12
@@ -865,9 +822,7 @@ class TimeTrackingService:
             # Default to weekly projection
             return time_saved_hours * 48
 
-    def _empty_roi_report(
-        self, period: str, start_date: date, end_date: date
-    ) -> ROIReport:
+    def _empty_roi_report(self, period: str, start_date: date, end_date: date) -> ROIReport:
         """Create empty ROI report when no data"""
         return ROIReport(
             period=period,
@@ -888,28 +843,20 @@ class TimeTrackingService:
             bottlenecks=[],
         )
 
-    def _calculate_trends(
-        self, current: ROIReport, previous: ROIReport
-    ) -> Dict[str, Any]:
+    def _calculate_trends(self, current: ROIReport, previous: ROIReport) -> Dict[str, Any]:
         """Calculate week-over-week trends"""
         trends = {}
 
         # ROI change
         if previous.roi_percentage > 0:
-            roi_change = (
-                (current.roi_percentage - previous.roi_percentage)
-                / previous.roi_percentage
-            ) * 100
+            roi_change = ((current.roi_percentage - previous.roi_percentage) / previous.roi_percentage) * 100
             trends["roi_change"] = f"{roi_change:+.1f}%"
         else:
             trends["roi_change"] = "N/A"
 
         # Efficiency change
         if previous.efficiency_gain > 0:
-            efficiency_change = (
-                (current.efficiency_gain - previous.efficiency_gain)
-                / previous.efficiency_gain
-            ) * 100
+            efficiency_change = ((current.efficiency_gain - previous.efficiency_gain) / previous.efficiency_gain) * 100
             trends["efficiency_change"] = f"{efficiency_change:+.1f}%"
         else:
             trends["efficiency_change"] = "N/A"
@@ -930,9 +877,7 @@ class TimeTrackingService:
 
         # Check for bottlenecks
         if roi_report.bottlenecks:
-            critical_bottlenecks = [
-                b for b in roi_report.bottlenecks if b.severity in ["critical", "high"]
-            ]
+            critical_bottlenecks = [b for b in roi_report.bottlenecks if b.severity in ["critical", "high"]]
             if critical_bottlenecks:
                 top_bottleneck = critical_bottlenecks[0]
                 recommendations.append(
@@ -947,28 +892,20 @@ class TimeTrackingService:
             none_percentage = (none_count / total_count * 100) if total_count > 0 else 0
 
             if none_percentage > 30:
-                recommendations.append(
-                    f"Increase AI usage: {none_percentage:.0f}% of tasks don't use AI assistance"
-                )
+                recommendations.append(f"Increase AI usage: {none_percentage:.0f}% of tasks don't use AI assistance")
 
         # Check multi-AI usage
         if "multi" in roi_report.ai_breakdown:
             multi_count = roi_report.ai_breakdown["multi"]["tasks"]
             total_count = roi_report.tasks_completed
-            multi_percentage = (
-                (multi_count / total_count * 100) if total_count > 0 else 0
-            )
+            multi_percentage = (multi_count / total_count * 100) if total_count > 0 else 0
 
             if multi_percentage < 10:
-                recommendations.append(
-                    "Consider using multi-AI approach for complex tasks to improve efficiency"
-                )
+                recommendations.append("Consider using multi-AI approach for complex tasks to improve efficiency")
 
         # Check success rate
         if roi_report.success_rate < 90:
-            recommendations.append(
-                f"Improve task success rate (currently {roi_report.success_rate:.1f}%)"
-            )
+            recommendations.append(f"Improve task success rate (currently {roi_report.success_rate:.1f}%)")
 
         # Check if meeting targets
         targets = self.config.get("targets", {}).get("weekly", {})
@@ -976,25 +913,17 @@ class TimeTrackingService:
 
         if roi_report.time_saved_hours < target_hours:
             gap = target_hours - roi_report.time_saved_hours
-            recommendations.append(
-                f"Need {gap:.1f} more hours saved to meet weekly target ({target_hours}h)"
-            )
+            recommendations.append(f"Need {gap:.1f} more hours saved to meet weekly target ({target_hours}h)")
         elif roi_report.time_saved_hours >= targets.get("stretch_hours_saved", 30):
-            recommendations.append(
-                "Excellent! Exceeded stretch target - maintain this productivity level"
-            )
+            recommendations.append("Excellent! Exceeded stretch target - maintain this productivity level")
 
         # Default recommendation if no issues found
         if not recommendations:
-            recommendations.append(
-                "Maintain current efficiency levels and continue monitoring for optimization opportunities"
-            )
+            recommendations.append("Maintain current efficiency levels and continue monitoring for optimization opportunities")
 
         return recommendations
 
-    async def _handle_uncertainty_overrun(
-        self, task_id: str, phase: Phase, ratio: float
-    ):
+    async def _handle_uncertainty_overrun(self, task_id: str, phase: Phase, ratio: float):
         """
         Adjust uncertainty when a task exceeds 1.2x baseline.
 
@@ -1058,13 +987,9 @@ class TimeTrackingService:
                     f"#time-tracking #risk-surge #uncertainty\n"
                 )
         except Exception as e:
-            logger.error(
-                f"Failed to handle uncertainty overrun for task {task_id}: {e}"
-            )
+            logger.error(f"Failed to handle uncertainty overrun for task {task_id}: {e}")
 
-    async def _sync_to_obsidian(
-        self, session_id: UUID, metrics: TaskMetrics, success: bool
-    ):
+    async def _sync_to_obsidian(self, session_id: UUID, metrics: TaskMetrics, success: bool):
         """Sync task completion to Obsidian"""
         if not self.obsidian_service:
             return

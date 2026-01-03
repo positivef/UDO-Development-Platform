@@ -102,23 +102,15 @@ class UnifiedErrorResolver:
 
         # Stats file path
         if stats_file is None:
-            stats_file = (
-                Path(__file__).parent.parent.parent.parent
-                / "data"
-                / "error_resolution_stats.json"
-            )
+            stats_file = Path(__file__).parent.parent.parent.parent / "data" / "error_resolution_stats.json"
         self.stats_file = stats_file
 
         # Load existing stats if available
         self._load_stats()
 
-        logger.info(
-            f"UnifiedErrorResolver initialized (Obsidian={obsidian_enabled}, Context7={context7_enabled})"
-        )
+        logger.info(f"UnifiedErrorResolver initialized (Obsidian={obsidian_enabled}, Context7={context7_enabled})")
 
-    def resolve_error(
-        self, error_message: str, context: Optional[Dict[str, Any]] = None
-    ) -> ResolutionResult:
+    def resolve_error(self, error_message: str, context: Optional[Dict[str, Any]] = None) -> ResolutionResult:
         """
         Resolve error using 3-tier cascade
 
@@ -153,9 +145,7 @@ class UnifiedErrorResolver:
                 result.resolution_time_ms = resolution_time
                 self.stats["tier1_hits"] += 1
                 self._record_resolution(error_ctx, result)
-                logger.info(
-                    f"[TIER 1 HIT] Resolved from Obsidian in {resolution_time:.1f}ms"
-                )
+                logger.info(f"[TIER 1 HIT] Resolved from Obsidian in {resolution_time:.1f}ms")
                 return result
 
         # Tier 2: Context7 (official docs)
@@ -191,7 +181,7 @@ class UnifiedErrorResolver:
             source="none",
             resolution_time_ms=resolution_time,
         )
-        logger.info(f"[TIER 3] Escalating to user (no automated solution found)")
+        logger.info("[TIER 3] Escalating to user (no automated solution found)")
         return result
 
     def _tier1_obsidian(self, error_ctx: ErrorContext) -> ResolutionResult:
@@ -276,9 +266,7 @@ class UnifiedErrorResolver:
             keywords.append(module_match.group(1))
 
         # File paths (support multiple extensions and non-quoted paths)
-        file_match = re.search(
-            r"'([^']+\.(py|js|ts|sh|yaml|yml|json|md|txt|cfg|conf|env))'", error_message
-        )
+        file_match = re.search(r"'([^']+\.(py|js|ts|sh|yaml|yml|json|md|txt|cfg|conf|env))'", error_message)
         if file_match:
             keywords.append(Path(file_match.group(1)).name)
         else:
@@ -319,17 +307,13 @@ class UnifiedErrorResolver:
             return module_match.group(1)
 
         # ImportError patterns
-        import_match = re.search(
-            r"cannot import name '(\w+)' from '(\w+)'", error_message
-        )
+        import_match = re.search(r"cannot import name '(\w+)' from '(\w+)'", error_message)
         if import_match:
             return import_match.group(2)
 
         return None
 
-    def _pattern_based_solution(
-        self, error_ctx: ErrorContext
-    ) -> tuple[Optional[str], float]:
+    def _pattern_based_solution(self, error_ctx: ErrorContext) -> tuple[Optional[str], float]:
         """
         Pattern-based fallback solutions (HIGH confidence patterns only)
 
@@ -400,7 +384,7 @@ class UnifiedErrorResolver:
         #     content=format_solution_entry(error_ctx, user_solution)
         # )
 
-        logger.info(f"[USER SOLUTION] Saved to Obsidian for future Tier 1 hits")
+        logger.info("[USER SOLUTION] Saved to Obsidian for future Tier 1 hits")
 
         # Update stats
         result = ResolutionResult(
@@ -475,9 +459,7 @@ class UnifiedErrorResolver:
         stats = self.get_statistics()
         return stats["knowledge_reuse_rate"] * 100
 
-    def _record_resolution(
-        self, error_ctx: ErrorContext, result: ResolutionResult
-    ) -> None:
+    def _record_resolution(self, error_ctx: ErrorContext, result: ResolutionResult) -> None:
         """Record resolution in history"""
         self.stats["resolution_history"].append(
             {
@@ -506,9 +488,7 @@ class UnifiedErrorResolver:
                     saved_stats = json.load(f)
                     # Merge with current stats (preserve structure)
                     self.stats.update(saved_stats)
-                logger.info(
-                    f"Loaded resolution stats: {self.stats['total_attempts']} attempts"
-                )
+                logger.info(f"Loaded resolution stats: {self.stats['total_attempts']} attempts")
             except Exception as e:
                 logger.warning(f"Failed to load stats: {e}")
 

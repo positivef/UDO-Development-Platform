@@ -10,10 +10,8 @@ Tables:
 """
 
 import uuid
-from datetime import datetime, timezone
 
-from sqlalchemy import (Boolean, Column, DateTime, Float, Index, Integer,
-                        String, Text)
+from sqlalchemy import Boolean, Column, DateTime, Float, Index, Integer, String, Text
 from sqlalchemy.dialects.postgresql import UUID
 from sqlalchemy.sql import func
 
@@ -27,7 +25,7 @@ class KnowledgeFeedback(Base):
     Tracks explicit and implicit feedback to calculate accuracy metrics.
 
     Benchmarking:
-    - Notion AI: Explicit [EMOJI]/[EMOJI] feedback
+    - Notion AI: Explicit thumbs-up/thumbs-down feedback
     - Linear: Confidence-based accuracy tracking
     - GitHub Copilot: Acceptance rate metrics (tab/esc)
     """
@@ -55,15 +53,9 @@ class KnowledgeFeedback(Base):
     )
 
     # Feedback signals
-    is_helpful = Column(
-        Boolean, nullable=False, comment="Explicit feedback: helpful or not"
-    )
-    implicit_accept = Column(
-        Boolean, nullable=True, comment="Implicit signal (copy/dismiss)"
-    )
-    reason = Column(
-        Text, nullable=True, comment="Optional reason for negative feedback"
-    )
+    is_helpful = Column(Boolean, nullable=False, comment="Explicit feedback: helpful or not")
+    implicit_accept = Column(Boolean, nullable=True, comment="Implicit signal (copy/dismiss)")
+    reason = Column(Text, nullable=True, comment="Optional reason for negative feedback")
 
     # Metadata
     created_at = Column(
@@ -108,29 +100,19 @@ class KnowledgeDocumentScore(Base):
     __tablename__ = "knowledge_document_scores"
 
     # Primary key
-    document_id = Column(
-        String(500), primary_key=True, comment="Obsidian document ID or filename"
-    )
+    document_id = Column(String(500), primary_key=True, comment="Obsidian document ID or filename")
 
     # Aggregate metrics
-    usefulness_score = Column(
-        Float, nullable=False, default=0.0, comment="Weighted score: -5.0 to +5.0"
-    )
+    usefulness_score = Column(Float, nullable=False, default=0.0, comment="Weighted score: -5.0 to +5.0")
     total_searches = Column(
         Integer,
         nullable=False,
         default=0,
         comment="Total search count for this document",
     )
-    helpful_count = Column(
-        Integer, nullable=False, default=0, comment="Explicit helpful feedback count"
-    )
-    unhelpful_count = Column(
-        Integer, nullable=False, default=0, comment="Explicit unhelpful feedback count"
-    )
-    acceptance_rate = Column(
-        Float, nullable=False, default=0.0, comment="Percentage: 0-100"
-    )
+    helpful_count = Column(Integer, nullable=False, default=0, comment="Explicit helpful feedback count")
+    unhelpful_count = Column(Integer, nullable=False, default=0, comment="Explicit unhelpful feedback count")
+    acceptance_rate = Column(Float, nullable=False, default=0.0, comment="Percentage: 0-100")
 
     # Metadata
     last_updated = Column(
@@ -140,9 +122,7 @@ class KnowledgeDocumentScore(Base):
         onupdate=func.now(),
         comment="Last score update timestamp",
     )
-    first_search = Column(
-        DateTime(timezone=True), nullable=True, comment="First search timestamp"
-    )
+    first_search = Column(DateTime(timezone=True), nullable=True, comment="First search timestamp")
 
     # Indexes
     __table_args__ = (
@@ -171,26 +151,14 @@ class KnowledgeSearchStats(Base):
 
     # Search metadata
     search_query = Column(Text, nullable=False, comment="Search query text")
-    session_id = Column(
-        String(100), nullable=True, index=True, comment="Session identifier"
-    )
+    session_id = Column(String(100), nullable=True, index=True, comment="Session identifier")
 
     # Performance metrics
-    search_time_ms = Column(
-        Float, nullable=False, comment="Total search time in milliseconds"
-    )
-    tier1_hits = Column(
-        Integer, nullable=False, default=0, comment="Filename pattern matches"
-    )
-    tier2_hits = Column(
-        Integer, nullable=False, default=0, comment="Frontmatter YAML matches"
-    )
-    tier3_hits = Column(
-        Integer, nullable=False, default=0, comment="Full-text content matches"
-    )
-    total_results = Column(
-        Integer, nullable=False, default=0, comment="Total results returned"
-    )
+    search_time_ms = Column(Float, nullable=False, comment="Total search time in milliseconds")
+    tier1_hits = Column(Integer, nullable=False, default=0, comment="Filename pattern matches")
+    tier2_hits = Column(Integer, nullable=False, default=0, comment="Frontmatter YAML matches")
+    tier3_hits = Column(Integer, nullable=False, default=0, comment="Full-text content matches")
+    total_results = Column(Integer, nullable=False, default=0, comment="Total results returned")
 
     # Metadata
     created_at = Column(

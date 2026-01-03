@@ -3,7 +3,7 @@
 """
 Restore Korean Text from Git History
 
-Restores files that had Korean text replaced with [EMOJI] placeholders.
+Restores files that had Korean text replaced with [*] placeholders.
 Uses git history to get the last good version (before commit 648966c).
 
 Usage:
@@ -11,7 +11,7 @@ Usage:
   python scripts/restore_korean_text.py --execute  # Actually restore
 
 Safe Restoration Strategy:
-1. Identify files with [EMOJI] placeholders
+1. Identify files with [*] placeholders
 2. For each file, get version from commit 1b2076d (before damage)
 3. Verify the restored version has Korean text
 4. Create backup of current version (.damaged)
@@ -37,9 +37,9 @@ def has_korean_text(text: str) -> bool:
     """Check if text contains Korean characters"""
     for char in text:
         code = ord(char)
-        if (0xAC00 <= code <= 0xD7AF or  # Hangul Syllables
-            0x1100 <= code <= 0x11FF or  # Hangul Jamo
-            0x3130 <= code <= 0x318F):   # Hangul Compatibility Jamo
+        if (
+            0xAC00 <= code <= 0xD7AF or 0x1100 <= code <= 0x11FF or 0x3130 <= code <= 0x318F  # Hangul Syllables  # Hangul Jamo
+        ):  # Hangul Compatibility Jamo
             return True
     return False
 
@@ -53,7 +53,7 @@ def get_file_from_commit(file_path: Path, commit: str) -> Tuple[bool, str]:
     """
     try:
         # Convert Windows path to Unix-style for git
-        git_path = str(file_path).replace('\\', '/')
+        git_path = str(file_path).replace("\\", "/")
 
         result = subprocess.run(
             ["git", "show", f"{commit}:{git_path}"],
@@ -78,14 +78,14 @@ def restore_file(file_path: Path, dry_run: bool = True) -> Tuple[bool, str]:
     """
     # Read current content
     try:
-        with open(file_path, 'r', encoding='utf-8') as f:
+        with open(file_path, "r", encoding="utf-8") as f:
             current_content = f.read()
     except Exception as e:
         return False, f"Cannot read current file: {e}"
 
-    # Check if it has [EMOJI]
-    if "[EMOJI]" not in current_content:
-        return True, "No [EMOJI] found, skipping"
+    # Check if it has [*]
+    if "[*]" not in current_content:
+        return True, "No [*] found, skipping"
 
     # Get content from good commit
     success, restored_content = get_file_from_commit(file_path, GOOD_COMMIT)
@@ -97,31 +97,31 @@ def restore_file(file_path: Path, dry_run: bool = True) -> Tuple[bool, str]:
     if not has_korean_text(restored_content):
         return False, "Restored version has no Korean text (suspicious)"
 
-    # Count how many [EMOJI] will be fixed
-    emoji_count = current_content.count("[EMOJI]")
+    # Count how many [*] will be fixed
+    emoji_count = current_content.count("[*]")
 
     if dry_run:
-        return True, f"Would restore (fixes {emoji_count} [EMOJI] occurrences)"
+        return True, f"Would restore (fixes {emoji_count} [*] occurrences)"
 
     # Actually restore
     try:
         # Backup current damaged version
         damaged_path = file_path.with_suffix(file_path.suffix + ".damaged")
-        with open(damaged_path, 'w', encoding='utf-8') as f:
+        with open(damaged_path, "w", encoding="utf-8") as f:
             f.write(current_content)
 
         # Write restored version
-        with open(file_path, 'w', encoding='utf-8') as f:
+        with open(file_path, "w", encoding="utf-8") as f:
             f.write(restored_content)
 
-        return True, f"Restored (fixed {emoji_count} [EMOJI], backup: {damaged_path.name})"
+        return True, f"Restored (fixed {emoji_count} [*], backup: {damaged_path.name})"
 
     except Exception as e:
         return False, f"Failed to write: {e}"
 
 
 def get_damaged_files() -> List[Path]:
-    """Get list of files with [EMOJI] placeholders"""
+    """Get list of files with [*] placeholders"""
     damaged = []
 
     for dir_name in ["backend", "src", "scripts", "tests"]:
@@ -134,10 +134,10 @@ def get_damaged_files() -> List[Path]:
                 continue
 
             try:
-                with open(py_file, 'r', encoding='utf-8') as f:
-                    if "[EMOJI]" in f.read():
+                with open(py_file, "r", encoding="utf-8") as f:
+                    if "[*]" in f.read():
                         damaged.append(py_file)
-            except:
+            except Exception:
                 pass
 
     return damaged
@@ -158,11 +158,11 @@ def main():
 
     mode = "DRY RUN (preview only)" if args.dry_run else "EXECUTE (will modify files)"
 
-    print("\n" + "="*60)
+    print("\n" + "=" * 60)
     print(f"[RESTORATION] Korean Text Restoration - {mode}")
-    print("="*60)
+    print("=" * 60)
     print(f"[INFO] Restoring from commit: {GOOD_COMMIT}")
-    print(f"[INFO] (Before damage in commit 648966c)\n")
+    print("[INFO] (Before damage in commit 648966c)\n")
 
     # Get list of damaged files
     print("[INFO] Scanning for damaged files...")
@@ -196,26 +196,26 @@ def main():
             print(f"[FAIL] {message}")
 
     # Summary
-    print("\n" + "="*60)
+    print("\n" + "=" * 60)
     print("[SUMMARY]")
     print(f"  Restored: {len(restored)} files")
     print(f"  Skipped: {len(skipped)} files")
     print(f"  Failed: {len(failed)} files")
 
     if failed:
-        print(f"\n[FAILED FILES]")
+        print("\n[FAILED FILES]")
         for file_path, message in failed[:10]:
             print(f"  {file_path}: {message}")
         if len(failed) > 10:
             print(f"  ... and {len(failed) - 10} more")
 
     if args.dry_run:
-        print(f"\n[NEXT STEP] Run with --execute to actually restore files")
-        print(f"  python scripts/restore_korean_text.py --execute")
+        print("\n[NEXT STEP] Run with --execute to actually restore files")
+        print("  python scripts/restore_korean_text.py --execute")
     else:
-        print(f"\n[SUCCESS] Restoration complete!")
-        print(f"[INFO] Damaged versions backed up with .damaged extension")
-        print(f"[INFO] Run tests to verify: python -m pytest tests/")
+        print("\n[SUCCESS] Restoration complete!")
+        print("[INFO] Damaged versions backed up with .damaged extension")
+        print("[INFO] Run tests to verify: python -m pytest tests/")
 
     return 0 if len(failed) == 0 else 1
 

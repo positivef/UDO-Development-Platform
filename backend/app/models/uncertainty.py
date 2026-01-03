@@ -29,12 +29,8 @@ class UncertaintyVectorResponse(BaseModel):
     resource: float = Field(..., ge=0, le=1, description="Resource uncertainty (0-1)")
     timeline: float = Field(..., ge=0, le=1, description="Timeline uncertainty (0-1)")
     quality: float = Field(..., ge=0, le=1, description="Quality uncertainty (0-1)")
-    magnitude: float = Field(
-        ..., ge=0, le=1, description="Total uncertainty magnitude (0-1)"
-    )
-    dominant_dimension: str = Field(
-        ..., description="Dimension with highest uncertainty"
-    )
+    magnitude: float = Field(..., ge=0, le=1, description="Total uncertainty magnitude (0-1)")
+    dominant_dimension: str = Field(..., description="Dimension with highest uncertainty")
 
     class Config:
         json_schema_extra = {
@@ -60,9 +56,7 @@ class MitigationStrategyResponse(BaseModel):
     estimated_impact: float = Field(..., ge=0, le=1, description="Impact (0-1)")
     estimated_cost: float = Field(..., ge=0, description="Cost in hours")
     prerequisites: List[str]
-    success_probability: float = Field(
-        ..., ge=0, le=1, description="Success probability (0-1)"
-    )
+    success_probability: float = Field(..., ge=0, le=1, description="Success probability (0-1)")
     fallback_strategy: Optional[str] = None
     roi: float = Field(..., description="Return on investment")
 
@@ -86,14 +80,10 @@ class MitigationStrategyResponse(BaseModel):
 class PredictiveModelResponse(BaseModel):
     """Predictive model for uncertainty evolution"""
 
-    trend: str = Field(
-        ..., description="Trend: increasing, decreasing, stable, oscillating"
-    )
+    trend: str = Field(..., description="Trend: increasing, decreasing, stable, oscillating")
     velocity: float = Field(..., description="Rate of change")
     acceleration: float = Field(..., description="Change of rate")
-    predicted_resolution: Optional[datetime] = Field(
-        None, description="Predicted resolution time"
-    )
+    predicted_resolution: Optional[datetime] = Field(None, description="Predicted resolution time")
     confidence_interval_lower: float = Field(..., ge=0, le=1)
     confidence_interval_upper: float = Field(..., ge=0, le=1)
 
@@ -115,9 +105,7 @@ class UncertaintyStatusResponse(BaseModel):
 
     vector: UncertaintyVectorResponse
     state: UncertaintyStateEnum
-    confidence_score: float = Field(
-        ..., ge=0, le=1, description="Overall confidence (1 - magnitude)"
-    )
+    confidence_score: float = Field(..., ge=0, le=1, description="Overall confidence (1 - magnitude)")
     prediction: PredictiveModelResponse
     mitigations: List[MitigationStrategyResponse]
     timestamp: datetime
@@ -216,9 +204,7 @@ class ContextAnalysisRequest(BaseModel):
 
     phase: str = Field(..., description="Current development phase")
     has_code: bool = Field(default=False, description="Whether code exists")
-    validation_score: float = Field(
-        default=0.0, ge=0, le=1, description="Market validation score"
-    )
+    validation_score: float = Field(default=0.0, ge=0, le=1, description="Market validation score")
     team_size: int = Field(default=1, ge=1, description="Team size")
     timeline_weeks: int = Field(default=4, ge=1, description="Timeline in weeks")
 
@@ -280,24 +266,12 @@ class BayesianMetadata(BaseModel):
     prior_mean: Optional[float] = Field(None, description="Prior confidence from phase")
     likelihood: Optional[float] = Field(None, description="Evidence-based likelihood")
     posterior_mean: Optional[float] = Field(None, description="Bayesian posterior mean")
-    credible_interval_lower: float = Field(
-        ..., ge=0, le=1, description="95% CI lower bound"
-    )
-    credible_interval_upper: float = Field(
-        ..., ge=0, le=1, description="95% CI upper bound"
-    )
-    effective_sample_size: Optional[int] = Field(
-        None, description="Statistical power measure"
-    )
-    uncertainty_magnitude: float = Field(
-        ..., ge=0, le=1, description="Uncertainty vector magnitude"
-    )
-    confidence_precision: Optional[float] = Field(
-        None, description="Inverse variance (higher = more precise)"
-    )
-    risk_level: str = Field(
-        ..., description="Risk assessment: low/medium/high/critical"
-    )
+    credible_interval_lower: float = Field(..., ge=0, le=1, description="95% CI lower bound")
+    credible_interval_upper: float = Field(..., ge=0, le=1, description="95% CI upper bound")
+    effective_sample_size: Optional[int] = Field(None, description="Statistical power measure")
+    uncertainty_magnitude: float = Field(..., ge=0, le=1, description="Uncertainty vector magnitude")
+    confidence_precision: Optional[float] = Field(None, description="Inverse variance (higher = more precise)")
+    risk_level: str = Field(..., description="Risk assessment: low/medium/high/critical")
     monitoring_level: str = Field(
         ...,
         description="Monitoring intensity: minimal/standard/enhanced/intensive/critical",
@@ -326,20 +300,12 @@ class BayesianMetadata(BaseModel):
 class BayesianConfidenceResponse(BaseModel):
     """Response with Bayesian confidence analysis"""
 
-    confidence_score: float = Field(
-        ..., ge=0, le=1, description="Bayesian posterior confidence (0-1)"
-    )
-    state: UncertaintyStateEnum = Field(
-        ..., description="Uncertainty state classification"
-    )
+    confidence_score: float = Field(..., ge=0, le=1, description="Bayesian posterior confidence (0-1)")
+    state: UncertaintyStateEnum = Field(..., description="Uncertainty state classification")
     decision: str = Field(..., description="GO/GO_WITH_CHECKPOINTS/NO_GO")
     metadata: BayesianMetadata = Field(..., description="Full statistical context")
-    recommendations: List[str] = Field(
-        ..., description="Actionable recommendations based on state"
-    )
-    timestamp: datetime = Field(
-        default_factory=datetime.now, description="Analysis timestamp"
-    )
+    recommendations: List[str] = Field(..., description="Actionable recommendations based on state")
+    timestamp: datetime = Field(default_factory=datetime.now, description="Analysis timestamp")
 
     class Config:
         json_schema_extra = {
@@ -362,8 +328,8 @@ class BayesianConfidenceResponse(BaseModel):
                     "dominant_dimension": "timeline",
                 },
                 "recommendations": [
-                    "[EMOJI] Good confidence - proceed with standard checkpoints",
-                    "[EMOJI] Document assumptions and validate periodically",
+                    "[OK] Good confidence - proceed with standard checkpoints",
+                    "[*] Document assumptions and validate periodically",
                 ],
                 "timestamp": "2025-12-01T02:30:00Z",
             }

@@ -14,11 +14,9 @@ Usage:
 """
 
 import sys
-import os
 import subprocess
-import json
 from pathlib import Path
-from typing import List, Dict, Any, Tuple
+from typing import List, Dict, Tuple
 import asyncio
 
 # Add project root to path
@@ -26,7 +24,7 @@ project_root = Path(__file__).parent.parent
 sys.path.insert(0, str(project_root))
 
 try:
-    from backend.app.core.constitutional_guard import ConstitutionalGuard, Severity
+    from backend.app.core.constitutional_guard import ConstitutionalGuard  # noqa: E402
 except ImportError:
     print("[FAIL] Error: Cannot import ConstitutionalGuard")
     print("   Make sure you're in the UDO-Development-Platform directory")
@@ -226,7 +224,7 @@ class ConstitutionalPreCommitHook:
         Returns:
             True if all checks pass, False otherwise
         """
-        print("[EMOJI] Running Constitutional Guard checks...")
+        print("[RUN] Constitutional Guard checks...")
 
         # Get staged files
         staged_files = self.get_staged_files()
@@ -285,9 +283,9 @@ class ConstitutionalPreCommitHook:
 
 async def main():
     """Main entry point"""
-    print("[EMOJI]" * 60)
+    print("=" * 60)
     print("UDO Constitutional Guard - Pre-commit Hook")
-    print("[EMOJI]" * 60)
+    print("=" * 60)
 
     hook = ConstitutionalPreCommitHook()
 
@@ -298,7 +296,7 @@ async def main():
     hook.print_results()
 
     # Summary
-    print("\n" + "[EMOJI]" * 60)
+    print("\n" + "=" * 60)
     if passed and not hook.violations:
         print("[OK] All constitutional checks passed!")
         print("   Commit allowed")
@@ -311,7 +309,7 @@ async def main():
         print("   - Remove hardcoded secrets (P8)")
         print("\nTo bypass (NOT RECOMMENDED):")
         print("   git commit --no-verify")
-    print("[EMOJI]" * 60)
+    print("=" * 60)
 
     return hook.get_exit_code()
 

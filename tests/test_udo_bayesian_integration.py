@@ -14,7 +14,7 @@ import shutil
 # Add parent directory to path
 sys.path.insert(0, str(Path(__file__).parent.parent / "src"))
 
-from udo_bayesian_integration import UDOBayesianIntegration
+from udo_bayesian_integration import UDOBayesianIntegration  # noqa: E402
 
 
 class TestUDOBayesianIntegration(unittest.TestCase):
@@ -118,7 +118,7 @@ class TestUDOBayesianIntegration(unittest.TestCase):
         """Test integration report generation"""
         # Make some decisions and learn
         for i in range(3):
-            decision = self.integration.enhance_go_decision(
+            _decision = self.integration.enhance_go_decision(
                 phase="implementation",
                 base_confidence=0.70 + i * 0.05,
                 uncertainties={"technical": 0.4, "market": 0.4, "resource": 0.5, "timeline": 0.5, "quality": 0.4},
@@ -182,7 +182,7 @@ class TestIntegrationScenarios(unittest.TestCase):
 
             for phase, confidence, success in zip(phases, phase_confidences, phase_successes):
                 # Make decision
-                decision = integration.enhance_go_decision(
+                _decision = integration.enhance_go_decision(
                     phase=phase,
                     base_confidence=confidence,
                     uncertainties={"technical": 0.4, "market": 0.4, "resource": 0.5, "timeline": 0.5, "quality": 0.4},

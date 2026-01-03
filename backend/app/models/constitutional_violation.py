@@ -5,7 +5,7 @@ Tracks violations of the UDO Constitution for audit and compliance
 """
 
 from datetime import datetime
-from typing import Any, Dict, Optional
+from typing import Any, Dict
 
 from sqlalchemy import JSON, Boolean, Column, DateTime, Integer, String, Text
 from sqlalchemy.sql import func
@@ -188,9 +188,7 @@ class ConstitutionalComplianceMetrics(Base):
     """Percentage of automated compliance checks"""
 
     # Timestamps
-    measured_at = Column(
-        DateTime, server_default=func.now(), nullable=False, index=True
-    )
+    measured_at = Column(DateTime, server_default=func.now(), nullable=False, index=True)
     """When metrics were measured"""
 
     period_start = Column(DateTime, nullable=True)
@@ -200,11 +198,7 @@ class ConstitutionalComplianceMetrics(Base):
     """End of measurement period"""
 
     def __repr__(self):
-        score = (
-            self.compliance_score.get("overall", 0)
-            if isinstance(self.compliance_score, dict)
-            else 0
-        )
+        score = self.compliance_score.get("overall", 0) if isinstance(self.compliance_score, dict) else 0
         return f"<ComplianceMetrics {score:.2%} @ {self.measured_at}>"
 
     def to_dict(self) -> Dict[str, Any]:
@@ -219,8 +213,6 @@ class ConstitutionalComplianceMetrics(Base):
             "improvement_rate": self.improvement_rate,
             "automation_rate": self.automation_rate,
             "measured_at": self.measured_at.isoformat() if self.measured_at else None,
-            "period_start": (
-                self.period_start.isoformat() if self.period_start else None
-            ),
+            "period_start": (self.period_start.isoformat() if self.period_start else None),
             "period_end": self.period_end.isoformat() if self.period_end else None,
         }

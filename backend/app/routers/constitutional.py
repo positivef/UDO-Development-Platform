@@ -9,11 +9,7 @@ from datetime import datetime, timedelta
 from pathlib import Path
 from typing import Any, Dict, List, Optional
 
-from app.core.constitutional_guard import (ConstitutionalGuard,
-                                                    Severity,
-                                                    ValidationResult)
-from app.models.constitutional_violation import (
-    ConstitutionalComplianceMetrics, ConstitutionalViolation)
+from app.core.constitutional_guard import ConstitutionalGuard, Severity
 from backend.database import Database
 from fastapi import APIRouter, Depends, HTTPException, Query
 from fastapi.responses import JSONResponse
@@ -114,9 +110,7 @@ def get_database():
     return Database()
 
 
-# [EMOJI]
 # Constitution Endpoints
-# [EMOJI]
 
 
 @router.get("/")
@@ -138,11 +132,7 @@ async def get_constitution(
                 "version": guard.constitution.get("version"),
                 "effective_date": guard.constitution.get("effective_date"),
                 "applies_to": guard.constitution.get("applies_to"),
-                "articles": {
-                    k: v
-                    for k, v in guard.constitution.items()
-                    if k.startswith("P") and k[1:2].isdigit()
-                },
+                "articles": {k: v for k, v in guard.constitution.items() if k.startswith("P") and k[1:2].isdigit()},
                 "enforcement": guard.constitution.get("enforcement"),
                 "metrics": guard.constitution.get("metrics"),
             }
@@ -180,9 +170,7 @@ async def list_articles(guard: ConstitutionalGuard = Depends(get_constitutional_
 
 
 @router.get("/articles/{article}")
-async def get_article(
-    article: str, guard: ConstitutionalGuard = Depends(get_constitutional_guard)
-):
+async def get_article(article: str, guard: ConstitutionalGuard = Depends(get_constitutional_guard)):
     """
     Get specific constitutional article
 
@@ -212,9 +200,7 @@ async def get_article(
         raise HTTPException(status_code=500, detail=str(e))
 
 
-# [EMOJI]
 # Validation Endpoints
-# [EMOJI]
 
 
 @router.post("/validate/design")
@@ -298,9 +284,7 @@ async def validate_phase_compliance(
         ValidationResult
     """
     try:
-        result = await guard.validate_phase_compliance(
-            request.phase, request.action, request.dict()
-        )
+        result = await guard.validate_phase_compliance(request.phase, request.action, request.dict())
         return JSONResponse(content=result.to_dict())
     except Exception as e:
         logger.error(f"Error validating phase compliance: {e}")
@@ -322,9 +306,7 @@ async def validate_phase_transition(
         ValidationResult
     """
     try:
-        result = await guard.validate_phase_transition(
-            request.current_phase, request.next_phase, request.dict()
-        )
+        result = await guard.validate_phase_transition(request.current_phase, request.next_phase, request.dict())
         return JSONResponse(content=result.to_dict())
     except Exception as e:
         logger.error(f"Error validating phase transition: {e}")
@@ -347,17 +329,13 @@ async def validate_ai_consensus(
     """
     try:
         result, consensus = await guard.validate_ai_consensus(request.decisions)
-        return JSONResponse(
-            content={"validation": result.to_dict(), "consensus": consensus}
-        )
+        return JSONResponse(content={"validation": result.to_dict(), "consensus": consensus})
     except Exception as e:
         logger.error(f"Error validating AI consensus: {e}")
         raise HTTPException(status_code=500, detail=str(e))
 
 
-# [EMOJI]
 # Violation Management Endpoints
-# [EMOJI]
 
 
 @router.get("/violations")
@@ -384,9 +362,7 @@ async def get_violations(
     """
     try:
         severity_enum = Severity(severity) if severity else None
-        violations = guard.get_violations(
-            article=article, severity=severity_enum, resolved=resolved
-        )
+        violations = guard.get_violations(article=article, severity=severity_enum, resolved=resolved)
 
         # Filter by AI agent if specified
         if ai_agent:
@@ -395,10 +371,8 @@ async def get_violations(
         # Limit results
         violations = violations[:limit]
 
-        return JSONResponse(
-            content={"total": len(violations), "violations": violations}
-        )
-    except ValueError as e:
+        return JSONResponse(content={"total": len(violations), "violations": violations})
+    except ValueError:
         raise HTTPException(status_code=400, detail=f"Invalid severity: {severity}")
     except Exception as e:
         logger.error(f"Error getting violations: {e}")
@@ -488,9 +462,7 @@ async def export_violations(
         raise HTTPException(status_code=500, detail=str(e))
 
 
-# [EMOJI]
 # Compliance Metrics Endpoints
-# [EMOJI]
 
 
 @router.get("/compliance/score")
@@ -511,18 +483,14 @@ async def get_compliance_score(
         for v in guard.violation_log:
             if not v["resolved"]:
                 severity = v["severity"]
-                violations_by_severity[severity] = (
-                    violations_by_severity.get(severity, 0) + 1
-                )
+                violations_by_severity[severity] = violations_by_severity.get(severity, 0) + 1
 
         # Count violations by article
         violations_by_article = {}
         for v in guard.violation_log:
             if not v["resolved"]:
                 article = v["article"]
-                violations_by_article[article] = (
-                    violations_by_article.get(article, 0) + 1
-                )
+                violations_by_article[article] = violations_by_article.get(article, 0) + 1
 
         return JSONResponse(
             content={
@@ -530,15 +498,9 @@ async def get_compliance_score(
                 "grade": (
                     "A"
                     if score >= 0.95
-                    else (
-                        "B"
-                        if score >= 0.85
-                        else "C" if score >= 0.75 else "D" if score >= 0.65 else "F"
-                    )
+                    else ("B" if score >= 0.85 else "C" if score >= 0.75 else "D" if score >= 0.65 else "F")
                 ),
-                "total_violations": len(
-                    [v for v in guard.violation_log if not v["resolved"]]
-                ),
+                "total_violations": len([v for v in guard.violation_log if not v["resolved"]]),
                 "violations_by_severity": violations_by_severity,
                 "violations_by_article": violations_by_article,
             }
@@ -566,18 +528,12 @@ async def get_compliance_report(
     """
     try:
         # Parse dates
-        start_date = (
-            datetime.fromisoformat(period_start)
-            if period_start
-            else datetime.now() - timedelta(days=30)
-        )
+        start_date = datetime.fromisoformat(period_start) if period_start else datetime.now() - timedelta(days=30)
         end_date = datetime.fromisoformat(period_end) if period_end else datetime.now()
 
         # Filter violations by date
         period_violations = [
-            v
-            for v in guard.violation_log
-            if start_date <= datetime.fromisoformat(v["timestamp"]) <= end_date
+            v for v in guard.violation_log if start_date <= datetime.fromisoformat(v["timestamp"]) <= end_date
         ]
 
         # Generate statistics
@@ -641,9 +597,7 @@ async def health_check(guard: ConstitutionalGuard = Depends(get_constitutional_g
             content={
                 "status": "healthy",
                 "constitution_loaded": bool(guard.constitution),
-                "version": (
-                    guard.constitution.get("version") if guard.constitution else None
-                ),
+                "version": (guard.constitution.get("version") if guard.constitution else None),
                 "total_violations": len(guard.violation_log),
                 "compliance_score": guard.get_compliance_score(),
             }

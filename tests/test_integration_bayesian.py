@@ -10,12 +10,12 @@ import sys
 from pathlib import Path
 import tempfile
 import shutil
-from datetime import datetime
+from datetime import datetime  # noqa: F401
 
 # Add parent directory to path
 sys.path.insert(0, str(Path(__file__).parent.parent))
 
-from src.uncertainty_map_v3_integrated import IntegratedUncertaintyMapV3
+from src.uncertainty_map_v3_integrated import IntegratedUncertaintyMapV3  # noqa: E402
 
 
 class TestIntegratedUncertaintyMap(unittest.TestCase):
@@ -58,7 +58,7 @@ class TestIntegratedUncertaintyMap(unittest.TestCase):
         """Test learning from actual outcomes"""
         # Make initial prediction
         prediction = self.integrated.predict(phase="design", hours_ahead=12)
-        initial_magnitude = prediction["prediction"]["predicted_magnitude"]
+        _initial_magnitude = prediction["prediction"]["predicted_magnitude"]
 
         # Create actual outcome
         actual = {
@@ -78,7 +78,7 @@ class TestIntegratedUncertaintyMap(unittest.TestCase):
         self.assertGreater(len(self.integrated.metrics["accuracy_improvements"]), 0)
 
         # Make another prediction - should be influenced by learning
-        prediction2 = self.integrated.predict(phase="design", hours_ahead=12)
+        _prediction2 = self.integrated.predict(phase="design", hours_ahead=12)
 
         # Check that Bayesian system has updated beliefs
         self.assertEqual(self.integrated.metrics["predictions_made"], 2)

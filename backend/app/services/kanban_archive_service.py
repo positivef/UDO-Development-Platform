@@ -829,21 +829,21 @@ schema_version: "1.0"
 **Task ID**: `{entry.task_id}`
 **Archived**: {entry.archived_at.strftime("%Y-%m-%d %H:%M")}
 
-## 💡 배운 점
+## [*] 배운 점
 
 """
         for learning in entry.key_learnings:
             note += f"- {learning}\n"
 
         note += """
-## 🔧 기술 인사이트
+## [*] 기술 인사이트
 
 """
         for insight in entry.technical_insights:
             note += f"- {insight}\n"
 
         note += f"""
-## 📊 ROI 메트릭
+## [*] ROI 메트릭
 
 | 지표 | 값 |
 |------|-----|
@@ -854,7 +854,7 @@ schema_version: "1.0"
 | 품질 점수 | {roi_metrics.quality_score}/100 |
 | 규정 준수 | {"Pass" if roi_metrics.constitutional_compliance else "Fail"} |
 
-## 📋 관련 문서
+## [*] 관련 문서
 
 - [[Kanban Archive MOC]]
 - [[{entry.phase_name.capitalize()} Phase]]

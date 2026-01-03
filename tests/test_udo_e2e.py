@@ -14,11 +14,11 @@ SRC_DIR = Path(__file__).resolve().parent.parent / "src"
 if str(SRC_DIR) not in os.sys.path:
     os.sys.path.append(str(SRC_DIR))
 
-import unified_development_orchestrator_v2 as udo_module
-import uncertainty_map_v3 as umap_module
-import three_ai_collaboration_bridge as bridge_module
-from unified_development_orchestrator_v2 import ProjectContext, UnifiedDevelopmentOrchestratorV2
-from uncertainty_map_v3 import UncertaintyMapV3, UncertaintyVector, UncertaintyState
+import unified_development_orchestrator_v2 as udo_module  # noqa: E402
+import uncertainty_map_v3 as umap_module  # noqa: E402
+import three_ai_collaboration_bridge as bridge_module  # noqa: E402
+from unified_development_orchestrator_v2 import ProjectContext, UnifiedDevelopmentOrchestratorV2  # noqa: E402
+from uncertainty_map_v3 import UncertaintyMapV3, UncertaintyVector, UncertaintyState  # noqa: E402
 
 
 def _prepare_storage(monkeypatch, tmp_path):
@@ -55,7 +55,7 @@ class TestUDOv2EndToEnd:
 
     def test_e2e_ideation_phase_workflow(self, monkeypatch, tmp_path):
         """Test complete workflow in ideation phase"""
-        storage_dir = _prepare_storage(monkeypatch, tmp_path)
+        _prepare_storage(monkeypatch, tmp_path)
         context = _build_test_project_context(phase="ideation")
 
         # Initialize UDO v2
@@ -73,14 +73,14 @@ class TestUDOv2EndToEnd:
         # Verify phase-aware confidence
         assert 0.0 <= result["confidence"] <= 1.0
 
-        print(f"[OK] Ideation phase E2E test passed")
+        print("[OK] Ideation phase E2E test passed")
         print(f"   Decision: {result['decision']}")
         print(f"   Confidence: {result['confidence']:.2%}")
         print(f"   System: {result['system']}")
 
     def test_e2e_design_phase_workflow(self, monkeypatch, tmp_path):
         """Test complete workflow in design phase"""
-        storage_dir = _prepare_storage(monkeypatch, tmp_path)
+        _prepare_storage(monkeypatch, tmp_path)
         context = _build_test_project_context(phase="design")
 
         orchestrator = UnifiedDevelopmentOrchestratorV2(context)
@@ -93,13 +93,13 @@ class TestUDOv2EndToEnd:
         assert result["decision"] in ["GO", "GO_WITH_MONITORING", "PROTOTYPE_FIRST", "NEED_MORE_INFO"]
         assert "confidence" in result
 
-        print(f"[OK] Design phase E2E test passed")
+        print("[OK] Design phase E2E test passed")
         print(f"   Decision: {result['decision']}")
         print(f"   Confidence: {result['confidence']:.2%}")
 
     def test_e2e_mvp_phase_workflow(self, monkeypatch, tmp_path):
         """Test MVP phase with time-critical constraints"""
-        storage_dir = _prepare_storage(monkeypatch, tmp_path)
+        _prepare_storage(monkeypatch, tmp_path)
         context = _build_test_project_context(phase="mvp")
 
         orchestrator = UnifiedDevelopmentOrchestratorV2(context)
@@ -113,12 +113,12 @@ class TestUDOv2EndToEnd:
         # MVP should have moderate confidence requirements
         assert 0.0 <= result["confidence"] <= 1.0
 
-        print(f"[OK] MVP phase E2E test passed")
+        print("[OK] MVP phase E2E test passed")
         print(f"   Confidence: {result['confidence']:.2%}")
 
     def test_e2e_implementation_phase_workflow(self, monkeypatch, tmp_path):
         """Test implementation phase with quality metrics"""
-        storage_dir = _prepare_storage(monkeypatch, tmp_path)
+        _prepare_storage(monkeypatch, tmp_path)
         context = _build_test_project_context(phase="implementation")
 
         orchestrator = UnifiedDevelopmentOrchestratorV2(context)
@@ -130,12 +130,12 @@ class TestUDOv2EndToEnd:
         assert "confidence" in result
 
         # Implementation phase should have higher quality requirements
-        print(f"[OK] Implementation phase E2E test passed")
+        print("[OK] Implementation phase E2E test passed")
         print(f"   Decision: {result['decision']}")
 
     def test_e2e_testing_phase_workflow(self, monkeypatch, tmp_path):
         """Test testing phase with coverage requirements"""
-        storage_dir = _prepare_storage(monkeypatch, tmp_path)
+        _prepare_storage(monkeypatch, tmp_path)
         context = _build_test_project_context(phase="testing")
 
         # Add more test files for testing phase
@@ -155,12 +155,12 @@ class TestUDOv2EndToEnd:
         assert "decision" in result
         assert "confidence" in result
 
-        print(f"[OK] Testing phase E2E test passed")
+        print("[OK] Testing phase E2E test passed")
         print(f"   Decision: {result['decision']}")
 
     def test_e2e_uncertainty_prediction_workflow(self, monkeypatch, tmp_path):
         """Test uncertainty prediction and evolution workflow"""
-        storage_dir = _prepare_storage(monkeypatch, tmp_path)
+        _prepare_storage(monkeypatch, tmp_path)
         context = _build_test_project_context(phase="mvp")
 
         # Initialize uncertainty map
@@ -201,14 +201,14 @@ class TestUDOv2EndToEnd:
         assert prediction is not None
         assert hasattr(prediction, "trend")
 
-        print(f"[OK] Uncertainty prediction E2E test passed")
+        print("[OK] Uncertainty prediction E2E test passed")
         print(f"   State: {classified_state}")
         print(f"   Magnitude: {magnitude:.2f}")
         print(f"   Trend: {prediction.trend}")
 
     def test_e2e_config_based_phase_weights(self, monkeypatch, tmp_path):
         """Test that phase-specific weights from config.yaml are applied"""
-        storage_dir = _prepare_storage(monkeypatch, tmp_path)
+        _prepare_storage(monkeypatch, tmp_path)
 
         # Test ideation phase
         ideation_context = _build_test_project_context(phase="ideation")
@@ -229,13 +229,13 @@ class TestUDOv2EndToEnd:
         # Different phases should produce different confidence scores
         assert ideation_confidence != design_confidence, "Phase-specific weights should produce different confidence scores"
 
-        print(f"[OK] Config-based phase weights test passed")
+        print("[OK] Config-based phase weights test passed")
         print(f"   Ideation confidence: {ideation_confidence:.2%}")
         print(f"   Design confidence: {design_confidence:.2%}")
 
     def test_e2e_full_lifecycle(self, monkeypatch, tmp_path):
         """Test complete project lifecycle through all phases"""
-        storage_dir = _prepare_storage(monkeypatch, tmp_path)
+        _prepare_storage(monkeypatch, tmp_path)
 
         phases = ["ideation", "design", "mvp", "implementation", "testing"]
         results = []
@@ -254,7 +254,7 @@ class TestUDOv2EndToEnd:
             assert "decision" in result
             assert result["decision"] in ["GO", "GO_WITH_MONITORING", "PROTOTYPE_FIRST", "NEED_MORE_INFO"]
 
-        print(f"[OK] Full lifecycle E2E test passed")
+        print("[OK] Full lifecycle E2E test passed")
         print(f"   Tested {len(phases)} phases successfully")
         for result in results:
             print(f"   - {result['phase']}: {result['decision']} (confidence: {result['confidence']:.2%})")

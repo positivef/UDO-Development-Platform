@@ -5,21 +5,22 @@ Week 3 Day 3: AI Task Suggestion with Claude Sonnet 4.5.
 Implements Q2: AI Hybrid (suggest + approve) with Constitutional compliance.
 """
 
-from typing import Optional
 from uuid import UUID
 
-from fastapi import APIRouter, Depends, HTTPException, Query, status
+from fastapi import APIRouter, Depends, status
 from fastapi.responses import JSONResponse
 
 from app.core.security import UserRole, get_current_user, require_role
-from app.models.kanban_ai import (ConstitutionalViolationError,
-                                          InvalidSuggestionError,
-                                          RateLimitExceededError,
-                                          RateLimitStatus,
-                                          TaskSuggestionApproval,
-                                          TaskSuggestionApprovalResponse,
-                                          TaskSuggestionRequest,
-                                          TaskSuggestionResponse)
+from app.models.kanban_ai import (
+    ConstitutionalViolationError,
+    InvalidSuggestionError,
+    RateLimitExceededError,
+    RateLimitStatus,
+    TaskSuggestionApproval,
+    TaskSuggestionApprovalResponse,
+    TaskSuggestionRequest,
+    TaskSuggestionResponse,
+)
 from app.services.kanban_ai_service import kanban_ai_service
 
 router = APIRouter(prefix="/api/kanban/ai", tags=["Kanban AI"])
@@ -60,9 +61,7 @@ def error_response(code: str, message: str, status_code: int, details: dict = No
     summary="Generate AI task suggestions",
     description="Generate intelligent task suggestions using Claude Sonnet 4.5 (Q2: AI Hybrid)",
 )
-async def suggest_tasks(
-    request: TaskSuggestionRequest, current_user: dict = Depends(get_current_user)
-):
+async def suggest_tasks(request: TaskSuggestionRequest, current_user: dict = Depends(get_current_user)):
     """
     Generate AI-powered task suggestions using Claude Sonnet 4.5.
 
@@ -167,9 +166,7 @@ async def approve_suggestion(
 
         # Approve and create task
         user_id = current_user.get("username", current_user.get("email"))
-        response = await kanban_ai_service.approve_suggestion(
-            suggestion_id, approval, user_id
-        )
+        response = await kanban_ai_service.approve_suggestion(suggestion_id, approval, user_id)
 
         return response
 

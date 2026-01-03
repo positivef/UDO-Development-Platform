@@ -9,13 +9,18 @@ Implements `AdaptiveSystemSelectorV2` with `analyze_request` and `recommend_syst
 methods expected by the orchestrator.
 """
 
+import logging
+from dataclasses import dataclass
 from enum import Enum
+from typing import Any, Dict, List
+
 
 class SystemType(Enum):
     CREATIVE_THINKING = "creative-thinking"
     ENHANCED = "vibe-coding-enhanced"
     FUSION = "vibe-coding-fusion"
     DEV_RULES = "dev-rules-starter-kit"
+
 
 class DevelopmentStage(Enum):
     IDEATION = "ideation"
@@ -26,6 +31,7 @@ class DevelopmentStage(Enum):
 
 
 logger = logging.getLogger(__name__)
+
 
 @dataclass
 class AnalysisContext:
@@ -38,10 +44,12 @@ class AnalysisContext:
         if self.files is None:
             self.files = []
 
+
 @dataclass
 class Recommendation:
-    primary: Any   # Enum placeholder (SystemType)
+    primary: Any  # Enum placeholder (SystemType)
     confidence: float = 0.7
+
 
 class AdaptiveSystemSelectorV2:
     """Lightweight deterministic selector used when the real selector is unavailable."""
@@ -58,9 +66,9 @@ class AdaptiveSystemSelectorV2:
 
     def recommend_system(self, analysis: AnalysisContext) -> Recommendation:
         """Return a deterministic recommendation based on simple heuristics.
-        - If request mentions "test" or "coverage" → testing system.
-        - If many files (>5) → implementation system.
-        - Otherwise → creative system.
+        - If request mentions "test" or "coverage" -> testing system.
+        - If many files (>5) -> implementation system.
+        - Otherwise -> creative system.
         """
         lower = analysis.request.lower()
         if "test" in lower or "coverage" in lower:
@@ -73,6 +81,7 @@ class AdaptiveSystemSelectorV2:
         class SimpleEnum:
             def __init__(self, value: str):
                 self.value = value
+
             def __repr__(self):
                 return f"SimpleEnum({self.value!r})"
 
@@ -80,6 +89,7 @@ class AdaptiveSystemSelectorV2:
         confidence = 0.75 if system_name != "creative" else 0.65
         logger.info("Recommendation: %s with confidence %.2f", primary, confidence)
         return Recommendation(primary=primary, confidence=confidence)
+
 
 # Backward‑compatible alias for older imports
 AdaptiveSystemSelector = AdaptiveSystemSelectorV2

@@ -13,12 +13,10 @@ import json
 import logging
 import os
 from datetime import datetime, timedelta
-from enum import Enum
-from typing import Any, Dict, List, Optional, Set
+from typing import Any, Dict, List, Optional
 
 import redis.asyncio as redis
 from redis.asyncio.client import PubSub
-from redis.asyncio.lock import Lock
 
 logger = logging.getLogger(__name__)
 
@@ -178,9 +176,7 @@ class RedisClient:
                 # Try to acquire with retries
                 end_time = datetime.now() + timedelta(seconds=blocking_timeout)
                 while datetime.now() < end_time:
-                    success = await self._client.set(
-                        key, value, nx=True, ex=ttl
-                    )  # Only set if not exists  # Expire after TTL
+                    success = await self._client.set(key, value, nx=True, ex=ttl)  # Only set if not exists  # Expire after TTL
                     if success:
                         return True
                     await asyncio.sleep(0.1)
@@ -253,9 +249,7 @@ class RedisClient:
 
     # ============= Session Operations =============
 
-    async def register_session(
-        self, session_id: str, session_data: Dict[str, Any], ttl: int = 3600
-    ) -> bool:
+    async def register_session(self, session_id: str, session_data: Dict[str, Any], ttl: int = 3600) -> bool:
         """Register a new session"""
         if not await self.ensure_connected():
             return False
@@ -374,9 +368,7 @@ class RedisClient:
 
     # ============= Conflict Management =============
 
-    async def register_conflict(
-        self, project_id: str, conflict_data: Dict[str, Any]
-    ) -> bool:
+    async def register_conflict(self, project_id: str, conflict_data: Dict[str, Any]) -> bool:
         """Register a detected conflict"""
         if not await self.ensure_connected():
             return False
@@ -385,9 +377,7 @@ class RedisClient:
             conflicts_key = RedisKeys.PROJECT_CONFLICTS.format(project_id)
             conflict_id = conflict_data.get("id", str(datetime.now().timestamp()))
 
-            await self._client.hset(
-                conflicts_key, conflict_id, json.dumps(conflict_data)
-            )
+            await self._client.hset(conflicts_key, conflict_id, json.dumps(conflict_data))
 
             # Publish conflict event
             await self.publish(

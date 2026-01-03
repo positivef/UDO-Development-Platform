@@ -9,7 +9,6 @@ Provides real-time task synchronization for Kanban board:
 """
 
 import asyncio
-import json
 import logging
 import os
 from datetime import datetime

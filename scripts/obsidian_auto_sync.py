@@ -5,7 +5,7 @@ Obsidian Auto-Sync v3.6.2 - AI-Enhanced Development Log Generator
 자동으로 Git commit 정보를 분석하여 Obsidian 개발일지를 생성합니다.
 
 Features (v3.6.2):
-- 로깅 개선: print() → logging 모듈 (표준 Python 로깅)
+- 로깅 개선: print() -> logging 모듈 (표준 Python 로깅)
 - 스키마 검증: 커리큘럼 항목 필수 필드 및 타입 검증
 - Path Traversal 방어: 환경변수 경로 보안 검증
 
@@ -1150,23 +1150,23 @@ class SectionGenerator:
             content += "|----------|---------|-------------|\n"
             for item in til_items[:6]:
                 cat_emoji = {
-                    "Pattern": "🔄",
-                    "Tool": "🔧",
-                    "Concept": "💡",
-                    "Debug": "🐛",
-                    "Performance": "⚡",
-                }.get(item["category"], "📝")
+                    "Pattern": "[*]",
+                    "Tool": "[*]",
+                    "Concept": "[*]",
+                    "Debug": "[*]",
+                    "Performance": "[*]",
+                }.get(item["category"], "[*]")
                 appl_emoji = {
-                    "Immediate": "🎯 이번 프로젝트",
-                    "Future": "🔮 다른 프로젝트",
-                    "General": "🌐 범용",
+                    "Immediate": "[*] 이번 프로젝트",
+                    "Future": "[*] 다른 프로젝트",
+                    "General": "[*] 범용",
                 }.get(item["applicability"], item["applicability"])
                 content += f"| {item['item']} | {cat_emoji} {item['category']} | {appl_emoji} |\n"
             content += "\n"
 
             # 초보자 학습 포인트 추가
             if beginner_tips:
-                content += "### 💡 초보자 학습 포인트\n\n"
+                content += "### [*] 초보자 학습 포인트\n\n"
                 for tip in beginner_tips[:3]:
                     content += f"{tip}\n\n"
         else:
@@ -1212,11 +1212,11 @@ class SectionGenerator:
         """
         # 유형별 기본 심각도
         base_severity = {
-            "FIXME": 80,  # 버그/문제 → 높은 심각도
-            "HACK": 70,  # 임시 해결책 → 중상 심각도
-            "TODO": 50,  # 구현 예정 → 중간 심각도
-            "SKIP": 60,  # 스킵 테스트 → 중간 심각도
-            "TYPE": 40,  # 타입 무시 → 낮은 심각도
+            "FIXME": 80,  # 버그/문제 -> 높은 심각도
+            "HACK": 70,  # 임시 해결책 -> 중상 심각도
+            "TODO": 50,  # 구현 예정 -> 중간 심각도
+            "SKIP": 60,  # 스킵 테스트 -> 중간 심각도
+            "TYPE": 40,  # 타입 무시 -> 낮은 심각도
         }.get(debt_type, 50)
 
         desc_lower = desc.lower()
@@ -1420,27 +1420,27 @@ class SectionGenerator:
             content += "\n"
 
             # 바이브코딩 학습 가이드 (v3.5 추가)
-            content += "### 🎯 바이브코딩 성장 가이드 (초보자용)\n\n"
+            content += "### [*] 바이브코딩 성장 가이드 (초보자용)\n\n"
             content += "**[프롬프트 팁]** AI에게 명확한 컨텍스트를 제공하세요:\n"
-            content += "- 현재 상황 → 원하는 결과 → 제약 조건 순으로 설명\n"
+            content += "- 현재 상황 -> 원하는 결과 -> 제약 조건 순으로 설명\n"
             content += '- 예: "FastAPI에서 401 에러 발생. JWT 토큰 검증 로직 수정 필요. Python 3.11 사용 중"\n\n'
 
             content += "**[SW 설계 원칙]** 검증된 이론 학습 추천:\n"
             content += "- **SOLID 원칙**: 단일 책임(S), 개방-폐쇄(O), 리스코프 치환(L), 인터페이스 분리(I), 의존성 역전(D)\n"
             content += "- **DRY/KISS/YAGNI**: 반복 금지, 단순하게, 필요할 때만 구현\n"
-            content += '- 📚 추천: "Clean Code" (Robert C. Martin), "Refactoring" (Martin Fowler)\n\n'
+            content += '- [*] 추천: "Clean Code" (Robert C. Martin), "Refactoring" (Martin Fowler)\n\n'
 
             content += "**[오류 정정 프로세스]** 체계적 디버깅 5단계:\n"
             content += "1. 에러 메시지 정확히 읽기 (스택 트레이스 분석)\n"
             content += "2. 최소 재현 케이스 만들기\n"
-            content += "3. 가설 수립 → 검증 → 반복\n"
+            content += "3. 가설 수립 -> 검증 -> 반복\n"
             content += "4. 수정 후 회귀 테스트\n"
             content += "5. 해결책 문서화 (다음에 재사용)\n\n"
 
             content += "**[테스트 전략]** TDD/BDD 접근법:\n"
-            content += "- 테스트 먼저 작성 → 실패 확인 → 코드 작성 → 통과 확인 → 리팩토링\n"
+            content += "- 테스트 먼저 작성 -> 실패 확인 -> 코드 작성 -> 통과 확인 -> 리팩토링\n"
             content += "- 경계값, 엣지 케이스, 예외 상황 우선 테스트\n"
-            content += '- 📚 추천: "Test-Driven Development" (Kent Beck)\n\n'
+            content += '- [*] 추천: "Test-Driven Development" (Kent Beck)\n\n'
 
         # 패턴 추출
         if self.flags.get("has_pattern"):
@@ -1472,7 +1472,7 @@ class SectionGenerator:
 
             # 초보자를 위한 패턴 설명 추가
             if detected_patterns:
-                content += "### 💡 패턴 이해하기 (초보자 가이드)\n\n"
+                content += "### [*] 패턴 이해하기 (초보자 가이드)\n\n"
                 for pattern_type in set(detected_patterns):
                     if pattern_type in pattern_explanations:
                         when_to_use, example = pattern_explanations[pattern_type]
@@ -1491,16 +1491,16 @@ class SectionGenerator:
         """Uncertainty Map 섹션 - 다층 불확실성 분석
 
         구성:
-        1. 🔍 기술적 불확실성 (Option A): Git diff 자동 분석
-        2. 🤔 AI 메타인지 (Option B): 세션 기반 자기 성찰
-        3. 🚧 Blockers: 작업 차단 요소
+        1. [*] 기술적 불확실성 (Option A): Git diff 자동 분석
+        2. [*] AI 메타인지 (Option B): 세션 기반 자기 성찰
+        3. [*] Blockers: 작업 차단 요소
         """
         content = "## Uncertainty Map\n\n"
 
         # =====================================================================
-        # Part 1: 🔍 기술적 불확실성 (Option A - Git diff 기반 자동 분석)
+        # Part 1: [*] 기술적 불확실성 (Option A - Git diff 기반 자동 분석)
         # =====================================================================
-        content += "### 🔍 기술적 불확실성 (자동 분석)\n\n"
+        content += "### [*] 기술적 불확실성 (자동 분석)\n\n"
 
         tech_uncertainties = []
 
@@ -1516,10 +1516,10 @@ class SectionGenerator:
 
         # 1-2. 복잡도 기반 추론 (Option A 강화)
         complexity_indicators = {
-            r"if.*if.*if": "⚠️ 중첩 조건문 3단계 - 로직 단순화 검토 필요",
-            r"for.*for": "⚠️ 중첩 루프 - O(n²) 성능 영향 확인 필요",
-            r"try.*try": "⚠️ 중첩 예외 처리 - 에러 흐름 정리 필요",
-            r"except\s*:": "⚠️ 광범위 예외 처리 - 구체적 예외 타입 권장",
+            r"if.*if.*if": "[WARN] 중첩 조건문 3단계 - 로직 단순화 검토 필요",
+            r"for.*for": "[WARN] 중첩 루프 - O(n²) 성능 영향 확인 필요",
+            r"try.*try": "[WARN] 중첩 예외 처리 - 에러 흐름 정리 필요",
+            r"except\s*:": "[WARN] 광범위 예외 처리 - 구체적 예외 타입 권장",
         }
         for pattern, msg in complexity_indicators.items():
             if re.search(pattern, self.added_lines, re.DOTALL):
@@ -1530,9 +1530,9 @@ class SectionGenerator:
         files_changed = len(self.files)
 
         if lines_added > 200:
-            tech_uncertainties.append(f"📊 대규모 변경 ({lines_added}줄) - 모든 엣지 케이스 고려했는지 검토 필요")
+            tech_uncertainties.append(f"[*] 대규모 변경 ({lines_added}줄) - 모든 엣지 케이스 고려했는지 검토 필요")
         if files_changed > 5:
-            tech_uncertainties.append(f"📁 다중 파일 변경 ({files_changed}개) - 파일 간 일관성 확인 필요")
+            tech_uncertainties.append(f"[*] 다중 파일 변경 ({files_changed}개) - 파일 간 일관성 확인 필요")
 
         # 1-4. 외부 의존성 추가 감지
         new_imports = re.findall(r"(?:import|from)\s+(\w+)", self.added_lines)
@@ -1540,7 +1540,7 @@ class SectionGenerator:
         if new_imports or new_deps:
             dep_names = list(set(new_imports[:3] + new_deps[:2]))
             if dep_names:
-                tech_uncertainties.append(f"📦 외부 의존성 추가: `{', '.join(dep_names)}` - 호환성 확인 필요")
+                tech_uncertainties.append(f"[*] 외부 의존성 추가: `{', '.join(dep_names)}` - 호환성 확인 필요")
 
         # 1-5. 테스트 미작성 신규 코드
         new_funcs = re.findall(r"def\s+(\w+)\s*\(", self.added_lines)
@@ -1551,7 +1551,7 @@ class SectionGenerator:
             items = [f for f in set(new_funcs) if not f.startswith("_")][:2]
             items += [c for c in set(new_classes)][:1]
             if items:
-                tech_uncertainties.append(f"🧪 테스트 미작성: `{', '.join(items)}` - 테스트 추가 권장")
+                tech_uncertainties.append(f"[*] 테스트 미작성: `{', '.join(items)}` - 테스트 추가 권장")
 
         # 1-6. 불확실성 키워드 (코드 내 maybe, 아마 등)
         uncertainty_keywords = []
@@ -1562,21 +1562,21 @@ class SectionGenerator:
                     uncertainty_keywords.append(cleaned)
 
         if uncertainty_keywords:
-            tech_uncertainties.append(f"❓ 불확실한 구현 감지: `{uncertainty_keywords[0][:30]}...`")
+            tech_uncertainties.append(f"[?] 불확실한 구현 감지: `{uncertainty_keywords[0][:30]}...`")
 
         # 기술적 불확실성 출력
         if tech_uncertainties:
             for item in tech_uncertainties[:6]:
                 content += f"- {item}\n"
         else:
-            content += "> ✅ 코드 분석에서 주요 불확실성이 감지되지 않았습니다.\n"
+            content += "> [OK] 코드 분석에서 주요 불확실성이 감지되지 않았습니다.\n"
 
         content += "\n"
 
         # =====================================================================
-        # Part 2: 🤔 AI 메타인지 v3.3 (정량적 지표 + 우선순위 매트릭스)
+        # Part 2: [*] AI 메타인지 v3.3 (정량적 지표 + 우선순위 매트릭스)
         # =====================================================================
-        content += "### 🤔 AI 메타인지 (신뢰도 기반)\n\n"
+        content += "### [*] AI 메타인지 (신뢰도 기반)\n\n"
 
         ai_meta = load_ai_metacognition()
         all_priority_items = []  # 우선순위 정렬용
@@ -1585,7 +1585,7 @@ class SectionGenerator:
             # 2-1. 가장 덜 자신있는 부분 (신뢰도 %)
             least_confident = ai_meta.get("least_confident", [])
             if least_confident:
-                content += "**1. 🔴 덜 자신있는 부분** (신뢰도: 구현 정확성 확신 수준)\n\n"
+                content += "**1. [*] 덜 자신있는 부분** (신뢰도: 구현 정확성 확신 수준)\n\n"
                 content += "| 항목 | 신뢰도 | 보완 시 기대효과 |\n"
                 content += "|------|--------|------------------|\n"
                 for item in least_confident[:4]:
@@ -1612,7 +1612,7 @@ class SectionGenerator:
             # 2-2. 단순화한 가정 (유효확률 %)
             simplifications = ai_meta.get("simplifications", [])
             if simplifications:
-                content += "**2. 🟡 단순화한 가정** (유효확률: 가정이 현실에서 성립할 확률)\n\n"
+                content += "**2. [*] 단순화한 가정** (유효확률: 가정이 현실에서 성립할 확률)\n\n"
                 content += "| 가정 | 유효확률 | 검증 시 기대효과 |\n"
                 content += "|------|----------|------------------|\n"
                 for item in simplifications[:4]:
@@ -1639,7 +1639,7 @@ class SectionGenerator:
             # 2-3. 의견 변경 가능 질문 (변경확률 %)
             opinion_changers = ai_meta.get("opinion_changers", [])
             if opinion_changers:
-                content += "**3. 🟠 의견 변경 가능 질문** (변경확률: 검증 시 설계가 바뀔 확률)\n\n"
+                content += "**3. [*] 의견 변경 가능 질문** (변경확률: 검증 시 설계가 바뀔 확률)\n\n"
                 content += "| 질문 | 변경확률 | 조기 검증 효과 |\n"
                 content += "|------|----------|----------------|\n"
                 for item in opinion_changers[:4]:
@@ -1666,7 +1666,7 @@ class SectionGenerator:
             # 2-4. 보완 필요 영역 (완성도 + 긴급도 2차원)
             areas_to_improve = ai_meta.get("areas_to_improve", [])
             if areas_to_improve:
-                content += "**4. 🔵 보완 필요 영역** (완성도 × 긴급도 2차원 분석)\n\n"
+                content += "**4. [*] 보완 필요 영역** (완성도 × 긴급도 2차원 분석)\n\n"
                 content += "| 영역 | 완성도 | 긴급도 | 우선순위 | 보완 시 기대효과 |\n"
                 content += "|------|--------|--------|----------|------------------|\n"
                 for item in areas_to_improve[:5]:
@@ -1685,9 +1685,9 @@ class SectionGenerator:
                     # 우선순위 계산: 완성도 낮고 긴급도 높으면 최우선
                     urgency_score = {"high": 3, "medium": 2, "low": 1}.get(urgency.lower(), 2)
                     priority_score = (100 - completeness) * urgency_score
-                    priority_label = "🚨 즉시" if priority_score > 150 else "⚡ 우선" if priority_score > 100 else "📋 계획"
+                    priority_label = "[*] 즉시" if priority_score > 150 else "[*] 우선" if priority_score > 100 else "[*] 계획"
 
-                    urgency_icon = {"high": "🔴", "medium": "🟡", "low": "🟢"}.get(urgency.lower(), "🟡")
+                    urgency_icon = {"high": "[*]", "medium": "[*]", "low": "[*]"}.get(urgency.lower(), "[*]")
                     content += (
                         f"| {name} | {completeness}% | {urgency_icon} {urgency.capitalize()} | {priority_label} | {effect} |\n"
                     )
@@ -1705,25 +1705,25 @@ class SectionGenerator:
                 content += "\n"
 
                 # 2차원 해석 가이드 (초보자용)
-                content += "**💡 우선순위 판단 기준:**\n"
+                content += "**[*] 우선순위 판단 기준:**\n"
                 content += "```\n"
                 content += "              긴급도\n"
                 content += "         Low    Medium    High\n"
-                content += "완성도  ┌────────┬────────┬────────┐\n"
-                content += " High   │ 관찰   │ 계획   │ 즉시   │\n"
-                content += " (>70%) │        │        │ 마무리 │\n"
-                content += "        ├────────┼────────┼────────┤\n"
-                content += " Medium │ 백로그 │ 다음   │ 우선   │\n"
-                content += " (40-70)│ 등록   │ 스프린트│ 처리   │\n"
-                content += "        ├────────┼────────┼────────┤\n"
-                content += " Low    │ 장기   │ 단기   │ 🚨     │\n"
-                content += " (<40%) │ 로드맵 │ 계획   │ 크리티컬│\n"
-                content += "        └────────┴────────┴────────┘\n"
+                content += "완성도  [*][*][*][*][*][*][*][*][*][*][*][*][*][*][*][*][*][*][*][*][*][*][*][*][*][*][*][*]\n"
+                content += " High   [*] 관찰   [*] 계획   [*] 즉시   [*]\n"
+                content += " (>70%) [*]        [*]        [*] 마무리 [*]\n"
+                content += "        [*][*][*][*][*][*][*][*][*][*][*][*][*][*][*][*][*][*][*][*][*][*][*][*][*][*][*][*]\n"
+                content += " Medium [*] 백로그 [*] 다음   [*] 우선   [*]\n"
+                content += " (40-70)[*] 등록   [*] 스프린트[*] 처리   [*]\n"
+                content += "        [*][*][*][*][*][*][*][*][*][*][*][*][*][*][*][*][*][*][*][*][*][*][*][*][*][*][*][*]\n"
+                content += " Low    [*] 장기   [*] 단기   [*] [*]     [*]\n"
+                content += " (<40%) [*] 로드맵 [*] 계획   [*] 크리티컬[*]\n"
+                content += "        [*][*][*][*][*][*][*][*][*][*][*][*][*][*][*][*][*][*][*][*][*][*][*][*][*][*][*][*]\n"
                 content += "```\n\n"
 
             # 전체 우선순위 정렬 요약
             if all_priority_items:
-                content += "**📊 전체 메타인지 우선순위 (점수 기준 정렬)**\n\n"
+                content += "**[*] 전체 메타인지 우선순위 (점수 기준 정렬)**\n\n"
                 # 점수가 낮을수록 (불확실할수록) 우선순위 높음
                 sorted_items = sorted(
                     all_priority_items,
@@ -1734,7 +1734,7 @@ class SectionGenerator:
                 content += "|------|----------|------|------|--------|------|\n"
                 for idx, item in enumerate(sorted_items[:8], 1):
                     urgency = item.get("urgency", "medium")
-                    urgency_icon = {"high": "🔴", "medium": "🟡", "low": "🟢"}.get(urgency, "🟡")
+                    urgency_icon = {"high": "[*]", "medium": "[*]", "low": "[*]"}.get(urgency, "[*]")
                     action = "즉시 검증" if urgency == "high" else "모니터링" if urgency == "medium" else "관찰"
                     cat = item["category"]
                     name = item["item"][:25]
@@ -1745,42 +1745,42 @@ class SectionGenerator:
             if not any([least_confident, simplifications, opinion_changers, areas_to_improve]):
                 content += "> AI 세션 메타인지가 로드되었으나 내용이 비어있습니다.\n\n"
         else:
-            content += "> 💡 AI 세션 메타인지 정보가 없습니다.\n"
+            content += "> [*] AI 세션 메타인지 정보가 없습니다.\n"
             content += "> `save_ai_metacognition()` 함수로 AI 작업 중 메타인지를 저장하면 자동 포함됩니다.\n\n"
             content += self._generate_default_metacognition()
 
         # =====================================================================
-        # Part 3: 🚧 Blockers (작업 차단 요소)
+        # Part 3: [*] Blockers (작업 차단 요소)
         # =====================================================================
-        content += "### 🚧 Blockers\n\n"
+        content += "### [*] Blockers\n\n"
 
         blockers = []
 
         # 3-1. 주석 기반 Blockers
         blocked_comments = extract_real_comments(self.diff, "BLOCKED")
-        blockers.extend([f"🔴 {b[:60]}" for b in blocked_comments[:2]])
+        blockers.extend([f"[*] {b[:60]}" for b in blocked_comments[:2]])
 
         decision_comments = extract_real_comments(self.diff, "DECISION")
-        blockers.extend([f"🟡 결정 대기: {d[:50]}" for d in decision_comments[:2]])
+        blockers.extend([f"[*] 결정 대기: {d[:50]}" for d in decision_comments[:2]])
 
         waiting_comments = extract_real_comments(self.diff, "WAITING")
-        blockers.extend([f"🟠 대기 중: {w[:50]}" for w in waiting_comments[:2]])
+        blockers.extend([f"[*] 대기 중: {w[:50]}" for w in waiting_comments[:2]])
 
         # 3-2. AI 세션 Blockers
         ai_blockers = ai_meta.get("blockers", [])
         for b in ai_blockers[:3]:
-            blockers.append(f"🔵 {b}")
+            blockers.append(f"[*] {b}")
 
         # 3-3. 외부 의존성 대기
         if re.search(r"#.*외부.*대기|#.*external.*wait", self.added_lines, re.I):
-            blockers.append("🟣 외부 시스템 응답 대기 중")
+            blockers.append("[*] 외부 시스템 응답 대기 중")
 
         # Blockers 출력
         if blockers:
             for item in blockers[:5]:
                 content += f"- {item}\n"
         else:
-            content += "> ✅ 현재 차단 요소가 없습니다.\n"
+            content += "> [OK] 현재 차단 요소가 없습니다.\n"
 
         content += "\n"
         return content
@@ -1895,7 +1895,7 @@ class SectionGenerator:
 
     def _generate_default_metacognition(self) -> str:
         """Diff 분석 기반 기본 메타인지 생성 (세션 데이터 없을 때)"""
-        content = "\n**📝 자동 분석 기반 메타인지:**\n\n"
+        content = "\n**[*] 자동 분석 기반 메타인지:**\n\n"
 
         items = []
 
@@ -1942,7 +1942,7 @@ class SectionGenerator:
             content += "| 카테고리 | 항목 | 점수 | 긴급도 | 기대효과 |\n"
             content += "|----------|------|------|--------|----------|\n"
             for item in items[:5]:
-                urgency_icon = {"high": "🔴", "medium": "🟡", "low": "🟢"}.get(item["urgency"], "🟡")
+                urgency_icon = {"high": "[*]", "medium": "[*]", "low": "[*]"}.get(item["urgency"], "[*]")
                 content += f"| {item['category']} | {item['item']} | {item['score']}% | {urgency_icon} | {item['effect']} |\n"
             content += "\n"
         else:
@@ -2048,7 +2048,7 @@ class SectionGenerator:
                 strategy = item.get("strategy", "-")
                 impact = item.get("impact", "Code-only")
                 complexity = item.get("complexity", "Low")
-                complexity_emoji = {"Low": "🟢", "Medium": "🟡", "High": "🔴"}.get(complexity, "🟡")
+                complexity_emoji = {"Low": "[*]", "Medium": "[*]", "High": "[*]"}.get(complexity, "[*]")
                 cmd = f"`{item['cmd']}`" if item.get("cmd") else "-"
                 time = item.get("time", "-")
                 content += f"| Tier {idx}: {strategy} | {impact} | {complexity_emoji} {complexity} | {cmd} | {time} |\n"
@@ -2058,12 +2058,12 @@ class SectionGenerator:
         content += "\n"
 
         # 초보자를 위한 롤백 가이드
-        content += "### 💡 롤백 가이드 (초보자용)\n\n"
+        content += "### [*] 롤백 가이드 (초보자용)\n\n"
         content += "**상황별 롤백 선택:**\n"
-        content += "1. **코드만 문제** → `git revert` (안전, 히스토리 유지)\n"
-        content += "2. **DB도 변경됨** → DB 롤백 먼저 → 코드 롤백\n"
-        content += "3. **설정만 변경** → Feature Flag OFF 또는 환경변수 복원\n"
-        content += "4. **긴급 상황** → `git reset --hard` (히스토리 삭제됨, 신중히!)\n\n"
+        content += "1. **코드만 문제** -> `git revert` (안전, 히스토리 유지)\n"
+        content += "2. **DB도 변경됨** -> DB 롤백 먼저 -> 코드 롤백\n"
+        content += "3. **설정만 변경** -> Feature Flag OFF 또는 환경변수 복원\n"
+        content += "4. **긴급 상황** -> `git reset --hard` (히스토리 삭제됨, 신중히!)\n\n"
 
         content += "**롤백 전 체크리스트:**\n"
         content += "- [ ] 다른 팀원에게 알림\n"
@@ -2123,7 +2123,7 @@ class SectionGenerator:
         bridge_preview = raw_curriculum.get("bridge_preview")
         bridge_review = raw_curriculum.get("bridge_review")
 
-        content += "\n### 📚 Learning Progress (VibeCoding)\n\n"
+        content += "\n### [LEARN] Progress (VibeCoding)\n\n"
 
         # Progress bar visualization
         # Week 0 = week 1 of 13, Month 1 Week 1 = week 2 of 13, etc.
@@ -2141,7 +2141,7 @@ class SectionGenerator:
         # Create ASCII progress bar (10 characters wide)
         filled_chars = int(progress_percent / 10)
         empty_chars = 10 - filled_chars
-        progress_bar = "█" * filled_chars + "░" * empty_chars
+        progress_bar = "[*]" * filled_chars + "[*]" * empty_chars
 
         # Calculate current week number (1-indexed for display)
         if month == 0:
@@ -2178,21 +2178,21 @@ class SectionGenerator:
 
         # 고려사항
         if considerations:
-            content += "**💡 고려사항**:\n"
+            content += "**[*] 고려사항**:\n"
             for c in considerations:
                 content += f"- {c}\n"
             content += "\n"
 
         # 주의점
         if warnings:
-            content += "**⚠️ 주의점**:\n"
+            content += "**[WARN] 주의점**:\n"
             for w in warnings:
                 content += f"- {w}\n"
             content += "\n"
 
         # v3.6: Bridge Review (Week 1 of Months 2 and 3 - start of new month)
         if bridge_review:
-            content += "**🔄 지난 달 복습 (Bridge Review)**:\n\n"
+            content += "**[*] 지난 달 복습 (Bridge Review)**:\n\n"
             content += f"*이전 단계*: {bridge_review['previous_month']}\n\n"
             content += "핵심 개념 확인:\n"
             for concept in bridge_review["key_concepts"]:
@@ -2204,7 +2204,7 @@ class SectionGenerator:
 
         # v3.6: Bridge Preview (Week 4 of Months 1 and 2 - end of month)
         if bridge_preview:
-            content += "**🚀 다음 달 미리보기 (Bridge Preview)**:\n\n"
+            content += "**[*] 다음 달 미리보기 (Bridge Preview)**:\n\n"
             content += f"*다음 단계*: {bridge_preview['next_month']}\n\n"
             content += f"미리보기: {bridge_preview['preview']}\n\n"
             content += "사전 준비 사항:\n"
@@ -2216,7 +2216,7 @@ class SectionGenerator:
         content += f"**참고**: [[{guide}]]\n\n"
 
         # 전체 가이드 링크 (접힌 상태)
-        content += "<details>\n<summary>📖 전체 가이드 목록</summary>\n\n"
+        content += "<details>\n<summary>[*] 전체 가이드 목록</summary>\n\n"
         content += "- [[VibeCoding-Growth-Guide]] - 3개월 성장 로드맵\n"
         content += "- [[MCP-Combination-Patterns]] - MCP 서버 조합 패턴\n"
         content += "- [[Claude-Skills-Curriculum]] - 클로드 스킬 4주 커리큘럼\n"
@@ -2317,7 +2317,7 @@ class SectionGenerator:
             content += "|------|------|--------|------|------------|\n"
             for debt in debts[:8]:
                 severity = debt.get("severity", 50)
-                severity_emoji = "🔴" if severity >= 80 else "🟠" if severity >= 60 else "🟡" if severity >= 40 else "🟢"
+                severity_emoji = "*" if severity >= 80 else "[*]" if severity >= 60 else "[*]" if severity >= 40 else "[*]"
                 effort = debt.get("effort", "M")
                 impact = debt.get("impact", "Maintenance")
                 content += f"| {debt['type']} | {debt['desc']} | {severity_emoji} {severity}% | {effort} | {impact} |\n"
@@ -2325,7 +2325,7 @@ class SectionGenerator:
             content += "\n"
 
             # 초보자를 위한 기술부채 가이드
-            content += "### 💡 기술부채 이해하기 (초보자용)\n\n"
+            content += "### [*] 기술부채 이해하기 (초보자용)\n\n"
             content += "**기술부채 유형별 의미:**\n"
             content += "| 유형 | 의미 | 조치 시점 |\n"
             content += "|------|------|----------|\n"
@@ -2336,8 +2336,8 @@ class SectionGenerator:
             content += "| TYPE | 타입 무시 | 타입 정의 완료 후 |\n\n"
 
             content += "**기술부채 관리 원칙:**\n"
-            content += "1. **의도적 부채** (마감에 맞추기 위해) → 반드시 기록하고 상환 계획 세우기\n"
-            content += "2. **무의식적 부채** (나중에 발견) → 발견 즉시 기록, 우선순위 판단\n"
+            content += "1. **의도적 부채** (마감에 맞추기 위해) -> 반드시 기록하고 상환 계획 세우기\n"
+            content += "2. **무의식적 부채** (나중에 발견) -> 발견 즉시 기록, 우선순위 판단\n"
             content += "3. **20% 규칙** - 매 스프린트 시간의 20%는 부채 상환에 할당\n\n"
 
         else:
@@ -2353,7 +2353,7 @@ class SectionGenerator:
             else:
                 content += "> 기술부채 플래그가 감지되었지만 구체적 항목이 없습니다.\n\n"
 
-            content += "### 💡 기술부채 기록 방법 (초보자용)\n\n"
+            content += "### [*] 기술부채 기록 방법 (초보자용)\n\n"
             content += "코드에 다음 주석을 추가하면 자동으로 추출됩니다:\n"
             content += "```python\n"
             content += "# TODO: 나중에 구현할 기능 설명\n"
@@ -2489,27 +2489,27 @@ class SectionGenerator:
             content += "|----------|------|--------|------|\n"
             for dec in decisions[:8]:
                 rev = dec.get("reversibility", "Medium")
-                rev_emoji = {"Easy": "🟢", "Medium": "🟡", "Hard": "🔴"}.get(rev, "🟡")
+                rev_emoji = {"Easy": "[*]", "Medium": "[*]", "Hard": "[*]"}.get(rev, "[*]")
                 scope = dec.get("scope", "Module")
-                scope_emoji = {"Local": "📄", "Module": "📦", "System": "🌐"}.get(scope, "📦")
+                scope_emoji = {"Local": "[*]", "Module": "[*]", "System": "[*]"}.get(scope, "[*]")
                 content += f"| {dec['desc']} | {dec['type']} | {rev_emoji} {rev} | {scope_emoji} {scope} |\n"
             content += "\n"
 
             # 초보자를 위한 메트릭 설명
-            content += "### 💡 의사결정 메트릭 이해하기 (초보자용)\n\n"
+            content += "### [*] 의사결정 메트릭 이해하기 (초보자용)\n\n"
             content += "**되돌림 가능성 (Reversibility)**:\n"
-            content += "- 🟢 Easy: 쉽게 되돌릴 수 있음 (의존성 제거, 설정 변경)\n"
-            content += "- 🟡 Medium: 약간의 작업 필요 (코드 리팩토링, DB 마이그레이션)\n"
-            content += "- 🔴 Hard: 되돌리기 어려움 (아키텍처 변경, 데이터 스키마 변경)\n\n"
+            content += "- [*] Easy: 쉽게 되돌릴 수 있음 (의존성 제거, 설정 변경)\n"
+            content += "- [*] Medium: 약간의 작업 필요 (코드 리팩토링, DB 마이그레이션)\n"
+            content += "- [*] Hard: 되돌리기 어려움 (아키텍처 변경, 데이터 스키마 변경)\n\n"
 
             content += "**결정 범위 (Scope)**:\n"
-            content += "- 📄 Local: 단일 파일/함수 수준\n"
-            content += "- 📦 Module: 모듈/패키지 수준\n"
-            content += "- 🌐 System: 시스템 전체 영향\n\n"
+            content += "- [*] Local: 단일 파일/함수 수준\n"
+            content += "- [*] Module: 모듈/패키지 수준\n"
+            content += "- [*] System: 시스템 전체 영향\n\n"
 
             # 결정 배경 설명
             if decision_contexts:
-                content += "### 📝 결정의 배경\n\n"
+                content += "### [*] 결정의 배경\n\n"
                 for ctx in decision_contexts[:3]:
                     content += f"{ctx}\n\n"
 
@@ -2517,7 +2517,7 @@ class SectionGenerator:
             # 구체적인 폴백 메시지
             content += "> 의사결정 플래그가 감지되었지만 구체적 내용이 없습니다.\n\n"
 
-            content += "### 💡 의사결정 기록의 중요성 (초보자용)\n\n"
+            content += "### [*] 의사결정 기록의 중요성 (초보자용)\n\n"
             content += "코드는 **무엇**을 하는지 보여주지만, **왜** 그렇게 했는지는 보여주지 않습니다.\n"
             content += "6개월 후의 자신(또는 동료)이 이해할 수 있도록 결정 이유를 남기세요:\n\n"
             content += "```python\n"
@@ -2869,7 +2869,7 @@ class ObsidianAutoSync:
 
         # 시행착오 감지
         if "fix" in message.lower():
-            insights["challenges"].append(f"문제 발견: {message.split(':')[0]} → 해결 완료")
+            insights["challenges"].append(f"문제 발견: {message.split(':')[0]} -> 해결 완료")
 
         if len(files) > 10:
             insights["challenges"].append("대규모 변경으로 인한 복잡도 관리")
@@ -3098,25 +3098,25 @@ files_changed: {len(files)}
 
         # AI 인사이트
         if insights["learned"]:
-            content += "## 💡 배운 점\n\n"
+            content += "## [*] 배운 점\n\n"
             for item in insights["learned"]:
                 content += f"- {item}\n"
             content += "\n"
 
         if insights["challenges"]:
-            content += "## 🔧 시행착오\n\n"
+            content += "## [*] 시행착오\n\n"
             for item in insights["challenges"]:
                 content += f"- {item}\n"
             content += "\n"
 
         if insights["next_steps"]:
-            content += "## 📋 다음 단계\n\n"
+            content += "## [*] 다음 단계\n\n"
             for item in insights["next_steps"]:
                 content += f"- {item}\n"
             content += "\n"
 
         # 커밋 통계
-        content += "## 📊 통계\n\n"
+        content += "## [*] 통계\n\n"
         content += f"```\n{commit_info.get('stats', '')}\n```\n\n"
 
         content += f"**커밋 해시**: `{commit_info['hash'][:7]}`  \n"
@@ -3291,7 +3291,7 @@ def main():
         from save_session_metacognition import save_current_session
 
         save_current_session(auto_analyze=True, use_last_commit=True)
-        logger.info("✅ AI 메타인지 자동 생성 완료 (last commit diff)")
+        logger.info("[OK] AI 메타인지 자동 생성 완료 (last commit diff)")
     except ImportError:
         logger.debug("save_session_metacognition 모듈 없음 - 스킵")
     except Exception as e:

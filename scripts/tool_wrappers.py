@@ -26,8 +26,7 @@ Usage:
 
 import subprocess
 import logging
-import os
-from typing import Optional, Dict, Any, List
+from typing import Optional, Dict, Any
 from pathlib import Path
 
 from scripts.auto_3tier_wrapper import auto_3tier
@@ -79,7 +78,7 @@ def bash_with_recovery(
         >>> # Command not found -> Tier 3 (User) -> Escalated
     """
     try:
-        logger.info(f"[EMOJI] Executing: {cmd[:100]}")
+        logger.info(f"[RUN]: {cmd[:100]}")
 
         # For security, split command unless shell=True explicitly requested
         if shell:
@@ -153,7 +152,7 @@ def read_with_recovery(file_path: str, encoding: str = "utf-8", errors: str = "s
         >>> # UnicodeDecodeError -> Tier 2 -> encoding=latin-1 suggested
     """
     try:
-        logger.info(f"[EMOJI] Reading: {file_path}")
+        logger.info(f"[READ]: {file_path}")
 
         path = Path(file_path)
 
@@ -250,7 +249,7 @@ def edit_with_recovery(
         >>> # Read-only filesystem -> Tier 3 -> User escalation
     """
     try:
-        logger.info(f"[EMOJI]  Editing: {file_path}")
+        logger.info(f"[*]  Editing: {file_path}")
 
         path = Path(file_path)
 
@@ -354,13 +353,13 @@ def write_with_recovery(
         >>> # PermissionError -> Tier 2 -> mkdir/chmod suggested
     """
     try:
-        logger.info(f"[EMOJI] Writing: {file_path}")
+        logger.info(f"[WRITE]: {file_path}")
 
         path = Path(file_path)
 
         # Create parent directories if needed
         if create_dirs and not path.parent.exists():
-            logger.info(f"[EMOJI] Creating directory: {path.parent}")
+            logger.info(f"[CREATE] directory: {path.parent}")
             path.parent.mkdir(parents=True, exist_ok=True)
 
         # Backup existing file
@@ -371,7 +370,7 @@ def write_with_recovery(
                 original = f.read()
             with open(backup_path, "w", encoding=encoding) as f:
                 f.write(original)
-            logger.info(f"[EMOJI] Backup created: {Path(backup_path).name}")
+            logger.info(f"[*] Backup created: {Path(backup_path).name}")
 
         # Write content
         with open(file_path, "w", encoding=encoding) as f:
@@ -428,17 +427,17 @@ def print_wrapper_report():
     stats = get_wrapper_statistics()
 
     print("\n" + "=" * 60)
-    print("[EMOJI] Tool Wrapper Statistics")
+    print("[*] Tool Wrapper Statistics")
     print("=" * 60)
     print(f"Total Calls: {stats['total_calls']}")
     print(f"Total Errors: {stats['total_errors']}")
-    print(f"")
-    print(f"3-Tier Distribution:")
+    print("")
+    print("3-Tier Distribution:")
     print(f"  Tier 1 (Obsidian):       {stats['tier1_hits']} hits")
     print(f"  Tier 2 (Context7 AUTO):  {stats['tier2_auto']} hits")
     print(f"  Tier 2 (Context7 CONFIRM): {stats['tier2_confirmed']} hits")
     print(f"  Tier 3 (User):           {stats['tier3_escalations']} escalations")
-    print(f"")
+    print("")
     print(f"Automation Rate: {stats['automation_rate'] * 100:.1f}%")
     print(f"Time Saved: {stats['time_saved_minutes']:.1f} minutes")
     print(f"Circuit Breaker: {stats['circuit_breaker_state']}")

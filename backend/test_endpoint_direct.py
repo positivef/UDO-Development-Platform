@@ -3,19 +3,24 @@
 import asyncio
 import os
 import sys
-from uuid import uuid4
 
 # Add parent directory to path for src module
 sys.path.insert(0, os.path.join(os.path.dirname(__file__), ".."))
 
-from backend.app.models.time_tracking import AIModel, Phase, TaskType
+from backend.app.models.time_tracking import AIModel, Phase, TaskType  # noqa: E402
+
 # Import models
-from backend.app.models.uncertainty_time_integration import \
-    UncertaintyAwareTrackingRequest
+from backend.app.models.uncertainty_time_integration import (  # noqa: E402
+    UncertaintyAwareTrackingRequest,
+)
+
 # Import the router function
-from backend.app.routers.uncertainty import start_uncertainty_aware_tracking
+from backend.app.routers.uncertainty import (  # noqa: E402
+    start_uncertainty_aware_tracking,
+)
+
 # Import dependencies
-from src.uncertainty_map_v3 import UncertaintyMap
+from src.uncertainty_map_v3 import UncertaintyMap  # noqa: E402
 
 
 async def test_endpoint():
@@ -38,9 +43,7 @@ async def test_endpoint():
         )
 
         # Create uncertainty map
-        uncertainty_map = UncertaintyMap(
-            project_name="UDO-Dashboard", use_ml_models=False
-        )
+        uncertainty_map = UncertaintyMap(project_name="UDO-Dashboard", use_ml_models=False)
 
         # Call the endpoint
         print("Calling endpoint...")

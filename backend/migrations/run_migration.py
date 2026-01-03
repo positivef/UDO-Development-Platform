@@ -10,12 +10,9 @@ from datetime import datetime
 from pathlib import Path
 
 import psycopg2
-from psycopg2 import sql
 
 # Configure logging
-logging.basicConfig(
-    level=logging.INFO, format="%(asctime)s - %(levelname)s - %(message)s"
-)
+logging.basicConfig(level=logging.INFO, format="%(asctime)s - %(levelname)s - %(message)s")
 logger = logging.getLogger(__name__)
 
 
@@ -140,7 +137,7 @@ class MigrationRunner:
 
             # Calculate execution time
             end_time = datetime.now()
-            execution_time_ms = int((end_time - start_time).total_seconds() * 1000)
+            execution_time_ms = int((end_time - start_time).total_seconds() * 1000)  # noqa: E226
 
             # Record migration
             cursor.execute(
@@ -204,33 +201,33 @@ class MigrationRunner:
             return True
 
         if dry_run:
-            logger.info("\n[EMOJI] DRY RUN - Would execute:")
+            logger.info("\n[DRY-RUN] - Would execute:")
             for filepath in pending:
                 logger.info(f"  - {filepath.name}")
             self.disconnect()
             return True
 
         # Execute migrations
-        logger.info(f"\n[EMOJI] Executing {len(pending)} migration(s):\n")
+        logger.info("\n[RUN] %d migration(s):\n", len(pending))
 
         success_count = 0
         for filepath in pending:
             if self.execute_migration(filepath):
                 success_count += 1
             else:
-                logger.error(f"\n[FAIL] Migration failed, stopping execution")
+                logger.error("\n[FAIL] Migration failed, stopping execution")
                 break
 
         self.disconnect()
 
         # Summary
-        logger.info(f"\n{'='*60}")
-        logger.info(f"MIGRATION SUMMARY")
-        logger.info(f"{'='*60}")
-        logger.info(f"Total pending: {len(pending)}")
-        logger.info(f"Executed: {success_count}")
-        logger.info(f"Failed: {len(pending) - success_count}")
-        logger.info(f"{'='*60}\n")
+        logger.info("\n" + "=" * 60)
+        logger.info("MIGRATION SUMMARY")
+        logger.info("=" * 60)
+        logger.info("Total pending: %d", len(pending))
+        logger.info("Executed: %d", success_count)
+        logger.info("Failed: %d", len(pending) - success_count)
+        logger.info("=" * 60 + "\n")
 
         if success_count == len(pending):
             logger.info("[OK] All migrations completed successfully!")
@@ -301,9 +298,7 @@ def main():
         action="store_true",
         help="Show pending migrations without executing",
     )
-    parser.add_argument(
-        "--rollback", type=str, help="Rollback specific migration (version)"
-    )
+    parser.add_argument("--rollback", type=str, help="Rollback specific migration (version)")
     parser.add_argument("--host", default="localhost", help="Database host")
     parser.add_argument("--port", type=int, default=5432, help="Database port")
     parser.add_argument("--database", default="udo_dev", help="Database name")

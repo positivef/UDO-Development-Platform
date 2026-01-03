@@ -9,7 +9,6 @@ Date: 2025-12-16
 """
 
 import os
-from datetime import datetime
 from unittest.mock import patch
 
 import pytest
@@ -18,8 +17,14 @@ from fastapi.testclient import TestClient
 # Set test admin key before imports
 os.environ["ADMIN_KEY"] = "test-admin-key"
 
-from app.core.feature_flags import FeatureFlag, FeatureFlagsManager, feature_flags_manager, is_feature_enabled, require_feature
-from backend.main import app
+from app.core.feature_flags import (
+    FeatureFlag,
+    FeatureFlagsManager,
+    feature_flags_manager,
+    is_feature_enabled,
+    require_feature,
+)  # noqa: E402
+from backend.main import app  # noqa: E402
 
 # Test client for API tests
 client = TestClient(app)

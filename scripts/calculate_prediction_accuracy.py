@@ -252,18 +252,18 @@ def generate_report(accuracy_results: Dict, error_analysis: Dict) -> str:
     """Generate human-readable report"""
     report_lines = []
     report_lines.append("=" * 70)
-    report_lines.append("[EMOJI] PREDICTION ACCURACY REPORT - Week 0 Baseline")
+    report_lines.append("[*] PREDICTION ACCURACY REPORT - Week 0 Baseline")
     report_lines.append("=" * 70)
     report_lines.append("")
 
     # Overall
     overall = accuracy_results["overall"]
-    report_lines.append(f"[EMOJI] Overall Accuracy: {overall:.1f}%")
+    report_lines.append(f"[*] Overall Accuracy: {overall:.1f}%")
     report_lines.append("")
 
     # Components
     components = accuracy_results["components"]
-    report_lines.append("[EMOJI] Component Breakdown:")
+    report_lines.append("[*] Component Breakdown:")
     report_lines.append(f"   Level Accuracy (50% weight):  {components['level_accuracy']:.1f}%")
     report_lines.append(f"   Trend Accuracy (30% weight):  {components['trend_accuracy']:.1f}%")
     report_lines.append(f"   State Accuracy (20% weight):  {components['state_accuracy']:.1f}%")
@@ -271,12 +271,12 @@ def generate_report(accuracy_results: Dict, error_analysis: Dict) -> str:
 
     # Sample size
     sample_size = accuracy_results["sample_size"]
-    report_lines.append(f"[EMOJI] Sample Size: {sample_size} predictions")
+    report_lines.append(f"[*] Sample Size: {sample_size} predictions")
     report_lines.append("")
 
     # Confidence
     conf = accuracy_results["confidence_breakdown"]
-    report_lines.append("[EMOJI] Annotator Confidence:")
+    report_lines.append("[*] Annotator Confidence:")
     report_lines.append(f"   High:   {conf.get('high', 0)}")
     report_lines.append(f"   Medium: {conf.get('medium', 0)}")
     report_lines.append(f"   Low:    {conf.get('low', 0)}")
@@ -284,7 +284,7 @@ def generate_report(accuracy_results: Dict, error_analysis: Dict) -> str:
 
     # Period
     period = accuracy_results["measurement_period"]
-    report_lines.append("[EMOJI] Measurement Period:")
+    report_lines.append("[*] Measurement Period:")
     report_lines.append(f"   Start: {period['start'][:10]}")
     report_lines.append(f"   End:   {period['end'][:10]}")
     report_lines.append("")
@@ -297,7 +297,7 @@ def generate_report(accuracy_results: Dict, error_analysis: Dict) -> str:
 
     # Worst errors
     if error_analysis["worst_level_errors"]:
-        report_lines.append("[EMOJI] Top 5 Worst Level Errors:")
+        report_lines.append("[*] Top 5 Worst Level Errors:")
         for i, error in enumerate(error_analysis["worst_level_errors"], 1):
             report_lines.append(
                 f"   {i}. {error['timestamp'][:10]}: "
@@ -308,7 +308,7 @@ def generate_report(accuracy_results: Dict, error_analysis: Dict) -> str:
         report_lines.append("")
 
     # Targets
-    report_lines.append("[EMOJI] Target Comparison:")
+    report_lines.append("[*] Target Comparison:")
     report_lines.append(f"   Week 0 Baseline:  {overall:.1f}% (expected: 50-60%)")
     report_lines.append(f"   Prototype Target: 55%")
     report_lines.append(f"   Beta Target:      65%")
@@ -367,7 +367,7 @@ def main():
         print("[FAIL] No annotations match criteria")
         return
 
-    print(f"[EMOJI] Calculating accuracy for {len(entries)} annotations...")
+    print(f"[*] Calculating accuracy for {len(entries)} annotations...")
     print(f"   (Total available: {len(all_entries)})")
     print("")
 
@@ -384,11 +384,11 @@ def main():
         report_file = storage_dir / f"prediction_accuracy_report_{datetime.now():%Y%m%d_%H%M%S}.txt"
         with open(report_file, "w", encoding="utf-8") as f:
             f.write(report)
-        print(f"\n[EMOJI] Report saved to: {report_file}")
+        print(f"\n[*] Report saved to: {report_file}")
 
     else:
         # Simple output
-        print(f"[EMOJI] Overall Accuracy: {accuracy_results['overall']:.1f}%")
+        print(f"[*] Overall Accuracy: {accuracy_results['overall']:.1f}%")
         print(f"\nComponents:")
         print(f"  Level:  {accuracy_results['components']['level_accuracy']:.1f}%")
         print(f"  Trend:  {accuracy_results['components']['trend_accuracy']:.1f}%")
@@ -400,7 +400,7 @@ def main():
     with open(results_file, "w", encoding="utf-8") as f:
         json.dump({"accuracy": accuracy_results, "errors": error_analysis}, f, indent=2)
 
-    print(f"\n[EMOJI] Results saved to: {results_file}")
+    print(f"\n[*] Results saved to: {results_file}")
 
 
 if __name__ == "__main__":

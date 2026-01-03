@@ -9,13 +9,16 @@ Based on Beta-Binomial conjugacy for efficient posterior updates.
 
 import logging
 import math
-from datetime import datetime, timedelta
+from datetime import datetime
 from functools import lru_cache
-from typing import Dict, List, Optional, Tuple
+from typing import Dict, List, Tuple
 
-from app.models.uncertainty import (BayesianConfidenceRequest,
-                                    BayesianConfidenceResponse,
-                                    BayesianMetadata, UncertaintyStateEnum)
+from app.models.uncertainty import (
+    BayesianConfidenceRequest,
+    BayesianConfidenceResponse,
+    BayesianMetadata,
+    UncertaintyStateEnum,
+)
 
 logger = logging.getLogger(__name__)
 
@@ -67,9 +70,7 @@ class OptimizedBayesianScorer:
     def _init_cache(self):
         """Initialize LRU cache for performance optimization"""
         # Cache is implemented via @lru_cache decorator on methods
-        logger.info(
-            f"[OK] Bayesian scorer initialized with cache_size={self.cache_size}"
-        )
+        logger.info(f"[OK] Bayesian scorer initialized with cache_size={self.cache_size}")
 
     @lru_cache(maxsize=128)
     def _beta_mean(self, alpha: float, beta: float) -> float:
@@ -82,9 +83,7 @@ class OptimizedBayesianScorer:
         n = alpha + beta
         return (alpha * beta) / (n * n * (n + 1))
 
-    def _beta_credible_interval(
-        self, alpha: float, beta: float, confidence_level: float = 0.95
-    ) -> Tuple[float, float]:
+    def _beta_credible_interval(self, alpha: float, beta: float, confidence_level: float = 0.95) -> Tuple[float, float]:
         """
         Calculate credible interval using normal approximation.
 
@@ -111,9 +110,7 @@ class OptimizedBayesianScorer:
 
         return (lower, upper)
 
-    def calculate_likelihood(
-        self, context: dict, historical_outcomes: List[bool]
-    ) -> float:
+    def calculate_likelihood(self, context: dict, historical_outcomes: List[bool]) -> float:
         """
         Calculate likelihood from evidence.
 
@@ -197,9 +194,7 @@ class OptimizedBayesianScorer:
 
         return (posterior_alpha, posterior_beta)
 
-    def calculate_uncertainty_vector(
-        self, context: dict, confidence_score: float
-    ) -> Dict[str, float]:
+    def calculate_uncertainty_vector(self, context: dict, confidence_score: float) -> Dict[str, float]:
         """
         Calculate multi-dimensional uncertainty vector.
 
@@ -214,11 +209,7 @@ class OptimizedBayesianScorer:
         base_uncertainty = 1 - confidence_score
 
         # Dimension-specific calculations
-        technical = (
-            base_uncertainty * 1.2
-            if not context.get("has_code", False)
-            else base_uncertainty * 0.8
-        )
+        technical = base_uncertainty * 1.2 if not context.get("has_code", False) else base_uncertainty * 0.8
 
         market = base_uncertainty * (1 - context.get("validation_score", 0.5))
 
@@ -347,63 +338,51 @@ def _generate_recommendations(
 
     # State-specific recommendations
     if state == UncertaintyStateEnum.DETERMINISTIC:
-        recommendations.append(
-            "[EMOJI] High confidence - proceed with standard monitoring"
-        )
-        recommendations.append("[EMOJI] Document assumptions for future reference")
+        recommendations.append("[GOOD] High confidence - proceed with standard monitoring")
+        recommendations.append("[*] Document assumptions for future reference")
 
     elif state == UncertaintyStateEnum.PROBABILISTIC:
-        recommendations.append(
-            "[EMOJI] Good confidence - proceed with standard checkpoints"
-        )
-        recommendations.append("[EMOJI] Document assumptions and validate periodically")
-        recommendations.append(f"[EMOJI] Focus on {dominant_dimension} dimension")
+        recommendations.append("[OK] Good confidence - proceed with standard checkpoints")
+        recommendations.append("[*] Document assumptions and validate periodically")
+        recommendations.append(f"[TIP] Focus on {dominant_dimension} dimension")
 
     elif state == UncertaintyStateEnum.QUANTUM:
-        recommendations.append(
-            "[WARN] Moderate uncertainty - increase checkpoint frequency"
-        )
-        recommendations.append(
-            "[EMOJI] Deep dive into {dominant_dimension} uncertainty"
-        )
-        recommendations.append("[EMOJI] Gather more data before major decisions")
-        recommendations.append(
-            "[EMOJI] Consider iterative approach with validation gates"
-        )
+        recommendations.append("[WARN] Moderate uncertainty - increase checkpoint frequency")
+        recommendations.append("[*] Deep dive into {dominant_dimension} uncertainty")
+        recommendations.append("[*] Gather more data before major decisions")
+        recommendations.append("[TIP] Consider iterative approach with validation gates")
 
     elif state == UncertaintyStateEnum.CHAOTIC:
-        recommendations.append("[EMOJI] High uncertainty - proceed with caution")
-        recommendations.append(
-            "[EMOJI] CRITICAL: Address {dominant_dimension} immediately"
-        )
-        recommendations.append("[EMOJI] Spike/prototype to reduce uncertainty")
-        recommendations.append("[EMOJI] Seek expert consultation")
-        recommendations.append("[EMOJI] Break into smaller, validated increments")
+        recommendations.append("[*] High uncertainty - proceed with caution")
+        recommendations.append("[*] CRITICAL: Address {dominant_dimension} immediately")
+        recommendations.append("[*] Spike/prototype to reduce uncertainty")
+        recommendations.append("[*] Seek expert consultation")
+        recommendations.append("[*] Break into smaller, validated increments")
 
     elif state == UncertaintyStateEnum.VOID:
         recommendations.append("[FAIL] Extreme uncertainty - DO NOT PROCEED")
-        recommendations.append("[EMOJI] Research phase required")
-        recommendations.append("[EMOJI] Study similar problems/solutions first")
-        recommendations.append("[EMOJI] Upskill team in unknown areas")
-        recommendations.append("[EMOJI] Consider pivot or alternative approaches")
+        recommendations.append("[*] Research phase required")
+        recommendations.append("[*] Study similar problems/solutions first")
+        recommendations.append("[*] Upskill team in unknown areas")
+        recommendations.append("[TIP] Consider pivot or alternative approaches")
 
     # Risk-specific recommendations
     if risk_level == "critical":
-        recommendations.append("[EMOJI] CRITICAL RISK: Executive review required")
+        recommendations.append("[*] CRITICAL RISK: Executive review required")
     elif risk_level == "high":
         recommendations.append("[WARN] High risk: Daily monitoring needed")
 
     # Dimension-specific recommendations
     if dominant_dimension == "technical":
-        recommendations.append("[EMOJI] Technical spike recommended")
+        recommendations.append("[*] Technical spike recommended")
     elif dominant_dimension == "timeline":
-        recommendations.append("⏱ Review timeline constraints")
+        recommendations.append("[REVIEW] timeline constraints")
     elif dominant_dimension == "resource":
-        recommendations.append("[EMOJI] Review resource allocation")
+        recommendations.append("[REVIEW] resource allocation")
     elif dominant_dimension == "market":
-        recommendations.append("[EMOJI] Conduct market validation")
+        recommendations.append("[*] Conduct market validation")
     elif dominant_dimension == "quality":
-        recommendations.append("[EMOJI] Implement quality gates")
+        recommendations.append("[*] Implement quality gates")
 
     return recommendations
 
@@ -437,14 +416,10 @@ def calculate_bayesian_confidence(
     prior_mean = prior["mean"]
 
     # Calculate likelihood from evidence
-    likelihood = scorer.calculate_likelihood(
-        context=request.context, historical_outcomes=request.historical_outcomes
-    )
+    likelihood = scorer.calculate_likelihood(context=request.context, historical_outcomes=request.historical_outcomes)
 
     # Calculate posterior (Bayesian update)
-    evidence_strength = (
-        len(request.historical_outcomes) if request.historical_outcomes else 10
-    )
+    evidence_strength = len(request.historical_outcomes) if request.historical_outcomes else 10
     posterior_alpha, posterior_beta = scorer.calculate_posterior(
         prior_alpha=prior_alpha,
         prior_beta=prior_beta,
@@ -456,9 +431,7 @@ def calculate_bayesian_confidence(
     confidence_score = scorer._beta_mean(posterior_alpha, posterior_beta)
 
     # Calculate uncertainty vector
-    uncertainty_vector = scorer.calculate_uncertainty_vector(
-        context=request.context, confidence_score=confidence_score
-    )
+    uncertainty_vector = scorer.calculate_uncertainty_vector(context=request.context, confidence_score=confidence_score)
 
     magnitude = uncertainty_vector["magnitude"]
     dominant_dimension = uncertainty_vector["dominant_dimension"]
@@ -500,9 +473,7 @@ def calculate_bayesian_confidence(
         effective_sample_size = None
     else:
         # Full Bayesian with credible intervals
-        ci_lower, ci_upper = scorer._beta_credible_interval(
-            posterior_alpha, posterior_beta
-        )
+        ci_lower, ci_upper = scorer._beta_credible_interval(posterior_alpha, posterior_beta)
         mode = "full"
         posterior_mean_value = confidence_score
         variance = scorer._beta_variance(posterior_alpha, posterior_beta)

@@ -5,7 +5,6 @@ import tempfile
 import uuid
 
 import pytest
-from httpx import AsyncClient
 import asyncio
 from starlette.testclient import TestClient
 
@@ -15,7 +14,7 @@ os.environ["DISABLE_AUTH_IN_DEV"] = "false"  # Ensure auth is enabled for tests
 os.environ["DISABLE_DEV_AUTH_BYPASS"] = "true"  # Disable DEV mode JWT bypass for proper testing
 os.environ["JWT_SECRET_KEY"] = "test-secret-key-for-jwt-token-validation-32chars"  # Fixed key for testing
 
-from backend.main import app
+from backend.main import app  # noqa: E402
 
 
 # Ensure an event loop is available for legacy asyncio.get_event_loop() usage

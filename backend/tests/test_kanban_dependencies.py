@@ -13,16 +13,13 @@ Test Categories:
 """
 
 import time
-from datetime import datetime
-from uuid import UUID, uuid4
+from uuid import uuid4
 
 import pytest
 import pytest_asyncio
 
 from app.models.kanban_dependencies import (
     CircularDependencyError,
-    Dependency,
-    DependencyAudit,
     DependencyCreate,
     DependencyGraph,
     DependencyStatus,
@@ -276,7 +273,7 @@ class TestTaskDependencies:
             depends_on_task_id=task_list[1],
             dependency_type=DependencyType.FINISH_TO_START,
         )
-        created_dep = await kanban_dependency_service.create_dependency(dep_data, available_task_ids)
+        await kanban_dependency_service.create_dependency(dep_data, available_task_ids)
 
         # Get dependencies for task[0]
         dependencies = await kanban_dependency_service.get_task_dependencies(task_list[0])
@@ -629,14 +626,10 @@ class TestDAGOperations:
             await kanban_dependency_service.create_dependency(dep, available_task_ids)
 
         # First call (builds cache)
-        start1 = time.perf_counter()
         result1 = await kanban_dependency_service.topological_sort(available_task_ids)
-        time1 = (time.perf_counter() - start1) * 1000
 
         # Second call (uses cache)
-        start2 = time.perf_counter()
         result2 = await kanban_dependency_service.topological_sort(available_task_ids)
-        time2 = (time.perf_counter() - start2) * 1000
 
         # Both should succeed
         assert len(result1.ordered_tasks) == len(available_task_ids)
@@ -656,7 +649,7 @@ class TestDAGOperations:
         created_dep = await kanban_dependency_service.create_dependency(dep, available_task_ids)
 
         # Get topological sort
-        result1 = await kanban_dependency_service.topological_sort(available_task_ids)
+        await kanban_dependency_service.topological_sort(available_task_ids)
 
         # Delete dependency (should invalidate cache)
         await kanban_dependency_service.delete_dependency(created_dep.id)
@@ -724,7 +717,7 @@ class TestEmergencyOverride:
         """Test that override reason is required (min 10 chars)"""
         # This validation happens at Pydantic level
         with pytest.raises(ValueError):
-            override_request = EmergencyOverride(
+            EmergencyOverride(
                 dependency_id=created_dependency.id,
                 reason="Short",  # Less than 10 chars
                 overridden_by="user",

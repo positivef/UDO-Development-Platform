@@ -7,19 +7,21 @@ Implements Q4 (Double-click auto-load, single-click popup)
 
 from uuid import UUID
 
-from fastapi import APIRouter, Depends, File, HTTPException, UploadFile, status
+from fastapi import APIRouter, Depends, File, UploadFile, status
 from fastapi.responses import JSONResponse
 
 from app.core.security import UserRole, get_current_user, require_role
-from app.models.kanban_context import (ContextLoadRequest,
-                                               ContextLoadResponse,
-                                               ContextMetadata,
-                                               ContextNotFoundError,
-                                               ContextSizeLimitExceeded,
-                                               ContextUploadRequest,
-                                               ContextUploadResponse,
-                                               InvalidContextFiles,
-                                               TaskContext)
+from app.models.kanban_context import (
+    ContextLoadRequest,
+    ContextLoadResponse,
+    ContextMetadata,
+    ContextNotFoundError,
+    ContextSizeLimitExceeded,
+    ContextUploadRequest,
+    ContextUploadResponse,
+    InvalidContextFiles,
+    TaskContext,
+)
 from app.services.kanban_context_service import kanban_context_service
 
 router = APIRouter(prefix="/api/kanban/context", tags=["Kanban Context"])
@@ -59,9 +61,7 @@ def error_response(code: str, message: str, status_code: int, details: dict = No
     summary="Get context metadata",
     description="Get context metadata without full files list (Q4: Context info)",
 )
-async def get_context_metadata(
-    task_id: UUID, current_user: dict = Depends(get_current_user)
-):
+async def get_context_metadata(task_id: UUID, current_user: dict = Depends(get_current_user)):
     """
     Get context metadata for task.
 
@@ -118,9 +118,7 @@ async def upload_context(
     5. Return ZIP URL and checksum
     """
     try:
-        upload_response = await kanban_context_service.upload_context(
-            task_id, upload_request
-        )
+        upload_response = await kanban_context_service.upload_context(task_id, upload_request)
         return upload_response
 
     except ContextSizeLimitExceeded as e:
@@ -173,9 +171,7 @@ async def track_context_load(
     5. Return updated stats
     """
     try:
-        load_response = await kanban_context_service.track_context_load(
-            task_id, load_request
-        )
+        load_response = await kanban_context_service.track_context_load(task_id, load_request)
         return load_response
 
     except ContextNotFoundError as e:
@@ -206,9 +202,7 @@ async def track_context_load(
     summary="Get full context with files list",
     description="Get complete context including all file paths (developer+ only)",
 )
-async def get_context_full(
-    task_id: UUID, current_user: dict = Depends(get_current_user)
-):
+async def get_context_full(task_id: UUID, current_user: dict = Depends(get_current_user)):
     """
     Get full context including files array.
 
@@ -306,9 +300,7 @@ async def upload_context_file(
             )
 
         # Process ZIP file through service
-        upload_response = await kanban_context_service.upload_context_file(
-            task_id, file.filename, contents
-        )
+        upload_response = await kanban_context_service.upload_context_file(task_id, file.filename, contents)
         return upload_response
 
     except ContextSizeLimitExceeded as e:

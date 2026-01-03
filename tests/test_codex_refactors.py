@@ -8,12 +8,12 @@ SRC_DIR = Path(__file__).resolve().parent.parent / "src"
 if str(SRC_DIR) not in os.sys.path:
     os.sys.path.append(str(SRC_DIR))
 
-import unified_development_orchestrator_v2 as udo_module
-import uncertainty_map_v3 as umap_module
-import three_ai_collaboration_bridge as bridge_module
-from unified_development_orchestrator_v2 import ProjectContext, UnifiedDevelopmentOrchestratorV2
-from uncertainty_map_v3 import UncertaintyMapV3, UncertaintyState
-from three_ai_collaboration_bridge import ThreeAICollaborationBridge
+import unified_development_orchestrator_v2 as udo_module  # noqa: E402
+import uncertainty_map_v3 as umap_module  # noqa: E402
+import three_ai_collaboration_bridge as bridge_module  # noqa: E402
+from unified_development_orchestrator_v2 import ProjectContext, UnifiedDevelopmentOrchestratorV2  # noqa: E402
+from uncertainty_map_v3 import UncertaintyMapV3, UncertaintyState  # noqa: E402
+from three_ai_collaboration_bridge import ThreeAICollaborationBridge  # noqa: E402
 
 
 def _prepare_storage(monkeypatch, tmp_path):
@@ -65,7 +65,7 @@ def test_analyze_context_identifies_high_uncertainty(monkeypatch, tmp_path):
     assert state == UncertaintyState.CHAOTIC
     assert vector.technical >= 0.9
     umap.save_state()
-    assert (storage_dir / f"uncertainty_history_{umap.project_name}.json").exists()
+    assert (storage_dir / "uncertainty_history_%s.json" % umap.project_name).exists()
 
 
 def test_collaborate_returns_summary(monkeypatch, tmp_path):

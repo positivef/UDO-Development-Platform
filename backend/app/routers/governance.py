@@ -73,9 +73,7 @@ class ApplyTemplateRequest(BaseModel):
     """Request to apply a template"""
 
     project_path: str
-    template_name: str = Field(
-        default="standard", description="Template: minimal, standard, full"
-    )
+    template_name: str = Field(default="standard", description="Template: minimal, standard, full")
     overwrite: bool = Field(default=False, description="Overwrite existing files")
 
 
@@ -186,11 +184,7 @@ async def validate_project_rules(request: RuleValidationRequest):
             passed_rules=passed_rules,
             failed_rules=total_rules - passed_rules,
             critical_failures=critical_failures,
-            message=(
-                "All rules passed"
-                if passed
-                else f"{critical_failures} critical failures"
-            ),
+            message=("All rules passed" if passed else f"{critical_failures} critical failures"),
             details=output[-2000:] if len(output) > 2000 else output,
         )
     except subprocess.TimeoutExpired:
@@ -304,9 +298,7 @@ async def apply_governance_template(request: ApplyTemplateRequest):
 
 
 @router.get("/config", response_model=Optional[ProjectGovernanceConfig])
-async def get_project_governance_config(
-    project_path: str = Query(default=".", description="Project path")
-):
+async def get_project_governance_config(project_path: str = Query(default=".", description="Project path")):
     """Get the governance configuration for a project.
     Reads and returns the .governance.yaml file.
     """
@@ -447,9 +439,7 @@ async def run_auto_fix(request: AutoFixRequest):
                 files_fixed = 0
                 details = "CLAUDE.md not found"
         else:
-            raise HTTPException(
-                status_code=400, detail=f"Unknown fix type: {request.fix_type}"
-            )
+            raise HTTPException(status_code=400, detail=f"Unknown fix type: {request.fix_type}")
         duration = time.time() - start
         return AutoFixResult(
             success=True,
@@ -510,9 +500,7 @@ async def get_timeline_status():
 
 
 @router.get("/tier/status", response_model=ProjectTierInfo)
-async def get_tier_status(
-    project_path: str = Query(default=".", description="Project path")
-):
+async def get_tier_status(project_path: str = Query(default=".", description="Project path")):
     """Get current governance tier status"""
     project_root = get_project_root()
     target_path = project_root if project_path == "." else Path(project_path).resolve()
@@ -526,15 +514,11 @@ async def get_tier_status(
     compliance = 100
     missing = []
 
-    # Check tier indicators in reverse order (tier-3 → tier-2 → tier-1)
+    # Check tier indicators in reverse order (tier-3 -> tier-2 -> tier-1)
     # Use elif to prevent overwriting
-    if (target_path / "src" / "domain").exists() and (
-        target_path / "src" / "infrastructure"
-    ).exists():
+    if (target_path / "src" / "domain").exists() and (target_path / "src" / "infrastructure").exists():
         current_tier = "tier-3"
-    elif (target_path / "config" / "schema.py").exists() or (
-        target_path / "config" / "schema.ts"
-    ).exists():
+    elif (target_path / "config" / "schema.py").exists() or (target_path / "config" / "schema.ts").exists():
         current_tier = "tier-2"
     else:
         current_tier = "tier-1"
@@ -597,9 +581,7 @@ async def upgrade_project_tier(request: UpgradeTierRequest):
             (project_root / "tests" / "__init__.py").touch()
             changes.append("Initialized tests/ directory")
 
-        message = (
-            "Upgraded to Tier 2. Configuration schema and test structure initialized."
-        )
+        message = "Upgraded to Tier 2. Configuration schema and test structure initialized."
 
     elif target_tier == "tier-3":
         # Tier 3: 3-Layer Architecture folders

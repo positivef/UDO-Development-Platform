@@ -108,23 +108,23 @@ def main():
     print("=" * 70)
     print("[COMPLETE] RBAC Development Mode Applied")
     print("=" * 70)
-    print(f"\n[STATS] Statistics:")
+    print("\n[STATS] Statistics:")
     print(f"   - Files modified: {len(modified_files)}")
     print(f"   - RBAC dependencies disabled: {total_modifications}")
 
     if modified_files:
-        print(f"\n[FILES] Modified files:")
+        print("\n[FILES] Modified files:")
         for file in modified_files:
             print(f"   - {file}")
 
-    print(f"\n[WARNING] RBAC is now disabled for development!")
-    print(f"   This allows frontend to access Kanban APIs without authentication.")
-    print(f"   Re-enable in Week 5 Day 2 before production deployment.")
-    print(f"\n[NEXT STEPS]:")
-    print(f"   1. Restart backend server (uvicorn will auto-reload)")
-    print(f"   2. Test frontend at http://localhost:3000/kanban")
-    print(f"   3. Verify no 403 errors in server logs")
-    print(f"   4. Track re-enablement in Week 5 backlog")
+    print("\n[WARNING] RBAC is now disabled for development!")
+    print("   This allows frontend to access Kanban APIs without authentication.")
+    print("   Re-enable in Week 5 Day 2 before production deployment.")
+    print("\n[NEXT STEPS]:")
+    print("   1. Restart backend server (uvicorn will auto-reload)")
+    print("   2. Test frontend at http://localhost:3000/kanban")
+    print("   3. Verify no 403 errors in server logs")
+    print("   4. Track re-enablement in Week 5 backlog")
 
 
 if __name__ == "__main__":

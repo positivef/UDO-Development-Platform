@@ -10,8 +10,8 @@ from pathlib import Path
 # Add parent directory to path
 sys.path.insert(0, str(Path(__file__).parent.parent / "backend"))
 
-from app.services.git_service import GitService
-from app.models.version_history import VersionCommit, VersionHistory
+from app.services.git_service import GitService  # noqa: E402
+from app.models.version_history import VersionCommit, VersionHistory  # noqa: E402
 
 
 def test_git_service():
@@ -52,7 +52,7 @@ def test_git_service():
 
         # Test: Get version history
         history = git_service.get_version_history(limit=10)
-        print(f"\n[OK] Version history:")
+        print("\n[OK] Version history:")
         print(f"    Project: {history.project_name}")
         print(f"    Branch: {history.current_branch}")
         print(f"    Total commits: {history.total_commits}")
@@ -62,7 +62,7 @@ def test_git_service():
         if len(commits) >= 2:
             comparison = git_service.compare_commits(commits[1].commit_hash, commits[0].commit_hash)
             assert comparison.files_changed is not None, "Comparison should include files_changed"
-            print(f"\n[OK] Commit comparison:")
+            print("\n[OK] Commit comparison:")
             print(f"    From: {comparison.from_commit}")
             print(f"    To: {comparison.to_commit}")
             print(f"    Files changed: {len(comparison.files_changed)}")

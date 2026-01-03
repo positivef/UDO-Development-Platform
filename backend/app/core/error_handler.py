@@ -31,14 +31,16 @@ DEBUG_MODE = os.environ.get("DEBUG", "false").lower() == "true" and not IS_PRODU
 
 class ErrorSeverity(Enum):
     """에러 심각도 레벨"""
-    LOW = "low"          # 경고 수준, 서비스 지속 가능
-    MEDIUM = "medium"    # 일부 기능 제한, 복구 시도 필요
-    HIGH = "high"        # 주요 기능 영향, 즉시 대응 필요
+
+    LOW = "low"  # 경고 수준, 서비스 지속 가능
+    MEDIUM = "medium"  # 일부 기능 제한, 복구 시도 필요
+    HIGH = "high"  # 주요 기능 영향, 즉시 대응 필요
     CRITICAL = "critical"  # 시스템 중단 위험, 긴급 대응
 
 
 class ErrorCategory(Enum):
     """에러 카테고리"""
+
     DATABASE = "database"
     NETWORK = "network"
     VALIDATION = "validation"
@@ -63,12 +65,7 @@ class ErrorRecoveryStrategy:
         self.max_retries = 3
         self.retry_delay = 1.0  # seconds
 
-    async def attempt_recovery(
-        self,
-        error: Exception,
-        category: ErrorCategory,
-        context: Dict[str, Any]
-    ) -> Optional[Any]:
+    async def attempt_recovery(self, error: Exception, category: ErrorCategory, context: Dict[str, Any]) -> Optional[Any]:
         """
         에러 복구 시도
 
@@ -95,7 +92,7 @@ class ErrorRecoveryStrategy:
 
         try:
             # Exponential backoff
-            await asyncio.sleep(self.retry_delay * (2 ** retry_count))
+            await asyncio.sleep(self.retry_delay * (2**retry_count))
 
             strategy = self.strategies[category]
             result = await strategy(error, context)
@@ -111,11 +108,7 @@ class ErrorRecoveryStrategy:
             logger.error(f"Recovery failed for {error_id}: {recovery_error}")
             return None
 
-    async def _recover_database_error(
-        self,
-        error: Exception,
-        context: Dict[str, Any]
-    ) -> Optional[Any]:
+    async def _recover_database_error(self, error: Exception, context: Dict[str, Any]) -> Optional[Any]:
         """데이터베이스 에러 복구"""
         logger.info("Attempting database error recovery...")
 
@@ -126,17 +119,14 @@ class ErrorRecoveryStrategy:
 
             # Mock 서비스 활성화
             from app.services.project_context_service import enable_mock_service
+
             enable_mock_service()
 
             return {"status": "recovered", "using": "mock_service"}
 
         return None
 
-    async def _recover_network_error(
-        self,
-        error: Exception,
-        context: Dict[str, Any]
-    ) -> Optional[Any]:
+    async def _recover_network_error(self, error: Exception, context: Dict[str, Any]) -> Optional[Any]:
         """네트워크 에러 복구"""
         logger.info("Attempting network error recovery...")
 
@@ -151,11 +141,7 @@ class ErrorRecoveryStrategy:
 
         return None
 
-    async def _recover_external_service_error(
-        self,
-        error: Exception,
-        context: Dict[str, Any]
-    ) -> Optional[Any]:
+    async def _recover_external_service_error(self, error: Exception, context: Dict[str, Any]) -> Optional[Any]:
         """외부 서비스 에러 복구"""
         logger.info("Attempting external service error recovery...")
 
@@ -215,12 +201,7 @@ class GlobalErrorHandler:
 
         return ErrorSeverity.MEDIUM
 
-    async def handle_error(
-        self,
-        request: Request,
-        error: Exception,
-        context: Optional[Dict[str, Any]] = None
-    ) -> JSONResponse:
+    async def handle_error(self, request: Request, error: Exception, context: Optional[Dict[str, Any]] = None) -> JSONResponse:
         """
         통합 에러 처리
 
@@ -245,7 +226,7 @@ class GlobalErrorHandler:
             "severity": severity.value,
             "error_type": type(error).__name__,
             "error_message": str(error),
-            "traceback": traceback.format_exc() if severity in [ErrorSeverity.HIGH, ErrorSeverity.CRITICAL] else None
+            "traceback": traceback.format_exc() if severity in [ErrorSeverity.HIGH, ErrorSeverity.CRITICAL] else None,
         }
 
         # 심각도에 따른 로깅
@@ -264,9 +245,7 @@ class GlobalErrorHandler:
         # 복구 시도
         recovery_result = None
         if severity in [ErrorSeverity.MEDIUM, ErrorSeverity.HIGH] and context:
-            recovery_result = await self.recovery_strategy.attempt_recovery(
-                error, category, context or {}
-            )
+            recovery_result = await self.recovery_strategy.attempt_recovery(error, category, context or {})
 
         # HTTP 상태 코드 결정
         status_code = self._get_status_code(error, category)
@@ -279,7 +258,7 @@ class GlobalErrorHandler:
                     "message": self._get_user_friendly_message(error, category),
                     "code": self._get_error_code(category),
                     "timestamp": error_info["timestamp"],
-                    "request_id": getattr(request.state, "request_id", None)
+                    "request_id": getattr(request.state, "request_id", None),
                 }
             }
         else:
@@ -290,17 +269,14 @@ class GlobalErrorHandler:
                     "category": category.value,
                     "severity": severity.value,
                     "timestamp": error_info["timestamp"],
-                    "request_id": getattr(request.state, "request_id", None)
+                    "request_id": getattr(request.state, "request_id", None),
                 }
             }
             response_data["detail"] = self._get_user_friendly_message(error, category)
 
         # 복구 성공 시 정보 추가
         if recovery_result:
-            response_data["recovery"] = {
-                "status": "success",
-                "action_taken": "Automatic recovery applied"
-            }
+            response_data["recovery"] = {"status": "success", "action_taken": "Automatic recovery applied"}
             # Don't expose recovery result details in production
             if not IS_PRODUCTION:
                 response_data["recovery"]["result"] = recovery_result
@@ -308,15 +284,9 @@ class GlobalErrorHandler:
 
         # Debug information only in development with DEBUG flag
         if DEBUG_MODE and not IS_PRODUCTION:
-            response_data["debug"] = {
-                "error_type": error_info["error_type"],
-                "traceback": error_info.get("traceback")
-            }
+            response_data["debug"] = {"error_type": error_info["error_type"], "traceback": error_info.get("traceback")}
 
-        return JSONResponse(
-            status_code=status_code,
-            content=response_data
-        )
+        return JSONResponse(status_code=status_code, content=response_data)
 
     def _record_error(self, error_info: Dict[str, Any]):
         """에러 히스토리 기록"""
@@ -342,7 +312,7 @@ class GlobalErrorHandler:
             ErrorCategory.EXTERNAL_SERVICE: 502,
             ErrorCategory.BUSINESS_LOGIC: 422,
             ErrorCategory.SYSTEM: 500,
-            ErrorCategory.UNKNOWN: 500
+            ErrorCategory.UNKNOWN: 500,
         }
 
         return status_map.get(category, 500)
@@ -358,7 +328,7 @@ class GlobalErrorHandler:
             if IS_PRODUCTION:
                 detail = str(error.detail)
                 # Don't expose internal paths, stack traces, or technical details
-                if any(x in detail.lower() for x in ['traceback', 'line ', 'file ', '/app/', '\\app\\']):
+                if any(x in detail.lower() for x in ["traceback", "line ", "file ", "/app/", "\\app\\"]):
                     return "An error occurred while processing your request."
             return error.detail
 
@@ -371,7 +341,7 @@ class GlobalErrorHandler:
             ErrorCategory.EXTERNAL_SERVICE: "외부 서비스 연결에 문제가 있습니다.",
             ErrorCategory.BUSINESS_LOGIC: "요청을 처리할 수 없습니다. 입력 데이터를 확인해주세요.",
             ErrorCategory.SYSTEM: "시스템 오류가 발생했습니다. 관리자에게 문의해주세요.",
-            ErrorCategory.UNKNOWN: "예기치 않은 오류가 발생했습니다."
+            ErrorCategory.UNKNOWN: "예기치 않은 오류가 발생했습니다.",
         }
 
         return message_map.get(category, "An error occurred." if IS_PRODUCTION else str(error))
@@ -387,19 +357,14 @@ class GlobalErrorHandler:
             ErrorCategory.EXTERNAL_SERVICE: "ERR_EXT",
             ErrorCategory.BUSINESS_LOGIC: "ERR_BIZ",
             ErrorCategory.SYSTEM: "ERR_SYS",
-            ErrorCategory.UNKNOWN: "ERR_UNK"
+            ErrorCategory.UNKNOWN: "ERR_UNK",
         }
         return code_map.get(category, "ERR_UNK")
 
     def get_error_statistics(self) -> Dict[str, Any]:
         """에러 통계 반환"""
         if not self.error_history:
-            return {
-                "total_errors": 0,
-                "by_category": {},
-                "by_severity": {},
-                "recent_errors": []
-            }
+            return {"total_errors": 0, "by_category": {}, "by_severity": {}, "recent_errors": []}
 
         # 카테고리별 집계
         by_category = {}
@@ -416,7 +381,7 @@ class GlobalErrorHandler:
             "total_errors": len(self.error_history),
             "by_category": by_category,
             "by_severity": by_severity,
-            "recent_errors": self.error_history[-10:]  # 최근 10개
+            "recent_errors": self.error_history[-10:],  # 최근 10개
         }
 
 
@@ -431,8 +396,6 @@ async def global_exception_handler(request: Request, exc: Exception) -> JSONResp
 
 def setup_error_handlers(app):
     """FastAPI 앱에 에러 핸들러 설정"""
-    from fastapi import FastAPI
-
     # 일반 예외 핸들러
     app.add_exception_handler(Exception, global_exception_handler)
 

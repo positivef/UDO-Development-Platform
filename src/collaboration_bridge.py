@@ -15,24 +15,23 @@ Version: 1.0.0
 
 import json
 import os
-import subprocess
 import time
 from pathlib import Path
 from typing import Dict, List, Optional, Tuple, Any
 from dataclasses import dataclass, asdict
 from enum import Enum
 from datetime import datetime
-import tempfile
 import yaml
 import logging
 
 # 로깅 설정
-logging.basicConfig(level=logging.INFO, format='%(asctime)s - %(levelname)s - %(message)s')
+logging.basicConfig(level=logging.INFO, format="%(asctime)s - %(levelname)s - %(message)s")
 logger = logging.getLogger(__name__)
 
 
 class AIRole(Enum):
     """Specialized roles for each AI"""
+
     # Claude roles
     CLAUDE_IMPLEMENT = "claude-implement"
     CLAUDE_ARCHITECT = "claude-architect"
@@ -51,15 +50,17 @@ class AIRole(Enum):
 
 class ExecutionMode(Enum):
     """Collaboration execution modes"""
+
     SEQUENTIAL = "sequential"  # One after another
-    PARALLEL = "parallel"      # All at once
-    ITERATIVE = "iterative"    # Loop until convergence
-    ADAPTIVE = "adaptive"      # Dynamic based on results
+    PARALLEL = "parallel"  # All at once
+    ITERATIVE = "iterative"  # Loop until convergence
+    ADAPTIVE = "adaptive"  # Dynamic based on results
 
 
 @dataclass
 class AIContext:
     """Shared context between AI tools"""
+
     task_id: str
     phase: str
     previous_outputs: Dict[str, Any]
@@ -77,7 +78,7 @@ class AIContext:
         return yaml.dump(asdict(self), default_flow_style=False)
 
     @classmethod
-    def from_yaml(cls, yaml_str: str) -> 'AIContext':
+    def from_yaml(cls, yaml_str: str) -> "AIContext":
         """Create from YAML string"""
         data = yaml.safe_load(yaml_str)
         return cls(**data)
@@ -86,6 +87,7 @@ class AIContext:
 @dataclass
 class AIResponse:
     """Response from an AI tool"""
+
     ai_name: str
     role: AIRole
     output: str
@@ -122,25 +124,13 @@ class CodexMCPConnector:
                 raise ConnectionError("Codex MCP not available")
 
             # MCP를 통한 Codex 실행
-            params = {
-                "prompt": prompt,
-                "context": context or {},
-                "mode": "development"
-            }
+            params = {"prompt": prompt, "context": context or {}, "mode": "development"}
 
             result = self._execute_mcp_command("codex", params)
-            return {
-                "success": True,
-                "content": result.get("output", ""),
-                "metadata": result.get("metadata", {})
-            }
+            return {"success": True, "content": result.get("output", ""), "metadata": result.get("metadata", {})}
         except Exception as e:
             logger.error(f"Codex execution failed: {e}")
-            return {
-                "success": False,
-                "content": "",
-                "error": str(e)
-            }
+            return {"success": False, "content": "", "error": str(e)}
 
     def _execute_mcp_command(self, command: str, params: Dict) -> Optional[Dict]:
         """MCP 명령 실행 (시뮬레이션)"""
@@ -152,10 +142,7 @@ class CodexMCPConnector:
             # Codex 실행 시뮬레이션
             return {
                 "output": f"# Codex Analysis\n{params.get('prompt', '')}",
-                "metadata": {
-                    "service": "codex-mcp",
-                    "timestamp": datetime.now().isoformat()
-                }
+                "metadata": {"service": "codex-mcp", "timestamp": datetime.now().isoformat()},
             }
         return None
 
@@ -189,19 +176,11 @@ class GeminiAPIConnector:
             return {
                 "success": True,
                 "content": f"[Gemini Response]\n{prompt[:100]}...",
-                "metadata": {
-                    "model": "gemini-pro",
-                    "timestamp": datetime.now().isoformat()
-                }
+                "metadata": {"model": "gemini-pro", "timestamp": datetime.now().isoformat()},
             }
         except Exception as e:
             logger.error(f"Gemini generation failed: {e}")
-            return {
-                "success": False,
-                "content": "",
-                "error": str(e)
-            }
-
+            return {"success": False, "content": "", "error": str(e)}
 
 
 class ThreeAICollaborationBridge:
@@ -219,34 +198,34 @@ class ThreeAICollaborationBridge:
                 "sequence": [
                     (AIRole.GEMINI_EXPLORE, "gemini"),
                     (AIRole.CLAUDE_ARCHITECT, "claude"),
-                    (AIRole.CODEX_VERIFY, "codex")
+                    (AIRole.CODEX_VERIFY, "codex"),
                 ],
-                "mode": ExecutionMode.SEQUENTIAL
+                "mode": ExecutionMode.SEQUENTIAL,
             },
             "implementation": {
                 "sequence": [
                     (AIRole.CLAUDE_IMPLEMENT, "claude"),
                     (AIRole.CODEX_REVIEW, "codex"),
-                    (AIRole.CLAUDE_IMPLEMENT, "claude")  # Fix issues
+                    (AIRole.CLAUDE_IMPLEMENT, "claude"),  # Fix issues
                 ],
-                "mode": ExecutionMode.ITERATIVE
+                "mode": ExecutionMode.ITERATIVE,
             },
             "optimization": {
                 "sequence": [
                     (AIRole.CODEX_REVIEW, "codex"),
                     (AIRole.GEMINI_OPTIMIZE, "gemini"),
-                    (AIRole.CLAUDE_IMPLEMENT, "claude")
+                    (AIRole.CLAUDE_IMPLEMENT, "claude"),
                 ],
-                "mode": ExecutionMode.SEQUENTIAL
+                "mode": ExecutionMode.SEQUENTIAL,
             },
             "debugging": {
                 "sequence": [
                     (AIRole.CODEX_DEBUG, "codex"),
                     (AIRole.CLAUDE_IMPLEMENT, "claude"),
-                    (AIRole.CODEX_VERIFY, "codex")
+                    (AIRole.CODEX_VERIFY, "codex"),
                 ],
-                "mode": ExecutionMode.ITERATIVE
-            }
+                "mode": ExecutionMode.ITERATIVE,
+            },
         }
         self._initialize_services()
 
@@ -255,14 +234,11 @@ class ThreeAICollaborationBridge:
         logger.info("Initializing AI services...")
         self.codex.ping()
         self.gemini.validate_connection()
-        logger.info(f"Codex MCP: {'✅ Connected' if self.codex.connected else '❌ Not available'}")
-        logger.info(f"Gemini API: {'✅ Connected' if self.gemini.connected else '❌ Not available'}")
-        logger.info(f"Claude: ✅ Available (current context)")
+        logger.info(f"Codex MCP: {'[OK] Connected' if self.codex.connected else '[FAIL] Not available'}")
+        logger.info(f"Gemini API: {'[OK] Connected' if self.gemini.connected else '[FAIL] Not available'}")
+        logger.info(f"Claude: [OK] Available (current context)")
 
-    def collaborate(self,
-                   task: str,
-                   pattern: str = "implementation",
-                   max_iterations: int = 3) -> Dict[str, Any]:
+    def collaborate(self, task: str, pattern: str = "implementation", max_iterations: int = 3) -> Dict[str, Any]:
         """Execute 3-AI collaboration"""
 
         # Initialize context
@@ -272,7 +248,7 @@ class ThreeAICollaborationBridge:
             previous_outputs={},
             constraints=self._extract_constraints(task),
             success_criteria=self._extract_criteria(task),
-            metadata={"pattern": pattern, "iterations": 0}
+            metadata={"pattern": pattern, "iterations": 0},
         )
 
         # Save initial context
@@ -293,10 +269,7 @@ class ThreeAICollaborationBridge:
         else:
             return self._execute_adaptive(task, sequence, context)
 
-    def _execute_sequential(self,
-                          task: str,
-                          sequence: List[Tuple[AIRole, str]],
-                          context: AIContext) -> Dict[str, Any]:
+    def _execute_sequential(self, task: str, sequence: List[Tuple[AIRole, str]], context: AIContext) -> Dict[str, Any]:
         """Execute AIs in sequence"""
         results = []
 
@@ -319,7 +292,7 @@ class ThreeAICollaborationBridge:
                 "role": role.value,
                 "output": response.output,
                 "issues": response.issues_found,
-                "suggestions": response.suggestions
+                "suggestions": response.suggestions,
             }
 
             # Save updated context
@@ -332,11 +305,9 @@ class ThreeAICollaborationBridge:
 
         return self._compile_results(results, context)
 
-    def _execute_iterative(self,
-                         task: str,
-                         sequence: List[Tuple[AIRole, str]],
-                         context: AIContext,
-                         max_iterations: int) -> Dict[str, Any]:
+    def _execute_iterative(
+        self, task: str, sequence: List[Tuple[AIRole, str]], context: AIContext, max_iterations: int
+    ) -> Dict[str, Any]:
         """Execute AIs iteratively until convergence"""
         results = []
         iteration = 0
@@ -365,7 +336,7 @@ class ThreeAICollaborationBridge:
                 # Update context
                 context.previous_outputs[f"{ai_name}_iter{iteration}"] = {
                     "output": response.output,
-                    "issues": response.issues_found
+                    "issues": response.issues_found,
                 }
 
             results.extend(iteration_results)
@@ -378,10 +349,7 @@ class ThreeAICollaborationBridge:
 
         return self._compile_results(results, context)
 
-    def _execute_parallel(self,
-                        task: str,
-                        sequence: List[Tuple[AIRole, str]],
-                        context: AIContext) -> Dict[str, Any]:
+    def _execute_parallel(self, task: str, sequence: List[Tuple[AIRole, str]], context: AIContext) -> Dict[str, Any]:
         """Execute AIs in parallel (simulated)"""
         # In production, use threading or async
         logger.info("Executing AIs in parallel")
@@ -401,10 +369,7 @@ class ThreeAICollaborationBridge:
 
         return self._compile_results(results, context)
 
-    def _execute_adaptive(self,
-                        task: str,
-                        sequence: List[Tuple[AIRole, str]],
-                        context: AIContext) -> Dict[str, Any]:
+    def _execute_adaptive(self, task: str, sequence: List[Tuple[AIRole, str]], context: AIContext) -> Dict[str, Any]:
         """Adaptively choose execution based on results"""
         results = []
 
@@ -447,20 +412,22 @@ class ThreeAICollaborationBridge:
             issues_found=[],
             suggestions=["Consider adding error handling", "Add unit tests"],
             execution_time=time.time() - start_time,
-            metadata={"context": "current"}
+            metadata={"context": "current"},
         )
 
     def _execute_codex(self, task: str, role: AIRole, context: AIContext) -> AIResponse:
         """Execute Codex using the new connector"""
         start_time = time.time()
         if not self.codex.connected:
-            return AIResponse("codex", role, "Codex not available", 0.0, [], [], time.time() - start_time, {"error": "Codex not connected"})
+            return AIResponse(
+                "codex", role, "Codex not available", 0.0, [], [], time.time() - start_time, {"error": "Codex not connected"}
+            )
 
         prompt = self._create_role_prompt(task, role, context)
         result = self.codex.execute(prompt, asdict(context))
-        
+
         issues, suggestions = self._parse_output(result.get("content", ""))
-        
+
         return AIResponse(
             ai_name="codex",
             role=role,
@@ -469,14 +436,23 @@ class ThreeAICollaborationBridge:
             issues_found=issues,
             suggestions=suggestions,
             execution_time=time.time() - start_time,
-            metadata=result.get("metadata", {})
+            metadata=result.get("metadata", {}),
         )
 
     def _execute_gemini(self, task: str, role: AIRole, context: AIContext) -> AIResponse:
         """Execute Gemini using the new connector"""
         start_time = time.time()
         if not self.gemini.connected:
-            return AIResponse("gemini", role, "Gemini not available", 0.0, [], [], time.time() - start_time, {"error": "Gemini not connected"})
+            return AIResponse(
+                "gemini",
+                role,
+                "Gemini not available",
+                0.0,
+                [],
+                [],
+                time.time() - start_time,
+                {"error": "Gemini not connected"},
+            )
 
         prompt = self._create_role_prompt(task, role, context)
         result = self.gemini.generate(prompt, asdict(context))
@@ -489,7 +465,7 @@ class ThreeAICollaborationBridge:
             issues_found=[],
             suggestions=self._extract_creative_suggestions(result.get("content", "")),
             execution_time=time.time() - start_time,
-            metadata=result.get("metadata", {})
+            metadata=result.get("metadata", {}),
         )
 
     def _create_role_prompt(self, task: str, role: AIRole, context: AIContext) -> str:
@@ -501,25 +477,25 @@ class ThreeAICollaborationBridge:
         """Parse AI output for structured information"""
         issues = []
         suggestions = []
-        lines = output.split('\n')
+        lines = output.split("\n")
         current_section = None
         for line in lines:
-            if 'Issues Found:' in line or 'Critical Issues:' in line:
-                current_section = 'issues'
-            elif 'Suggestions:' in line:
-                current_section = 'suggestions'
-            elif line.strip().startswith('- ') or line.strip().startswith('* '):
-                if current_section == 'issues':
+            if "Issues Found:" in line or "Critical Issues:" in line:
+                current_section = "issues"
+            elif "Suggestions:" in line:
+                current_section = "suggestions"
+            elif line.strip().startswith("- ") or line.strip().startswith("* "):
+                if current_section == "issues":
                     issues.append(line.strip()[2:])
-                elif current_section == 'suggestions':
+                elif current_section == "suggestions":
                     suggestions.append(line.strip()[2:])
         return issues, suggestions
 
     def _extract_creative_suggestions(self, output: str) -> List[str]:
         """Extract creative suggestions from Gemini output"""
         suggestions = []
-        lines = output.split('\n')
-        for i, line in enumerate(lines):
+        lines = output.split("\n")
+        for line in lines:
             if any(keyword in line.lower() for keyword in ["could", "consider", "what if", "imagine", "perhaps"]):
                 suggestions.append(line.strip())
         return suggestions[:5]
@@ -547,7 +523,7 @@ class ThreeAICollaborationBridge:
     def _save_context(self, context: AIContext):
         """Save context to disk for persistence"""
         context_file = self.context_store / f"{context.task_id}.yaml"
-        with open(context_file, 'w') as f:
+        with open(context_file, "w") as f:
             f.write(context.to_yaml())
 
     def _compile_results(self, responses: List[AIResponse], context: AIContext) -> Dict[str, Any]:
@@ -571,60 +547,60 @@ class ThreeAICollaborationBridge:
             "aggregated_suggestions": list(set(all_suggestions)),
             "context": asdict(context),
             "collaboration_pattern": context.phase,
-            "iterations": context.metadata.get("iterations", 1)
+            "iterations": context.metadata.get("iterations", 1),
         }
 
 
 def main():
     """Demo of 3-AI Collaboration"""
-    print("="*80)
-    print("🤝 3-AI Collaboration Bridge Demo")
-    print("="*80)
+    print("=" * 80)
+    print("[*] 3-AI Collaboration Bridge Demo")
+    print("=" * 80)
 
     bridge = ThreeAICollaborationBridge()
 
     # Check AI availability
-    print("\n📊 AI Availability:")
-    print(f"  - Claude: ✅ (current context)")
-    print(f"  - Codex: {'✅' if bridge.codex.connected else '❌'}")
-    print(f"  - Gemini: {'✅' if bridge.gemini.connected else '❌'}")
+    print("\n[*] AI Availability:")
+    print(f"  - Claude: [OK] (current context)")
+    print(f"  - Codex: {'[OK]' if bridge.codex.connected else '[FAIL]'}")
+    print(f"  - Gemini: {'[OK]' if bridge.gemini.connected else '[FAIL]'}")
 
     # Test patterns
     test_tasks = [
         ("Create a user authentication system with JWT", "implementation"),
         ("Design a scalable microservices architecture", "ideation"),
         ("Fix performance issues in the payment module", "debugging"),
-        ("Optimize database queries for better response time", "optimization")
+        ("Optimize database queries for better response time", "optimization"),
     ]
 
     for task, pattern in test_tasks:
         print(f"\n{'='*60}")
-        print(f"📝 Task: {task}")
-        print(f"🎯 Pattern: {pattern}")
+        print(f"[*] Task: {task}")
+        print(f"[*] Pattern: {pattern}")
         print(f"{'='*60}")
 
         # Execute collaboration
         result = bridge.collaborate(task, pattern)
 
         # Display results
-        print(f"\n📊 Results:")
+        print(f"\n[*] Results:")
         print(f"  - Status: {result['status']}")
         print(f"  - Confidence: {result['overall_confidence']:.0%}")
         print(f"  - Time: {result['total_execution_time']:.1f}s")
         print(f"  - Issues Found: {len(result['aggregated_issues'])}")
         print(f"  - Suggestions: {len(result['aggregated_suggestions'])}")
 
-        if result['aggregated_issues']:
-            print(f"\n⚠️ Issues to Address:")
-            for issue in result['aggregated_issues'][:3]:
+        if result["aggregated_issues"]:
+            print(f"\n[WARN] Issues to Address:")
+            for issue in result["aggregated_issues"][:3]:
                 print(f"  - {issue}")
 
-        if result['aggregated_suggestions']:
-            print(f"\n💡 Suggestions:")
-            for suggestion in result['aggregated_suggestions'][:3]:
+        if result["aggregated_suggestions"]:
+            print(f"\n[*] Suggestions:")
+            for suggestion in result["aggregated_suggestions"][:3]:
                 print(f"  - {suggestion}")
 
-        print(f"\n✅ Collaboration Complete!")
+        print(f"\n[OK] Collaboration Complete!")
         time.sleep(1)  # Brief pause between tests
 
 

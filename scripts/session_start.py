@@ -17,7 +17,7 @@ from pathlib import Path
 # Add scripts directory to path
 sys.path.insert(0, str(Path(__file__).parent))
 
-from obsidian_3stage_search import check_scheduled_tasks_on_session_start
+from obsidian_3stage_search import check_scheduled_tasks_on_session_start  # noqa: E402
 
 
 def main():

@@ -39,7 +39,7 @@ router = APIRouter(prefix="/api/v1/gi-formula", tags=["GI Formula"])
     - Sequential MCP integration for structured reasoning
     - Automatic bias detection and mitigation
     - Obsidian knowledge base integration
-    - 3-tier caching (Memory → Redis → SQLite)
+    - 3-tier caching (Memory -> Redis -> SQLite)
 
     **Use Cases**:
     - Problem solving and decision making
@@ -47,11 +47,9 @@ router = APIRouter(prefix="/api/v1/gi-formula", tags=["GI Formula"])
     - Performance bottleneck identification
     - Security vulnerability analysis
     """,
-    response_description="Complete GI Formula result with all 5 stages and bias check"
+    response_description="Complete GI Formula result with all 5 stages and bias check",
 )
-async def generate_insight(
-    request: GIFormulaRequest
-) -> GIFormulaResult:
+async def generate_insight(request: GIFormulaRequest) -> GIFormulaResult:
     """
     Generate insight using GI Formula
 
@@ -115,22 +113,13 @@ async def generate_insight(
 
     except ValueError as e:
         logger.error(f"Validation error: {e}")
-        raise HTTPException(
-            status_code=400,
-            detail=f"Invalid request: {str(e)}"
-        )
+        raise HTTPException(status_code=400, detail=f"Invalid request: {str(e)}")
     except RuntimeError as e:
         logger.error(f"Generation error: {e}")
-        raise HTTPException(
-            status_code=500,
-            detail=f"Insight generation failed: {str(e)}"
-        )
+        raise HTTPException(status_code=500, detail=f"Insight generation failed: {str(e)}")
     except Exception as e:
         logger.error(f"Unexpected error: {e}", exc_info=True)
-        raise HTTPException(
-            status_code=500,
-            detail=f"Internal server error: {str(e)}"
-        )
+        raise HTTPException(status_code=500, detail=f"Internal server error: {str(e)}")
 
 
 @router.get(
@@ -138,14 +127,10 @@ async def generate_insight(
     response_model=GIFormulaResult,
     summary="Get insight by ID",
     description="Retrieve a specific insight by its unique identifier",
-    response_description="Complete insight result"
+    response_description="Complete insight result",
 )
 async def get_insight(
-    insight_id: str = Path(
-        ...,
-        description="Unique insight ID (format: gi-YYYY-MM-DD-{hash})",
-        example="gi-2025-11-20-abc123"
-    )
+    insight_id: str = Path(..., description="Unique insight ID (format: gi-YYYY-MM-DD-{hash})", example="gi-2025-11-20-abc123")
 ) -> GIFormulaResult:
     """
     Get insight by ID
@@ -166,10 +151,7 @@ async def get_insight(
 
         if result is None:
             logger.warning(f"Insight not found: {insight_id}")
-            raise HTTPException(
-                status_code=404,
-                detail=f"Insight not found: {insight_id}"
-            )
+            raise HTTPException(status_code=404, detail=f"Insight not found: {insight_id}")
 
         logger.info(f"Retrieved insight: {insight_id}")
         return result
@@ -178,10 +160,7 @@ async def get_insight(
         raise
     except Exception as e:
         logger.error(f"Retrieval error: {e}", exc_info=True)
-        raise HTTPException(
-            status_code=500,
-            detail=f"Failed to retrieve insight: {str(e)}"
-        )
+        raise HTTPException(status_code=500, detail=f"Failed to retrieve insight: {str(e)}")
 
 
 @router.get(
@@ -193,25 +172,12 @@ async def get_insight(
 
     Results are sorted by creation time (newest first).
     """,
-    response_description="List of insight summaries"
+    response_description="List of insight summaries",
 )
 async def list_insights(
-    project: Optional[str] = Query(
-        None,
-        description="Filter by project name",
-        example="UDO-Development-Platform"
-    ),
-    limit: int = Query(
-        10,
-        ge=1,
-        le=100,
-        description="Maximum number of results"
-    ),
-    offset: int = Query(
-        0,
-        ge=0,
-        description="Pagination offset"
-    )
+    project: Optional[str] = Query(None, description="Filter by project name", example="UDO-Development-Platform"),
+    limit: int = Query(10, ge=1, le=100, description="Maximum number of results"),
+    offset: int = Query(0, ge=0, description="Pagination offset"),
 ) -> List[GIInsightSummary]:
     """
     List recent insights
@@ -230,35 +196,24 @@ async def list_insights(
     try:
         logger.info(f"Listing insights (project={project}, limit={limit}, offset={offset})")
 
-        summaries = await gi_formula_service.list_insights(
-            project=project,
-            limit=limit,
-            offset=offset
-        )
+        summaries = await gi_formula_service.list_insights(project=project, limit=limit, offset=offset)
 
         logger.info(f"Retrieved {len(summaries)} insights")
         return summaries
 
     except Exception as e:
         logger.error(f"Listing error: {e}", exc_info=True)
-        raise HTTPException(
-            status_code=500,
-            detail=f"Failed to list insights: {str(e)}"
-        )
+        raise HTTPException(status_code=500, detail=f"Failed to list insights: {str(e)}")
 
 
 @router.delete(
     "/{insight_id}",
     summary="Delete insight",
     description="Delete insight from cache",
-    response_description="Deletion confirmation"
+    response_description="Deletion confirmation",
 )
 async def delete_insight(
-    insight_id: str = Path(
-        ...,
-        description="Unique insight ID to delete",
-        example="gi-2025-11-20-abc123"
-    )
+    insight_id: str = Path(..., description="Unique insight ID to delete", example="gi-2025-11-20-abc123")
 ) -> dict:
     """
     Delete insight
@@ -279,32 +234,23 @@ async def delete_insight(
 
         if not success:
             logger.warning(f"Failed to delete insight: {insight_id}")
-            raise HTTPException(
-                status_code=404,
-                detail=f"Insight not found or deletion failed: {insight_id}"
-            )
+            raise HTTPException(status_code=404, detail=f"Insight not found or deletion failed: {insight_id}")
 
         logger.info(f"Deleted insight: {insight_id}")
-        return {
-            "message": f"Insight {insight_id} deleted successfully",
-            "insight_id": insight_id
-        }
+        return {"message": f"Insight {insight_id} deleted successfully", "insight_id": insight_id}
 
     except HTTPException:
         raise
     except Exception as e:
         logger.error(f"Deletion error: {e}", exc_info=True)
-        raise HTTPException(
-            status_code=500,
-            detail=f"Failed to delete insight: {str(e)}"
-        )
+        raise HTTPException(status_code=500, detail=f"Failed to delete insight: {str(e)}")
 
 
 @router.get(
     "/health",
     summary="Health check",
     description="Check GI Formula service health",
-    response_description="Service health status"
+    response_description="Service health status",
 )
 async def health_check() -> dict:
     """
@@ -321,5 +267,5 @@ async def health_check() -> dict:
             "sequential_mcp": gi_formula_service.sequential_mcp is not None,
             "obsidian_sync": gi_formula_service.obsidian_service is not None,
             "caching": gi_formula_service.cache_service is not None,
-        }
+        },
     }

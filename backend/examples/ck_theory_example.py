@@ -11,8 +11,8 @@ from pathlib import Path
 # Add parent directory to path
 sys.path.insert(0, str(Path(__file__).parent.parent))
 
-from app.models.ck_theory import CKTheoryRequest, DesignFeedback
-from app.services.ck_theory_service import CKTheoryService
+from app.models.ck_theory import CKTheoryRequest, DesignFeedback  # noqa: E402
+from app.services.ck_theory_service import CKTheoryService  # noqa: E402
 
 
 async def main():
@@ -40,12 +40,10 @@ async def main():
     result1 = await service.generate_design(request1)
 
     print(f"\n[OK] Design ID: {result1.id}")
-    print(
-        f"⏱  Duration: {result1.total_duration_ms}ms ({result1.total_duration_ms / 1000:.1f}s)"
-    )
+    print(f"[*]  Duration: {result1.total_duration_ms}ms ({result1.total_duration_ms / 1000:.1f}s)")
 
     # Show alternatives
-    print(f"\n[EMOJI] Design Alternatives:")
+    print("\n[DESIGN] Alternatives:")
     for alt in result1.alternatives:
         print(f"\n  Alternative {alt.id}: {alt.title}")
         print(
@@ -57,17 +55,17 @@ async def main():
         print(f"  Cons: {', '.join(alt.cons[:2])}...")
 
     # Show trade-off analysis
-    print(f"\n[EMOJI]  Trade-off Analysis:")
+    print("\n[*]  Trade-off Analysis:")
     print(f"  Summary: {result1.tradeoff_analysis.summary[:150]}...")
     print(f"  Recommendation: {result1.tradeoff_analysis.recommendation[:150]}...")
 
     # Show decision tree
-    print(f"\n[EMOJI] Decision Tree:")
+    print("\n[DECISION] Tree:")
     for i, criterion in enumerate(result1.tradeoff_analysis.decision_tree[:3], 1):
         print(f"  {i}. {criterion}")
 
     if result1.obsidian_path:
-        print(f"\n[EMOJI] Saved to Obsidian: {result1.obsidian_path}")
+        print(f"\n[SAVED] to Obsidian: {result1.obsidian_path}")
 
     # Example 2: Performance Optimization Design
     print("\n" + "=" * 60)
@@ -87,15 +85,15 @@ async def main():
     result2 = await service.generate_design(request2)
 
     print(f"\n[OK] Design ID: {result2.id}")
-    print(f"⏱  Duration: {result2.total_duration_ms}ms")
+    print(f"[*]  Duration: {result2.total_duration_ms}ms")
 
     # Show RICE scores
-    print(f"\n[EMOJI] RICE Score Comparison:")
+    print("\n[RICE] Score Comparison:")
     for alt in result2.alternatives:
         print(f"  {alt.id}: {alt.rice.score:>5.2f} - {alt.title}")
 
     # Show recommended alternative
-    print(f"\n[EMOJI] Recommendation:")
+    print("\n[*] Recommendation:")
     print(f"{result2.tradeoff_analysis.recommendation[:200]}...")
 
     # Example 3: Add feedback
@@ -115,13 +113,13 @@ async def main():
     success = await service.add_feedback(result1.id, feedback)
 
     if success:
-        print(f"\n[OK] Feedback added successfully")
+        print("\n[OK] Feedback added successfully")
         print(f"   Design: {result1.id}")
         print(f"   Selected: Alternative {feedback.selected_alternative}")
         print(f"   Rating: {feedback.rating}/5")
         print(f"   Outcome: {feedback.outcome}")
     else:
-        print(f"\n[FAIL] Failed to add feedback")
+        print("\n[FAIL] Failed to add feedback")
 
     # Example 4: Retrieve feedback
     print("\n" + "=" * 60)

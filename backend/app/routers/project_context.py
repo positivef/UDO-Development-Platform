@@ -8,13 +8,15 @@ import logging
 from typing import Optional
 from uuid import UUID
 
-from app.models.project_context import (ProjectContextCreate,
-                                        ProjectContextResponse,
-                                        ProjectContextUpdate,
-                                        ProjectListResponse,
-                                        ProjectsListResponse,
-                                        ProjectSwitchRequest,
-                                        ProjectSwitchResponse)
+from app.models.project_context import (
+    ProjectContextCreate,
+    ProjectContextResponse,
+    ProjectContextUpdate,
+    ProjectListResponse,
+    ProjectsListResponse,
+    ProjectSwitchRequest,
+    ProjectSwitchResponse,
+)
 from app.services.project_context_service import get_project_context_service
 from fastapi import APIRouter, Depends, HTTPException, Query, status
 
@@ -32,19 +34,16 @@ projects_router = APIRouter(prefix="/api/projects", tags=["Projects"])
 
 def get_service():
     """Dependency to get project context service"""
-    logger.info(f"[DEBUG] get_service() called")
+    logger.info("[DEBUG] get_service() called")
 
     service = get_project_context_service()
-    logger.info(
-        f"[DEBUG] get_project_context_service() returned: {type(service) if service else 'None'}"
-    )
+    logger.info(f"[DEBUG] get_project_context_service() returned: {type(service) if service else 'None'}")
 
     if not service:
         # Try to enable mock service as fallback
         try:
             logger.info("[DEBUG] Attempting to enable mock service as fallback")
-            from app.services.project_context_service import (
-                _mock_service_instance, _use_mock_service, enable_mock_service)
+            from app.services.project_context_service import _mock_service_instance, _use_mock_service, enable_mock_service
 
             logger.info(
                 f"[DEBUG] Before enable: _use_mock_service={_use_mock_service}, _mock_service_instance={type(_mock_service_instance) if _mock_service_instance else 'None'}"
@@ -53,9 +52,7 @@ def get_service():
             enable_mock_service()
             service = get_project_context_service()
 
-            logger.info(
-                f"[DEBUG] After enable: service={type(service) if service else 'None'}"
-            )
+            logger.info(f"[DEBUG] After enable: service={type(service) if service else 'None'}")
             logger.info("[OK] Mock service enabled as fallback")
         except Exception as e:
             logger.error(f"Failed to enable mock service: {e}")
@@ -77,12 +74,8 @@ def get_service():
 # ============================================================
 
 
-@router.post(
-    "/save", response_model=ProjectContextResponse, status_code=status.HTTP_200_OK
-)
-async def save_project_context(
-    context_data: ProjectContextCreate, service=Depends(get_service)
-) -> ProjectContextResponse:
+@router.post("/save", response_model=ProjectContextResponse, status_code=status.HTTP_200_OK)
+async def save_project_context(context_data: ProjectContextCreate, service=Depends(get_service)) -> ProjectContextResponse:
     """
     Save or update project context.
 
@@ -97,31 +90,17 @@ async def save_project_context(
     **Response:** Complete saved context with timestamps
     """
     try:
-        logger.info(f"[EMOJI] Saving context for project {context_data.project_id}")
+        logger.info(f"[SAVE] context for project {context_data.project_id}")
 
         result = await service.save_context(
             project_id=context_data.project_id,
-            udo_state=(
-                context_data.udo_state.model_dump() if context_data.udo_state else None
-            ),
-            ml_models=(
-                context_data.ml_models.model_dump() if context_data.ml_models else None
-            ),
+            udo_state=(context_data.udo_state.model_dump() if context_data.udo_state else None),
+            ml_models=(context_data.ml_models.model_dump() if context_data.ml_models else None),
             recent_executions=(
-                [e.model_dump() for e in context_data.recent_executions]
-                if context_data.recent_executions
-                else None
+                [e.model_dump() for e in context_data.recent_executions] if context_data.recent_executions else None
             ),
-            ai_preferences=(
-                context_data.ai_preferences.model_dump()
-                if context_data.ai_preferences
-                else None
-            ),
-            editor_state=(
-                context_data.editor_state.model_dump()
-                if context_data.editor_state
-                else None
-            ),
+            ai_preferences=(context_data.ai_preferences.model_dump() if context_data.ai_preferences else None),
+            editor_state=(context_data.editor_state.model_dump() if context_data.editor_state else None),
         )
 
         return ProjectContextResponse(**result)
@@ -138,9 +117,7 @@ async def save_project_context(
 
 
 @router.get("/load/{project_id}", response_model=ProjectContextResponse)
-async def load_project_context(
-    project_id: UUID, service=Depends(get_service)
-) -> ProjectContextResponse:
+async def load_project_context(project_id: UUID, service=Depends(get_service)) -> ProjectContextResponse:
     """
     Load project context for a specific project.
 
@@ -152,7 +129,7 @@ async def load_project_context(
     **Response:** Complete project context or 404 if not found
     """
     try:
-        logger.info(f"[EMOJI] Loading context for project {project_id}")
+        logger.info(f"[LOAD] context for project {project_id}")
 
         result = await service.load_context(project_id)
 
@@ -192,7 +169,7 @@ async def update_project_context(
     **Response:** Complete updated context
     """
     try:
-        logger.info(f"[EMOJI] Updating context for project {project_id}")
+        logger.info(f"[UPDATE] context for project {project_id}")
 
         # Prepare partial update
         partial_context = {}
@@ -202,13 +179,9 @@ async def update_project_context(
         if context_update.ml_models:
             partial_context["ml_models"] = context_update.ml_models.model_dump()
         if context_update.recent_executions:
-            partial_context["recent_executions"] = [
-                e.model_dump() for e in context_update.recent_executions
-            ]
+            partial_context["recent_executions"] = [e.model_dump() for e in context_update.recent_executions]
         if context_update.ai_preferences:
-            partial_context["ai_preferences"] = (
-                context_update.ai_preferences.model_dump()
-            )
+            partial_context["ai_preferences"] = context_update.ai_preferences.model_dump()
         if context_update.editor_state:
             partial_context["editor_state"] = context_update.editor_state.model_dump()
 
@@ -235,7 +208,7 @@ async def delete_project_context(project_id: UUID, service=Depends(get_service))
     **Response:** 204 No Content on success
     """
     try:
-        logger.info(f"[EMOJI] Deleting context for project {project_id}")
+        logger.info(f"[DELETE] context for project {project_id}")
 
         deleted = await service.delete_context(project_id)
 
@@ -258,9 +231,7 @@ async def delete_project_context(project_id: UUID, service=Depends(get_service))
 
 
 @router.post("/switch", response_model=ProjectSwitchResponse)
-async def switch_project(
-    switch_request: ProjectSwitchRequest, service=Depends(get_service)
-) -> ProjectSwitchResponse:
+async def switch_project(switch_request: ProjectSwitchRequest, service=Depends(get_service)) -> ProjectSwitchResponse:
     """
     Switch to a different project with context auto-loading.
 
@@ -277,7 +248,7 @@ async def switch_project(
     **Response:** Switch result with loaded context
     """
     try:
-        logger.info(f"[EMOJI] Switching to project {switch_request.project_id}")
+        logger.info(f"[SWITCH] to project {switch_request.project_id}")
 
         result = await service.switch_project(
             target_project_id=switch_request.project_id,
@@ -320,11 +291,9 @@ async def list_projects(
     **Response:** List of projects sorted by last_active_at (most recent first)
     """
     try:
-        logger.info(f"[EMOJI] Listing projects (limit={limit}, offset={offset})")
+        logger.info(f"[*] Listing projects (limit={limit}, offset={offset})")
 
-        result = await service.list_projects(
-            include_archived=include_archived, limit=limit, offset=offset
-        )
+        result = await service.list_projects(include_archived=include_archived, limit=limit, offset=offset)
 
         return ProjectsListResponse(**result)
 
@@ -346,7 +315,7 @@ async def get_current_project(
     **Response:** Current project info or null if no project is active
     """
     try:
-        logger.info("[EMOJI] Getting current project")
+        logger.info("[*] Getting current project")
 
         result = await service.get_current_project()
 
