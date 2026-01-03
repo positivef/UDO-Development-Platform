@@ -66,26 +66,31 @@ def save_session_state(data: Dict[str, Any]) -> bool:
         return False
 
 
-def analyze_git_diff() -> Dict[str, Any]:
-    """Git diff를 분석하여 자동으로 메타인지 추출"""
+def analyze_git_diff(use_last_commit: bool = False) -> Dict[str, Any]:
+    """Git diff를 분석하여 자동으로 메타인지 추출
+
+    Args:
+        use_last_commit: True면 마지막 커밋의 diff 사용, False면 staged diff 사용
+    """
     try:
-        # 스테이징된 변경사항 가져오기
-        result = subprocess.run(
-            ["git", "diff", "--cached", "--stat"],
-            capture_output=True,
-            text=True,
-        )
+        # diff 명령어 결정
+        if use_last_commit:
+            # 마지막 커밋의 diff (post-commit에서 사용)
+            diff_cmd = ["git", "diff", "HEAD~1", "HEAD", "--stat"]
+            files_cmd = ["git", "diff", "HEAD~1", "HEAD", "--name-only"]
+        else:
+            # 스테이징된 변경사항 (pre-commit에서 사용)
+            diff_cmd = ["git", "diff", "--cached", "--stat"]
+            files_cmd = ["git", "diff", "--cached", "--name-only"]
+
+        result = subprocess.run(diff_cmd, capture_output=True, text=True)
         diff_stat = result.stdout
 
         # 변경된 파일 수
         files_changed = len([line for line in diff_stat.split("\n") if "|" in line])
 
         # 변경된 파일 목록
-        result = subprocess.run(
-            ["git", "diff", "--cached", "--name-only"],
-            capture_output=True,
-            text=True,
-        )
+        result = subprocess.run(files_cmd, capture_output=True, text=True)
         changed_files = result.stdout.strip().split("\n") if result.stdout.strip() else []
 
         # 카테고리별 분류
@@ -196,6 +201,7 @@ def save_current_session(
     areas_to_improve: Optional[List[Dict]] = None,
     blockers: Optional[List[str]] = None,
     auto_analyze: bool = True,
+    use_last_commit: bool = False,
 ) -> bool:
     """현재 세션의 메타인지 정보 저장
 
@@ -206,13 +212,14 @@ def save_current_session(
         areas_to_improve: 보완 필요 영역 리스트
         blockers: 현재 차단 요소 리스트
         auto_analyze: Git diff 기반 자동 분석 여부
+        use_last_commit: True면 마지막 커밋의 diff 분석 (post-commit용)
 
     Returns:
         성공 여부
     """
     # 자동 분석
     if auto_analyze:
-        diff_info = analyze_git_diff()
+        diff_info = analyze_git_diff(use_last_commit=use_last_commit)
         auto_meta = generate_auto_metacognition(diff_info)
     else:
         auto_meta = {

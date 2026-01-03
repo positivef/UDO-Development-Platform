@@ -3286,11 +3286,12 @@ def main():
     args = parser.parse_args()
 
     # v3.6: AI 메타인지 자동 생성 (커밋 직후, 동기화 전)
+    # use_last_commit=True: 커밋 후에는 staged diff가 비어있으므로 마지막 커밋의 diff 사용
     try:
         from save_session_metacognition import save_current_session
 
-        save_current_session(auto_analyze=True)
-        logger.info("✅ AI 메타인지 자동 생성 완료")
+        save_current_session(auto_analyze=True, use_last_commit=True)
+        logger.info("✅ AI 메타인지 자동 생성 완료 (last commit diff)")
     except ImportError:
         logger.debug("save_session_metacognition 모듈 없음 - 스킵")
     except Exception as e:
