@@ -13,7 +13,6 @@ Usage:
 
 import argparse
 import sys
-import os
 import shutil
 from pathlib import Path
 from typing import Optional, List
@@ -347,7 +346,7 @@ def interactive_mode():
         language = "python"
 
     # Confirm
-    print(f"\n[*] Summary:")
+    print("\n[*] Summary:")
     print(f"   Name: {name}")
     print(f"   Template: {template}")
     print(f"   Language: {language}")

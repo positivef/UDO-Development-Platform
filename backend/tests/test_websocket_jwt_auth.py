@@ -265,10 +265,10 @@ def test_websocket_requires_token_parameter(async_client):
 
     # Attempt connection without token
     try:
-        with async_client.websocket_connect(f"/ws/kanban/projects/{project_id}") as websocket:
+        with async_client.websocket_connect(f"/ws/kanban/projects/{project_id}"):
             # Should not reach here
             pytest.fail("WebSocket connection should fail without token")
-    except Exception as e:
+    except Exception:
         # Expected: connection rejected
         # FastAPI should return 422 Unprocessable Entity (missing required parameter)
         pass
@@ -308,12 +308,12 @@ def test_websocket_with_invalid_token(async_client, invalid_token):
     project_id = "test-project-123"
 
     try:
-        with async_client.websocket_connect(f"/ws/kanban/projects/{project_id}?token={invalid_token}") as websocket:
+        with async_client.websocket_connect(f"/ws/kanban/projects/{project_id}?token={invalid_token}"):
             # Should not reach here
             pytest.fail("WebSocket should reject invalid token")
-    except WebSocketDisconnect as e:
+    except WebSocketDisconnect as exc:
         # Expected: 1008 Policy Violation
-        assert e.code == 1008
+        assert exc.code == 1008
 
 
 # ============= Test Summary =============

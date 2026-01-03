@@ -7,14 +7,13 @@ Balanced mode:
 - Explicit vault/path configuration via env or defaults
 
 Usage (PowerShell/cmd from repo root):
-  python scripts\install_obsidian_git_hook.py --vault "C:\Users\user\Documents\Obsidian Vault"
+  python scripts/install_obsidian_git_hook.py --vault "C:/Users/user/Documents/Obsidian Vault"
 
 Uninstall:
   delete .git/hooks/post-commit (if created by this script)
 """
 
 import argparse
-import os
 from pathlib import Path
 
 HOOK_NAME = "post-commit"

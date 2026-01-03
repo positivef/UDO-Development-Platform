@@ -155,11 +155,11 @@ class TestDAGPerformance:
         p95_index = int(len(times_sorted) * 0.95)
         p95_time = times_sorted[p95_index]
 
-        print(f"\n[PERF] Task Insertion Performance (1,000 tasks):")
-        print(f"  - Average: {sum(times)/len(times):.2f}ms")
-        print(f"  - p50: {times_sorted[len(times_sorted)//2]:.2f}ms")
+        print("\n[PERF] Task Insertion Performance (1,000 tasks):")
+        print(f"  - Average: {sum(times) / len(times):.2f}ms")
+        print(f"  - p50: {times_sorted[len(times_sorted) // 2]:.2f}ms")
         print(f"  - p95: {p95_time:.2f}ms")
-        print(f"  - p99: {times_sorted[int(len(times_sorted)*0.99)]:.2f}ms")
+        print(f"  - p99: {times_sorted[int(len(times_sorted) * 0.99)]:.2f}ms")
         print(f"  - Max: {max(times):.2f}ms")
 
         assert p95_time < 50, f"p95 task insertion time {p95_time:.2f}ms exceeds 50ms threshold"
@@ -188,11 +188,11 @@ class TestDAGPerformance:
         times_sorted = sorted(times)
         p95_time = times_sorted[int(len(times_sorted) * 0.95)]
 
-        print(f"\n[PERF] Dependency Insertion Performance (999 dependencies with cycle detection):")
-        print(f"  - Average: {sum(times)/len(times):.2f}ms")
-        print(f"  - p50: {times_sorted[len(times_sorted)//2]:.2f}ms")
+        print("\n[PERF] Dependency Insertion Performance (999 dependencies with cycle detection):")
+        print(f"  - Average: {sum(times) / len(times):.2f}ms")
+        print(f"  - p50: {times_sorted[len(times_sorted) // 2]:.2f}ms")
         print(f"  - p95: {p95_time:.2f}ms")
-        print(f"  - p99: {times_sorted[int(len(times_sorted)*0.99)]:.2f}ms")
+        print(f"  - p99: {times_sorted[int(len(times_sorted) * 0.99)]:.2f}ms")
         print(f"  - Max: {max(times):.2f}ms")
 
         assert p95_time < 50, f"p95 dependency insertion time {p95_time:.2f}ms exceeds 50ms threshold"
@@ -219,7 +219,7 @@ class TestDAGPerformance:
             await db.insert_dependency(task_ids[99], task_ids[0])
         elapsed = (time.time() - start) * 1000
 
-        print(f"\n[PERF] Cycle Detection Performance (100-task chain):")
+        print("\n[PERF] Cycle Detection Performance (100-task chain):")
         print(f"  - Detection time: {elapsed:.2f}ms")
 
         assert elapsed < 50, f"Cycle detection time {elapsed:.2f}ms exceeds 50ms threshold"
@@ -250,7 +250,7 @@ class TestDAGPerformance:
 
         for task_id in sample_tasks:
             start = time.time()
-            deps = await db.get_task_dependencies(task_id)
+            _ = await db.get_task_dependencies(task_id)  # Result unused, timing only
             elapsed = (time.time() - start) * 1000
             times.append(elapsed)
 
@@ -258,9 +258,9 @@ class TestDAGPerformance:
         times_sorted = sorted(times)
         p95_time = times_sorted[int(len(times_sorted) * 0.95)]
 
-        print(f"\n[PERF] Dependency Query Performance (100 queries on 1,000 tasks):")
-        print(f"  - Average: {sum(times)/len(times):.2f}ms")
-        print(f"  - p50: {times_sorted[len(times_sorted)//2]:.2f}ms")
+        print("\n[PERF] Dependency Query Performance (100 queries on 1,000 tasks):")
+        print(f"  - Average: {sum(times) / len(times):.2f}ms")
+        print(f"  - p50: {times_sorted[len(times_sorted) // 2]:.2f}ms")
         print(f"  - p95: {p95_time:.2f}ms")
         print(f"  - Max: {max(times):.2f}ms")
 
@@ -291,7 +291,7 @@ class TestDAGPerformance:
 
         for task_id in sample_tasks:
             start = time.time()
-            dependents = await db.get_dependent_tasks(task_id)
+            _ = await db.get_dependent_tasks(task_id)  # Result unused, timing only
             elapsed = (time.time() - start) * 1000
             times.append(elapsed)
 
@@ -299,9 +299,9 @@ class TestDAGPerformance:
         times_sorted = sorted(times)
         p95_time = times_sorted[int(len(times_sorted) * 0.95)]
 
-        print(f"\n[PERF] Reverse Dependency Query Performance (50 queries):")
-        print(f"  - Average: {sum(times)/len(times):.2f}ms")
-        print(f"  - p50: {times_sorted[len(times_sorted)//2]:.2f}ms")
+        print("\n[PERF] Reverse Dependency Query Performance (50 queries):")
+        print(f"  - Average: {sum(times) / len(times):.2f}ms")
+        print(f"  - p50: {times_sorted[len(times_sorted) // 2]:.2f}ms")
         print(f"  - p95: {p95_time:.2f}ms")
         print(f"  - Max: {max(times):.2f}ms")
 
@@ -318,7 +318,7 @@ class TestDAGPerformance:
         query_times = []
 
         # Phase 1: Insert 1,000 tasks (measure each)
-        print(f"\n[PERF] Full DAG Workflow Simulation:")
+        print("\n[PERF] Full DAG Workflow Simulation:")
         for i in range(1000):
             task_id = str(uuid4())
             start = time.time()
@@ -349,18 +349,18 @@ class TestDAGPerformance:
         dependency_p95 = sorted(dependency_times)[int(len(dependency_times) * 0.95)]
         query_p95 = sorted(query_times)[int(len(query_times) * 0.95)]
 
-        print(f"  Phase 1 - Inserts (1,000 tasks):")
+        print("  Phase 1 - Inserts (1,000 tasks):")
         print(f"    p95: {insert_p95:.2f}ms, target: <50ms {'[PASS]' if insert_p95 < 50 else '[FAIL]'}")
-        print(f"  Phase 2 - Dependencies (900 edges):")
+        print("  Phase 2 - Dependencies (900 edges):")
         print(f"    p95: {dependency_p95:.2f}ms, target: <50ms {'[PASS]' if dependency_p95 < 50 else '[FAIL]'}")
-        print(f"  Phase 3 - Queries (200 lookups):")
+        print("  Phase 3 - Queries (200 lookups):")
         print(f"    p95: {query_p95:.2f}ms, target: <50ms {'[PASS]' if query_p95 < 50 else '[FAIL]'}")
 
         assert insert_p95 < 50, f"Task insertion p95 {insert_p95:.2f}ms exceeds 50ms"
         assert dependency_p95 < 50, f"Dependency insertion p95 {dependency_p95:.2f}ms exceeds 50ms"
         assert query_p95 < 50, f"Query p95 {query_p95:.2f}ms exceeds 50ms"
 
-        print(f"\n[SUCCESS] All DAG operations meet <50ms performance target at 1,000 task scale")
+        print("\n[SUCCESS] All DAG operations meet <50ms performance target at 1,000 task scale")
 
 
 class TestIndexEffectiveness:
@@ -392,7 +392,7 @@ class TestIndexEffectiveness:
         _ = [(s, t, dt) for (s, t, dt) in db.dependencies if s == task_ids[0]]
         without_index_time = (time.time() - start) * 1000
 
-        print(f"\n[PERF] Index Effectiveness:")
+        print("\n[PERF] Index Effectiveness:")
         print(f"  - With index: {with_index_time:.4f}ms")
         print(f"  - Without index: {without_index_time:.4f}ms")
         print(f"  - Speedup: {without_index_time / with_index_time:.1f}x")

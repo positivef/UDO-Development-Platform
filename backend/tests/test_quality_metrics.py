@@ -1,8 +1,9 @@
-import pytest
+import pytest  # noqa: F401
 from fastapi.testclient import TestClient
 from backend.main import app
 
 client = TestClient(app)
+
 
 def test_quality_endpoint():
     response = client.get("/api/quality-metrics")

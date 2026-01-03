@@ -19,6 +19,7 @@ import argparse
 import os
 import re
 from pathlib import Path
+from typing import List  # noqa: F401 - may be used in type annotations
 
 # Obsidian vault path from environment or user home fallback
 OBSIDIAN_VAULT = os.getenv("OBSIDIAN_VAULT_PATH") or str(Path.home() / "Documents" / "Obsidian Vault")

@@ -107,7 +107,8 @@ class MigrationTester:
             logger.info("[OK] Mock mode - skipping database table check")
             logger.info("   Expected table: phase_transitions")
             logger.info(
-                "   Expected columns: id, from_phase, to_phase, transition_time, duration_seconds, automated, metadata, project_id, created_at"
+                "   Expected columns: id, from_phase, to_phase, transition_time, "
+                "duration_seconds, automated, metadata, project_id, created_at"
             )
             return True
 

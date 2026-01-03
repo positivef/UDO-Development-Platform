@@ -7,7 +7,6 @@ Codex MCP, Claude, Gemini 통합
 
 import sys
 import os
-import json
 from typing import Dict, Optional, Any
 from dataclasses import dataclass, asdict
 from datetime import datetime
@@ -170,11 +169,11 @@ class AICollaborationConnector:
 
         # Claude는 현재 컨텍스트에서 항상 사용 가능
         self.services_status[AIService.CLAUDE] = True
-        logger.info(f"Claude: [OK] Available (current context)")
+        logger.info("Claude: [OK] Available (current context)")
 
         # Local 실행은 항상 가능
         self.services_status[AIService.LOCAL] = True
-        logger.info(f"Local: [OK] Available")
+        logger.info("Local: [OK] Available")
 
     def execute_request(self, request: AIRequest) -> AIResponse:
         """AI 요청 실행"""

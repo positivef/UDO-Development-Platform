@@ -22,7 +22,7 @@ import os
 import re
 import sys
 from pathlib import Path
-from typing import List, Dict
+from typing import List
 from dataclasses import dataclass
 from enum import Enum
 
@@ -411,7 +411,7 @@ class SystemRulesValidator:
                     rule_section="Tier 1 (Obsidian)",
                     check_name="개발일지 폴더 존재",
                     passed=True,
-                    message=f"[OK] Obsidian 개발일지 존재",
+                    message="[OK] Obsidian 개발일지 존재",
                 )
             )
 
@@ -486,7 +486,7 @@ def main():
     validator = SystemRulesValidator(repo_root)
 
     # 검증 실행
-    results = validator.validate_all()
+    validator.validate_all()
 
     # 결과 출력
     exit_code = validator.print_summary()

@@ -134,7 +134,7 @@ class TestLRUEviction:
 
         # Calculate actual size of test strings (account for Python overhead)
         small_entry_size = sys.getsizeof("x" * 100)  # ~149 bytes
-        large_entry_size = sys.getsizeof("y" * 800)  # ~849 bytes
+        _large_entry_size = sys.getsizeof("y" * 800)  # noqa: F841 ~849 bytes (for reference)
 
         # Size cache to fit exactly 10 small entries + some buffer
         cache = CacheManager(max_size_bytes=small_entry_size * 10 + 100)
@@ -303,8 +303,8 @@ class TestEdgeCases:
         """Should handle many small entries efficiently"""
         import sys
 
-        # Calculate actual size of small entry
-        small_entry_size = sys.getsizeof("value0")  # ~51 bytes
+        # Calculate actual size of small entry (~51 bytes, for reference)
+        _small_entry_size = sys.getsizeof("value0")  # noqa: F841
 
         # Size cache to force evictions: 100 entries × 51 bytes = 5100 bytes
         # Set cache to 4KB to ensure evictions happen

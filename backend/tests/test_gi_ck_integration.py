@@ -12,7 +12,7 @@ Updated: 2025-12-13
 - Use only allowed constraint keys
 """
 
-from datetime import datetime
+from datetime import datetime  # noqa: F401
 
 import pytest
 
@@ -115,9 +115,7 @@ class TestCKTheoryIntegration:
             # Removed project_context - not a valid field
         )
 
-        result = await ck_service.generate_design(
-            request
-        )  # Changed from generate_alternatives
+        result = await ck_service.generate_design(request)  # Changed from generate_alternatives
 
         assert result is not None
         assert result.id is not None  # Changed from design_id
@@ -134,9 +132,7 @@ class TestCKTheoryIntegration:
             constraints={"budget": "medium", "complexity": "moderate"},
         )
 
-        result = await ck_service.generate_design(
-            request
-        )  # Changed from generate_alternatives
+        result = await ck_service.generate_design(request)  # Changed from generate_alternatives
 
         # Check that all alternatives have unique IDs and titles
         ids = [alt.id for alt in result.alternatives]
@@ -164,9 +160,7 @@ class TestCKTheoryIntegration:
             },  # Fixed: removed team_experience
         )
 
-        result = await ck_service.generate_design(
-            request
-        )  # Changed from generate_alternatives
+        result = await ck_service.generate_design(request)  # Changed from generate_alternatives
         analysis = result.tradeoff_analysis
 
         assert analysis.summary is not None
@@ -183,14 +177,10 @@ class TestCKTheoryIntegration:
         """Test feedback submission and retrieval"""
         request = CKTheoryRequest(
             challenge="Design CI/CD pipeline for microservices",
-            constraints={
-                "complexity": "high"
-            },  # Fixed: changed automation_level to complexity
+            constraints={"complexity": "high"},  # Fixed: changed automation_level to complexity
         )
 
-        result = await ck_service.generate_design(
-            request
-        )  # Changed from generate_alternatives
+        result = await ck_service.generate_design(request)  # Changed from generate_alternatives
 
         # Submit feedback using add_feedback method
         from backend.app.models.ck_theory import DesignFeedback
@@ -203,9 +193,7 @@ class TestCKTheoryIntegration:
             outcome="success",  # Fixed: must be 'success', 'partial', or 'failure'
         )
 
-        feedback_result = await ck_service.add_feedback(
-            result.id, feedback
-        )  # Changed from submit_feedback
+        feedback_result = await ck_service.add_feedback(result.id, feedback)  # Changed from submit_feedback
 
         # add_feedback() returns True on success, not a feedback object
         assert feedback_result is True
@@ -236,9 +224,7 @@ class TestServiceIntegration:
             constraints={"budget": "medium", "timeline": "2 months"},
         )
 
-        ck_result = await ck_service.generate_design(
-            ck_request
-        )  # Changed from generate_alternatives
+        ck_result = await ck_service.generate_design(ck_request)  # Changed from generate_alternatives
         assert len(ck_result.alternatives) == 3
         assert ck_result.tradeoff_analysis is not None
 
@@ -249,22 +235,16 @@ class TestServiceIntegration:
         ck_service = CKTheoryService()
 
         # GI Formula should complete in <30 seconds
-        gi_request = GIFormulaRequest(
-            problem="Optimize resource allocation", context={}
-        )
+        gi_request = GIFormulaRequest(problem="Optimize resource allocation", context={})
 
         gi_result = await gi_service.generate_insight(gi_request)
         gi_time_sec = gi_result.total_duration_ms / 1000  # Convert ms to seconds
         assert gi_time_sec < 30.0, f"GI Formula took {gi_time_sec}s (target: <30s)"
 
         # C-K Theory should complete in <45 seconds
-        ck_request = CKTheoryRequest(
-            challenge="Design scalable architecture", constraints={}
-        )
+        ck_request = CKTheoryRequest(challenge="Design scalable architecture", constraints={})
 
-        ck_result = await ck_service.generate_design(
-            ck_request
-        )  # Changed from generate_alternatives
+        ck_result = await ck_service.generate_design(ck_request)  # Changed from generate_alternatives
         ck_time_sec = ck_result.total_duration_ms / 1000  # Convert ms to seconds
         assert ck_time_sec < 45.0, f"C-K Theory took {ck_time_sec}s (target: <45s)"
 

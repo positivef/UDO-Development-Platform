@@ -3,7 +3,7 @@
 from pathlib import Path
 from types import SimpleNamespace
 
-import pytest
+import pytest  # noqa: F401
 
 from backend.app.services.quality_service import QualityMetricsService
 

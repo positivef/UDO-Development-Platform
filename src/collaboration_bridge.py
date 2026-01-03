@@ -236,7 +236,7 @@ class ThreeAICollaborationBridge:
         self.gemini.validate_connection()
         logger.info(f"Codex MCP: {'[OK] Connected' if self.codex.connected else '[FAIL] Not available'}")
         logger.info(f"Gemini API: {'[OK] Connected' if self.gemini.connected else '[FAIL] Not available'}")
-        logger.info(f"Claude: [OK] Available (current context)")
+        logger.info("Claude: [OK] Available (current context)")
 
     def collaborate(self, task: str, pattern: str = "implementation", max_iterations: int = 3) -> Dict[str, Any]:
         """Execute 3-AI collaboration"""
@@ -403,7 +403,15 @@ class ThreeAICollaborationBridge:
     def _execute_claude(self, task: str, role: AIRole, context: AIContext) -> AIResponse:
         """Execute Claude (current context)"""
         start_time = time.time()
-        output = f"[Claude executing in role: {role.value}]\nTask: {task}\n\nBased on context analysis:\n1. Implementing solution with best practices\n2. Following established patterns\n3. Ensuring code quality and documentation\n\nOutput: [Implementation would go here]"
+        output = (
+            f"[Claude executing in role: {role.value}]\n"
+            f"Task: {task}\n\n"
+            "Based on context analysis:\n"
+            "1. Implementing solution with best practices\n"
+            "2. Following established patterns\n"
+            "3. Ensuring code quality and documentation\n\n"
+            "Output: [Implementation would go here]"
+        )
         return AIResponse(
             ai_name="claude",
             role=role,
@@ -561,7 +569,7 @@ def main():
 
     # Check AI availability
     print("\n[*] AI Availability:")
-    print(f"  - Claude: [OK] (current context)")
+    print("  - Claude: [OK] (current context)")
     print(f"  - Codex: {'[OK]' if bridge.codex.connected else '[FAIL]'}")
     print(f"  - Gemini: {'[OK]' if bridge.gemini.connected else '[FAIL]'}")
 
@@ -574,16 +582,16 @@ def main():
     ]
 
     for task, pattern in test_tasks:
-        print(f"\n{'='*60}")
+        print("\n" + "=" * 60)
         print(f"[*] Task: {task}")
         print(f"[*] Pattern: {pattern}")
-        print(f"{'='*60}")
+        print("=" * 60)
 
         # Execute collaboration
         result = bridge.collaborate(task, pattern)
 
         # Display results
-        print(f"\n[*] Results:")
+        print("\n[*] Results:")
         print(f"  - Status: {result['status']}")
         print(f"  - Confidence: {result['overall_confidence']:.0%}")
         print(f"  - Time: {result['total_execution_time']:.1f}s")
@@ -591,16 +599,16 @@ def main():
         print(f"  - Suggestions: {len(result['aggregated_suggestions'])}")
 
         if result["aggregated_issues"]:
-            print(f"\n[WARN] Issues to Address:")
+            print("\n[WARN] Issues to Address:")
             for issue in result["aggregated_issues"][:3]:
                 print(f"  - {issue}")
 
         if result["aggregated_suggestions"]:
-            print(f"\n[*] Suggestions:")
+            print("\n[*] Suggestions:")
             for suggestion in result["aggregated_suggestions"][:3]:
                 print(f"  - {suggestion}")
 
-        print(f"\n[OK] Collaboration Complete!")
+        print("\n[OK] Collaboration Complete!")
         time.sleep(1)  # Brief pause between tests
 
 

@@ -161,13 +161,15 @@ class UnifiedErrorResolver:
                     self.stats["tier2_auto_applied"] += 1
                     self._record_resolution(error_ctx, result)
                     logger.info(
-                        f"[TIER 2 AUTO] Auto-applied from Context7 in {resolution_time:.1f}ms (confidence={result.confidence:.0%})"
+                        f"[TIER 2 AUTO] Auto-applied from Context7 in "
+                        f"{resolution_time:.1f}ms (confidence={result.confidence:.0%})"
                     )
                     return result
                 else:
                     # MEDIUM confidence (70-95%) - return for user confirmation
                     logger.info(
-                        f"[TIER 2 MEDIUM] Context7 suggests solution (confidence={result.confidence:.0%}) - user confirmation needed"
+                        f"[TIER 2 MEDIUM] Context7 suggests solution "
+                        f"(confidence={result.confidence:.0%}) - user confirmation needed"
                     )
                     return result
 

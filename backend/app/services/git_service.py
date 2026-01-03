@@ -202,7 +202,7 @@ class GitService:
                     # Parse date
                     try:
                         commit_date = datetime.fromisoformat(date_str.replace(" ", "T"))
-                    except:
+                    except (ValueError, TypeError):
                         commit_date = datetime.now()
 
                     # Get tags for this commit

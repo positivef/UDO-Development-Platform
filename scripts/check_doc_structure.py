@@ -11,12 +11,10 @@ Returns:
     0 if valid, 1 if errors found
 """
 
-import os
 import re
 import sys
 from pathlib import Path
-from typing import List, Tuple, Dict
-from datetime import datetime
+from typing import List
 
 # Project root
 PROJECT_ROOT = Path(__file__).parent.parent

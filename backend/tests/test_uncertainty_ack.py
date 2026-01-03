@@ -1,6 +1,6 @@
 """Tests for mitigation ACK endpoint and status cache invalidation."""
 
-import os
+import os  # noqa: F401
 import sys
 from pathlib import Path
 

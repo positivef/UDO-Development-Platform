@@ -27,6 +27,8 @@ from enum import Enum
 from pathlib import Path
 from typing import Any, Dict, List, Optional
 
+# Note: json is imported in main() for argparse CLI output
+
 logger = logging.getLogger(__name__)
 
 

@@ -29,8 +29,11 @@ def add_time_tracking_router():
     print("Adding time tracking router to main.py...")
 
     # Add import
-    old_import = "from app.routers import version_history_router, quality_metrics_router, constitutional_router"
-    new_import = "from app.routers import version_history_router, quality_metrics_router, constitutional_router, time_tracking_router"
+    old_import = "from app.routers import version_history_router, " "quality_metrics_router, constitutional_router"
+    new_import = (
+        "from app.routers import version_history_router, "
+        "quality_metrics_router, constitutional_router, time_tracking_router"
+    )
 
     content = content.replace(old_import, new_import)
 

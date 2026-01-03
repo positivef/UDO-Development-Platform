@@ -310,9 +310,9 @@ def generate_report(accuracy_results: Dict, error_analysis: Dict) -> str:
     # Targets
     report_lines.append("[*] Target Comparison:")
     report_lines.append(f"   Week 0 Baseline:  {overall:.1f}% (expected: 50-60%)")
-    report_lines.append(f"   Prototype Target: 55%")
-    report_lines.append(f"   Beta Target:      65%")
-    report_lines.append(f"   Production Target: 80%")
+    report_lines.append("   Prototype Target: 55%")
+    report_lines.append("   Beta Target:      65%")
+    report_lines.append("   Production Target: 80%")
     report_lines.append("")
 
     report_lines.append("=" * 70)
@@ -389,7 +389,7 @@ def main():
     else:
         # Simple output
         print(f"[*] Overall Accuracy: {accuracy_results['overall']:.1f}%")
-        print(f"\nComponents:")
+        print("\nComponents:")
         print(f"  Level:  {accuracy_results['components']['level_accuracy']:.1f}%")
         print(f"  Trend:  {accuracy_results['components']['trend_accuracy']:.1f}%")
         print(f"  State:  {accuracy_results['components']['state_accuracy']:.1f}%")

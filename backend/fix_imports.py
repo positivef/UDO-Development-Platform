@@ -12,10 +12,10 @@ for dirpath, _, filenames in os.walk(root):
             try:
                 with open(path, "r", encoding="utf-8") as file:
                     content = file.read()
-                
+
                 new_content = content.replace("from backend.app", "from app")
                 new_content = new_content.replace("import backend.app", "import app")
-                
+
                 if new_content != content:
                     print(f"Fixing {f}")
                     with open(path, "w", encoding="utf-8") as file:

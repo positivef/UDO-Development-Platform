@@ -8,7 +8,6 @@ Checks only files that are staged for commit (git diff --cached)
 import re
 import subprocess
 import sys
-from pathlib import Path
 
 
 def get_staged_python_files():

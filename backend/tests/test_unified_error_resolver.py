@@ -16,9 +16,7 @@ from pathlib import Path
 
 import pytest
 
-from backend.app.services.unified_error_resolver import (ErrorContext,
-                                                         ResolutionResult,
-                                                         UnifiedErrorResolver)
+from backend.app.services.unified_error_resolver import UnifiedErrorResolver  # noqa: F401
 
 
 class TestKnowledgeReuseTracking:
@@ -272,9 +270,7 @@ class TestErrorKeywordExtraction:
             stats_file = Path(tmpdir) / "test_stats.json"
             resolver = UnifiedErrorResolver(stats_file=stats_file)
 
-            keywords = resolver._extract_error_keywords(
-                "ModuleNotFoundError: No module named 'pandas'"
-            )
+            keywords = resolver._extract_error_keywords("ModuleNotFoundError: No module named 'pandas'")
             assert "ModuleNotFoundError" in keywords
 
     def test_extract_module_name(self):
@@ -339,9 +335,7 @@ class TestRealWorldScenarios:
                 context={"tool": "Bash", "command": "./deploy.sh"},
             )
 
-            assert (
-                result.solution is not None
-            ), "Solution should not be None for permission denied"
+            assert result.solution is not None, "Solution should not be None for permission denied"
             assert "chmod +x" in result.solution
             assert result.confidence >= 0.95
 
@@ -361,9 +355,7 @@ class TestRealWorldScenarios:
 
             # 2 permission errors
             for _ in range(2):
-                resolver.resolve_error(
-                    "Permission denied: 'script.sh'", context={"tool": "Bash"}
-                )
+                resolver.resolve_error("Permission denied: 'script.sh'", context={"tool": "Bash"})
 
             stats = resolver.get_statistics()
             assert stats["total"] == 10

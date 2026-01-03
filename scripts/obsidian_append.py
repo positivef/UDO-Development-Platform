@@ -2,8 +2,8 @@
 Utility script to append a markdown snippet to today's Obsidian daily log.
 
 Usage (Windows PowerShell):
-  set PYTHONPATH=C:\Users\user\Documents\GitHub\UDO-Development-Platform
-  python scripts\obsidian_append.py --vault "C:\Users\user\Documents\Obsidian Vault" --file tmp\obsidian_append.txt
+  set PYTHONPATH=C:/Users/user/Documents/GitHub/UDO-Development-Platform
+  python scripts/obsidian_append.py --vault "C:/Users/user/Documents/Obsidian Vault" --file tmp/obsidian_append.txt
 
 This script:
 - Creates the daily note under <vault>/개발일지/YYYY-MM-DD.md if missing

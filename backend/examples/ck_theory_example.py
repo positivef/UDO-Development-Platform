@@ -47,7 +47,9 @@ async def main():
     for alt in result1.alternatives:
         print(f"\n  Alternative {alt.id}: {alt.title}")
         print(
-            f"  RICE Score: {alt.rice.score:.2f} (R:{alt.rice.reach} I:{alt.rice.impact} C:{alt.rice.confidence} E:{alt.rice.effort})"
+            f"  RICE Score: {alt.rice.score:.2f} "
+            f"(R:{alt.rice.reach} I:{alt.rice.impact} "
+            f"C:{alt.rice.confidence} E:{alt.rice.effort})"
         )
         print(f"  Description: {alt.description[:100]}...")
         print(f"  Timeline: {alt.estimated_timeline}")

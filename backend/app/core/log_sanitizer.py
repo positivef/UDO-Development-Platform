@@ -42,7 +42,8 @@ SENSITIVE_PATTERNS = [
     ),
     # API keys and secrets
     (
-        r'(?i)(api[_-]?key|apikey|secret[_-]?key|auth[_-]?token|access[_-]?token)\s*[=:]\s*[\'"]?([A-Za-z0-9_\-\.]{16,})[\'"]?',
+        r"(?i)(api[_-]?key|apikey|secret[_-]?key|auth[_-]?token|access[_-]?token)"
+        r'\s*[=:]\s*[\'"]?([A-Za-z0-9_\-\.]{16,})[\'"]?',
         r"\1=***REDACTED***",
     ),
     # JWT tokens (Bearer tokens)

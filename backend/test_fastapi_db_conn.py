@@ -8,7 +8,10 @@ load_dotenv(".env")
 
 
 async def test():
-    dsn = f"postgresql://{os.getenv('DB_USER')}:{os.getenv('DB_PASSWORD')}@{os.getenv('DB_HOST')}:{os.getenv('DB_PORT')}/{os.getenv('DB_NAME')}"
+    dsn = (
+        f"postgresql://{os.getenv('DB_USER')}:{os.getenv('DB_PASSWORD')}"
+        f"@{os.getenv('DB_HOST')}:{os.getenv('DB_PORT')}/{os.getenv('DB_NAME')}"
+    )
     try:
         conn = await asyncpg.connect(dsn)
         await conn.close()

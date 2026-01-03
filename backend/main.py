@@ -961,7 +961,6 @@ async def shutdown_event():
             logger.error(f"[FAIL] Failed to cleanup SessionManager: {e}")
 
     # Cleanup Phase Transition System
-    global phase_transition_listener
     if phase_transition_listener is not None:
         try:
             await phase_transition_listener.stop()

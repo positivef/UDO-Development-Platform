@@ -133,20 +133,20 @@ class SessionManager:
 
         if is_orphaned and not force:
             return (
-                f"[WARN]  ORPHANED SESSION DETECTED\n"
+                "[WARN]  ORPHANED SESSION DETECTED\n"
                 f"    Reason: {reason}\n"
-                f"\n"
-                f"    Options:\n"
-                f"    1. Recover: python scripts/session_automation.py recover\n"
-                f"    2. Force new: python scripts/session_automation.py start --force\n"
-                f"\n"
-                f"    Recovery will generate handoff from saved checkpoints."
+                "\n"
+                "    Options:\n"
+                "    1. Recover: python scripts/session_automation.py recover\n"
+                "    2. Force new: python scripts/session_automation.py start --force\n"
+                "\n"
+                "    Recovery will generate handoff from saved checkpoints."
             )
 
         if self.state.get("active") and not force:
             return (
                 f"[WARN]  Session already active (started: {self.state.get('start_time')})\n"
-                f"    Use 'checkpoint' to save progress or 'end' to finish."
+                "    Use 'checkpoint' to save progress or 'end' to finish."
             )
 
         now = datetime.now()
@@ -171,12 +171,12 @@ class SessionManager:
 
         return (
             f"[OK] Session started at {now.strftime('%Y-%m-%d %H:%M')}\n"
-            f"\n"
-            f"   Remember to:\n"
+            "\n"
+            "   Remember to:\n"
             f"   - Run 'checkpoint' periodically (every {AUTO_CHECKPOINT_MINUTES}min)\n"
-            f"   - Run 'end' when finished\n"
-            f"\n"
-            f"   If session is interrupted unexpectedly, run 'recover'"
+            "   - Run 'end' when finished\n"
+            "\n"
+            "   If session is interrupted unexpectedly, run 'recover'"
         )
 
     def checkpoint(self, notes: str = "") -> str:
@@ -204,7 +204,7 @@ class SessionManager:
         return (
             f"[OK] Checkpoint #{checkpoint_count} created at {now.strftime('%H:%M')}\n"
             f"   Notes: {notes if notes else '(none)'}\n"
-            f"   Git status saved for recovery"
+            "   Git status saved for recovery"
         )
 
     def end_session(self, summary: str = "") -> str:
@@ -230,10 +230,10 @@ class SessionManager:
         self._save_state()
 
         return (
-            f"[OK] Session ended successfully\n"
+            "[OK] Session ended successfully\n"
             f"   Duration: {duration}\n"
             f"   Handoff: {handoff_path.name}\n"
-            f"   Synced to Obsidian"
+            "   Synced to Obsidian"
         )
 
     def recover_session(self) -> str:
@@ -280,12 +280,12 @@ class SessionManager:
         self._save_state()
 
         return (
-            f"[OK] Session recovered successfully\n"
+            "[OK] Session recovered successfully\n"
             f"   Checkpoints recovered: {checkpoint_count}\n"
             f"   Emergency handoff: {handoff_path.name}\n"
-            f"   Synced to Obsidian\n"
-            f"\n"
-            f"   You can now start a new session with 'start'"
+            "   Synced to Obsidian\n"
+            "\n"
+            "   You can now start a new session with 'start'"
         )
 
     def get_status(self) -> str:
@@ -455,7 +455,7 @@ class SessionManager:
         for i, cp in enumerate(self.state["checkpoints"], 1):
             try:
                 time = datetime.fromisoformat(cp["time"]).strftime("%H:%M")
-            except Exception:
+            except (ValueError, TypeError, KeyError):
                 time = "unknown"
             notes = cp.get("notes", "No notes")
             lines.append(f"{i}. **{time}**: {notes}")

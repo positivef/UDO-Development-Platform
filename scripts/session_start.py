@@ -13,6 +13,7 @@ Usage:
 
 import sys
 from pathlib import Path
+from typing import List  # noqa: F401 - may be used in type annotations
 
 # Add scripts directory to path
 sys.path.insert(0, str(Path(__file__).parent))

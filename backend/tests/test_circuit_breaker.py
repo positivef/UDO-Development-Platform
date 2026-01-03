@@ -36,9 +36,7 @@ class TestCircuitBreakerStateMachine:
 
         # Execute 3 times (threshold)
         for i in range(3):
-            assert (
-                cb.state == "CLOSED"
-            ), f"Should stay CLOSED until threshold (attempt {i+1})"
+            assert cb.state == "CLOSED", f"Should stay CLOSED until threshold (attempt {i + 1})"
             with pytest.raises(ValueError):
                 await failing_func()
 
@@ -99,12 +97,13 @@ class TestCircuitBreakerStateMachine:
     async def test_half_open_to_closed_on_success(self):
         """HALF_OPEN -> CLOSED on successful call"""
         cb = CircuitBreaker(failure_threshold=2, recovery_timeout=1)
-        success_count = 0
+        call_count = 0
 
         @cb
         async def sometimes_failing_func():
-            nonlocal success_count
-            if success_count < 2:
+            nonlocal call_count
+            call_count += 1
+            if call_count <= 2:
                 raise ValueError("Fail")
             return "success"
 
@@ -119,7 +118,7 @@ class TestCircuitBreakerStateMachine:
         await asyncio.sleep(1.1)
 
         # Next call: OPEN -> HALF_OPEN, then success -> CLOSED
-        success_count = 2  # Make it succeed
+        _success_count = 2  # noqa: F841 - controls success in sometimes_failing_func
         result = await sometimes_failing_func()
 
         assert result == "success"
@@ -256,9 +255,7 @@ class TestCircuitBreakerEdgeCases:
     @pytest.mark.asyncio
     async def test_custom_exception_type(self):
         """Circuit breaker should only catch expected_exception"""
-        cb = CircuitBreaker(
-            failure_threshold=2, recovery_timeout=1, expected_exception=ValueError
-        )
+        cb = CircuitBreaker(failure_threshold=2, recovery_timeout=1, expected_exception=ValueError)
 
         @cb
         async def func_with_different_errors():

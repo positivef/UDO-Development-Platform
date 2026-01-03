@@ -20,7 +20,7 @@ from typing import Any, Dict
 sys.path.insert(0, str(Path(__file__).parent.parent))
 
 from src.adaptive_bayesian_uncertainty import AdaptiveBayesianUncertainty
-from src.uncertainty_map_v3 import (
+from src.uncertainty_map_v3 import (  # noqa: F401
     UncertaintyMapV3,
     UncertaintyVector,
 )
@@ -130,7 +130,7 @@ class IntegratedUncertaintyMapV3:
             "predictions_count": self.metrics["predictions_made"],
         }
 
-        print(f"[*] Bayesian Enhancement Applied:")
+        print("[*] Bayesian Enhancement Applied:")
         print(f"   - Confidence: {bayesian_prediction.get('confidence', 0):.1%}")
         print(f"   - Bias: {bayesian_prediction.get('bias_profile', {}).get('type', 'unbiased')}")
         print(f"   - Correction: {bayesian_prediction.get('correction_factor', 0):+.3f}")
@@ -166,12 +166,11 @@ class IntegratedUncertaintyMapV3:
 
         self.metrics["accuracy_improvements"].append(improvement)
 
-        print(f"[LEARN] Complete:")
+        print("[LEARN] Complete:")
         print(f"   - Error reduction: {improvement:.1f}%")
         print(f"   - Total observations: {len(self.metrics['accuracy_improvements'])}")
-        print(
-            f"   - Average improvement: {sum(self.metrics['accuracy_improvements'])/max(len(self.metrics['accuracy_improvements']), 1):.1f}%"
-        )
+        avg_improvement = sum(self.metrics["accuracy_improvements"]) / max(len(self.metrics["accuracy_improvements"]), 1)
+        print(f"   - Average improvement: {avg_improvement:.1f}%")
 
     def get_performance_report(self) -> Dict[str, Any]:
         """

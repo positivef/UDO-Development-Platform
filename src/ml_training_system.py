@@ -8,12 +8,10 @@ RandomForest 기반 불확실성 예측 모델
 import sys
 import os
 import json
-import pickle
 import numpy as np
-import pandas as pd
 from typing import Dict, List, Tuple, Optional, Any
 from dataclasses import dataclass, asdict
-from datetime import datetime, timedelta
+from datetime import datetime
 from pathlib import Path
 import logging
 from sklearn.ensemble import RandomForestRegressor, RandomForestClassifier
@@ -235,7 +233,7 @@ class MLTrainingSystem:
         if model_name in self.scalers:
             try:
                 features_scaled = self.scalers[model_name].transform(features)
-            except:
+            except Exception:
                 # 스케일러가 아직 fit되지 않은 경우
                 features_scaled = features
         else:

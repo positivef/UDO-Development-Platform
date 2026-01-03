@@ -16,10 +16,10 @@ for dirpath, _, filenames in os.walk(root):
             try:
                 with open(path, "r", encoding="utf-8") as file:
                     content = file.read()
-                
+
                 # Regex replacement
-                new_content = re.sub(r'(from|import)\s+backend\.app', r'\1 app', content)
-                
+                new_content = re.sub(r"(from|import)\s+backend\.app", r"\1 app", content)
+
                 if new_content != content:
                     print(f"Fixing {f}")
                     with open(path, "w", encoding="utf-8") as file:

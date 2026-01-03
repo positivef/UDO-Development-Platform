@@ -11,7 +11,6 @@ Version History:
 - v2.0 (2025-12-25): Added Korean/CJK preservation logic
 """
 
-import re
 import shutil
 import unicodedata
 from pathlib import Path
@@ -178,7 +177,7 @@ def replace_emoji_in_text(text: str) -> Tuple[str, List[str]]:
                 try:
                     emoji_code = emoji.encode("unicode-escape").decode("ascii")
                     changes.append(f"Replaced \\{emoji_code} with {replacement} ({count} times)")
-                except:
+                except Exception:
                     changes.append(f"Replaced emoji with {replacement} ({count} times)")
 
     # Step 2: Character-by-character check for remaining emoji
@@ -203,7 +202,7 @@ def replace_emoji_in_text(text: str) -> Tuple[str, List[str]]:
                         emoji_name = unicodedata.name(char, "UNKNOWN")
                         emoji_code = char.encode("unicode-escape").decode("ascii")
                         changes.append(f"Replaced \\{emoji_code} ({emoji_name}) with [*]")
-                except:
+                except Exception:
                     pass
             else:
                 # PRESERVE: Other valid Unicode characters
@@ -312,7 +311,7 @@ def main():
 
     # Show errors if any
     if error_files:
-        print(f"\n[ERROR] Files with errors:\n")
+        print("\n[ERROR] Files with errors:\n")
         for result in error_files:
             print(f"File: {result['file']}")
             print(f"  Error: {result['error']}\n")

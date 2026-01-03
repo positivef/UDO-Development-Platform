@@ -169,7 +169,7 @@ class MigrationRunner:
                     (version, filepath.name, False, str(e)),
                 )
                 self.conn.commit()
-            except:
+            except Exception:
                 pass
 
             logger.error(f"[FAIL] Migration failed: {version}")

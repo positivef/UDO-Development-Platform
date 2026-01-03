@@ -45,8 +45,10 @@ def get_service():
             logger.info("[DEBUG] Attempting to enable mock service as fallback")
             from app.services.project_context_service import _mock_service_instance, _use_mock_service, enable_mock_service
 
+            mock_instance_type = type(_mock_service_instance) if _mock_service_instance else "None"
             logger.info(
-                f"[DEBUG] Before enable: _use_mock_service={_use_mock_service}, _mock_service_instance={type(_mock_service_instance) if _mock_service_instance else 'None'}"
+                f"[DEBUG] Before enable: _use_mock_service={_use_mock_service}, "
+                f"_mock_service_instance={mock_instance_type}"
             )
 
             enable_mock_service()

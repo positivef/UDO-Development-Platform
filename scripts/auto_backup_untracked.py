@@ -13,7 +13,6 @@ This script:
 """
 
 import subprocess
-import os
 import shutil
 from pathlib import Path
 from datetime import datetime
@@ -191,7 +190,7 @@ def restore_backup(backup_name, repo_root):
 
     metadata_file = backup_dir / BACKUP_METADATA_FILE
     if not metadata_file.exists():
-        print(f"[FAIL] Backup metadata not found")
+        print("[FAIL] Backup metadata not found")
         return
 
     # Load metadata

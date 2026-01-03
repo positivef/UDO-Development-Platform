@@ -11,7 +11,7 @@ Critical Issue #2: Prevent regression of response structure bugs
 import sys
 from datetime import datetime
 from pathlib import Path
-from typing import Any, Dict
+from typing import Any, Dict  # noqa: F401
 from uuid import UUID, uuid4
 
 import pytest
@@ -44,9 +44,7 @@ class TestMockProjectServiceResponseStructure:
         # Type validation
         assert isinstance(result["projects"], list)
         assert isinstance(result["total"], int)
-        assert result["current_project_id"] is None or isinstance(
-            result["current_project_id"], str
-        )
+        assert result["current_project_id"] is None or isinstance(result["current_project_id"], str)
 
         # Projects structure
         if result["projects"]:
@@ -356,8 +354,8 @@ class TestMockProjectServiceContextStructure:
         assert "project_id" in loaded
 
         # Types should match
-        assert type(saved["udo_state"]) == type(loaded["udo_state"])
-        assert type(saved["ml_models"]) == type(loaded["ml_models"])
+        assert type(saved["udo_state"]) is type(loaded["udo_state"])
+        assert type(saved["ml_models"]) is type(loaded["ml_models"])
 
 
 if __name__ == "__main__":

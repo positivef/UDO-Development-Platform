@@ -7,9 +7,10 @@ is properly masked before being logged.
 
 import sys
 import os
+
 sys.path.insert(0, os.path.dirname(os.path.dirname(os.path.abspath(__file__))))
 
-import pytest
+import pytest  # noqa: F401
 from backend.app.core.log_sanitizer import (
     sanitize_log_message,
     sanitize_exception,
@@ -176,22 +177,13 @@ class TestSanitizeDict:
 
     def test_nested_dict(self):
         """Test that nested dictionaries are sanitized"""
-        data = {
-            "user": {
-                "credentials": "api_key=SUPERSECRETKEY123456"
-            }
-        }
+        data = {"user": {"credentials": "api_key=SUPERSECRETKEY123456"}}
         result = sanitize_dict(data)
         assert "SUPERSECRETKEY123456" not in result["user"]["credentials"]
 
     def test_dict_with_list(self):
         """Test that lists in dictionaries are sanitized"""
-        data = {
-            "messages": [
-                "password=pass1",
-                "password=pass2"
-            ]
-        }
+        data = {"messages": ["password=pass1", "password=pass2"]}
         result = sanitize_dict(data)
         assert "pass1" not in result["messages"][0]
         assert "pass2" not in result["messages"][1]

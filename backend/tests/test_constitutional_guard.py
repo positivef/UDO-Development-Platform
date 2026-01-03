@@ -577,11 +577,11 @@ async def test_validation_performance(guard, sample_design):
     import time
 
     start = time.time()
-    result = await guard.validate_design(sample_design)
+    _result = await guard.validate_design(sample_design)  # noqa: F841 - timing test
     duration = time.time() - start
 
     # Should complete in < 50ms
-    assert duration < 0.05, f"Validation took {duration*1000:.2f}ms (target: <50ms)"
+    assert duration < 0.05, f"Validation took {duration * 1000:.2f}ms (target: <50ms)"
 
 
 if __name__ == "__main__":

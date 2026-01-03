@@ -6,7 +6,7 @@ Tests whitelist validation for sort fields.
 """
 
 import pytest
-from fastapi import HTTPException
+from fastapi import HTTPException  # noqa: F401
 
 from backend.app.models.kanban_task import TaskSortField
 

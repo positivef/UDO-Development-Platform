@@ -19,8 +19,11 @@ from typing import Optional
 from fastapi import APIRouter, Header, HTTPException
 from pydantic import BaseModel, Field
 
-from app.core.feature_flags import (FeatureFlag, feature_flags_manager,
-                                            is_feature_enabled)
+from app.core.feature_flags import (
+    FeatureFlag,
+    feature_flags_manager,
+    is_feature_enabled,
+)
 
 logger = logging.getLogger(__name__)
 
@@ -97,9 +100,7 @@ async def admin_health():
 
 
 @router.get("/feature-flags", response_model=AllFlagsResponse)
-async def get_all_feature_flags(
-    admin_key: str = Header(..., alias="X-Admin-Key")
-) -> AllFlagsResponse:
+async def get_all_feature_flags(admin_key: str = Header(..., alias="X-Admin-Key")) -> AllFlagsResponse:
     """
     Get all feature flags and their states.
 
@@ -113,9 +114,7 @@ async def get_all_feature_flags(
 
 # SPECIFIC routes BEFORE parameterized routes
 @router.get("/feature-flags/history", response_model=ChangeHistoryResponse)
-async def get_change_history(
-    limit: int = 20, admin_key: str = Header(..., alias="X-Admin-Key")
-) -> ChangeHistoryResponse:
+async def get_change_history(limit: int = 20, admin_key: str = Header(..., alias="X-Admin-Key")) -> ChangeHistoryResponse:
     """
     Get feature flag change history.
 
@@ -132,9 +131,7 @@ async def get_change_history(
 
 
 @router.post("/feature-flags/reset", response_model=AllFlagsResponse)
-async def reset_all_flags(
-    admin_key: str = Header(..., alias="X-Admin-Key")
-) -> AllFlagsResponse:
+async def reset_all_flags(admin_key: str = Header(..., alias="X-Admin-Key")) -> AllFlagsResponse:
     """
     Reset all feature flags to their default values.
 
@@ -151,9 +148,7 @@ async def reset_all_flags(
 
 
 @router.post("/feature-flags/disable-all", response_model=AllFlagsResponse)
-async def emergency_disable_all(
-    admin_key: str = Header(..., alias="X-Admin-Key")
-) -> AllFlagsResponse:
+async def emergency_disable_all(admin_key: str = Header(..., alias="X-Admin-Key")) -> AllFlagsResponse:
     """
     Emergency: Disable ALL feature flags.
 
@@ -172,9 +167,7 @@ async def emergency_disable_all(
 
 # PARAMETERIZED routes AFTER specific routes
 @router.get("/feature-flags/{flag}", response_model=FeatureFlagResponse)
-async def get_feature_flag(
-    flag: str, admin_key: str = Header(..., alias="X-Admin-Key")
-) -> FeatureFlagResponse:
+async def get_feature_flag(flag: str, admin_key: str = Header(..., alias="X-Admin-Key")) -> FeatureFlagResponse:
     """
     Get a specific feature flag status.
 
@@ -226,19 +219,13 @@ async def toggle_feature_flag(
     except ValueError:
         raise HTTPException(status_code=404, detail=f"Unknown feature flag: {flag}")
 
-    success = feature_flags_manager.set_flag(
-        flag=flag, enabled=request.enabled, changed_by="admin", reason=request.reason
-    )
+    success = feature_flags_manager.set_flag(flag=flag, enabled=request.enabled, changed_by="admin", reason=request.reason)
 
     if not success:
-        raise HTTPException(
-            status_code=500, detail=f"Failed to update feature flag: {flag}"
-        )
+        raise HTTPException(status_code=500, detail=f"Failed to update feature flag: {flag}")
 
     action = "enabled" if request.enabled else "disabled"
-    logger.warning(
-        "Admin %s feature flag '%s' (reason: %s)", action, flag, request.reason
-    )
+    logger.warning("Admin %s feature flag '%s' (reason: %s)", action, flag, request.reason)
 
     return FeatureFlagResponse(
         flag=flag,

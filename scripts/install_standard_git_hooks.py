@@ -9,9 +9,6 @@ Standard 레벨 규칙을 강제하는 Git Hooks 설치
 """
 
 import os
-import sys
-import subprocess
-import json
 from pathlib import Path
 
 

@@ -67,7 +67,10 @@ class DesignAlternative(BaseModel):
             "example": {
                 "id": "A",
                 "title": "JWT + OAuth2 Hybrid Authentication",
-                "description": "Implement a hybrid authentication system using JWT tokens for session management and OAuth2 for third-party provider integration...",
+                "description": (
+                    "Implement a hybrid authentication system using JWT tokens for "
+                    "session management and OAuth2 for third-party provider integration..."
+                ),
                 "concept_origin": "Security-first approach with flexibility",
                 "knowledge_basis": ["OAuth2 specification", "JWT best practices", "Multi-tenant architecture"],
                 "rice": {"reach": 8, "impact": 7, "confidence": 6, "effort": 5, "score": 6.72},
@@ -96,7 +99,11 @@ class TradeoffAnalysis(BaseModel):
         json_schema_extra = {
             "example": {
                 "summary": "Alternative A offers the best balance of security and flexibility...",
-                "recommendation": "Choose Alternative A (JWT + OAuth2 Hybrid) because it provides industry-standard security while maintaining flexibility for future provider additions...",
+                "recommendation": (
+                    "Choose Alternative A (JWT + OAuth2 Hybrid) because it provides "
+                    "industry-standard security while maintaining flexibility for "
+                    "future provider additions..."
+                ),
                 "comparison_matrix": {
                     "security": {"A": "High", "B": "Medium", "C": "High"},
                     "complexity": {"A": "Medium", "B": "Low", "C": "High"},

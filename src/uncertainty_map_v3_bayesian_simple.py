@@ -6,7 +6,6 @@ This module provides a simple but effective integration between the existing
 UncertaintyMapV3 and the new AdaptiveBayesianUncertainty system.
 """
 
-import os
 import sys
 from datetime import datetime
 from pathlib import Path

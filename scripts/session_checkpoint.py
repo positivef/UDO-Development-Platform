@@ -136,7 +136,7 @@ class SessionCheckpoint:
         try:
             from scripts.unified_error_resolver import UnifiedErrorResolver
 
-            resolver = UnifiedErrorResolver()
+            _resolver = UnifiedErrorResolver()  # noqa: F841 - test instantiation
 
             result.checks["unified_error_resolver_available"] = True
             logger.info("[OK] UnifiedErrorResolver: AVAILABLE")
@@ -151,7 +151,7 @@ class SessionCheckpoint:
         try:
             from scripts.auto_obsidian_context import AutoObsidianContext
 
-            auto_ctx = AutoObsidianContext()
+            _auto_ctx = AutoObsidianContext()  # noqa: F841 - test instantiation
 
             result.checks["obsidian_auto_search_available"] = True
             logger.info("[OK] Obsidian Auto-Search: AVAILABLE")
@@ -228,7 +228,7 @@ class SessionCheckpoint:
             automation_rate = stats.get("automation_rate", 0.0)
             total_errors = stats.get("total_errors", 0)
 
-            logger.info(f"[*] Progress Report:")
+            logger.info("[*] Progress Report:")
             logger.info(f"  Total Errors: {total_errors}")
             logger.info(f"  Automation Rate: {automation_rate * 100:.1f}%")
             logger.info(f"  Tier 1 Hits: {stats.get('tier1_hits', 0)}")

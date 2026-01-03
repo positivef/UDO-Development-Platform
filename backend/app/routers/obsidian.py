@@ -420,7 +420,10 @@ async def queue_event(request: ObsidianAutoSyncRequest) -> ObsidianSyncResponse:
         if success:
             return ObsidianSyncResponse(
                 success=True,
-                message=f"Event queued ({pending} pending, will flush in {obsidian_service.debounce_window}s or on immediate trigger)",
+                message=(
+                    f"Event queued ({pending} pending, will flush in "
+                    f"{obsidian_service.debounce_window}s or on immediate trigger)"
+                ),
             )
         else:
             return ObsidianSyncResponse(success=False, message="Failed to queue event - check logs")

@@ -15,7 +15,6 @@ UDO v2 Orchestrator에 Adaptive Bayesian Learning을 통합하여
 import logging
 from pathlib import Path
 from typing import Dict, Any, Optional, Tuple
-from datetime import datetime
 
 from adaptive_bayesian_uncertainty import AdaptiveBayesianUncertainty
 from uncertainty_map_v3 import UncertaintyVector
@@ -311,7 +310,9 @@ class UDOBayesianIntegration:
 
         explanations = {
             "GO": f"[OK] GO: Confidence ({confidence:.2%}) > Threshold ({threshold:.2%}), Gap: {gap:+.2%}",
-            "GO_WITH_CHECKPOINTS": f"[WARN] GO_WITH_CHECKPOINTS: Confidence ({confidence:.2%}) ≥ 80% Threshold, Gap: {gap:+.2%}",
+            "GO_WITH_CHECKPOINTS": (
+                f"[WARN] GO_WITH_CHECKPOINTS: Confidence ({confidence:.2%}) " f">= 80% Threshold, Gap: {gap:+.2%}"
+            ),
             "NO_GO": f"[FAIL] NO_GO: Confidence ({confidence:.2%}) < Threshold ({threshold:.2%}), Gap: {gap:-.2%}",
         }
 
@@ -352,7 +353,7 @@ def demo_integration():
 
     # Bayesian 인사이트
     insights = decision["bayesian_insights"]
-    print(f"\n[*] Bayesian Insights:")
+    print("\n[*] Bayesian Insights:")
     print(f"   Predicted Uncertainty: {insights['predicted_uncertainty']:.2%}")
     print(f"   Trend: {insights['trend']}")
     print(f"   Quantum State: {insights['quantum_state']}")

@@ -5,14 +5,13 @@ Tests time tracking, ROI calculation, bottleneck detection, and reporting.
 """
 
 import asyncio
-from datetime import date, datetime, timedelta
+from datetime import date, datetime, timedelta  # noqa: F401
 from pathlib import Path
 from uuid import UUID, uuid4
 
 import pytest
 
-from backend.app.models.time_tracking import (AIModel, Bottleneck, Phase,
-                                              ROIReport, TaskMetrics, TaskType)
+from backend.app.models.time_tracking import AIModel, Bottleneck, Phase, ROIReport, TaskMetrics, TaskType
 from backend.app.services.time_tracking_service import TimeTrackingService
 
 
@@ -25,9 +24,7 @@ def config_path():
 @pytest.fixture
 def time_tracking_service(config_path):
     """Fixture for TimeTrackingService"""
-    return TimeTrackingService(
-        pool=None, obsidian_service=None, config_path=config_path
-    )  # Mock mode for testing
+    return TimeTrackingService(pool=None, obsidian_service=None, config_path=config_path)  # Mock mode for testing
 
 
 class TestTimeTrackingService:
@@ -60,10 +57,7 @@ class TestTimeTrackingService:
     async def test_get_baseline_seconds(self, time_tracking_service):
         """Test getting baseline seconds for task types"""
         # Test known task types
-        assert (
-            time_tracking_service._get_baseline_seconds(TaskType.ERROR_RESOLUTION)
-            == 1800
-        )
+        assert time_tracking_service._get_baseline_seconds(TaskType.ERROR_RESOLUTION) == 1800
         assert time_tracking_service._get_baseline_seconds(TaskType.DESIGN_TASK) == 7200
         assert time_tracking_service._get_baseline_seconds(TaskType.TESTING) == 3600
 
@@ -418,9 +412,7 @@ class TestTimeTrackingService:
         await asyncio.sleep(0.01)  # Minimum task duration
 
         end_time = time.perf_counter()
-        metrics = await time_tracking_service.end_task(
-            session_id=session_id, success=True
-        )
+        await time_tracking_service.end_task(session_id=session_id, success=True)
         end_overhead = (time.perf_counter() - end_time) * 1000  # Convert to ms
 
         # End overhead should be < 5ms (without database)

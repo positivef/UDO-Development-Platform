@@ -1,6 +1,6 @@
 """Test Uncertainty-Time Tracking Integration"""
 
-import os
+import os  # noqa: F401
 import sys
 from pathlib import Path
 
@@ -69,9 +69,7 @@ def test_track_with_uncertainty(client):
     print(f"Response: {response.text}")
 
     # Check status code
-    assert (
-        response.status_code == 200
-    ), f"Expected 200, got {response.status_code}: {response.text}"
+    assert response.status_code == 200, f"Expected 200, got {response.status_code}: {response.text}"
 
     # Check response structure
     data = response.json()
@@ -99,18 +97,14 @@ def test_adjusted_baseline(client):
         "timeline_weeks": 8,
     }
 
-    response = client.post(
-        "/api/uncertainty/adjusted-baseline/implementation/implementation", json=payload
-    )
+    response = client.post("/api/uncertainty/adjusted-baseline/implementation/implementation", json=payload)
 
     # Print response for debugging
     print(f"\nStatus Code: {response.status_code}")
     print(f"Response: {response.text}")
 
     # Check status code
-    assert (
-        response.status_code == 200
-    ), f"Expected 200, got {response.status_code}: {response.text}"
+    assert response.status_code == 200, f"Expected 200, got {response.status_code}: {response.text}"
 
     # Check response structure
     data = response.json()

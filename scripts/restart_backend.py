@@ -119,12 +119,12 @@ def start_backend():
         # Check if process is still running
         if process.poll() is None:
             print("[OK] Backend is running")
-            print(f"\n[*] API: http://localhost:8000")
-            print(f"[*] Docs: http://localhost:8000/docs")
+            print("\n[*] API: http://localhost:8000")
+            print("[*] Docs: http://localhost:8000/docs")
             return True
         else:
             stdout, stderr = process.communicate()
-            print(f"[FAIL] Backend failed to start")
+            print("[FAIL] Backend failed to start")
             print(f"STDOUT: {stdout}")
             print(f"STDERR: {stderr}")
             return False
@@ -137,7 +137,6 @@ def start_backend():
 def verify_backend():
     """Verify backend is responding"""
     import urllib.request
-    import json
 
     print("\n[*] Verifying backend health...")
 

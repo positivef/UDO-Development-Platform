@@ -24,7 +24,7 @@ def test_quality_service_initialization():
     assert service.backend_dir is not None, "Backend directory should be set"
     assert service.frontend_dir is not None, "Frontend directory should be set"
 
-    print(f"[PASS] Quality Service initialized successfully")
+    print("[PASS] Quality Service initialized successfully")
     print(f"  - Project Root: {service.project_root}")
     print(f"  - Backend Dir: {service.backend_dir}")
     print(f"  - Frontend Dir: {service.frontend_dir}")
@@ -48,15 +48,11 @@ def test_get_all_metrics():
     assert "typescript" in metrics["code_quality"], "Should have TypeScript metrics"
 
     # Verify score ranges
-    assert (
-        0.0 <= metrics["overall_score"] <= 10.0
-    ), "Overall score should be between 0-10"
+    assert 0.0 <= metrics["overall_score"] <= 10.0, "Overall score should be between 0-10"
 
     print(f"[PASS] Overall Quality Score: {metrics['overall_score']:.2f}/10")
     print(f"  - Python (Pylint): {metrics['code_quality']['python']['score']:.2f}/10")
-    print(
-        f"  - TypeScript (ESLint): {metrics['code_quality']['typescript']['score']:.2f}/10"
-    )
+    print(f"  - TypeScript (ESLint): {metrics['code_quality']['typescript']['score']:.2f}/10")
     print(f"  - Test Coverage: {metrics['test_metrics']['coverage_percentage']:.2f}%")
 
 
@@ -124,9 +120,7 @@ def test_coverage_metrics():
 
     # If pytest is installed, verify ranges
     if "error" not in metrics:
-        assert (
-            0.0 <= metrics["coverage_percentage"] <= 100.0
-        ), "Coverage should be 0-100%"
+        assert 0.0 <= metrics["coverage_percentage"] <= 100.0, "Coverage should be 0-100%"
         assert 0.0 <= metrics["success_rate"] <= 100.0, "Success rate should be 0-100%"
         print(f"[PASS] Test Coverage: {metrics['coverage_percentage']:.2f}%")
         print(f"  - Tests Passed: {metrics['tests_passed']}/{metrics['tests_total']}")

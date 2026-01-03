@@ -22,25 +22,25 @@ from replace_emoji_safe import (  # noqa: E402
 def test_is_korean_char():
     """Test Korean character detection"""
     # Hangul Syllables
-    assert is_korean_char("가") == True
-    assert is_korean_char("개") == True
-    assert is_korean_char("발") == True
-    assert is_korean_char("일") == True
-    assert is_korean_char("지") == True
-    assert is_korean_char("한") == True
-    assert is_korean_char("글") == True
+    assert is_korean_char("가") is True
+    assert is_korean_char("개") is True
+    assert is_korean_char("발") is True
+    assert is_korean_char("일") is True
+    assert is_korean_char("지") is True
+    assert is_korean_char("한") is True
+    assert is_korean_char("글") is True
 
     # Hangul Compatibility Jamo
-    assert is_korean_char("ㄱ") == True
-    assert is_korean_char("ㅏ") == True
+    assert is_korean_char("ㄱ") is True
+    assert is_korean_char("ㅏ") is True
 
     # NOT Korean
-    assert is_korean_char("a") == False
-    assert is_korean_char("A") == False
-    assert is_korean_char("1") == False
-    assert is_korean_char("[OK]") == False
-    assert is_korean_char("[*]") == False
-    assert is_korean_char("日") == False  # Japanese/Chinese
+    assert is_korean_char("a") is False
+    assert is_korean_char("A") is False
+    assert is_korean_char("1") is False
+    assert is_korean_char("[OK]") is False
+    assert is_korean_char("[*]") is False
+    assert is_korean_char("日") is False  # Japanese/Chinese
 
     print("[OK] test_is_korean_char passed")
 
@@ -48,27 +48,27 @@ def test_is_korean_char():
 def test_is_safe_char():
     """Test safe character detection"""
     # ASCII
-    assert is_safe_char("a") == True
-    assert is_safe_char("Z") == True
-    assert is_safe_char("0") == True
-    assert is_safe_char(" ") == True
-    assert is_safe_char("\n") == True
+    assert is_safe_char("a") is True
+    assert is_safe_char("Z") is True
+    assert is_safe_char("0") is True
+    assert is_safe_char(" ") is True
+    assert is_safe_char("\n") is True
 
     # Korean
-    assert is_safe_char("개") == True
-    assert is_safe_char("발") == True
-    assert is_safe_char("일") == True
-    assert is_safe_char("지") == True
+    assert is_safe_char("개") is True
+    assert is_safe_char("발") is True
+    assert is_safe_char("일") is True
+    assert is_safe_char("지") is True
 
     # CJK/Japanese
-    assert is_safe_char("日") == True
-    assert is_safe_char("本") == True
-    assert is_safe_char("発") == True
+    assert is_safe_char("日") is True
+    assert is_safe_char("本") is True
+    assert is_safe_char("発") is True
 
     # Emoji (NOT safe, should be replaced)
-    assert is_safe_char("[OK]") == False
-    assert is_safe_char("[*]") == False
-    assert is_safe_char("[FAIL]") == False
+    assert is_safe_char("[OK]") is False
+    assert is_safe_char("[*]") is False
+    assert is_safe_char("[FAIL]") is False
 
     print("[OK] test_is_safe_char passed")
 

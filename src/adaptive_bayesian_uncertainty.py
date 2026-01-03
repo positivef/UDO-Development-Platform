@@ -30,7 +30,7 @@ Date: 2025-11-20
 Version: 1.0.0
 """
 
-import json
+import json  # noqa: F401 - reserved for future serialization
 import logging
 import math
 import os
@@ -475,7 +475,9 @@ class AdaptiveBayesianUncertainty:
         self.save_state()
 
         logger.info(
-            f"Bayesian update completed - Phase: {phase}, Accuracy: {accuracy:.2%}, Improvement rate: {self.metrics['improvement_rate']:.2%}"
+            f"Bayesian update completed - Phase: {phase}, "
+            f"Accuracy: {accuracy:.2%}, "
+            f"Improvement rate: {self.metrics['improvement_rate']:.2%}"
         )
 
     def _kalman_filter_update(self, measurement: float, prediction: float) -> float:
@@ -889,7 +891,7 @@ def demonstrate_bayesian_learning():
         # Make prediction
         prediction = bayesian.predict_uncertainty(scenario["current"], scenario["phase"], horizon_hours=24)
 
-        print(f"\n[INFO] Current State:")
+        print("\n[INFO] Current State:")
         print(f"  * Phase: {scenario['phase']}")
         print(f"  * Current magnitude: {scenario['current'].magnitude():.2%}")
         print(f"  * Predicted magnitude: {prediction['predicted_magnitude']:.2%}")
@@ -900,13 +902,13 @@ def demonstrate_bayesian_learning():
         # Show top recommendation
         if prediction["recommendations"]:
             top_rec = prediction["recommendations"][0]
-            print(f"\n[TIP] Top Recommendation:")
+            print("\n[TIP] Top Recommendation:")
             print(f"  * Action: {top_rec['action']}")
             print(f"  * Urgency: {top_rec['urgency']}")
             print(f"  * Expected impact: {top_rec['expected_impact']:.1%}")
 
         # Simulate observation and update
-        print(f"\n[RESULT] Observed Outcome:")
+        print("\n[RESULT] Observed Outcome:")
         print(f"  * Actual magnitude: {scenario['observed'].magnitude():.2%}")
 
         # Update Bayesian beliefs
@@ -923,19 +925,19 @@ def demonstrate_bayesian_learning():
 
     report = bayesian.get_performance_report()
 
-    print(f"\n[RESULT] Overall Performance:")
+    print("\n[RESULT] Overall Performance:")
     print(f"  * Total predictions: {report['total_predictions']}")
     print(f"  * Overall accuracy: {report['overall_accuracy']:.1f}%")
     print(f"  * Recent accuracy: {report['recent_accuracy']:.1f}%")
     print(f"  * Improvement rate: {report['improvement_rate']:.1f}%")
     print(f"  * Learning status: {report['learning_status']}")
 
-    print(f"\n[INFO] Phase-Specific Biases:")
+    print("\n[INFO] Phase-Specific Biases:")
     for phase, bias_info in report["phase_biases"].items():
         if bias_info["mean_error"] != 0:  # Only show phases with data
             print(f"  * {phase}: {bias_info['bias_type']} (error: {bias_info['mean_error']:.3f})")
 
-    print(f"\n[INFO] Kalman Filter Parameters (auto-optimized):")
+    print("\n[INFO] Kalman Filter Parameters (auto-optimized):")
     print(f"  * Measurement noise (R): {report['kalman_parameters']['measurement_noise']:.3f}")
     print(f"  * Process noise (Q): {report['kalman_parameters']['process_noise']:.3f}")
 

@@ -87,18 +87,21 @@ class SearchTelemetry:
 
     def record(self, result: SearchResult) -> None:
         """Record a search result"""
-        self.stats["total_searches"] += 1
+        try:
+            self.stats["total_searches"] += 1
 
-        if result.found:
-            tier_key = f"tier{result.stage}_hits"
-            time_key = f"tier{result.stage}_total_ms"
-            self.stats[tier_key] = self.stats.get(tier_key, 0) + 1
-            self.stats[time_key] = self.stats.get(time_key, 0.0) + result.search_time_ms
-        else:
-            self.stats["misses"] += 1
+            if result.found:
+                tier_key = f"tier{result.stage}_hits"
+                time_key = f"tier{result.stage}_total_ms"
+                self.stats[tier_key] = self.stats.get(tier_key, 0) + 1
+                self.stats[time_key] = self.stats.get(time_key, 0.0) + result.search_time_ms
+            else:
+                self.stats["misses"] += 1
 
-        self.stats["last_updated"] = time.strftime("%Y-%m-%d %H:%M:%S")
-        self._save_stats()
+            self.stats["last_updated"] = time.strftime("%Y-%m-%d %H:%M:%S")
+            self._save_stats()
+        except Exception:
+            pass
 
     def _save_stats(self) -> None:
         """Persist stats to file"""
@@ -321,7 +324,7 @@ class Obsidian3StageSearch:
                         confidence=0.85,  # Good confidence from frontmatter
                     )
 
-            except Exception as e:
+            except (IOError, OSError, UnicodeDecodeError) as e:
                 logger.debug(f"Error reading {md_file.name}: {e}")
                 continue
 
@@ -364,7 +367,7 @@ class Obsidian3StageSearch:
                     best_score = score
                     best_match = md_file
 
-            except Exception as e:
+            except (IOError, OSError, UnicodeDecodeError) as e:
                 logger.debug(f"Error reading {md_file.name}: {e}")
                 continue
 
@@ -432,7 +435,7 @@ class Obsidian3StageSearch:
             text = "\n".join(lines)[:300]
             return text + "..."
 
-        except Exception as e:
+        except (IOError, OSError, UnicodeDecodeError) as e:
             logger.error(f"Error extracting solution from {file_path}: {e}")
             return f"Error reading solution from {file_path.name}"
 

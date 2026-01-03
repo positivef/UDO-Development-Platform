@@ -146,7 +146,7 @@ def test_rl_knowledge_card():
     print(f"\nPassed: {passed}/{total}")
 
     if results["errors"]:
-        print(f"\nErrors:")
+        print("\nErrors:")
         for err in results["errors"]:
             print(f"  - {err}")
 

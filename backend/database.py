@@ -8,7 +8,7 @@ import os
 from contextlib import contextmanager
 from typing import Any, Dict, Optional
 
-import psycopg2
+import psycopg2  # noqa: F401 - required for psycopg2.pool
 from psycopg2 import pool
 from psycopg2.extras import RealDictCursor
 
@@ -139,7 +139,7 @@ class Database:
                 yield cursor
                 if commit:
                     conn.commit()
-            except Exception as e:
+            except Exception:
                 conn.rollback()
                 raise
 

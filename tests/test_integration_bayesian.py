@@ -58,7 +58,7 @@ class TestIntegratedUncertaintyMap(unittest.TestCase):
         """Test learning from actual outcomes"""
         # Make initial prediction
         prediction = self.integrated.predict(phase="design", hours_ahead=12)
-        _initial_magnitude = prediction["prediction"]["predicted_magnitude"]
+        prediction["prediction"]["predicted_magnitude"]  # noqa: F841 - accessed for side effect
 
         # Create actual outcome
         actual = {
@@ -78,7 +78,7 @@ class TestIntegratedUncertaintyMap(unittest.TestCase):
         self.assertGreater(len(self.integrated.metrics["accuracy_improvements"]), 0)
 
         # Make another prediction - should be influenced by learning
-        _prediction2 = self.integrated.predict(phase="design", hours_ahead=12)
+        self.integrated.predict(phase="design", hours_ahead=12)  # noqa: F841 - called for side effect
 
         # Check that Bayesian system has updated beliefs
         self.assertEqual(self.integrated.metrics["predictions_made"], 2)

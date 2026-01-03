@@ -15,8 +15,8 @@ Endpoints tested:
 8. DELETE /api/knowledge/feedback/{feedback_id} (mocked)
 """
 
-from datetime import datetime, timezone
-from unittest.mock import MagicMock, patch
+from datetime import datetime, timezone  # noqa: F401
+from unittest.mock import MagicMock, patch  # noqa: F401
 from uuid import uuid4
 
 import pytest

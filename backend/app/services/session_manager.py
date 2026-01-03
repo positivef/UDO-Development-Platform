@@ -347,7 +347,7 @@ class SessionManager:
         # Update session
         if session_id in self.local_sessions:
             session = self.local_sessions[session_id]
-            session.locks = [l for l in session.locks if l["resource"] != resource_id]
+            session.locks = [lock for lock in session.locks if lock["resource"] != resource_id]
 
         # Broadcast lock release
         await self._broadcast_event(
@@ -380,7 +380,7 @@ class SessionManager:
 
             # Check for file edit conflicts
             if action == "edit_file" and resource in [
-                l["resource"] for l in other_session.locks if l["type"] == LockType.FILE.value
+                lock["resource"] for lock in other_session.locks if lock["type"] == LockType.FILE.value
             ]:
                 conflict = Conflict(
                     id=str(uuid4()),

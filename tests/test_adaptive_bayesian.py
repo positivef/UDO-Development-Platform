@@ -19,7 +19,7 @@ import os
 import unittest
 import numpy as np
 from pathlib import Path
-from datetime import datetime, timedelta
+from datetime import datetime
 import tempfile
 import shutil
 
@@ -41,7 +41,7 @@ class TestBayesianBelief(unittest.TestCase):
 
     def test_belief_update_correct_prediction(self):
         """Test belief update with correct prediction"""
-        initial_mean = self.belief.mean
+        _initial_mean = self.belief.mean  # noqa: F841
         initial_alpha = self.belief.alpha
 
         # Simulate correct prediction (uncertainty decreased as predicted)

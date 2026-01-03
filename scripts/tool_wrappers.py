@@ -189,14 +189,14 @@ def read_with_recovery(file_path: str, encoding: str = "utf-8", errors: str = "s
         logger.error(f"[FAIL] Permission denied: {file_path}")
         return {"success": False, "content": "", "file_path": file_path, "size_bytes": 0, "error": f"PermissionError: {e}"}
 
-    except UnicodeDecodeError as e:
-        logger.error(f"[FAIL] Encoding error: {file_path}")
+    except UnicodeDecodeError:
+        logger.error("[FAIL] Encoding error: %s", file_path)
         return {
             "success": False,
             "content": "",
             "file_path": file_path,
             "size_bytes": 0,
-            "error": f"UnicodeDecodeError: Try encoding='latin-1' or errors='ignore'",
+            "error": "UnicodeDecodeError: Try encoding='latin-1' or errors='ignore'",
         }
 
     except Exception as e:

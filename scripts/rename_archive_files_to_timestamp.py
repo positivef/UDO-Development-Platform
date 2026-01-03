@@ -17,10 +17,7 @@ from datetime import datetime
 from collections import defaultdict
 
 # Obsidian vault path
-OBSIDIAN_VAULT = os.getenv(
-    "OBSIDIAN_VAULT_PATH",
-    r"C:\Users\user\Documents\Obsidian Vault"
-)
+OBSIDIAN_VAULT = os.getenv("OBSIDIAN_VAULT_PATH", r"C:\Users\user\Documents\Obsidian Vault")
 
 DEV_LOG_DIR = Path(OBSIDIAN_VAULT) / "개발일지"
 
@@ -35,16 +32,16 @@ def extract_title_from_file(file_path: Path) -> str:
     3. Filename as fallback
     """
     try:
-        with open(file_path, 'r', encoding='utf-8') as f:
+        with open(file_path, "r", encoding="utf-8") as f:
             content = f.read()
 
         # Try YAML frontmatter: topic: XXX
-        frontmatter_match = re.search(r'^topic:\s*(.+)$', content, re.MULTILINE)
+        frontmatter_match = re.search(r"^topic:\s*(.+)$", content, re.MULTILINE)
         if frontmatter_match:
             return frontmatter_match.group(1).strip()
 
         # Try first markdown heading: # Title
-        heading_match = re.search(r'^#\s+(.+)$', content, re.MULTILINE)
+        heading_match = re.search(r"^#\s+(.+)$", content, re.MULTILINE)
         if heading_match:
             return heading_match.group(1).strip()
 
@@ -59,9 +56,9 @@ def extract_title_from_file(file_path: Path) -> str:
 def sanitize_title_for_filename(title: str) -> str:
     """Sanitize title for use in filename"""
     # Remove special characters
-    safe = re.sub(r'[<>:"/\\|?*\x00-\x1f]', '', title)
+    safe = re.sub(r'[<>:"/\\|?*\x00-\x1f]', "", title)
     # Replace spaces with hyphens
-    safe = re.sub(r'\s+', '-', safe.strip())
+    safe = re.sub(r"\s+", "-", safe.strip())
     # Limit length
     return safe[:80]
 
@@ -133,7 +130,7 @@ def rename_files(dry_run: bool = True) -> dict:
 
                 # Get file modification time for timestamp
                 mtime = datetime.fromtimestamp(file_path.stat().st_mtime)
-                time_str = mtime.strftime('%H%M%S')
+                time_str = mtime.strftime("%H%M%S")
 
                 # Base filename: YYYY-MM-DD_HHMMSS_Title.md
                 base_filename = f"{date_str}_{time_str}_{safe_title}"
@@ -151,13 +148,13 @@ def rename_files(dry_run: bool = True) -> dict:
                 used_filenames.add(new_filename)
 
                 if dry_run:
-                    print(f"   [DRY RUN] Would rename:")
+                    print("   [DRY RUN] Would rename:")
                     print(f"      FROM: {file_path.name}")
                     print(f"      TO:   {new_filename}")
                     stats["renamed"] += 1  # Count for dry run
                 else:
                     file_path.rename(new_path)
-                    print(f"   [OK] Renamed:")
+                    print("   [OK] Renamed:")
                     print(f"      FROM: {file_path.name}")
                     print(f"      TO:   {new_filename}")
                     stats["renamed"] += 1
@@ -224,7 +221,7 @@ def main():
     print("\n" + "=" * 70)
     print("[COMPLETE] RENAME COMPLETE")
     print("=" * 70)
-    print(f"\n[STATS] Statistics:")
+    print("\n[STATS] Statistics:")
     print(f"   - Files renamed: {stats['renamed']}")
     print(f"   - Files skipped: {stats['skipped']}")
     print(f"   - Errors: {len(stats['errors'])}")
@@ -235,7 +232,7 @@ def main():
             print(f"   - {error}")
 
     print("\n[SUCCESS] All UUID files have been renamed to timestamp format!")
-    print(f"   Format: YYYY-MM-DD_HHMMSS_TaskTitle.md")
+    print("   Format: YYYY-MM-DD_HHMMSS_TaskTitle.md")
 
 
 if __name__ == "__main__":

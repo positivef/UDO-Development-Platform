@@ -137,7 +137,7 @@ class UnifiedErrorResolver:
             "LOW": 0.00,  # User intervention
         }
 
-        logger.info(f"UnifiedErrorResolver initialized: vault={self.vault_path}, context7={enable_context7}")
+        logger.info(f"UnifiedErrorResolver initialized: vault={self.vault_path}, " f"context7={enable_context7}")
 
     def resolve_error(self, error_msg: str, context: Optional[Dict[str, Any]] = None) -> Optional[str]:
         """
@@ -198,7 +198,8 @@ class UnifiedErrorResolver:
 
                         elapsed_ms = (time.time() - start_time) * 1000
                         logger.info(
-                            f"[OK] TIER 2 AUTO: Context7 HIGH confidence ({tier2_result.confidence:.0%}) in {elapsed_ms:.1f}ms"
+                            f"[OK] TIER 2 AUTO: Context7 HIGH confidence "
+                            f"({tier2_result.confidence:.0%}) in {elapsed_ms:.1f}ms"
                         )
 
                         return tier2_result.solution

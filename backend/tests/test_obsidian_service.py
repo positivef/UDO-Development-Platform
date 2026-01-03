@@ -11,9 +11,9 @@ Tests cover:
 """
 
 import pytest
-import asyncio
+import asyncio  # noqa: F401
 from pathlib import Path
-from datetime import datetime, timedelta
+from datetime import datetime, timedelta  # noqa: F401
 import tempfile
 import shutil
 
@@ -85,13 +85,8 @@ class TestAutoSync:
             "from_phase": "design",
             "to_phase": "implementation",
             "project": "Test Project",
-            "context": {
-                "trigger": "User requested"
-            },
-            "changes": [
-                "Updated project phase",
-                "Initialized tasks"
-            ]
+            "context": {"trigger": "User requested"},
+            "changes": ["Updated project phase", "Initialized tasks"],
         }
 
         success = await service.auto_sync("phase_transition", event_data)
@@ -109,10 +104,8 @@ class TestAutoSync:
         event_data = {
             "error_type": "ModuleNotFoundError",
             "project": "Test Project",
-            "context": {
-                "error_message": "ModuleNotFoundError: No module named 'pandas'"
-            },
-            "solution": "pip install pandas"
+            "context": {"error_message": "ModuleNotFoundError: No module named 'pandas'"},
+            "solution": "pip install pandas",
         }
 
         success = await service.auto_sync("error_resolution", event_data)
@@ -125,10 +118,7 @@ class TestAutoSync:
         """Test that auto-sync creates daily note file"""
         service = obsidian_service_with_temp_vault
 
-        event_data = {
-            "project": "Test Project",
-            "context": {"test": "data"}
-        }
+        event_data = {"project": "Test Project", "context": {"test": "data"}}
 
         await service.auto_sync("task_completion", event_data)
 
@@ -163,12 +153,8 @@ class TestDailyNoteCreation:
 
         title = "Test Note"
         content = {
-            "frontmatter": {
-                "date": "2025-11-20",
-                "project": "Test Project",
-                "tags": ["test", "development"]
-            },
-            "content": "This is test content"
+            "frontmatter": {"date": "2025-11-20", "project": "Test Project", "tags": ["test", "development"]},
+            "content": "This is test content",
         }
 
         success = await service.create_daily_note(title, content)
@@ -197,10 +183,7 @@ class TestDailyNoteCreation:
         service = obsidian_service_with_temp_vault
 
         title = 'Invalid<>:"/\\|?*Title'
-        content = {
-            "frontmatter": {"date": "2025-11-20"},
-            "content": "Test"
-        }
+        content = {"frontmatter": {"date": "2025-11-20"}, "content": "Test"}
 
         success = await service.create_daily_note(title, content)
 
@@ -227,10 +210,7 @@ class TestKnowledgeSearch:
 
         # Create test note with searchable content
         test_content = {
-            "frontmatter": {
-                "date": "2025-11-20",
-                "event_type": "error_resolution"
-            },
+            "frontmatter": {"date": "2025-11-20", "event_type": "error_resolution"},
             "content": """
 ## Solution
 ```
@@ -238,7 +218,7 @@ pip install pandas
 ```
 
 This resolves ModuleNotFoundError for pandas.
-"""
+""",
         }
 
         await service.create_daily_note("ModuleNotFound Error", test_content)
@@ -265,10 +245,7 @@ This resolves ModuleNotFoundError for pandas.
 
         # Create multiple matching notes
         for i in range(5):
-            content = {
-                "frontmatter": {"date": "2025-11-20"},
-                "content": f"Test content with keyword {i}"
-            }
+            content = {"frontmatter": {"date": "2025-11-20"}, "content": f"Test content with keyword {i}"}
             await service.create_daily_note(f"Note {i}", content)
 
         results = await service.search_knowledge("keyword", max_results=3)
@@ -286,11 +263,7 @@ class TestErrorResolution:
 
         error = "ModuleNotFoundError: No module named 'pandas'"
         solution = "pip install pandas"
-        context = {
-            "tool": "Python",
-            "file": "test.py",
-            "command": "python test.py"
-        }
+        context = {"tool": "Python", "file": "test.py", "command": "python test.py"}
 
         success = await service.save_error_resolution(error, solution, context)
 
@@ -355,11 +328,8 @@ class TestRecentNotes:
         # Create some notes
         for i in range(3):
             content = {
-                "frontmatter": {
-                    "date": datetime.now().strftime("%Y-%m-%d"),
-                    "time": f"14:{i:02d}"
-                },
-                "content": f"Test note {i}"
+                "frontmatter": {"date": datetime.now().strftime("%Y-%m-%d"), "time": f"14:{i:02d}"},
+                "content": f"Test note {i}",
             }
             await service.create_daily_note(f"Note {i}", content)
 
@@ -374,10 +344,7 @@ class TestRecentNotes:
         service = obsidian_service_with_temp_vault
 
         # Create note in today's directory
-        content = {
-            "frontmatter": {"date": datetime.now().strftime("%Y-%m-%d")},
-            "content": "Today's note"
-        }
+        content = {"frontmatter": {"date": datetime.now().strftime("%Y-%m-%d")}, "content": "Today's note"}
         await service.create_daily_note("Today", content)
 
         # Get notes from last 1 day

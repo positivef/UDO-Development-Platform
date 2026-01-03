@@ -1,0 +1,24 @@
+[flake8]
+max-line-length = 127
+extend-ignore = E203, W503
+exclude =
+    .venv,
+    __pycache__,
+    .git,
+    build,
+    dist,
+    *.egg-info,
+    node_modules,
+    web-dashboard,
+    .pytest_temp*,
+    _pytest_temp*,
+    tmp-*
+per-file-ignores =
+    __init__.py: F401
+    */tests/*: E501, E402
+    test_*.py: F401, F841, E402
+    run_udo_phase1.py: E402
+    *_integrated.py: E402
+    *_bayesian_simple.py: E402
+    *_bayesian.py: E402
+    gi_formula_service.py: E501

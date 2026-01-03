@@ -28,15 +28,17 @@ try:
 except ImportError:
     asyncpg = None
 
-from app.models.kanban_context import (ContextLoadRequest,
-                                               ContextLoadResponse,
-                                               ContextMetadata,
-                                               ContextNotFoundError,
-                                               ContextSizeLimitExceeded,
-                                               ContextUploadRequest,
-                                               ContextUploadResponse,
-                                               InvalidContextFiles,
-                                               TaskContext)
+from app.models.kanban_context import (
+    ContextLoadRequest,
+    ContextLoadResponse,
+    ContextMetadata,
+    ContextNotFoundError,
+    ContextSizeLimitExceeded,
+    ContextUploadRequest,
+    ContextUploadResponse,
+    InvalidContextFiles,
+    TaskContext,
+)
 
 logger = logging.getLogger(__name__)
 
@@ -218,9 +220,7 @@ class KanbanContextService:
     # Context Upload Operations
     # ========================================================================
 
-    async def upload_context(
-        self, task_id: UUID, upload_request: ContextUploadRequest
-    ) -> ContextUploadResponse:
+    async def upload_context(self, task_id: UUID, upload_request: ContextUploadRequest) -> ContextUploadResponse:
         """
         Upload context files as metadata (no actual ZIP creation).
 
@@ -244,9 +244,7 @@ class KanbanContextService:
 
         # Check 50MB limit
         if estimated_size_bytes > 52428800:
-            raise ContextSizeLimitExceeded(
-                f"Estimated ZIP size {estimated_size_bytes} bytes exceeds 50MB limit"
-            )
+            raise ContextSizeLimitExceeded(f"Estimated ZIP size {estimated_size_bytes} bytes exceeds 50MB limit")
 
         # Generate ZIP checksum (hash of file list)
         file_list_str = ",".join(sorted(upload_request.files))
@@ -288,10 +286,7 @@ class KanbanContextService:
             context_id = row["context_id"]
             created_at = row["created_at"]
 
-        logger.info(
-            f"Uploaded context metadata for task {task_id}: "
-            f"{len(upload_request.files)} files"
-        )
+        logger.info(f"Uploaded context metadata for task {task_id}: " f"{len(upload_request.files)} files")
 
         return ContextUploadResponse(
             context_id=context_id,
@@ -303,9 +298,7 @@ class KanbanContextService:
             created_at=created_at,
         )
 
-    async def upload_context_file(
-        self, task_id: UUID, filename: str, contents: bytes
-    ) -> ContextUploadResponse:
+    async def upload_context_file(self, task_id: UUID, filename: str, contents: bytes) -> ContextUploadResponse:
         """
         Upload context ZIP file (Week 6 Day 2: Database storage).
 
@@ -326,26 +319,20 @@ class KanbanContextService:
         file_size = len(contents)
 
         if file_size > MAX_SIZE:
-            raise ContextSizeLimitExceeded(
-                f"ZIP file size {file_size} bytes exceeds 50MB limit"
-            )
+            raise ContextSizeLimitExceeded(f"ZIP file size {file_size} bytes exceeds 50MB limit")
 
         # Extract file list from ZIP
         try:
             zip_buffer = io.BytesIO(contents)
             with zipfile.ZipFile(zip_buffer, "r") as zip_file:
                 # Get file list (exclude directories)
-                file_list = [
-                    name for name in zip_file.namelist() if not name.endswith("/")
-                ]
+                file_list = [name for name in zip_file.namelist() if not name.endswith("/")]
 
                 if not file_list:
                     raise InvalidContextFiles("ZIP file contains no files")
 
                 # Extract file sizes for metadata
-                total_uncompressed_size = sum(
-                    info.file_size for info in zip_file.infolist() if not info.is_dir()
-                )
+                total_uncompressed_size = sum(info.file_size for info in zip_file.infolist() if not info.is_dir())
 
         except zipfile.BadZipFile:
             raise InvalidContextFiles("Invalid ZIP file format")
@@ -354,9 +341,7 @@ class KanbanContextService:
         zip_checksum = hashlib.sha256(contents).hexdigest()
 
         # Calculate compression ratio
-        compression_ratio = (
-            file_size / total_uncompressed_size if total_uncompressed_size > 0 else 1.0
-        )
+        compression_ratio = file_size / total_uncompressed_size if total_uncompressed_size > 0 else 1.0
 
         # Build metadata JSONB
         metadata = {
@@ -414,9 +399,7 @@ class KanbanContextService:
     # Context Load Tracking (Q4: Double-click)
     # ========================================================================
 
-    async def track_context_load(
-        self, task_id: UUID, load_request: ContextLoadRequest
-    ) -> ContextLoadResponse:
+    async def track_context_load(self, task_id: UUID, load_request: ContextLoadRequest) -> ContextLoadResponse:
         """
         Track context load (Q4: Double-click auto-load).
 
@@ -472,9 +455,7 @@ class KanbanContextService:
                 WHERE task_id = $1
                 RETURNING last_loaded_at
             """
-            update_row = await conn.fetchrow(
-                update_query, task_id, json.dumps(metadata_json)
-            )
+            update_row = await conn.fetchrow(update_query, task_id, json.dumps(metadata_json))
             last_loaded_at = update_row["last_loaded_at"]
 
         logger.info(
@@ -583,9 +564,7 @@ class MockKanbanContextService:
         """Mock: Returns None as no actual ZIP is stored."""
         return None
 
-    async def upload_context(
-        self, task_id: UUID, upload_request: ContextUploadRequest
-    ) -> ContextUploadResponse:
+    async def upload_context(self, task_id: UUID, upload_request: ContextUploadRequest) -> ContextUploadResponse:
         """Upload context files as mock storage."""
         if not upload_request.files:
             raise InvalidContextFiles("At least one file path required")
@@ -613,9 +592,7 @@ class MockKanbanContextService:
         )
 
         # Remove existing context for task
-        self._mock_contexts = {
-            k: v for k, v in self._mock_contexts.items() if v.task_id != task_id
-        }
+        self._mock_contexts = {k: v for k, v in self._mock_contexts.items() if v.task_id != task_id}
         self._mock_contexts[context_id] = context
 
         return ContextUploadResponse(
@@ -628,9 +605,7 @@ class MockKanbanContextService:
             created_at=context.created_at,
         )
 
-    async def upload_context_file(
-        self, task_id: UUID, filename: str, contents: bytes
-    ) -> ContextUploadResponse:
+    async def upload_context_file(self, task_id: UUID, filename: str, contents: bytes) -> ContextUploadResponse:
         """Upload context ZIP file (mock)."""
         MAX_SIZE = 50 * 1024 * 1024
         if len(contents) > MAX_SIZE:
@@ -658,9 +633,7 @@ class MockKanbanContextService:
             zip_checksum=zip_checksum,
         )
 
-        self._mock_contexts = {
-            k: v for k, v in self._mock_contexts.items() if v.task_id != task_id
-        }
+        self._mock_contexts = {k: v for k, v in self._mock_contexts.items() if v.task_id != task_id}
         self._mock_contexts[context_id] = context
 
         return ContextUploadResponse(
@@ -673,9 +646,7 @@ class MockKanbanContextService:
             created_at=context.created_at,
         )
 
-    async def track_context_load(
-        self, task_id: UUID, load_request: ContextLoadRequest
-    ) -> ContextLoadResponse:
+    async def track_context_load(self, task_id: UUID, load_request: ContextLoadRequest) -> ContextLoadResponse:
         """Track context load (mock)."""
         context = await self.get_context_full(task_id)
         if not context:
@@ -731,8 +702,6 @@ def get_kanban_context_service() -> KanbanContextService:
 
     db_pool = async_db.get_pool()
     if db_pool is None:
-        raise RuntimeError(
-            "Database pool not initialized. Ensure startup_event has run."
-        )
+        raise RuntimeError("Database pool not initialized. Ensure startup_event has run.")
 
     return KanbanContextService(db_pool=db_pool)

@@ -111,7 +111,7 @@ def check_file_for_critical_korean_paths(file_path: Path) -> Tuple[bool, List[st
 
         return len(warnings) == 0, warnings
 
-    except Exception as e:
+    except Exception:
         return True, []  # If we can't read, don't fail
 
 

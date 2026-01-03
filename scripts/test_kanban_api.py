@@ -44,7 +44,7 @@ if response.status_code == 200:
         task_id = task.get("id") or task.get("task_id") or task.get("_id")
         current_status = task["status"]
 
-        print(f"\n[*] Testing with task:")
+        print("\n[*] Testing with task:")
         print(f"   ID: {task_id}")
         print(f"   Title: {task['title']}")
         print(f"   Current status: {current_status}")

@@ -16,7 +16,7 @@ Usage:
 import sys
 import subprocess
 from pathlib import Path
-from typing import List, Dict, Tuple
+from typing import List, Tuple
 import asyncio
 
 # Add project root to path

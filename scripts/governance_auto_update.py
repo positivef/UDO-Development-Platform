@@ -9,7 +9,6 @@ Part of UDO Platform Layer 2: Platform Features
 """
 
 import sys
-import os
 import json
 import hashlib
 from pathlib import Path
@@ -325,7 +324,8 @@ def run_check(verbose: bool = True) -> Tuple[bool, Dict]:
 
     if verbose:
         print(
-            f"[*] Compliance: {compliance['summary']['passed']}/{compliance['summary']['total']} ({compliance['summary']['percentage']}%)"
+            f"[*] Compliance: {compliance['summary']['passed']}/{compliance['summary']['total']} "
+            f"({compliance['summary']['percentage']}%)"
         )
         print(f"   Status: {compliance['status'].upper()}\n")
 
@@ -395,7 +395,7 @@ def main():
         if args.json:
             print(json.dumps(report, indent=2))
         else:
-            print(f"\n[*] Compliance Report")
+            print("\n[*] Compliance Report")
             print(f"   Status: {report['status'].upper()}")
             print(f"   Score: {report['summary']['percentage']}%")
             for check in report["checks"]:

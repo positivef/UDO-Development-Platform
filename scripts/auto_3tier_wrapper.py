@@ -430,6 +430,6 @@ if __name__ == "__main__":
 
     # Print statistics
     stats = get_statistics()
-    print(f"\n[*] Statistics:")
+    print("\n[*] Statistics:")
     for key, value in stats.items():
         print(f"  {key}: {value}")

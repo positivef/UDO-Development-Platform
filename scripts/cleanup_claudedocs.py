@@ -24,11 +24,10 @@ Usage:
     python scripts/cleanup_claudedocs.py --external   # Also process Stage 2 (external archive)
 """
 
-import os
 import sys
 import argparse
 import subprocess
-from datetime import datetime, timedelta
+from datetime import datetime
 from pathlib import Path
 from typing import Dict, List, Tuple, Optional
 

@@ -203,7 +203,7 @@ class UnifiedDevelopmentOrchestratorV2:
                 # v3 requires project_name parameter
                 self.uncertainty = UncertaintyMapV3(project_name=project_context.project_name)
                 logger.info("UncertaintyMap v3.0 with predictive modeling initialized")
-            except Exception as e:
+            except (TypeError, ValueError):
                 # v2 fallback
                 try:
                     self.uncertainty = UncertaintyMapV3()  # v2 doesn't need params
@@ -293,7 +293,7 @@ class UnifiedDevelopmentOrchestratorV2:
 
         # Phase별 가중치 적용
         weighted_confidence = 0.0
-        weights = phase_metric.weight_distribution
+        _weights = phase_metric.weight_distribution  # noqa: F841 - Reserved for future
 
         # Phase-specific 조정
         if phase == "ideation":
