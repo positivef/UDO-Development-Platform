@@ -16,6 +16,7 @@ Exit code:
 - 0 : All checks passed
 - 1 : One or more checks failed (details printed to stdout)
 """
+import os
 import sys
 import yaml
 from pathlib import Path
@@ -76,8 +77,14 @@ def verify_ssot_registry() -> bool:
 
 
 def verify_obsidian_path() -> bool:
-    # User‑defined memory path
-    expected_path = Path(r"C:\\Users\\user\\Documents\\Obsidian Vault")
+    # Priority 1: Environment variable
+    env_path = os.getenv("OBSIDIAN_VAULT_PATH")
+    if env_path:
+        expected_path = Path(env_path)
+    else:
+        # Priority 2: User home fallback
+        expected_path = Path.home() / "Documents" / "Obsidian Vault"
+
     # Check that .governance.yaml (if it defines a vault) matches
     governance = load_governance()
     vault_path = governance.get("obsidian_vault_path")

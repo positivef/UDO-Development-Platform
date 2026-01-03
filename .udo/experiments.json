@@ -1,0 +1,23 @@
+{
+  "test-problem-1": {
+    "problem_id": "test-problem-1",
+    "problem_description": "API timeout test",
+    "domain": "api",
+    "winning_approach": "circuit breaker",
+    "total_time_minutes": 5,
+    "attempts": [
+      {
+        "approach": "increase timeout",
+        "result": "failed",
+        "reason": "still times out",
+        "time_minutes": 0
+      },
+      {
+        "approach": "circuit breaker",
+        "result": "success",
+        "reason": null,
+        "time_minutes": 5
+      }
+    ]
+  }
+}

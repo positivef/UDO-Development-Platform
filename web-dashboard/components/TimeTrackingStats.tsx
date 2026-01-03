@@ -76,19 +76,21 @@ export function TimeTrackingStats({ metrics, roi }: TimeTrackingStatsProps) {
     return "neutral"
   }
 
+  const changePercent = roi.comparison?.change_percent ?? 0
+
   const stats = [
     {
       title: "Time Saved",
       value: `${formatNumber(metrics.time_saved_hours, 1)}h`,
-      change: formatPercentage(roi.comparison.change_percent),
-      trend: getTrend(roi.comparison.change_percent),
+      change: formatPercentage(changePercent),
+      trend: getTrend(changePercent),
       icon: <Clock className="h-5 w-5" />,
     },
     {
       title: "ROI Percentage",
       value: `${formatNumber(roi.roi_percentage, 0)}%`,
-      change: formatPercentage(roi.comparison.change_percent),
-      trend: getTrend(roi.comparison.change_percent),
+      change: formatPercentage(changePercent),
+      trend: getTrend(changePercent),
       icon: <DollarSign className="h-5 w-5" />,
     },
     {

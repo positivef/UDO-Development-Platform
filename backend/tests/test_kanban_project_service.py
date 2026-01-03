@@ -12,9 +12,7 @@ from uuid import uuid4
 
 import pytest
 
-from backend.app.models.kanban_task_project import (
-    MaxRelatedProjectsError, MultiplePrimaryProjectsError,
-    NoPrimaryProjectError)
+from app.models.kanban_task_project import MaxRelatedProjectsError, MultiplePrimaryProjectsError, NoPrimaryProjectError
 from backend.app.services.kanban_project_service import KanbanProjectService
 
 

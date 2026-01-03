@@ -24,7 +24,7 @@ export function EnvCheckBanner() {
 
     try {
       // 1. Backend health check
-      const apiUrl = process.env.NEXT_PUBLIC_API_URL || "http://localhost:8000";
+      const apiUrl = process.env.NEXT_PUBLIC_API_URL || "http://localhost:8001";
       const res = await fetch(`${apiUrl}/health`, {
         method: "GET",
         signal: AbortSignal.timeout(3000),

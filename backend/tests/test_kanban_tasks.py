@@ -17,13 +17,19 @@ from uuid import uuid4
 import pytest
 import pytest_asyncio
 
-from backend.app.models.kanban_task import (ArchiveRequest,
-                                            CompletenessUpdateRequest,
-                                            PhaseChangeRequest, PhaseName,
-                                            PriorityChangeRequest,
-                                            StatusChangeRequest, Task,
-                                            TaskCreate, TaskPriority,
-                                            TaskStatus, TaskUpdate)
+from backend.app.models.kanban_task import (
+    ArchiveRequest,
+    CompletenessUpdateRequest,
+    PhaseChangeRequest,
+    PhaseName,
+    PriorityChangeRequest,
+    StatusChangeRequest,
+    Task,
+    TaskCreate,
+    TaskPriority,
+    TaskStatus,
+    TaskUpdate,
+)
 from backend.app.services.kanban_task_service import kanban_task_service
 
 # ============================================================================
@@ -143,7 +149,7 @@ class TestTaskCRUD:
     @pytest.mark.asyncio
     async def test_get_task_not_found(self):
         """Test task retrieval with non-existent ID"""
-        from backend.app.models.kanban_task import TaskNotFoundError
+        from app.models.kanban_task import TaskNotFoundError
 
         with pytest.raises(TaskNotFoundError):
             await kanban_task_service.get_task(uuid4())
@@ -151,9 +157,7 @@ class TestTaskCRUD:
     @pytest.mark.asyncio
     async def test_list_tasks_default_pagination(self, created_task):
         """Test list tasks with default pagination (50 per page)"""
-        result = await kanban_task_service.list_tasks(
-            filters=None, page=1, per_page=50, sort_by="created_at", sort_desc=True
-        )
+        result = await kanban_task_service.list_tasks(filters=None, page=1, per_page=50, sort_by="created_at", sort_desc=True)
 
         assert result is not None
         assert result.pagination.per_page == 50
@@ -253,9 +257,7 @@ class TestTaskCRUD:
             await kanban_task_service.create_task(task_data)
 
         # Sort by priority descending
-        result = await kanban_task_service.list_tasks(
-            sort_by="priority", sort_desc=True
-        )
+        result = await kanban_task_service.list_tasks(sort_by="priority", sort_desc=True)
 
         # First task should have highest priority
         if len(result.data) >= 2:
@@ -278,9 +280,7 @@ class TestTaskCRUD:
             priority=TaskPriority.CRITICAL,
         )
 
-        updated_task = await kanban_task_service.update_task(
-            created_task.task_id, update_data
-        )
+        updated_task = await kanban_task_service.update_task(created_task.task_id, update_data)
 
         assert updated_task.title == "Updated Title"
         assert updated_task.description == "Updated description"
@@ -293,9 +293,7 @@ class TestTaskCRUD:
         """Test task update with only some fields"""
         update_data = TaskUpdate(title="New Title Only")
 
-        updated_task = await kanban_task_service.update_task(
-            created_task.task_id, update_data
-        )
+        updated_task = await kanban_task_service.update_task(created_task.task_id, update_data)
 
         # Updated field
         assert updated_task.title == "New Title Only"
@@ -306,7 +304,7 @@ class TestTaskCRUD:
     @pytest.mark.asyncio
     async def test_update_task_not_found(self):
         """Test task update with non-existent ID"""
-        from backend.app.models.kanban_task import TaskNotFoundError
+        from app.models.kanban_task import TaskNotFoundError
 
         update_data = TaskUpdate(title="New Title")
 
@@ -318,9 +316,7 @@ class TestTaskCRUD:
         """Test task auto-completion when completeness reaches 100%"""
         update_data = TaskUpdate(completeness=100)
 
-        updated_task = await kanban_task_service.update_task(
-            created_task.task_id, update_data
-        )
+        updated_task = await kanban_task_service.update_task(created_task.task_id, update_data)
 
         assert updated_task.completeness == 100
         assert updated_task.status == TaskStatus.COMPLETED
@@ -334,7 +330,7 @@ class TestTaskCRUD:
         assert result is True
 
         # Task should not be retrievable
-        from backend.app.models.kanban_task import TaskNotFoundError
+        from app.models.kanban_task import TaskNotFoundError
 
         with pytest.raises(TaskNotFoundError):
             await kanban_task_service.get_task(created_task.task_id)
@@ -342,7 +338,7 @@ class TestTaskCRUD:
     @pytest.mark.asyncio
     async def test_delete_task_not_found(self):
         """Test task deletion with non-existent ID"""
-        from backend.app.models.kanban_task import TaskNotFoundError
+        from app.models.kanban_task import TaskNotFoundError
 
         with pytest.raises(TaskNotFoundError):
             await kanban_task_service.delete_task(uuid4())
@@ -366,9 +362,7 @@ class TestPhaseOperations:
             reason="Moving to design phase",
         )
 
-        updated_task = await kanban_task_service.change_phase(
-            created_task.task_id, phase_request
-        )
+        updated_task = await kanban_task_service.change_phase(created_task.task_id, phase_request)
 
         assert updated_task.phase_id == new_phase_id
         assert updated_task.phase_name == PhaseName.DESIGN
@@ -386,13 +380,9 @@ class TestPhaseOperations:
         ]
 
         for phase in phases:
-            phase_request = PhaseChangeRequest(
-                new_phase_id=uuid4(), new_phase_name=phase
-            )
+            phase_request = PhaseChangeRequest(new_phase_id=uuid4(), new_phase_name=phase)
 
-            updated_task = await kanban_task_service.change_phase(
-                created_task.task_id, phase_request
-            )
+            updated_task = await kanban_task_service.change_phase(created_task.task_id, phase_request)
 
             assert updated_task.phase_name == phase
 
@@ -405,20 +395,16 @@ class TestPhaseOperations:
             reason="Requirements completed, starting implementation",
         )
 
-        updated_task = await kanban_task_service.change_phase(
-            created_task.task_id, phase_request
-        )
+        updated_task = await kanban_task_service.change_phase(created_task.task_id, phase_request)
 
         assert updated_task.phase_name == PhaseName.IMPLEMENTATION
 
     @pytest.mark.asyncio
     async def test_change_phase_task_not_found(self):
         """Test phase change with non-existent task"""
-        from backend.app.models.kanban_task import TaskNotFoundError
+        from app.models.kanban_task import TaskNotFoundError
 
-        phase_request = PhaseChangeRequest(
-            new_phase_id=uuid4(), new_phase_name=PhaseName.DESIGN
-        )
+        phase_request = PhaseChangeRequest(new_phase_id=uuid4(), new_phase_name=PhaseName.DESIGN)
 
         with pytest.raises(TaskNotFoundError):
             await kanban_task_service.change_phase(uuid4(), phase_request)
@@ -443,13 +429,9 @@ class TestStatusPriorityOperations:
     @pytest.mark.asyncio
     async def test_change_status_success(self, created_task):
         """Test successful status change"""
-        status_request = StatusChangeRequest(
-            new_status=TaskStatus.IN_PROGRESS, reason="Starting work on this task"
-        )
+        status_request = StatusChangeRequest(new_status=TaskStatus.IN_PROGRESS, reason="Starting work on this task")
 
-        updated_task = await kanban_task_service.change_status(
-            created_task.task_id, status_request
-        )
+        updated_task = await kanban_task_service.change_status(created_task.task_id, status_request)
 
         assert updated_task.status == TaskStatus.IN_PROGRESS
 
@@ -458,9 +440,7 @@ class TestStatusPriorityOperations:
         """Test status change to COMPLETED sets completed_at"""
         status_request = StatusChangeRequest(new_status=TaskStatus.COMPLETED)
 
-        updated_task = await kanban_task_service.change_status(
-            created_task.task_id, status_request
-        )
+        updated_task = await kanban_task_service.change_status(created_task.task_id, status_request)
 
         assert updated_task.status == TaskStatus.COMPLETED
         assert updated_task.completed_at is not None
@@ -468,20 +448,16 @@ class TestStatusPriorityOperations:
     @pytest.mark.asyncio
     async def test_change_status_to_blocked(self, created_task):
         """Test status change to BLOCKED"""
-        status_request = StatusChangeRequest(
-            new_status=TaskStatus.BLOCKED, reason="Waiting for dependency"
-        )
+        status_request = StatusChangeRequest(new_status=TaskStatus.BLOCKED, reason="Waiting for dependency")
 
-        updated_task = await kanban_task_service.change_status(
-            created_task.task_id, status_request
-        )
+        updated_task = await kanban_task_service.change_status(created_task.task_id, status_request)
 
         assert updated_task.status == TaskStatus.BLOCKED
 
     @pytest.mark.asyncio
     async def test_change_status_task_not_found(self):
         """Test status change with non-existent task"""
-        from backend.app.models.kanban_task import TaskNotFoundError
+        from app.models.kanban_task import TaskNotFoundError
 
         status_request = StatusChangeRequest(new_status=TaskStatus.IN_PROGRESS)
 
@@ -491,13 +467,9 @@ class TestStatusPriorityOperations:
     @pytest.mark.asyncio
     async def test_change_priority_success(self, created_task):
         """Test successful priority change"""
-        priority_request = PriorityChangeRequest(
-            new_priority=TaskPriority.CRITICAL, reason="Urgent client request"
-        )
+        priority_request = PriorityChangeRequest(new_priority=TaskPriority.CRITICAL, reason="Urgent client request")
 
-        updated_task = await kanban_task_service.change_priority(
-            created_task.task_id, priority_request
-        )
+        updated_task = await kanban_task_service.change_priority(created_task.task_id, priority_request)
 
         assert updated_task.priority == TaskPriority.CRITICAL
 
@@ -514,16 +486,14 @@ class TestStatusPriorityOperations:
         for priority in priorities:
             priority_request = PriorityChangeRequest(new_priority=priority)
 
-            updated_task = await kanban_task_service.change_priority(
-                created_task.task_id, priority_request
-            )
+            updated_task = await kanban_task_service.change_priority(created_task.task_id, priority_request)
 
             assert updated_task.priority == priority
 
     @pytest.mark.asyncio
     async def test_change_priority_task_not_found(self):
         """Test priority change with non-existent task"""
-        from backend.app.models.kanban_task import TaskNotFoundError
+        from app.models.kanban_task import TaskNotFoundError
 
         priority_request = PriorityChangeRequest(new_priority=TaskPriority.HIGH)
 
@@ -533,26 +503,18 @@ class TestStatusPriorityOperations:
     @pytest.mark.asyncio
     async def test_update_completeness_success(self, created_task):
         """Test successful completeness update"""
-        completeness_request = CompletenessUpdateRequest(
-            completeness=50, updated_by="test_user"
-        )
+        completeness_request = CompletenessUpdateRequest(completeness=50, updated_by="test_user")
 
-        updated_task = await kanban_task_service.update_completeness(
-            created_task.task_id, completeness_request
-        )
+        updated_task = await kanban_task_service.update_completeness(created_task.task_id, completeness_request)
 
         assert updated_task.completeness == 50
 
     @pytest.mark.asyncio
     async def test_update_completeness_to_100(self, created_task):
         """Test completeness update to 100% marks as COMPLETED"""
-        completeness_request = CompletenessUpdateRequest(
-            completeness=100, updated_by="test_user"
-        )
+        completeness_request = CompletenessUpdateRequest(completeness=100, updated_by="test_user")
 
-        updated_task = await kanban_task_service.update_completeness(
-            created_task.task_id, completeness_request
-        )
+        updated_task = await kanban_task_service.update_completeness(created_task.task_id, completeness_request)
 
         assert updated_task.completeness == 100
         assert updated_task.status == TaskStatus.COMPLETED
@@ -562,31 +524,21 @@ class TestStatusPriorityOperations:
     async def test_update_completeness_boundary_values(self, created_task):
         """Test completeness with boundary values (0, 100)"""
         # Test 0%
-        completeness_request = CompletenessUpdateRequest(
-            completeness=0, updated_by="test_user"
-        )
-        updated_task = await kanban_task_service.update_completeness(
-            created_task.task_id, completeness_request
-        )
+        completeness_request = CompletenessUpdateRequest(completeness=0, updated_by="test_user")
+        updated_task = await kanban_task_service.update_completeness(created_task.task_id, completeness_request)
         assert updated_task.completeness == 0
 
         # Test 100%
-        completeness_request = CompletenessUpdateRequest(
-            completeness=100, updated_by="test_user"
-        )
-        updated_task = await kanban_task_service.update_completeness(
-            created_task.task_id, completeness_request
-        )
+        completeness_request = CompletenessUpdateRequest(completeness=100, updated_by="test_user")
+        updated_task = await kanban_task_service.update_completeness(created_task.task_id, completeness_request)
         assert updated_task.completeness == 100
 
     @pytest.mark.asyncio
     async def test_update_completeness_task_not_found(self):
         """Test completeness update with non-existent task"""
-        from backend.app.models.kanban_task import TaskNotFoundError
+        from app.models.kanban_task import TaskNotFoundError
 
-        completeness_request = CompletenessUpdateRequest(
-            completeness=50, updated_by="test_user"
-        )
+        completeness_request = CompletenessUpdateRequest(completeness=50, updated_by="test_user")
 
         with pytest.raises(TaskNotFoundError):
             await kanban_task_service.update_completeness(uuid4(), completeness_request)
@@ -631,9 +583,7 @@ class TestQualityGates:
         result = await kanban_task_service.run_quality_gates(created_task.task_id)
 
         # Should have constitutional compliance check
-        constitutional_check = next(
-            (c for c in result.checks if "Constitutional" in c.check_name), None
-        )
+        constitutional_check = next((c for c in result.checks if "Constitutional" in c.check_name), None)
         assert constitutional_check is not None
 
     @pytest.mark.asyncio
@@ -650,7 +600,7 @@ class TestQualityGates:
     @pytest.mark.asyncio
     async def test_run_quality_gates_task_not_found(self):
         """Test quality gate execution with non-existent task"""
-        from backend.app.models.kanban_task import TaskNotFoundError
+        from app.models.kanban_task import TaskNotFoundError
 
         with pytest.raises(TaskNotFoundError):
             await kanban_task_service.run_quality_gates(uuid4())
@@ -679,7 +629,7 @@ class TestQualityGates:
     @pytest.mark.asyncio
     async def test_get_quality_gates_task_not_found(self):
         """Test get quality gate status with non-existent task"""
-        from backend.app.models.kanban_task import TaskNotFoundError
+        from app.models.kanban_task import TaskNotFoundError
 
         with pytest.raises(TaskNotFoundError):
             await kanban_task_service.get_quality_gates(uuid4())
@@ -702,9 +652,7 @@ class TestArchiveOperations:
             reason="Task completed successfully",
         )
 
-        archive = await kanban_task_service.archive_task(
-            created_task.task_id, archive_request
-        )
+        archive = await kanban_task_service.archive_task(created_task.task_id, archive_request)
 
         assert archive is not None
         assert archive.task_id == created_task.task_id
@@ -714,13 +662,9 @@ class TestArchiveOperations:
     @pytest.mark.asyncio
     async def test_archive_task_with_ai_summary(self, created_task):
         """Test archive with AI summary generation (Q6)"""
-        archive_request = ArchiveRequest(
-            archived_by="test_user", generate_ai_summary=True
-        )
+        archive_request = ArchiveRequest(archived_by="test_user", generate_ai_summary=True)
 
-        archive = await kanban_task_service.archive_task(
-            created_task.task_id, archive_request
-        )
+        archive = await kanban_task_service.archive_task(created_task.task_id, archive_request)
 
         # AI summary should be generated
         assert archive.ai_summary is not None
@@ -729,13 +673,9 @@ class TestArchiveOperations:
     @pytest.mark.asyncio
     async def test_archive_task_without_ai_summary(self, created_task):
         """Test archive without AI summary"""
-        archive_request = ArchiveRequest(
-            archived_by="test_user", generate_ai_summary=False
-        )
+        archive_request = ArchiveRequest(archived_by="test_user", generate_ai_summary=False)
 
-        archive = await kanban_task_service.archive_task(
-            created_task.task_id, archive_request
-        )
+        archive = await kanban_task_service.archive_task(created_task.task_id, archive_request)
 
         # AI summary should be None
         assert archive.ai_summary is None
@@ -755,7 +695,7 @@ class TestArchiveOperations:
     @pytest.mark.asyncio
     async def test_archive_task_not_found(self):
         """Test archive with non-existent task"""
-        from backend.app.models.kanban_task import TaskNotFoundError
+        from app.models.kanban_task import TaskNotFoundError
 
         archive_request = ArchiveRequest(archived_by="test_user")
 

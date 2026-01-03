@@ -1,4 +1,5 @@
-export function formatDuration(minutes: number): string {
+export function formatDuration(minutes: number | undefined | null): string {
+  if (minutes == null || isNaN(minutes)) return "0m"
   if (minutes < 60) {
     return `${Math.round(minutes)}m`
   }
@@ -7,11 +8,13 @@ export function formatDuration(minutes: number): string {
   return mins > 0 ? `${hours}h ${mins}m` : `${hours}h`
 }
 
-export function formatNumber(num: number, decimals: number = 0): string {
+export function formatNumber(num: number | undefined | null, decimals: number = 0): string {
+  if (num == null || isNaN(num)) return "0"
   return num.toFixed(decimals).replace(/\B(?=(\d{3})+(?!\d))/g, ",")
 }
 
-export function formatPercentage(num: number, decimals: number = 1): string {
+export function formatPercentage(num: number | undefined | null, decimals: number = 1): string {
+  if (num == null || isNaN(num)) return "0%"
   return `${num > 0 ? "+" : ""}${num.toFixed(decimals)}%`
 }
 

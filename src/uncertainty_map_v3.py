@@ -30,21 +30,21 @@ import logging
 from filelock import FileLock
 
 # Windows Unicode 인코딩 문제 근본 해결
-if sys.platform == 'win32':
+if sys.platform == "win32":
     # 환경변수 설정
-    os.environ['PYTHONIOENCODING'] = 'utf-8'
+    os.environ["PYTHONIOENCODING"] = "utf-8"
     # stdout/stderr를 UTF-8 모드로 재구성
-    if hasattr(sys.stdout, 'reconfigure'):
-        sys.stdout.reconfigure(encoding='utf-8')
-        sys.stderr.reconfigure(encoding='utf-8')
+    if hasattr(sys.stdout, "reconfigure"):
+        sys.stdout.reconfigure(encoding="utf-8")
+        sys.stderr.reconfigure(encoding="utf-8")
 
 # ML imports for prediction
 logger = logging.getLogger(__name__)
 
 
 def _get_storage_dir() -> Path:
-    env_dir = os.environ.get('UDO_STORAGE_DIR') or os.environ.get('UDO_HOME')
-    base_dir = Path(env_dir).expanduser() if env_dir else Path.home() / '.udo'
+    env_dir = os.environ.get("UDO_STORAGE_DIR") or os.environ.get("UDO_HOME")
+    base_dir = Path(env_dir).expanduser() if env_dir else Path.home() / ".udo"
     base_dir.mkdir(parents=True, exist_ok=True)
     return base_dir
 
@@ -54,6 +54,7 @@ DEFAULT_STORAGE_DIR = _get_storage_dir()
 try:
     from sklearn.ensemble import RandomForestRegressor
     from sklearn.preprocessing import StandardScaler
+
     ML_AVAILABLE = True
 except Exception:
     ML_AVAILABLE = False
@@ -62,37 +63,40 @@ except Exception:
 
 class UncertaintyState(Enum):
     """Quantum-inspired uncertainty states"""
-    DETERMINISTIC = "deterministic"      # 100% certain
-    PROBABILISTIC = "probabilistic"      # 70-99% certain
-    QUANTUM = "quantum"                   # 40-70% (superposition)
-    CHAOTIC = "chaotic"                   # 10-40% (butterfly effect)
-    VOID = "void"                         # <10% (unknown territory)
+
+    DETERMINISTIC = "deterministic"  # 100% certain
+    PROBABILISTIC = "probabilistic"  # 70-99% certain
+    QUANTUM = "quantum"  # 40-70% (superposition)
+    CHAOTIC = "chaotic"  # 10-40% (butterfly effect)
+    VOID = "void"  # <10% (unknown territory)
 
 
 @dataclass
 class UncertaintyVector:
     """Multi-dimensional uncertainty representation"""
-    technical: float      # 기술적 불확실성
-    market: float        # 시장 불확실성
-    resource: float      # 리소스 불확실성
-    timeline: float      # 일정 불확실성
-    quality: float       # 품질 불확실성
+
+    technical: float  # 기술적 불확실성
+    market: float  # 시장 불확실성
+    resource: float  # 리소스 불확실성
+    timeline: float  # 일정 불확실성
+    quality: float  # 품질 불확실성
 
     def magnitude(self) -> float:
         """Calculate total uncertainty magnitude"""
         return math.sqrt(
-            self.technical**2 + self.market**2 +
-            self.resource**2 + self.timeline**2 + self.quality**2
-        ) / math.sqrt(5)  # Normalize to 0-1
+            self.technical**2 + self.market**2 + self.resource**2 + self.timeline**2 + self.quality**2
+        ) / math.sqrt(
+            5
+        )  # Normalize to 0-1
 
     def dominant_dimension(self) -> str:
         """Find which dimension has highest uncertainty"""
         dims = {
-            'technical': self.technical,
-            'market': self.market,
-            'resource': self.resource,
-            'timeline': self.timeline,
-            'quality': self.quality
+            "technical": self.technical,
+            "market": self.market,
+            "resource": self.resource,
+            "timeline": self.timeline,
+            "quality": self.quality,
         }
         return max(dims.items(), key=lambda x: x[1])[0]
 
@@ -100,6 +104,7 @@ class UncertaintyVector:
 @dataclass
 class PredictiveModel:
     """Predictive model for uncertainty evolution"""
+
     trend: str  # "increasing", "decreasing", "stable", "oscillating"
     velocity: float  # Rate of change
     acceleration: float  # Change of rate
@@ -111,13 +116,14 @@ class PredictiveModel:
         """Predict uncertainty level in the future"""
         # Simple linear model with acceleration
         base_change = self.velocity * hours_ahead
-        accel_change = 0.5 * self.acceleration * (hours_ahead ** 2)
+        accel_change = 0.5 * self.acceleration * (hours_ahead**2)
         return max(0, min(1, base_change + accel_change))
 
 
 @dataclass
 class MitigationStrategy:
     """Auto-generated mitigation strategy"""
+
     id: str
     uncertainty_id: str
     action: str
@@ -131,7 +137,7 @@ class MitigationStrategy:
     def roi(self) -> float:
         """Calculate return on investment"""
         if self.estimated_cost == 0:
-            return float('inf')
+            return float("inf")
         return (self.estimated_impact * self.success_probability) / self.estimated_cost
 
 
@@ -170,7 +176,7 @@ class UncertaintyMapV3:
             self.scaler = None
             self.is_trained = False
             self._predictor_feature_count = 0
-        
+
         # Pattern database
         self.known_patterns = self._load_known_patterns()
 
@@ -196,20 +202,13 @@ class UncertaintyMapV3:
 
     def _predict_with_ml(self, vector: UncertaintyVector, hours: int) -> Optional[Tuple[str, float, datetime, float]]:
         """Use the trained ML model for predictions if available."""
-        if not (ML_AVAILABLE and getattr(self, 'is_trained', False)):
+        if not (ML_AVAILABLE and getattr(self, "is_trained", False)):
             return None
 
         try:
-            feature_vector = np.array([
-                [
-                    vector.technical,
-                    vector.market,
-                    vector.resource,
-                    vector.timeline,
-                    vector.quality,
-                    hours
-                ]
-            ])
+            feature_vector = np.array(
+                [[vector.technical, vector.market, vector.resource, vector.timeline, vector.quality, hours]]
+            )
 
             if self._predictor_feature_count and feature_vector.shape[1] != self._predictor_feature_count:
                 raise ValueError("Feature vector does not match trained model shape")
@@ -234,14 +233,11 @@ class UncertaintyMapV3:
             return None
 
     def _predict_with_rules(
-        self,
-        vector: UncertaintyVector,
-        pattern: Optional[Dict],
-        hours: int
+        self, vector: UncertaintyVector, pattern: Optional[Dict], hours: int
     ) -> Tuple[str, float, datetime, float]:
         """Heuristic prediction used when ML is unavailable."""
         if pattern:
-            typical = pattern['typical_vector']
+            typical = pattern["typical_vector"]
             diff = vector.magnitude() - typical.magnitude()
 
             if abs(diff) < 0.1:
@@ -268,46 +264,46 @@ class UncertaintyMapV3:
                 "description": "High uncertainty in early stages",
                 "phases": ["ideation", "design"],
                 "typical_vector": UncertaintyVector(0.8, 0.9, 0.6, 0.7, 0.5),
-                "resolution_time": 168  # hours
+                "resolution_time": 168,  # hours
             },
             "implementation_spike": {
                 "description": "Uncertainty spike during implementation",
                 "phases": ["implementation"],
                 "typical_vector": UncertaintyVector(0.7, 0.3, 0.5, 0.8, 0.6),
-                "resolution_time": 72
+                "resolution_time": 72,
             },
             "testing_convergence": {
                 "description": "Uncertainty reduces during testing",
                 "phases": ["testing"],
                 "typical_vector": UncertaintyVector(0.3, 0.2, 0.2, 0.3, 0.7),
-                "resolution_time": 48
+                "resolution_time": 48,
             },
             "market_unknown": {
                 "description": "Persistent market uncertainty",
                 "phases": ["all"],
                 "typical_vector": UncertaintyVector(0.3, 0.9, 0.4, 0.5, 0.4),
-                "resolution_time": 336
-            }
+                "resolution_time": 336,
+            },
         }
 
     def analyze_context(self, context: Dict) -> Tuple[UncertaintyVector, UncertaintyState]:
         """
         Analyze context and return uncertainty vector and state
         """
-        phase = context.get('phase')
+        phase = context.get("phase")
         if not phase:
             raise ValueError("Context must include a phase")
-        has_code = len(context.get('files', [])) > 0
-        team_size = context.get('team_size', 1)
+        has_code = len(context.get("files", [])) > 0
+        team_size = context.get("team_size", 1)
         if team_size <= 0:
             raise ValueError("team_size must be greater than zero")
-        timeline = context.get('timeline_weeks', 12)
+        timeline = context.get("timeline_weeks", 12)
         if timeline <= 0:
             raise ValueError("timeline_weeks must be greater than zero")
 
         # Calculate uncertainty dimensions
         technical = self._calc_technical_uncertainty(phase, has_code)
-        market = self._calc_market_uncertainty(phase, context.get('market_validation', 0))
+        market = self._calc_market_uncertainty(phase, context.get("market_validation", 0))
         resource = self._calc_resource_uncertainty(team_size, timeline)
         timeline_unc = self._calc_timeline_uncertainty(phase, timeline)
         quality = self._calc_quality_uncertainty(phase, has_code)
@@ -331,13 +327,7 @@ class UncertaintyMapV3:
 
     def _calc_technical_uncertainty(self, phase: str, has_code: bool) -> float:
         """Calculate technical uncertainty"""
-        base_uncertainty = {
-            'ideation': 0.9,
-            'design': 0.7,
-            'mvp': 0.5,
-            'implementation': 0.4,
-            'testing': 0.2
-        }.get(phase, 0.5)
+        base_uncertainty = {"ideation": 0.9, "design": 0.7, "mvp": 0.5, "implementation": 0.4, "testing": 0.2}.get(phase, 0.5)
 
         # Reduce if we have code
         if has_code:
@@ -347,9 +337,9 @@ class UncertaintyMapV3:
 
     def _calc_market_uncertainty(self, phase: str, validation: float) -> float:
         """Calculate market uncertainty"""
-        if phase == 'ideation':
+        if phase == "ideation":
             return 0.9 * (1 - validation)
-        elif phase == 'design':
+        elif phase == "design":
             return 0.7 * (1 - validation)
         else:
             return 0.5 * (1 - validation)
@@ -366,13 +356,7 @@ class UncertaintyMapV3:
 
     def _calc_timeline_uncertainty(self, phase: str, timeline_weeks: int) -> float:
         """Calculate timeline uncertainty"""
-        phase_factors = {
-            'ideation': 0.3,
-            'design': 0.5,
-            'mvp': 0.7,
-            'implementation': 0.8,
-            'testing': 0.4
-        }
+        phase_factors = {"ideation": 0.3, "design": 0.5, "mvp": 0.7, "implementation": 0.8, "testing": 0.4}
 
         base = phase_factors.get(phase, 0.5)
 
@@ -386,16 +370,10 @@ class UncertaintyMapV3:
 
     def _calc_quality_uncertainty(self, phase: str, has_code: bool) -> float:
         """Calculate quality uncertainty"""
-        if not has_code and phase in ['implementation', 'testing']:
+        if not has_code and phase in ["implementation", "testing"]:
             return 0.9  # High uncertainty without code
 
-        return {
-            'ideation': 0.4,
-            'design': 0.5,
-            'mvp': 0.7,
-            'implementation': 0.6,
-            'testing': 0.3
-        }.get(phase, 0.5)
+        return {"ideation": 0.4, "design": 0.5, "mvp": 0.7, "implementation": 0.6, "testing": 0.3}.get(phase, 0.5)
 
     def add_observation(self, phase: str, vector: UncertaintyVector, outcome: bool):
         """
@@ -407,15 +385,10 @@ class UncertaintyMapV3:
             outcome: Success (True) or failure (False)
         """
         # Store observation for future training
-        observation = {
-            'timestamp': datetime.now().isoformat(),
-            'phase': phase,
-            'vector': asdict(vector),
-            'outcome': outcome
-        }
+        observation = {"timestamp": datetime.now().isoformat(), "phase": phase, "vector": asdict(vector), "outcome": outcome}
 
         # Add to patterns for learning
-        phase_key = f'observations_{phase}'
+        phase_key = f"observations_{phase}"
         if phase_key not in self.patterns:
             self.patterns[phase_key] = []
         self.patterns[phase_key].append(observation)
@@ -459,11 +432,7 @@ class UncertaintyMapV3:
         if ml_prediction:
             trend, velocity, predicted_resolution, predicted_level = ml_prediction
         else:
-            trend, velocity, predicted_resolution, predicted_level = self._predict_with_rules(
-                vector,
-                pattern,
-                hours
-            )
+            trend, velocity, predicted_resolution, predicted_level = self._predict_with_rules(vector, pattern, hours)
 
         lower_bound = max(0, min(vector.magnitude(), predicted_level) - 0.2)
         upper_bound = min(1, max(vector.magnitude(), predicted_level) + 0.2)
@@ -475,7 +444,7 @@ class UncertaintyMapV3:
             acceleration=-0.0001,  # Tend toward stability
             inflection_points=[],
             confidence_interval=(lower_bound, upper_bound),
-            predicted_resolution=predicted_resolution
+            predicted_resolution=predicted_resolution,
         )
 
         return model
@@ -483,18 +452,18 @@ class UncertaintyMapV3:
     def _match_pattern(self, vector: UncertaintyVector) -> Optional[Dict]:
         """Match current vector to known patterns"""
         best_match = None
-        best_distance = float('inf')
+        best_distance = float("inf")
 
         for name, pattern in self.known_patterns.items():
-            typical = pattern['typical_vector']
+            typical = pattern["typical_vector"]
 
             # Calculate Euclidean distance
             distance = math.sqrt(
-                (vector.technical - typical.technical)**2 +
-                (vector.market - typical.market)**2 +
-                (vector.resource - typical.resource)**2 +
-                (vector.timeline - typical.timeline)**2 +
-                (vector.quality - typical.quality)**2
+                (vector.technical - typical.technical) ** 2
+                + (vector.market - typical.market) ** 2
+                + (vector.resource - typical.resource) ** 2
+                + (vector.timeline - typical.timeline) ** 2
+                + (vector.quality - typical.quality) ** 2
             )
 
             if distance < best_distance:
@@ -517,92 +486,106 @@ class UncertaintyMapV3:
         dominant = vector.dominant_dimension()
 
         # Generate strategies based on dominant uncertainty
-        if dominant == 'technical':
-            strategies.append(MitigationStrategy(
-                id=f"mit_{uid}_1",
-                uncertainty_id=uid,
-                action="Conduct technical proof of concept",
-                priority=1,
-                estimated_impact=0.4,
-                estimated_cost=16,  # hours
-                prerequisites=[],
-                success_probability=0.8,
-                fallback_strategy="Consult external expert"
-            ))
-            strategies.append(MitigationStrategy(
-                id=f"mit_{uid}_2",
-                uncertainty_id=uid,
-                action="Research similar implementations",
-                priority=2,
-                estimated_impact=0.3,
-                estimated_cost=8,
-                prerequisites=[],
-                success_probability=0.9,
-                fallback_strategy=None
-            ))
+        if dominant == "technical":
+            strategies.append(
+                MitigationStrategy(
+                    id=f"mit_{uid}_1",
+                    uncertainty_id=uid,
+                    action="Conduct technical proof of concept",
+                    priority=1,
+                    estimated_impact=0.4,
+                    estimated_cost=16,  # hours
+                    prerequisites=[],
+                    success_probability=0.8,
+                    fallback_strategy="Consult external expert",
+                )
+            )
+            strategies.append(
+                MitigationStrategy(
+                    id=f"mit_{uid}_2",
+                    uncertainty_id=uid,
+                    action="Research similar implementations",
+                    priority=2,
+                    estimated_impact=0.3,
+                    estimated_cost=8,
+                    prerequisites=[],
+                    success_probability=0.9,
+                    fallback_strategy=None,
+                )
+            )
 
-        elif dominant == 'market':
-            strategies.append(MitigationStrategy(
-                id=f"mit_{uid}_3",
-                uncertainty_id=uid,
-                action="Conduct user interviews (10+)",
-                priority=1,
-                estimated_impact=0.5,
-                estimated_cost=20,
-                prerequisites=["Identify target users"],
-                success_probability=0.7,
-                fallback_strategy="Run online survey"
-            ))
-            strategies.append(MitigationStrategy(
-                id=f"mit_{uid}_4",
-                uncertainty_id=uid,
-                action="Build MVP for validation",
-                priority=2,
-                estimated_impact=0.6,
-                estimated_cost=40,
-                prerequisites=["Core features defined"],
-                success_probability=0.6,
-                fallback_strategy="Create landing page"
-            ))
+        elif dominant == "market":
+            strategies.append(
+                MitigationStrategy(
+                    id=f"mit_{uid}_3",
+                    uncertainty_id=uid,
+                    action="Conduct user interviews (10+)",
+                    priority=1,
+                    estimated_impact=0.5,
+                    estimated_cost=20,
+                    prerequisites=["Identify target users"],
+                    success_probability=0.7,
+                    fallback_strategy="Run online survey",
+                )
+            )
+            strategies.append(
+                MitigationStrategy(
+                    id=f"mit_{uid}_4",
+                    uncertainty_id=uid,
+                    action="Build MVP for validation",
+                    priority=2,
+                    estimated_impact=0.6,
+                    estimated_cost=40,
+                    prerequisites=["Core features defined"],
+                    success_probability=0.6,
+                    fallback_strategy="Create landing page",
+                )
+            )
 
-        elif dominant == 'resource':
-            strategies.append(MitigationStrategy(
-                id=f"mit_{uid}_5",
-                uncertainty_id=uid,
-                action="Hire contractor/freelancer",
-                priority=1,
-                estimated_impact=0.5,
-                estimated_cost=8,  # Time to find
-                prerequisites=["Budget approval"],
-                success_probability=0.7,
-                fallback_strategy="Reduce scope"
-            ))
+        elif dominant == "resource":
+            strategies.append(
+                MitigationStrategy(
+                    id=f"mit_{uid}_5",
+                    uncertainty_id=uid,
+                    action="Hire contractor/freelancer",
+                    priority=1,
+                    estimated_impact=0.5,
+                    estimated_cost=8,  # Time to find
+                    prerequisites=["Budget approval"],
+                    success_probability=0.7,
+                    fallback_strategy="Reduce scope",
+                )
+            )
 
-        elif dominant == 'timeline':
-            strategies.append(MitigationStrategy(
-                id=f"mit_{uid}_6",
-                uncertainty_id=uid,
-                action="Implement parallel development",
-                priority=1,
-                estimated_impact=0.4,
-                estimated_cost=4,
-                prerequisites=["Clear task separation"],
-                success_probability=0.8,
-                fallback_strategy="Cut non-essential features"
-            ))
+        elif dominant == "timeline":
+            strategies.append(
+                MitigationStrategy(
+                    id=f"mit_{uid}_6",
+                    uncertainty_id=uid,
+                    action="Implement parallel development",
+                    priority=1,
+                    estimated_impact=0.4,
+                    estimated_cost=4,
+                    prerequisites=["Clear task separation"],
+                    success_probability=0.8,
+                    fallback_strategy="Cut non-essential features",
+                )
+            )
 
-        elif dominant == 'quality':
-            strategies.append(MitigationStrategy(
-                id=f"mit_{uid}_7",
-                uncertainty_id=uid,
-                action="Set up automated testing",
-                priority=1,
-                estimated_impact=0.6,
-                estimated_cost=12,
-                prerequisites=["Test framework chosen"],
-                success_probability=0.9,
-                fallback_strategy="Manual testing checklist"
-            ))
+        elif dominant == "quality":
+            strategies.append(
+                MitigationStrategy(
+                    id=f"mit_{uid}_7",
+                    uncertainty_id=uid,
+                    action="Set up automated testing",
+                    priority=1,
+                    estimated_impact=0.6,
+                    estimated_cost=12,
+                    prerequisites=["Test framework chosen"],
+                    success_probability=0.9,
+                    fallback_strategy="Manual testing checklist",
+                )
+            )
 
         # Sort by ROI
         strategies.sort(key=lambda s: s.roi(), reverse=True)
@@ -621,11 +604,11 @@ class UncertaintyMapV3:
             return f"[{'=' * filled}{'.' * empty}]"
 
         bars = {
-            'Technical': render_bar(vector.technical),
-            'Market': render_bar(vector.market),
-            'Resource': render_bar(vector.resource),
-            'Timeline': render_bar(vector.timeline),
-            'Quality': render_bar(vector.quality)
+            "Technical": render_bar(vector.technical),
+            "Market": render_bar(vector.market),
+            "Resource": render_bar(vector.resource),
+            "Timeline": render_bar(vector.timeline),
+            "Quality": render_bar(vector.quality),
         }
 
         state_icons = {
@@ -633,7 +616,7 @@ class UncertaintyMapV3:
             UncertaintyState.PROBABILISTIC: "VAR",
             UncertaintyState.QUANTUM: "QNT",
             UncertaintyState.CHAOTIC: "RISK",
-            UncertaintyState.VOID: "UNK"
+            UncertaintyState.VOID: "UNK",
         }
 
         border = "+" + "-" * 52 + "+"
@@ -654,7 +637,7 @@ class UncertaintyMapV3:
             pad(f"Resource  : {bars['Resource']} ({vector.resource:.0%})"),
             pad(f"Timeline  : {bars['Timeline']} ({vector.timeline:.0%})"),
             pad(f"Quality   : {bars['Quality']} ({vector.quality:.0%})"),
-            border
+            border,
         ]
 
         return "\n".join(lines)
@@ -662,27 +645,27 @@ class UncertaintyMapV3:
     def save_state(self, filepath: Optional[Path] = None):
         """Save current state to file"""
         state = {
-            'project': self.project_name,
-            'timestamp': datetime.now().isoformat(),
-            'uncertainties': {k: asdict(v) for k, v in self.uncertainties.items()},
-            'patterns': self.patterns
+            "project": self.project_name,
+            "timestamp": datetime.now().isoformat(),
+            "uncertainties": {k: asdict(v) for k, v in self.uncertainties.items()},
+            "patterns": self.patterns,
         }
 
         target = Path(filepath).expanduser() if filepath else self.history_file
         target.parent.mkdir(parents=True, exist_ok=True)
-        lock = FileLock(str(target) + '.lock')
+        lock = FileLock(str(target) + ".lock")
         with lock:
-            with open(target, 'w', encoding='utf-8') as f:
+            with open(target, "w", encoding="utf-8") as f:
                 json.dump(state, f, indent=2, ensure_ascii=False)
 
     def load_history(self):
         """Load historical data"""
         if self.history_file.exists():
-            lock = FileLock(str(self.history_file) + '.lock')
+            lock = FileLock(str(self.history_file) + ".lock")
             with lock:
-                with open(self.history_file, 'r', encoding='utf-8') as f:
+                with open(self.history_file, "r", encoding="utf-8") as f:
                     data = json.load(f)
-                    self.patterns = data.get('patterns', {})
+                    self.patterns = data.get("patterns", {})
 
 
 def demo():
@@ -698,25 +681,25 @@ def demo():
     # Test different contexts
     contexts = [
         {
-            'name': 'Ideation Phase',
-            'phase': 'ideation',
-            'files': [],
-            'team_size': 5,
-            'timeline_weeks': 12,
-            'market_validation': 0.2
+            "name": "Ideation Phase",
+            "phase": "ideation",
+            "files": [],
+            "team_size": 5,
+            "timeline_weeks": 12,
+            "market_validation": 0.2,
         },
         {
-            'name': 'Implementation Phase',
-            'phase': 'implementation',
-            'files': ['app.py', 'models.py', 'views.py'],
-            'team_size': 5,
-            'timeline_weeks': 8,
-            'market_validation': 0.6
-        }
+            "name": "Implementation Phase",
+            "phase": "implementation",
+            "files": ["app.py", "models.py", "views.py"],
+            "team_size": 5,
+            "timeline_weeks": 8,
+            "market_validation": 0.6,
+        },
     ]
 
     for ctx in contexts:
-        logger.info("Context: %s", ctx['name'])
+        logger.info("Context: %s", ctx["name"])
         logger.info("%s", "-" * 50)
 
         # Analyze
@@ -737,13 +720,7 @@ def demo():
         logger.info("Top mitigation strategies:")
         for i, mit in enumerate(mitigations, 1):
             logger.info("%d. %s", i, mit.action)
-            logger.info(
-                "Impact: %.1f%%, Cost: %sh, ROI: %.1f",
-                mit.estimated_impact * 100,
-                mit.estimated_cost,
-                mit.roi()
-            )
-
+            logger.info("Impact: %.1f%%, Cost: %sh, ROI: %.1f", mit.estimated_impact * 100, mit.estimated_cost, mit.roi())
 
 
 class Uncertainty:
@@ -751,6 +728,7 @@ class Uncertainty:
     Facade for UncertaintyMapV3 to match simple test API.
     Used for MVP testing and backward compatibility.
     """
+
     def __init__(self):
         self.engine = UncertaintyMapV3("default_project")
         # Initialize with a default context to have a baseline vector
@@ -781,7 +759,7 @@ class Uncertainty:
         result = {
             "global": SimplePrediction(level=future_level, trend=model.trend),
             "technical": SimplePrediction(level=self.default_vector.technical, trend="stable"),  # Simplified
-            "market": SimplePrediction(level=self.default_vector.market, trend="stable")
+            "market": SimplePrediction(level=self.default_vector.market, trend="stable"),
         }
 
         # Week 0 Day 3: Log predictions for ground truth validation
@@ -815,7 +793,7 @@ class Uncertainty:
                 "predicted_global_level": result["global"].level,
                 "predicted_global_trend": result["global"].trend,
                 "predicted_global_state": level_to_state(result["global"].level),
-                "previous_level": self.default_vector.magnitude()  # For trend calculation
+                "previous_level": self.default_vector.magnitude(),  # For trend calculation
             }
 
             # Write to predictions log
@@ -829,6 +807,276 @@ class Uncertainty:
         except Exception as e:
             # Don't fail prediction if logging fails
             logger.warning(f"Failed to log prediction for validation: {e}")
+
+
+# =============================================================================
+# RL-Enhanced Uncertainty Facade with Token Prior
+# =============================================================================
+
+
+class UncertaintyWithTokenPrior(Uncertainty):
+    """
+    RL-Enhanced Facade for UncertaintyMapV3 with Token Prior storage.
+
+    Implements Training-free GRPO concepts:
+    1. Token Prior: Store past decisions for knowledge reuse
+    2. Group Relative: Compare predictions with historical accuracy
+    3. Policy Optimization: Improve predictions based on feedback
+
+    Usage:
+        uncertainty = UncertaintyWithTokenPrior()
+        prediction = uncertainty.predict(24)  # 24-hour prediction
+
+        # Later, validate the prediction
+        uncertainty.validate_prediction(prediction_id, actual_level=0.35)
+    """
+
+    def __init__(self, storage_dir: Optional[Path] = None):
+        """
+        Initialize with Token Prior storage.
+
+        Args:
+            storage_dir: Directory for Token Prior storage (default: ~/.udo)
+        """
+        super().__init__()
+        self.storage_dir = storage_dir or DEFAULT_STORAGE_DIR
+        self.token_prior_file = self.storage_dir / "token_prior.json"
+        self.decision_history: List[Dict[str, Any]] = []
+        self._load_token_prior()
+
+    def _load_token_prior(self) -> None:
+        """Load Token Prior from storage."""
+        if self.token_prior_file.exists():
+            try:
+                with open(self.token_prior_file, "r", encoding="utf-8") as f:
+                    data = json.load(f)
+                    self.decision_history = data.get("decisions", [])
+                    logger.info(f"Loaded {len(self.decision_history)} past decisions from Token Prior")
+            except Exception as e:
+                logger.warning(f"Failed to load Token Prior: {e}")
+                self.decision_history = []
+
+    def _save_token_prior(self) -> None:
+        """Save Token Prior to storage."""
+        try:
+            self.storage_dir.mkdir(parents=True, exist_ok=True)
+            with open(self.token_prior_file, "w", encoding="utf-8") as f:
+                json.dump(
+                    {"decisions": self.decision_history, "last_updated": datetime.now().isoformat(), "version": "1.0"},
+                    f,
+                    indent=2,
+                )
+        except Exception as e:
+            logger.warning(f"Failed to save Token Prior: {e}")
+
+    def predict(self, hours_ahead: int) -> Dict[str, Any]:
+        """
+        Enhanced prediction with Token Prior check.
+
+        Args:
+            hours_ahead: Hours to predict ahead
+
+        Returns:
+            Prediction dictionary with Token Prior enhancement
+        """
+        # Step 1: Check Token Prior for similar predictions
+        prior_prediction = self._check_token_prior(hours_ahead)
+
+        if prior_prediction and prior_prediction.get("confidence", 0) > 0.9:
+            logger.info(f"[TOKEN PRIOR HIT] Reusing prediction from past ({prior_prediction['confidence']:.0%} confidence)")
+            # Apply small adjustment based on current state
+            adjusted = self._adjust_from_prior(prior_prediction, hours_ahead)
+            self._record_decision(hours_ahead, adjusted, source="token_prior")
+            return adjusted
+
+        # Step 2: Call complex engine
+        result = super().predict(hours_ahead)
+
+        # Step 3: Save to Token Prior
+        self._record_decision(hours_ahead, result, source="engine")
+
+        return result
+
+    def _check_token_prior(self, hours_ahead: int) -> Optional[Dict[str, Any]]:
+        """
+        Check Token Prior for similar past predictions.
+
+        Args:
+            hours_ahead: Hours to predict ahead
+
+        Returns:
+            Past prediction if found with high confidence, else None
+        """
+        if not self.decision_history:
+            return None
+
+        # Look for predictions with similar hours_ahead (+/- 2 hours)
+        similar = [
+            d
+            for d in self.decision_history
+            if abs(d.get("hours_ahead", 0) - hours_ahead) <= 2
+            and d.get("validated", False)
+            and d.get("accuracy", 0) > 0.8  # Only use highly accurate past predictions
+        ]
+
+        if not similar:
+            return None
+
+        # Return most recent accurate prediction
+        similar.sort(key=lambda x: x.get("timestamp", ""), reverse=True)
+        best = similar[0]
+
+        # Calculate confidence based on accuracy history
+        accuracies = [d.get("accuracy", 0) for d in similar[:5]]  # Last 5
+        confidence = sum(accuracies) / len(accuracies) if accuracies else 0
+
+        return {
+            **best,
+            "confidence": confidence,
+            "reuse_count": len(similar),
+        }
+
+    def _adjust_from_prior(self, prior: Dict[str, Any], hours_ahead: int) -> Dict[str, Any]:
+        """
+        Adjust prior prediction based on current state.
+
+        Args:
+            prior: Prior prediction to adjust
+            hours_ahead: Current prediction horizon
+
+        Returns:
+            Adjusted prediction
+        """
+
+        @dataclass
+        class SimplePrediction:
+            level: float
+            trend: str
+
+        # Get current magnitude
+        current_magnitude = self.default_vector.magnitude()
+
+        # Adjust prior level based on current state difference
+        prior_level = prior.get("predicted_level", 0.5)
+        adjustment = (current_magnitude - 0.5) * 0.1  # Small adjustment
+
+        adjusted_level = max(0.0, min(1.0, prior_level + adjustment))
+
+        return {
+            "global": SimplePrediction(level=adjusted_level, trend=prior.get("trend", "stable")),
+            "technical": SimplePrediction(level=self.default_vector.technical, trend="stable"),
+            "market": SimplePrediction(level=self.default_vector.market, trend="stable"),
+            "_token_prior_reuse": True,
+            "_prior_id": prior.get("id"),
+        }
+
+    def _record_decision(self, hours_ahead: int, result: Dict[str, Any], source: str) -> str:
+        """
+        Record a decision to Token Prior.
+
+        Args:
+            hours_ahead: Prediction horizon
+            result: Prediction result
+            source: "token_prior" or "engine"
+
+        Returns:
+            Decision ID
+        """
+        decision_id = hashlib.md5(f"{datetime.now().isoformat()}-{hours_ahead}".encode()).hexdigest()[:8]
+
+        decision = {
+            "id": decision_id,
+            "timestamp": datetime.now().isoformat(),
+            "hours_ahead": hours_ahead,
+            "predicted_level": result.get("global").level if hasattr(result.get("global"), "level") else 0.5,
+            "trend": result.get("global").trend if hasattr(result.get("global"), "trend") else "stable",
+            "source": source,
+            "validated": False,
+            "accuracy": None,
+            "actual_level": None,
+        }
+
+        self.decision_history.append(decision)
+
+        # Keep last 100 decisions
+        if len(self.decision_history) > 100:
+            self.decision_history = self.decision_history[-100:]
+
+        self._save_token_prior()
+
+        return decision_id
+
+    def validate_prediction(self, decision_id: str, actual_level: float) -> Dict[str, Any]:
+        """
+        Validate a past prediction with actual outcome.
+
+        This is crucial for Policy Optimization - we learn from outcomes.
+
+        Args:
+            decision_id: ID of the decision to validate
+            actual_level: Actual uncertainty level observed
+
+        Returns:
+            Validation result with accuracy
+        """
+        for decision in self.decision_history:
+            if decision.get("id") == decision_id:
+                predicted = decision.get("predicted_level", 0.5)
+                error = abs(predicted - actual_level)
+                accuracy = 1.0 - error
+
+                decision["validated"] = True
+                decision["actual_level"] = actual_level
+                decision["accuracy"] = accuracy
+                decision["validated_at"] = datetime.now().isoformat()
+
+                self._save_token_prior()
+
+                logger.info(
+                    f"[VALIDATION] Decision {decision_id}: "
+                    f"predicted={predicted:.2f}, actual={actual_level:.2f}, "
+                    f"accuracy={accuracy:.0%}"
+                )
+
+                return {
+                    "decision_id": decision_id,
+                    "predicted_level": predicted,
+                    "actual_level": actual_level,
+                    "accuracy": accuracy,
+                    "source": decision.get("source"),
+                }
+
+        return {"error": f"Decision {decision_id} not found"}
+
+    def get_token_prior_stats(self) -> Dict[str, Any]:
+        """
+        Get Token Prior statistics.
+
+        Returns:
+            Statistics about Token Prior usage and accuracy
+        """
+        if not self.decision_history:
+            return {
+                "total_decisions": 0,
+                "validated_decisions": 0,
+                "avg_accuracy": 0,
+                "token_prior_reuse_rate": 0,
+            }
+
+        validated = [d for d in self.decision_history if d.get("validated")]
+        token_prior_reuses = [d for d in self.decision_history if d.get("source") == "token_prior"]
+
+        accuracies = [d.get("accuracy", 0) for d in validated if d.get("accuracy") is not None]
+
+        return {
+            "total_decisions": len(self.decision_history),
+            "validated_decisions": len(validated),
+            "avg_accuracy": sum(accuracies) / len(accuracies) if accuracies else 0,
+            "token_prior_reuse_rate": len(token_prior_reuses) / len(self.decision_history) if self.decision_history else 0,
+            "token_prior_reuse_count": len(token_prior_reuses),
+            "recent_decisions": self.decision_history[-5:],
+        }
+
 
 if __name__ == "__main__":
     demo()

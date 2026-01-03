@@ -12,20 +12,26 @@ from fastapi import APIRouter, Depends, HTTPException, Query, status
 from fastapi.responses import JSONResponse
 
 from app.core.security import UserRole, get_current_user, require_role
-from app.models.kanban_task import (ArchiveRequest,
-                                            CompletenessUpdateRequest,
-                                            PhaseChangeRequest,
-                                            PriorityChangeRequest,
-                                            QualityGateResult,
-                                            StatusChangeRequest, Task,
-                                            TaskArchive, TaskCreate,
-                                            TaskFilters, TaskListResponse,
-                                            TaskNotFoundError, TaskSortField,
-                                            TaskUpdate)
+from app.models.kanban_task import (
+    ArchiveRequest,
+    CompletenessUpdateRequest,
+    PhaseChangeRequest,
+    PriorityChangeRequest,
+    QualityGateResult,
+    StatusChangeRequest,
+    Task,
+    TaskArchive,
+    TaskCreate,
+    TaskFilters,
+    TaskListResponse,
+    TaskNotFoundError,
+    TaskSortField,
+    TaskUpdate,
+)
+
 # WebSocket support for real-time updates
 from app.routers.kanban_websocket import kanban_manager
-from app.services.kanban_task_service import (KanbanTaskService,
-                                                      MockKanbanTaskService)
+from app.services.kanban_task_service import KanbanTaskService, MockKanbanTaskService
 from backend.async_database import async_db
 
 router = APIRouter(prefix="/api/kanban/tasks", tags=["Kanban Tasks"])
@@ -53,9 +59,7 @@ def get_kanban_service():
 
     logger = logging.getLogger(__name__)
     # Identity logs for debugging
-    logger.debug(
-        f"[IDENTITY] async_database module id: {id(sys.modules.get('backend.async_database'))}"
-    )
+    logger.debug(f"[IDENTITY] async_database module id: {id(sys.modules.get('backend.async_database'))}")
     logger.debug(f"[IDENTITY] async_db object id: {id(async_db)}")
     logger.debug(f"[IDENTITY] async_db._initialized: {async_db._initialized}")
     try:
@@ -125,14 +129,14 @@ async def create_task(
                 "type": "task_created",
                 "task": task.model_dump(),  # Convert Pydantic model to dict
                 "created_by": current_user.get("username", current_user.get("email")),
-                "timestamp": (
-                    task.created_at.isoformat() if hasattr(task, "created_at") else None
-                ),
+                "timestamp": (task.created_at.isoformat() if hasattr(task, "created_at") else None),
             },
             project_id,
         )
 
         return task
+    except HTTPException:
+        raise  # Re-raise HTTP exceptions
     except Exception as e:
         return error_response(
             code="TASK_CREATE_FAILED",
@@ -151,22 +155,12 @@ async def create_task(
 async def list_tasks(
     # Filters (Q1: Phase filtering)
     phase: Optional[str] = Query(None, description="Filter by phase"),
-    status_filter: Optional[str] = Query(
-        None, alias="status", description="Filter by status"
-    ),
+    status_filter: Optional[str] = Query(None, alias="status", description="Filter by status"),
     priority: Optional[str] = Query(None, description="Filter by priority"),
-    min_completeness: Optional[int] = Query(
-        None, ge=0, le=100, description="Min completeness %"
-    ),
-    max_completeness: Optional[int] = Query(
-        None, ge=0, le=100, description="Max completeness %"
-    ),
-    ai_suggested: Optional[bool] = Query(
-        None, description="Filter AI-suggested tasks (Q2)"
-    ),
-    quality_gate_passed: Optional[bool] = Query(
-        None, description="Filter by quality gate (Q3)"
-    ),
+    min_completeness: Optional[int] = Query(None, ge=0, le=100, description="Min completeness %"),
+    max_completeness: Optional[int] = Query(None, ge=0, le=100, description="Max completeness %"),
+    ai_suggested: Optional[bool] = Query(None, description="Filter AI-suggested tasks (Q2)"),
+    quality_gate_passed: Optional[bool] = Query(None, description="Filter by quality gate (Q3)"),
     # Pagination
     page: int = Query(1, ge=1, description="Page number (1-indexed)"),
     per_page: int = Query(50, ge=1, le=100, description="Items per page (default 50)"),
@@ -191,9 +185,7 @@ async def list_tasks(
         try:
             validated_sort_by = TaskSortField.validate(sort_by)
         except ValueError as e:
-            raise HTTPException(
-                status_code=status.HTTP_400_BAD_REQUEST, detail=str(e)
-            )
+            raise HTTPException(status_code=status.HTTP_400_BAD_REQUEST, detail=str(e))
 
         # Build filters
         filters = TaskFilters(
@@ -215,6 +207,8 @@ async def list_tasks(
         )
 
         return result
+    except HTTPException:
+        raise  # Re-raise HTTP exceptions (including validation errors)
     except Exception as e:
         return error_response(
             code="TASK_LIST_FAILED",
@@ -267,6 +261,8 @@ async def get_task(
             status_code=status.HTTP_404_NOT_FOUND,
             details={"task_id": str(task_id)},
         )
+    except HTTPException:
+        raise  # Re-raise HTTP exceptions
     except Exception as e:
         return error_response(
             code="TASK_GET_FAILED",
@@ -305,14 +301,10 @@ async def update_task(
             {
                 "type": "task_updated",
                 "task_id": str(task_id),
-                "updates": task_update.model_dump(
-                    exclude_unset=True
-                ),  # Only changed fields
+                "updates": task_update.model_dump(exclude_unset=True),  # Only changed fields
                 "task": task.model_dump(),  # Full updated task
                 "updated_by": current_user.get("username", current_user.get("email")),
-                "timestamp": (
-                    task.updated_at.isoformat() if hasattr(task, "updated_at") else None
-                ),
+                "timestamp": (task.updated_at.isoformat() if hasattr(task, "updated_at") else None),
             },
             project_id,
         )
@@ -325,6 +317,8 @@ async def update_task(
             status_code=status.HTTP_404_NOT_FOUND,
             details={"task_id": str(task_id)},
         )
+    except HTTPException:
+        raise  # Re-raise HTTP exceptions
     except Exception as e:
         return error_response(
             code="TASK_UPDATE_FAILED",
@@ -377,6 +371,8 @@ async def delete_task(
             status_code=status.HTTP_404_NOT_FOUND,
             details={"task_id": str(task_id)},
         )
+    except HTTPException:
+        raise  # Re-raise HTTP exceptions
     except Exception as e:
         return error_response(
             code="TASK_DELETE_FAILED",
@@ -419,6 +415,8 @@ async def change_phase(
             status_code=status.HTTP_404_NOT_FOUND,
             details={"task_id": str(task_id)},
         )
+    except HTTPException:
+        raise  # Re-raise HTTP exceptions
     except Exception as e:
         return error_response(
             code="PHASE_CHANGE_FAILED",
@@ -461,6 +459,8 @@ async def change_status(
             status_code=status.HTTP_404_NOT_FOUND,
             details={"task_id": str(task_id)},
         )
+    except HTTPException:
+        raise  # Re-raise HTTP exceptions
     except Exception as e:
         return error_response(
             code="STATUS_CHANGE_FAILED",
@@ -497,6 +497,8 @@ async def change_priority(
             status_code=status.HTTP_404_NOT_FOUND,
             details={"task_id": str(task_id)},
         )
+    except HTTPException:
+        raise  # Re-raise HTTP exceptions
     except Exception as e:
         return error_response(
             code="PRIORITY_CHANGE_FAILED",
@@ -534,6 +536,8 @@ async def update_completeness(
             status_code=status.HTTP_404_NOT_FOUND,
             details={"task_id": str(task_id)},
         )
+    except HTTPException:
+        raise  # Re-raise HTTP exceptions
     except Exception as e:
         return error_response(
             code="COMPLETENESS_UPDATE_FAILED",
@@ -575,6 +579,8 @@ async def get_quality_gates(
             status_code=status.HTTP_404_NOT_FOUND,
             details={"task_id": str(task_id)},
         )
+    except HTTPException:
+        raise  # Re-raise HTTP exceptions
     except Exception as e:
         return error_response(
             code="QUALITY_GATE_GET_FAILED",
@@ -617,6 +623,8 @@ async def run_quality_gates(
             status_code=status.HTTP_404_NOT_FOUND,
             details={"task_id": str(task_id)},
         )
+    except HTTPException:
+        raise  # Re-raise HTTP exceptions
     except Exception as e:
         return error_response(
             code="QUALITY_GATE_RUN_FAILED",
@@ -665,6 +673,8 @@ async def archive_task(
             status_code=status.HTTP_404_NOT_FOUND,
             details={"task_id": str(task_id)},
         )
+    except HTTPException:
+        raise  # Re-raise HTTP exceptions
     except Exception as e:
         return error_response(
             code="ARCHIVE_FAILED",

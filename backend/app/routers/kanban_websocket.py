@@ -11,6 +11,7 @@ Provides real-time task synchronization for Kanban board:
 import asyncio
 import json
 import logging
+import os
 from datetime import datetime
 from typing import Any, Dict, Optional, Set
 from uuid import uuid4
@@ -66,9 +67,7 @@ class KanbanConnectionManager:
                 self.project_clients[project_id] = set()
             self.project_clients[project_id].add(client_id)
 
-        logger.info(
-            f"Kanban WebSocket connected: client={client_id}, user={user_email}, project={project_id}"
-        )
+        logger.info(f"Kanban WebSocket connected: client={client_id}, user={user_email}, project={project_id}")
 
         # Send connection confirmation
         await self.send_to_client(
@@ -107,9 +106,7 @@ class KanbanConnectionManager:
                     await websocket.send_json(message)
                     return True
                 else:
-                    logger.warning(
-                        f"WebSocket not connected for {client_id}: state={websocket.client_state}"
-                    )
+                    logger.warning(f"WebSocket not connected for {client_id}: state={websocket.client_state}")
             except Exception as e:
                 logger.error(f"Failed to send message to {client_id}: {e}")
                 await self.disconnect(client_id)
@@ -142,9 +139,7 @@ async def kanban_websocket_endpoint(
     websocket: WebSocket,
     project_id: str,
     token: Optional[str] = Query(None, description="JWT access token"),
-    client_id: Optional[str] = Query(
-        None, description="Client ID (auto-generated if not provided)"
-    ),
+    client_id: Optional[str] = Query(None, description="Client ID (auto-generated if not provided)"),
 ):
     """
     WebSocket endpoint for Kanban real-time updates
@@ -189,12 +184,12 @@ async def kanban_websocket_endpoint(
     try:
         # P0-2: Validate JWT token
         if not token:
-             if os.environ.get("ENVIRONMENT") == "development":
-                 token = "dev-token" # Use dummy token to trigger dev bypass in security.py
-                 logger.warning("[DEV] No token provided for WebSocket, using dev-token")
-             else:
-                 await websocket.close(code=1008, reason="Missing authentication token")
-                 return
+            if os.environ.get("ENVIRONMENT") == "development":
+                token = "dev-token"  # Use dummy token to trigger dev bypass in security.py
+                logger.warning("[DEV] No token provided for WebSocket, using dev-token")
+            else:
+                await websocket.close(code=1008, reason="Missing authentication token")
+                return
 
         try:
             payload = await JWTManager.decode_token_async(token, check_blacklist=True)
@@ -266,9 +261,7 @@ async def process_kanban_message(data: Dict[str, Any], client_id: str, project_i
 
     if message_type == "ping":
         # Simple heartbeat response
-        await kanban_manager.send_to_client(
-            {"type": "pong", "timestamp": datetime.now().isoformat()}, client_id
-        )
+        await kanban_manager.send_to_client({"type": "pong", "timestamp": datetime.now().isoformat()}, client_id)
 
     elif message_type == "task_created":
         # Broadcast new task to all clients in project
@@ -359,9 +352,7 @@ async def process_kanban_message(data: Dict[str, Any], client_id: str, project_i
     "/projects/{project_id}/clients",
     dependencies=[Depends(require_role(UserRole.VIEWER))],
 )
-async def get_active_clients(
-    project_id: str, current_user: dict = Depends(get_current_user)
-):
+async def get_active_clients(project_id: str, current_user: dict = Depends(get_current_user)):
     """
     Get number of active clients for a project
 

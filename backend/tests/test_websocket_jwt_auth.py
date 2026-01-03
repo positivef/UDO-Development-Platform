@@ -5,6 +5,12 @@ Validates that WebSocket connections require valid JWT tokens.
 Tests authentication enforcement and proper error handling.
 """
 
+# CRITICAL: Set env vars BEFORE importing security module
+import os
+
+os.environ.setdefault("JWT_SECRET_KEY", "test-secret-key-for-jwt-token-validation-32chars")
+os.environ.setdefault("DISABLE_DEV_AUTH_BYPASS", "true")
+
 import asyncio
 import json
 from datetime import UTC, datetime, timedelta
@@ -107,9 +113,7 @@ async def test_expired_token_rejected():
         await JWTManager.decode_token_async(expired_token_str, check_blacklist=False)
 
     # jwt.ExpiredSignatureError or similar
-    assert "expired" in str(exc_info.value).lower() or "signature" in str(
-        exc_info.value
-    ).lower()
+    assert "expired" in str(exc_info.value).lower() or "signature" in str(exc_info.value).lower()
 
 
 @pytest.mark.asyncio
@@ -119,9 +123,7 @@ async def test_invalid_signature_rejected(invalid_token):
         await JWTManager.decode_token_async(invalid_token, check_blacklist=False)
 
     # jwt.InvalidSignatureError or similar
-    assert "signature" in str(exc_info.value).lower() or "invalid" in str(
-        exc_info.value
-    ).lower()
+    assert "signature" in str(exc_info.value).lower() or "invalid" in str(exc_info.value).lower()
 
 
 # ============= Test 4-5: Blacklist Integration =============
@@ -268,9 +270,7 @@ def test_websocket_requires_token_parameter(async_client):
 
     # Attempt connection without token
     try:
-        with async_client.websocket_connect(
-            f"/ws/kanban/projects/{project_id}"
-        ) as websocket:
+        with async_client.websocket_connect(f"/ws/kanban/projects/{project_id}") as websocket:
             # Should not reach here
             pytest.fail("WebSocket connection should fail without token")
     except Exception as e:
@@ -291,9 +291,7 @@ def test_websocket_with_valid_token(async_client, valid_access_token):
     project_id = "test-project-123"
 
     # Attempt connection with valid token
-    with async_client.websocket_connect(
-        f"/ws/kanban/projects/{project_id}?token={valid_access_token}"
-    ) as websocket:
+    with async_client.websocket_connect(f"/ws/kanban/projects/{project_id}?token={valid_access_token}") as websocket:
         # Wait for connection_established message
         message = websocket.receive_json()
 
@@ -315,9 +313,7 @@ def test_websocket_with_invalid_token(async_client, invalid_token):
     project_id = "test-project-123"
 
     try:
-        with async_client.websocket_connect(
-            f"/ws/kanban/projects/{project_id}?token={invalid_token}"
-        ) as websocket:
+        with async_client.websocket_connect(f"/ws/kanban/projects/{project_id}?token={invalid_token}") as websocket:
             # Should not reach here
             pytest.fail("WebSocket should reject invalid token")
     except WebSocketDisconnect as e:

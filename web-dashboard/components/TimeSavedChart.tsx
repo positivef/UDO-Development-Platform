@@ -10,6 +10,21 @@ interface TimeSavedChartProps {
 }
 
 export function TimeSavedChart({ data }: TimeSavedChartProps) {
+  if (!data || !Array.isArray(data) || data.length === 0) {
+    return (
+      <Card>
+        <CardHeader>
+          <CardTitle>Time Saved Trend (30 Days)</CardTitle>
+        </CardHeader>
+        <CardContent>
+          <div className="h-[300px] flex items-center justify-center text-muted-foreground">
+            No trend data available
+          </div>
+        </CardContent>
+      </Card>
+    )
+  }
+
   const chartData = data.map((point) => ({
     ...point,
     date: format(new Date(point.date), "MMM dd"),

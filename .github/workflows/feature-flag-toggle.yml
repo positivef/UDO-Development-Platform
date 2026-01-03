@@ -1,0 +1,238 @@
+name: Feature Flag Toggle
+
+on:
+  workflow_dispatch:
+    inputs:
+      flag_name:
+        description: 'Feature flag to toggle'
+        required: true
+        type: choice
+        options:
+          - kanban_board
+          - kanban_ai_suggest
+          - kanban_archive
+          - kanban_dependencies
+          - kanban_multi_project
+          - kanban_obsidian_sync
+          - kanban_quality_gates
+          - kanban_time_tracking
+      action:
+        description: 'Action to perform'
+        required: true
+        type: choice
+        options:
+          - enable
+          - disable
+          - status
+      reason:
+        description: 'Reason for change'
+        required: true
+        type: string
+
+jobs:
+  validate-request:
+    name: Validate Toggle Request
+    runs-on: ubuntu-latest
+
+    outputs:
+      approved: ${{ steps.validate.outputs.approved }}
+
+    steps:
+      - name: Validate inputs
+        id: validate
+        run: |
+          echo "Flag: ${{ inputs.flag_name }}"
+          echo "Action: ${{ inputs.action }}"
+          echo "Reason: ${{ inputs.reason }}"
+
+          # Validate reason is not empty
+          if [ -z "${{ inputs.reason }}" ] || [ "${{ inputs.reason }}" == " " ]; then
+            echo "::error::Reason cannot be empty"
+            echo "approved=false" >> $GITHUB_OUTPUT
+            exit 1
+          fi
+
+          echo "approved=true" >> $GITHUB_OUTPUT
+
+  toggle-feature:
+    name: Toggle Feature Flag
+    runs-on: ubuntu-latest
+    needs: validate-request
+    if: needs.validate-request.outputs.approved == 'true'
+
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v4
+
+      - name: Set up Python 3.13
+        uses: actions/setup-python@v5
+        with:
+          python-version: '3.13'
+
+      - name: Generate feature flag change record
+        id: generate
+        run: |
+          python << 'EOF'
+          import json
+          from datetime import datetime
+
+          flag = "${{ inputs.flag_name }}"
+          action = "${{ inputs.action }}"
+          reason = "${{ inputs.reason }}"
+          actor = "${{ github.actor }}"
+          run_id = "${{ github.run_id }}"
+
+          record = {
+              "flag": flag,
+              "action": action,
+              "reason": reason,
+              "triggered_by": actor,
+              "run_id": run_id,
+              "timestamp": datetime.utcnow().isoformat() + "Z",
+              "environment": "production"
+          }
+
+          print("Feature Flag Change Record:")
+          print(json.dumps(record, indent=2))
+
+          with open("feature_flag_change.json", "w") as f:
+              json.dump(record, f, indent=2)
+
+          # Generate environment variable override
+          env_var = f"FEATURE_{flag.upper()}"
+          env_value = "true" if action == "enable" else "false"
+          print(f"\nEnvironment Override: {env_var}={env_value}")
+
+          # Write to GitHub output
+          with open("$GITHUB_OUTPUT", "a") as f:
+              f.write(f"env_var={env_var}\n")
+              f.write(f"env_value={env_value}\n")
+          EOF
+
+      - name: Display current flag status
+        if: inputs.action == 'status'
+        run: |
+          python << 'EOF'
+          import sys
+          sys.path.insert(0, '.')
+
+          try:
+              from backend.app.core.feature_flags import feature_flags_manager
+              flags = feature_flags_manager.get_all_flags()
+
+              print("Current Feature Flag Status:")
+              print("-" * 50)
+              for name, state in flags.items():
+                  status = "ENABLED" if state["enabled"] else "DISABLED"
+                  print(f"  {name}: {status}")
+                  print(f"    Last changed: {state['last_changed']}")
+                  print(f"    Changed by: {state['changed_by']}")
+                  print()
+          except Exception as e:
+              print(f"Could not read feature flags: {e}")
+              print("This is expected in CI environment without full setup.")
+          EOF
+
+      - name: Upload change record
+        uses: actions/upload-artifact@v4
+        with:
+          name: feature-flag-change-${{ github.run_id }}
+          path: feature_flag_change.json
+          retention-days: 90
+
+      - name: Create summary
+        run: |
+          echo "## Feature Flag Toggle" >> $GITHUB_STEP_SUMMARY
+          echo "" >> $GITHUB_STEP_SUMMARY
+          echo "### Request Details" >> $GITHUB_STEP_SUMMARY
+          echo "| Field | Value |" >> $GITHUB_STEP_SUMMARY
+          echo "|-------|-------|" >> $GITHUB_STEP_SUMMARY
+          echo "| **Flag** | \`${{ inputs.flag_name }}\` |" >> $GITHUB_STEP_SUMMARY
+          echo "| **Action** | ${{ inputs.action }} |" >> $GITHUB_STEP_SUMMARY
+          echo "| **Reason** | ${{ inputs.reason }} |" >> $GITHUB_STEP_SUMMARY
+          echo "| **Triggered by** | @${{ github.actor }} |" >> $GITHUB_STEP_SUMMARY
+          echo "| **Timestamp** | $(date -u +%Y-%m-%dT%H:%M:%SZ) |" >> $GITHUB_STEP_SUMMARY
+          echo "" >> $GITHUB_STEP_SUMMARY
+          echo "### Next Steps" >> $GITHUB_STEP_SUMMARY
+          echo "" >> $GITHUB_STEP_SUMMARY
+          if [ "${{ inputs.action }}" == "status" ]; then
+            echo "Status check completed. No changes made." >> $GITHUB_STEP_SUMMARY
+          else
+            echo "To apply this change in production:" >> $GITHUB_STEP_SUMMARY
+            echo "" >> $GITHUB_STEP_SUMMARY
+            echo "1. Set environment variable: \`FEATURE_${{ inputs.flag_name | upper }}=${{ inputs.action == 'enable' && 'true' || 'false' }}\`" >> $GITHUB_STEP_SUMMARY
+            echo "2. Or call the admin API: \`POST /api/admin/features/${{ inputs.flag_name }}\`" >> $GITHUB_STEP_SUMMARY
+            echo "3. Verify the change in application logs" >> $GITHUB_STEP_SUMMARY
+          fi
+
+  notify-change:
+    name: Notify Stakeholders
+    runs-on: ubuntu-latest
+    needs: toggle-feature
+    if: inputs.action != 'status'
+
+    steps:
+      - name: Create issue for tracking
+        uses: actions/github-script@v7
+        with:
+          script: |
+            const action = '${{ inputs.action }}';
+            const flag = '${{ inputs.flag_name }}';
+            const reason = '${{ inputs.reason }}';
+            const actor = '${{ github.actor }}';
+
+            const title = `[Feature Flag] ${action.toUpperCase()}: ${flag}`;
+            const body = `## Feature Flag Change Request
+
+            | Field | Value |
+            |-------|-------|
+            | **Flag** | \`${flag}\` |
+            | **Action** | ${action} |
+            | **Reason** | ${reason} |
+            | **Requested by** | @${actor} |
+            | **Workflow Run** | [#${{ github.run_number }}](${{ github.server_url }}/${{ github.repository }}/actions/runs/${{ github.run_id }}) |
+
+            ### Deployment Instructions
+
+            To apply this change:
+            1. Update the environment variable: \`FEATURE_${flag.toUpperCase()}=${action === 'enable' ? 'true' : 'false'}\`
+            2. Or use the admin API endpoint
+
+            ### Rollback
+
+            To rollback, trigger this workflow again with the opposite action.
+
+            ---
+            *This issue was automatically created by the Feature Flag Toggle workflow.*
+            `;
+
+            // Check if similar issue already exists
+            const issues = await github.rest.issues.listForRepo({
+              owner: context.repo.owner,
+              repo: context.repo.repo,
+              state: 'open',
+              labels: 'feature-flag'
+            });
+
+            const existingIssue = issues.data.find(i => i.title.includes(flag));
+
+            if (existingIssue) {
+              // Add comment to existing issue
+              await github.rest.issues.createComment({
+                owner: context.repo.owner,
+                repo: context.repo.repo,
+                issue_number: existingIssue.number,
+                body: `## Update: ${action.toUpperCase()}\n\n${body}`
+              });
+              console.log(`Added comment to existing issue #${existingIssue.number}`);
+            } else {
+              // Create new issue
+              const newIssue = await github.rest.issues.create({
+                owner: context.repo.owner,
+                repo: context.repo.repo,
+                title: title,
+                body: body,
+                labels: ['feature-flag', 'ops']
+              });
+              console.log(`Created new issue #${newIssue.data.number}`);
+            }

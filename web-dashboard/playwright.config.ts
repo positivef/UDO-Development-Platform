@@ -42,5 +42,8 @@ export default defineConfig({
     url: 'http://localhost:3000',
     reuseExistingServer: true, // Always reuse existing server to avoid timeout
     timeout: 180000, // Increased to 3 minutes as backup
+    env: {
+      NEXT_PUBLIC_API_URL: 'http://localhost:8001', // Ensure backend URL is set for tests
+    },
   },
 });

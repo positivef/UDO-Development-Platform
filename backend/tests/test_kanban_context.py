@@ -11,12 +11,14 @@ from uuid import uuid4
 import pytest
 import pytest_asyncio
 
-from backend.app.models.kanban_context import (ContextLoadRequest,
-                                               ContextNotFoundError,
-                                               ContextSizeLimitExceeded,
-                                               ContextUploadRequest,
-                                               InvalidContextFiles)
-from backend.app.services.kanban_context_service import kanban_context_service
+from app.models.kanban_context import (
+    ContextLoadRequest,
+    ContextNotFoundError,
+    ContextSizeLimitExceeded,
+    ContextUploadRequest,
+    InvalidContextFiles,
+)
+from app.services.kanban_context_service import kanban_context_service
 
 # ============================================================================
 # Fixtures
@@ -39,9 +41,7 @@ def sample_upload_request():
 async def uploaded_context(sample_upload_request):
     """Create and return uploaded context"""
     task_id = uuid4()
-    upload_response = await kanban_context_service.upload_context(
-        task_id, sample_upload_request
-    )
+    upload_response = await kanban_context_service.upload_context(task_id, sample_upload_request)
     return task_id, upload_response
 
 
@@ -58,9 +58,7 @@ class TestContextUpload:
         """Test successful context upload"""
         task_id = uuid4()
 
-        upload_response = await kanban_context_service.upload_context(
-            task_id, sample_upload_request
-        )
+        upload_response = await kanban_context_service.upload_context(task_id, sample_upload_request)
 
         assert upload_response.task_id == task_id
         assert upload_response.file_count == 3
@@ -98,17 +96,11 @@ class TestContextUpload:
         task_id = uuid4()
 
         # First upload
-        first_response = await kanban_context_service.upload_context(
-            task_id, sample_upload_request
-        )
+        first_response = await kanban_context_service.upload_context(task_id, sample_upload_request)
 
         # Second upload (should replace first)
-        new_request = ContextUploadRequest(
-            files=["src/updated.py"], git_branch="feature/updated"
-        )
-        second_response = await kanban_context_service.upload_context(
-            task_id, new_request
-        )
+        new_request = ContextUploadRequest(files=["src/updated.py"], git_branch="feature/updated")
+        second_response = await kanban_context_service.upload_context(task_id, new_request)
 
         assert first_response.context_id != second_response.context_id
         assert second_response.file_count == 1
@@ -179,9 +171,7 @@ class TestContextLoadTracking:
         task_id, upload_response = uploaded_context
 
         load_request = ContextLoadRequest(load_time_ms=150)
-        load_response = await kanban_context_service.track_context_load(
-            task_id, load_request
-        )
+        load_response = await kanban_context_service.track_context_load(task_id, load_request)
 
         assert load_response.success is True
         assert load_response.load_count == 1
@@ -194,25 +184,19 @@ class TestContextLoadTracking:
         task_id, upload_response = uploaded_context
 
         # First load: 150ms
-        load_response_1 = await kanban_context_service.track_context_load(
-            task_id, ContextLoadRequest(load_time_ms=150)
-        )
+        load_response_1 = await kanban_context_service.track_context_load(task_id, ContextLoadRequest(load_time_ms=150))
         assert load_response_1.load_count == 1
         assert load_response_1.avg_load_time_ms == 150
 
         # Second load: 200ms
         # Expected avg: (150 * 1 + 200) / 2 = 175
-        load_response_2 = await kanban_context_service.track_context_load(
-            task_id, ContextLoadRequest(load_time_ms=200)
-        )
+        load_response_2 = await kanban_context_service.track_context_load(task_id, ContextLoadRequest(load_time_ms=200))
         assert load_response_2.load_count == 2
         assert load_response_2.avg_load_time_ms == 175
 
         # Third load: 120ms
         # Expected avg: (175 * 2 + 120) / 3 = 156
-        load_response_3 = await kanban_context_service.track_context_load(
-            task_id, ContextLoadRequest(load_time_ms=120)
-        )
+        load_response_3 = await kanban_context_service.track_context_load(task_id, ContextLoadRequest(load_time_ms=120))
         assert load_response_3.load_count == 3
         assert load_response_3.avg_load_time_ms == 156
 
@@ -235,9 +219,7 @@ class TestContextLoadTracking:
         assert context_before.last_loaded_at is None
 
         # Track load
-        load_response = await kanban_context_service.track_context_load(
-            task_id, ContextLoadRequest(load_time_ms=150)
-        )
+        load_response = await kanban_context_service.track_context_load(task_id, ContextLoadRequest(load_time_ms=150))
 
         # Get updated context
         context_after = await kanban_context_service.get_context_full(task_id)
@@ -293,9 +275,7 @@ class TestContextEdgeCases:
         task_id = uuid4()
         upload_request = ContextUploadRequest(files=["README.md"])
 
-        upload_response = await kanban_context_service.upload_context(
-            task_id, upload_request
-        )
+        upload_response = await kanban_context_service.upload_context(task_id, upload_request)
 
         assert upload_response.file_count == 1
 
@@ -308,9 +288,7 @@ class TestContextEdgeCases:
         file_list = [f"file_{i}.py" for i in range(100)]
         upload_request = ContextUploadRequest(files=file_list)
 
-        upload_response = await kanban_context_service.upload_context(
-            task_id, upload_request
-        )
+        upload_response = await kanban_context_service.upload_context(task_id, upload_request)
 
         assert upload_response.file_count == 100
         assert upload_response.zip_size_bytes <= 52428800  # 50MB
@@ -324,9 +302,7 @@ class TestContextEdgeCases:
             # No git_branch, git_commit_hash, etc.
         )
 
-        upload_response = await kanban_context_service.upload_context(
-            task_id, upload_request
-        )
+        upload_response = await kanban_context_service.upload_context(task_id, upload_request)
 
         assert upload_response.file_count == 1
 
@@ -340,9 +316,7 @@ class TestContextEdgeCases:
         task_id, upload_response = uploaded_context
 
         load_request = ContextLoadRequest(load_time_ms=0)
-        load_response = await kanban_context_service.track_context_load(
-            task_id, load_request
-        )
+        load_response = await kanban_context_service.track_context_load(task_id, load_request)
 
         assert load_response.success is True
         assert load_response.load_count == 1

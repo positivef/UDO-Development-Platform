@@ -47,11 +47,8 @@ SESSIONS_DIR = DOCS_ROOT / "sessions"
 WORKLOGS_DIR = SESSIONS_DIR / "worklogs"
 STATE_FILE = PROJECT_ROOT / ".udo" / "session_state.json"
 
-# Obsidian path (from environment or default)
-OBSIDIAN_VAULT = Path(os.environ.get(
-    "OBSIDIAN_VAULT_PATH",
-    "C:/Users/user/Documents/Obsidian Vault"
-))
+# Obsidian path (from environment or user home fallback)
+OBSIDIAN_VAULT = Path(os.environ.get("OBSIDIAN_VAULT_PATH") or str(Path.home() / "Documents" / "Obsidian Vault"))
 
 # Recovery settings
 ORPHAN_THRESHOLD_HOURS = 12  # Sessions older than this are considered orphaned
@@ -82,17 +79,14 @@ class SessionManager:
             "checkpoints": [],
             "files_modified": [],
             "tests_run": [],
-            "recovery_info": None
+            "recovery_info": None,
         }
 
     def _save_state(self):
         """Save session state to file."""
         STATE_FILE.parent.mkdir(parents=True, exist_ok=True)
         self.state["last_checkpoint"] = datetime.now().isoformat()
-        STATE_FILE.write_text(
-            json.dumps(self.state, indent=2, default=str),
-            encoding="utf-8"
-        )
+        STATE_FILE.write_text(json.dumps(self.state, indent=2, default=str), encoding="utf-8")
 
     def _check_orphaned_session(self) -> Tuple[bool, Optional[str]]:
         """
@@ -168,16 +162,13 @@ class SessionManager:
             "recovery_info": {
                 "started_by": "session_automation.py",
                 "hostname": os.environ.get("COMPUTERNAME", "unknown"),
-                "pid": os.getpid()
-            }
+                "pid": os.getpid(),
+            },
         }
         self._save_state()
 
         # Update CURRENT.md
-        self._update_current_md(
-            status="Session Started",
-            notes=f"New session started at {now.strftime('%Y-%m-%d %H:%M')}"
-        )
+        self._update_current_md(status="Session Started", notes=f"New session started at {now.strftime('%Y-%m-%d %H:%M')}")
 
         return (
             f"✅ Session started at {now.strftime('%Y-%m-%d %H:%M')}\n"
@@ -203,7 +194,7 @@ class SessionManager:
             "time": now.isoformat(),
             "notes": notes,
             "git_status": git_status,
-            "recent_commits": self._get_recent_commits(3)
+            "recent_commits": self._get_recent_commits(3),
         }
 
         self.state["checkpoints"].append(checkpoint)
@@ -230,10 +221,7 @@ class SessionManager:
         handoff_path = self._generate_handoff(summary, duration, is_recovery=False)
 
         # Update CURRENT.md
-        self._update_current_md(
-            status="Session Ended",
-            notes=f"Session ended. Handoff: {handoff_path.name}"
-        )
+        self._update_current_md(status="Session Ended", notes=f"Session ended. Handoff: {handoff_path.name}")
 
         # Sync to Obsidian
         self._sync_to_obsidian(handoff_path)
@@ -265,9 +253,7 @@ class SessionManager:
             duration = datetime.now() - start_time
 
             handoff_path = self._generate_handoff(
-                summary="[EMERGENCY RECOVERY] Session interrupted without checkpoints",
-                duration=duration,
-                is_recovery=True
+                summary="[EMERGENCY RECOVERY] Session interrupted without checkpoints", duration=duration, is_recovery=True
             )
         else:
             # Has checkpoints - generate recovery handoff
@@ -280,16 +266,11 @@ class SessionManager:
             last_notes = last_checkpoint.get("notes", "No notes")
 
             handoff_path = self._generate_handoff(
-                summary=f"[RECOVERY] Last checkpoint: {last_notes}",
-                duration=duration,
-                is_recovery=True
+                summary=f"[RECOVERY] Last checkpoint: {last_notes}", duration=duration, is_recovery=True
             )
 
         # Update CURRENT.md
-        self._update_current_md(
-            status="Session Recovered",
-            notes=f"Orphaned session recovered. Handoff: {handoff_path.name}"
-        )
+        self._update_current_md(status="Session Recovered", notes=f"Orphaned session recovered. Handoff: {handoff_path.name}")
 
         # Sync to Obsidian
         self._sync_to_obsidian(handoff_path)
@@ -327,12 +308,14 @@ class SessionManager:
         ]
 
         if is_orphaned:
-            status_lines.extend([
-                f"",
-                f"   ⚠️  WARNING: Session may be orphaned",
-                f"   Reason: {reason}",
-                f"   Run 'recover' to generate emergency handoff"
-            ])
+            status_lines.extend(
+                [
+                    f"",
+                    f"   ⚠️  WARNING: Session may be orphaned",
+                    f"   Reason: {reason}",
+                    f"   Run 'recover' to generate emergency handoff",
+                ]
+            )
 
         last_cp = self.state.get("last_checkpoint")
         if last_cp:
@@ -358,11 +341,7 @@ class SessionManager:
         now = datetime.now()
 
         # Update Last Updated line
-        content = re.sub(
-            r'\*\*Last Updated\*\*: .*',
-            f'**Last Updated**: {now.strftime("%Y-%m-%d")}',
-            content
-        )
+        content = re.sub(r"\*\*Last Updated\*\*: .*", f'**Last Updated**: {now.strftime("%Y-%m-%d")}', content)
 
         # Update change log (add entry)
         changelog_entry = f"| {now.strftime('%Y-%m-%d')} | {status}: {notes[:50]} | @claude-code |"
@@ -493,7 +472,7 @@ class SessionManager:
         lines = [
             f"- **Started by**: {info.get('started_by', 'unknown')}",
             f"- **Hostname**: {info.get('hostname', 'unknown')}",
-            f"- **Process ID**: {info.get('pid', 'unknown')}"
+            f"- **Process ID**: {info.get('pid', 'unknown')}",
         ]
         return "\n".join(lines)
 
@@ -504,9 +483,9 @@ class SessionManager:
                 ["git", "status", "--short"],
                 capture_output=True,
                 text=True,
-                encoding='utf-8',
-                errors='replace',
-                cwd=PROJECT_ROOT
+                encoding="utf-8",
+                errors="replace",
+                cwd=PROJECT_ROOT,
             )
             return result.stdout.strip() or "No changes"
         except Exception:
@@ -519,9 +498,9 @@ class SessionManager:
                 ["git", "log", f"-{count}", "--oneline"],
                 capture_output=True,
                 text=True,
-                encoding='utf-8',
-                errors='replace',
-                cwd=PROJECT_ROOT
+                encoding="utf-8",
+                errors="replace",
+                cwd=PROJECT_ROOT,
             )
             return result.stdout.strip() or "No recent commits"
         except Exception:
@@ -538,10 +517,7 @@ class SessionManager:
 
         try:
             obsidian_devlog.mkdir(parents=True, exist_ok=True)
-            obsidian_target.write_text(
-                handoff_path.read_text(encoding="utf-8"),
-                encoding="utf-8"
-            )
+            obsidian_target.write_text(handoff_path.read_text(encoding="utf-8"), encoding="utf-8")
             print(f"  [OK] Synced to Obsidian: {obsidian_target.name}")
         except Exception as e:
             print(f"  [WARN] Obsidian sync failed: {e}")
@@ -554,12 +530,13 @@ def safe_print(text: str):
     except UnicodeEncodeError:
         # Remove emojis and special characters for Windows console
         import re
-        clean_text = re.sub(r'[^\x00-\x7F]+', '', text)
-        clean_text = clean_text.replace('✅', '[OK]')
-        clean_text = clean_text.replace('⚠️', '[WARN]')
-        clean_text = clean_text.replace('ℹ️', '[INFO]')
-        clean_text = clean_text.replace('📊', '[STATUS]')
-        clean_text = clean_text.replace('💡', '[TIP]')
+
+        clean_text = re.sub(r"[^\x00-\x7F]+", "", text)
+        clean_text = clean_text.replace("✅", "[OK]")
+        clean_text = clean_text.replace("⚠️", "[WARN]")
+        clean_text = clean_text.replace("ℹ️", "[INFO]")
+        clean_text = clean_text.replace("📊", "[STATUS]")
+        clean_text = clean_text.replace("💡", "[TIP]")
         print(clean_text)
 
 
@@ -581,28 +558,12 @@ Recovery Scenarios:
   - CMD window closed  → Run 'recover' in new window
   - Claude terminated  → Run 'recover' in next session
   - Context limit      → Auto-detected on next 'start'
-        """
+        """,
     )
-    parser.add_argument(
-        "action",
-        choices=["start", "checkpoint", "end", "status", "recover"],
-        help="Session action"
-    )
-    parser.add_argument(
-        "--summary", "-s",
-        default="",
-        help="Session summary (for end action)"
-    )
-    parser.add_argument(
-        "--notes", "-n",
-        default="",
-        help="Checkpoint notes (for checkpoint action)"
-    )
-    parser.add_argument(
-        "--force", "-f",
-        action="store_true",
-        help="Force action (skip checks)"
-    )
+    parser.add_argument("action", choices=["start", "checkpoint", "end", "status", "recover"], help="Session action")
+    parser.add_argument("--summary", "-s", default="", help="Session summary (for end action)")
+    parser.add_argument("--notes", "-n", default="", help="Checkpoint notes (for checkpoint action)")
+    parser.add_argument("--force", "-f", action="store_true", help="Force action (skip checks)")
 
     args = parser.parse_args()
     manager = SessionManager()

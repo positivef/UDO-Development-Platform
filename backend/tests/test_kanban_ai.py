@@ -11,16 +11,19 @@ from uuid import uuid4
 import pytest
 import pytest_asyncio
 
-from backend.app.models.kanban_ai import (ConstitutionalViolationError,
-                                          InvalidSuggestionError, PhaseName,
-                                          RateLimitExceededError,
-                                          RateLimitStatus,
-                                          SuggestionConfidence,
-                                          TaskSuggestionApproval,
-                                          TaskSuggestionApprovalResponse,
-                                          TaskSuggestionRequest,
-                                          TaskSuggestionResponse)
-from backend.app.services.kanban_ai_service import kanban_ai_service
+from app.models.kanban_ai import (
+    ConstitutionalViolationError,
+    InvalidSuggestionError,
+    PhaseName,
+    RateLimitExceededError,
+    RateLimitStatus,
+    SuggestionConfidence,
+    TaskSuggestionApproval,
+    TaskSuggestionApprovalResponse,
+    TaskSuggestionRequest,
+    TaskSuggestionResponse,
+)
+from app.services.kanban_ai_service import kanban_ai_service
 
 # ============================================================================
 # Fixtures
@@ -47,9 +50,7 @@ def test_user_id():
 @pytest_asyncio.fixture
 async def generated_suggestions(sample_suggestion_request, test_user_id):
     """Generate suggestions for testing approval workflow"""
-    response = await kanban_ai_service.suggest_tasks(
-        sample_suggestion_request, test_user_id
-    )
+    response = await kanban_ai_service.suggest_tasks(sample_suggestion_request, test_user_id)
     return response
 
 
@@ -64,9 +65,7 @@ class TestTaskSuggestionGeneration:
     @pytest.mark.asyncio
     async def test_suggest_tasks_success(self, sample_suggestion_request, test_user_id):
         """Test successful task suggestion generation"""
-        response = await kanban_ai_service.suggest_tasks(
-            sample_suggestion_request, test_user_id
-        )
+        response = await kanban_ai_service.suggest_tasks(sample_suggestion_request, test_user_id)
 
         # Verify response structure
         assert isinstance(response, TaskSuggestionResponse)
@@ -125,25 +124,16 @@ class TestTaskSuggestionGeneration:
         response = await kanban_ai_service.suggest_tasks(request, test_user_id)
 
         # At least some suggestions should have dependencies
-        has_dependencies = any(
-            len(suggestion.suggested_dependencies) > 0
-            for suggestion in response.suggestions
-        )
+        has_dependencies = any(len(suggestion.suggested_dependencies) > 0 for suggestion in response.suggestions)
         assert has_dependencies
 
     @pytest.mark.asyncio
-    async def test_suggest_tasks_performance(
-        self, sample_suggestion_request, test_user_id
-    ):
+    async def test_suggest_tasks_performance(self, sample_suggestion_request, test_user_id):
         """Test suggestion generation meets <3s target"""
-        response = await kanban_ai_service.suggest_tasks(
-            sample_suggestion_request, test_user_id
-        )
+        response = await kanban_ai_service.suggest_tasks(sample_suggestion_request, test_user_id)
 
         # Verify performance target (<3000ms)
-        assert (
-            response.generation_time_ms < 3000
-        ), f"Generation took {response.generation_time_ms}ms, target is <3000ms"
+        assert response.generation_time_ms < 3000, f"Generation took {response.generation_time_ms}ms, target is <3000ms"
 
 
 # ============================================================================
@@ -166,21 +156,15 @@ class TestRateLimiting:
         assert status.suggestions_used_today >= 0
 
     @pytest.mark.asyncio
-    async def test_rate_limit_enforcement(
-        self, sample_suggestion_request, test_user_id
-    ):
+    async def test_rate_limit_enforcement(self, sample_suggestion_request, test_user_id):
         """Test rate limit enforcement (10 suggestions/hour)"""
         # Generate 10 suggestions (max allowed)
         for i in range(10):
-            await kanban_ai_service.suggest_tasks(
-                sample_suggestion_request, test_user_id
-            )
+            await kanban_ai_service.suggest_tasks(sample_suggestion_request, test_user_id)
 
         # 11th suggestion should be rate limited
         with pytest.raises(RateLimitExceededError) as exc_info:
-            await kanban_ai_service.suggest_tasks(
-                sample_suggestion_request, test_user_id
-            )
+            await kanban_ai_service.suggest_tasks(sample_suggestion_request, test_user_id)
 
         # Verify error details
         error = exc_info.value
@@ -189,20 +173,14 @@ class TestRateLimiting:
         assert error.status.suggestions_remaining == 0
 
     @pytest.mark.asyncio
-    async def test_rate_limit_remaining_decreases(
-        self, sample_suggestion_request, test_user_id
-    ):
+    async def test_rate_limit_remaining_decreases(self, sample_suggestion_request, test_user_id):
         """Test rate limit remaining count decreases"""
         # First suggestion
-        response1 = await kanban_ai_service.suggest_tasks(
-            sample_suggestion_request, test_user_id
-        )
+        response1 = await kanban_ai_service.suggest_tasks(sample_suggestion_request, test_user_id)
         remaining1 = response1.remaining_suggestions_today
 
         # Second suggestion
-        response2 = await kanban_ai_service.suggest_tasks(
-            sample_suggestion_request, test_user_id
-        )
+        response2 = await kanban_ai_service.suggest_tasks(sample_suggestion_request, test_user_id)
         remaining2 = response2.remaining_suggestions_today
 
         # Remaining should decrease by 1
@@ -218,9 +196,7 @@ class TestSuggestionApproval:
     """Test AI suggestion approval and task creation"""
 
     @pytest.mark.asyncio
-    async def test_approve_suggestion_success(
-        self, generated_suggestions, test_user_id
-    ):
+    async def test_approve_suggestion_success(self, generated_suggestions, test_user_id):
         """Test successful suggestion approval and task creation"""
         suggestion = generated_suggestions.suggestions[0]
 
@@ -230,9 +206,7 @@ class TestSuggestionApproval:
             approval_notes="Looks good for implementation",
         )
 
-        response = await kanban_ai_service.approve_suggestion(
-            suggestion.suggestion_id, approval, test_user_id
-        )
+        response = await kanban_ai_service.approve_suggestion(suggestion.suggestion_id, approval, test_user_id)
 
         # Verify approval response
         assert isinstance(response, TaskSuggestionApprovalResponse)
@@ -247,9 +221,7 @@ class TestSuggestionApproval:
         assert response.created_task["phase_name"] == suggestion.phase_name
 
     @pytest.mark.asyncio
-    async def test_approve_suggestion_with_modifications(
-        self, generated_suggestions, test_user_id
-    ):
+    async def test_approve_suggestion_with_modifications(self, generated_suggestions, test_user_id):
         """Test approval with user modifications"""
         suggestion = generated_suggestions.suggestions[0]
 
@@ -262,9 +234,7 @@ class TestSuggestionApproval:
             },  # Change priority
         )
 
-        response = await kanban_ai_service.approve_suggestion(
-            suggestion.suggestion_id, approval, test_user_id
-        )
+        response = await kanban_ai_service.approve_suggestion(suggestion.suggestion_id, approval, test_user_id)
 
         # Verify modifications were applied
         assert response.success is True
@@ -276,19 +246,13 @@ class TestSuggestionApproval:
         """Test approval of nonexistent suggestion"""
         fake_suggestion_id = uuid4()
 
-        approval = TaskSuggestionApproval(
-            suggestion_id=fake_suggestion_id, approved_by="test_developer"
-        )
+        approval = TaskSuggestionApproval(suggestion_id=fake_suggestion_id, approved_by="test_developer")
 
         with pytest.raises(InvalidSuggestionError):
-            await kanban_ai_service.approve_suggestion(
-                fake_suggestion_id, approval, test_user_id
-            )
+            await kanban_ai_service.approve_suggestion(fake_suggestion_id, approval, test_user_id)
 
     @pytest.mark.asyncio
-    async def test_approve_suggestion_removes_from_cache(
-        self, generated_suggestions, test_user_id
-    ):
+    async def test_approve_suggestion_removes_from_cache(self, generated_suggestions, test_user_id):
         """Test suggestion is removed from cache after approval"""
         suggestion = generated_suggestions.suggestions[0]
 
@@ -296,12 +260,8 @@ class TestSuggestionApproval:
         assert suggestion.suggestion_id in kanban_ai_service.suggestions_cache
 
         # Approve suggestion
-        approval = TaskSuggestionApproval(
-            suggestion_id=suggestion.suggestion_id, approved_by="test_developer"
-        )
-        await kanban_ai_service.approve_suggestion(
-            suggestion.suggestion_id, approval, test_user_id
-        )
+        approval = TaskSuggestionApproval(suggestion_id=suggestion.suggestion_id, approved_by="test_developer")
+        await kanban_ai_service.approve_suggestion(suggestion.suggestion_id, approval, test_user_id)
 
         # Verify suggestion is removed from cache
         assert suggestion.suggestion_id not in kanban_ai_service.suggestions_cache
@@ -359,16 +319,12 @@ class TestMockMode:
     """Test mock mode when ANTHROPIC_API_KEY not set"""
 
     @pytest.mark.asyncio
-    async def test_mock_mode_generates_valid_suggestions(
-        self, sample_suggestion_request, test_user_id
-    ):
+    async def test_mock_mode_generates_valid_suggestions(self, sample_suggestion_request, test_user_id):
         """Test mock mode generates valid suggestions"""
         # Mock mode should be active (no API key set in tests)
         assert kanban_ai_service.mock_mode is True
 
-        response = await kanban_ai_service.suggest_tasks(
-            sample_suggestion_request, test_user_id
-        )
+        response = await kanban_ai_service.suggest_tasks(sample_suggestion_request, test_user_id)
 
         # Verify mock suggestions are valid
         assert len(response.suggestions) == 3
@@ -377,9 +333,7 @@ class TestMockMode:
         for suggestion in response.suggestions:
             assert suggestion.title is not None
             assert suggestion.description is not None
-            assert (
-                suggestion.confidence == SuggestionConfidence.HIGH
-            )  # Mock always high
+            assert suggestion.confidence == SuggestionConfidence.HIGH  # Mock always high
 
     @pytest.mark.asyncio
     async def test_mock_mode_phase_specific_suggestions(self, test_user_id):
@@ -392,9 +346,7 @@ class TestMockMode:
         ]
 
         for phase, expected_keyword in phases_to_test:
-            request = TaskSuggestionRequest(
-                phase_name=phase, context=f"Working on {phase} phase", num_suggestions=1
-            )
+            request = TaskSuggestionRequest(phase_name=phase, context=f"Working on {phase} phase", num_suggestions=1)
 
             response = await kanban_ai_service.suggest_tasks(request, test_user_id)
 

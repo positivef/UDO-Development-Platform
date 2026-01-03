@@ -20,8 +20,8 @@ import os
 import re
 from pathlib import Path
 
-# Obsidian vault path from environment or default
-OBSIDIAN_VAULT = os.getenv("OBSIDIAN_VAULT_PATH", r"C:\Users\user\Documents\Obsidian Vault")
+# Obsidian vault path from environment or user home fallback
+OBSIDIAN_VAULT = os.getenv("OBSIDIAN_VAULT_PATH") or str(Path.home() / "Documents" / "Obsidian Vault")
 
 DEV_LOG_DIR = Path(OBSIDIAN_VAULT) / "개발일지"
 

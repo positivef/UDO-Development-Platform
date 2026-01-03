@@ -12,8 +12,11 @@ from starlette.testclient import TestClient
 # Set test environment variables BEFORE importing app
 os.environ["ADMIN_KEY"] = "test-admin-key"
 os.environ["DISABLE_AUTH_IN_DEV"] = "false"  # Ensure auth is enabled for tests
+os.environ["DISABLE_DEV_AUTH_BYPASS"] = "true"  # Disable DEV mode JWT bypass for proper testing
+os.environ["JWT_SECRET_KEY"] = "test-secret-key-for-jwt-token-validation-32chars"  # Fixed key for testing
 
 from backend.main import app
+
 
 # Ensure an event loop is available for legacy asyncio.get_event_loop() usage
 @pytest.fixture(autouse=True)
@@ -34,6 +37,7 @@ def ensure_event_loop():
         yield
         loop.close()
         asyncio.set_event_loop(None)
+
 
 _TEMP_ROOT = Path(__file__).resolve().parents[1] / "_pytest_temp_root"
 _TEMP_ROOT.mkdir(exist_ok=True)

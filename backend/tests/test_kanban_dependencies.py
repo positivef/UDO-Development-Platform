@@ -19,20 +19,20 @@ from uuid import UUID, uuid4
 import pytest
 import pytest_asyncio
 
-from backend.app.models.kanban_dependencies import (CircularDependencyError,
-                                                    Dependency,
-                                                    DependencyAudit,
-                                                    DependencyCreate,
-                                                    DependencyGraph,
-                                                    DependencyStatus,
-                                                    DependencyType,
-                                                    EmergencyOverride,
-                                                    TopologicalSortResult)
-from backend.app.models.kanban_task import (PhaseName, TaskCreate,
-                                            TaskPriority, TaskStatus)
-from backend.app.services.kanban_dependency_service import \
-    kanban_dependency_service
-from backend.app.services.kanban_task_service import kanban_task_service
+from app.models.kanban_dependencies import (
+    CircularDependencyError,
+    Dependency,
+    DependencyAudit,
+    DependencyCreate,
+    DependencyGraph,
+    DependencyStatus,
+    DependencyType,
+    EmergencyOverride,
+    TopologicalSortResult,
+)
+from app.models.kanban_task import PhaseName, TaskCreate, TaskPriority, TaskStatus
+from app.services.kanban_dependency_service import kanban_dependency_service
+from app.services.kanban_task_service import kanban_task_service
 
 # ============================================================================
 # Test Fixtures
@@ -72,9 +72,7 @@ def sample_dependency_data(available_task_ids):
 @pytest_asyncio.fixture
 async def created_dependency(sample_dependency_data, available_task_ids):
     """Create a dependency for testing"""
-    dependency = await kanban_dependency_service.create_dependency(
-        sample_dependency_data, available_task_ids
-    )
+    dependency = await kanban_dependency_service.create_dependency(sample_dependency_data, available_task_ids)
     return dependency
 
 
@@ -87,19 +85,13 @@ class TestDependencyCRUD:
     """Test CRUD operations for dependencies"""
 
     @pytest.mark.asyncio
-    async def test_create_dependency_success(
-        self, sample_dependency_data, available_task_ids
-    ):
+    async def test_create_dependency_success(self, sample_dependency_data, available_task_ids):
         """Test successful dependency creation"""
-        dependency = await kanban_dependency_service.create_dependency(
-            sample_dependency_data, available_task_ids
-        )
+        dependency = await kanban_dependency_service.create_dependency(sample_dependency_data, available_task_ids)
 
         assert dependency.id is not None
         assert dependency.task_id == sample_dependency_data.task_id
-        assert (
-            dependency.depends_on_task_id == sample_dependency_data.depends_on_task_id
-        )
+        assert dependency.depends_on_task_id == sample_dependency_data.depends_on_task_id
         assert dependency.dependency_type == DependencyType.FINISH_TO_START
         assert dependency.status == DependencyStatus.PENDING
 
@@ -120,9 +112,7 @@ class TestDependencyCRUD:
                 depends_on_task_id=task_list[i + 1],
                 dependency_type=dep_type,
             )
-            dependency = await kanban_dependency_service.create_dependency(
-                dep_data, available_task_ids
-            )
+            dependency = await kanban_dependency_service.create_dependency(dep_data, available_task_ids)
             assert dependency.dependency_type == dep_type
 
     @pytest.mark.asyncio
@@ -138,9 +128,7 @@ class TestDependencyCRUD:
         )
 
         with pytest.raises(CircularDependencyError) as exc_info:
-            await kanban_dependency_service.create_dependency(
-                dep_data, available_task_ids
-            )
+            await kanban_dependency_service.create_dependency(dep_data, available_task_ids)
 
         assert task_id in exc_info.value.cycle
 
@@ -188,18 +176,14 @@ class TestDependencyCRUD:
         )
 
         with pytest.raises(ValueError) as exc_info:
-            await kanban_dependency_service.create_dependency(
-                dep_data, available_task_ids
-            )
+            await kanban_dependency_service.create_dependency(dep_data, available_task_ids)
 
         assert str(invalid_task_id) in str(exc_info.value)
 
     @pytest.mark.asyncio
     async def test_get_dependency_success(self, created_dependency):
         """Test successful dependency retrieval"""
-        dependency = await kanban_dependency_service.get_dependency(
-            created_dependency.id
-        )
+        dependency = await kanban_dependency_service.get_dependency(created_dependency.id)
 
         assert dependency is not None
         assert dependency.id == created_dependency.id
@@ -216,16 +200,12 @@ class TestDependencyCRUD:
     @pytest.mark.asyncio
     async def test_delete_dependency_success(self, created_dependency):
         """Test successful dependency deletion"""
-        deleted = await kanban_dependency_service.delete_dependency(
-            created_dependency.id
-        )
+        deleted = await kanban_dependency_service.delete_dependency(created_dependency.id)
 
         assert deleted is True
 
         # Verify deletion
-        dependency = await kanban_dependency_service.get_dependency(
-            created_dependency.id
-        )
+        dependency = await kanban_dependency_service.get_dependency(created_dependency.id)
         assert dependency is None
 
     @pytest.mark.asyncio
@@ -280,9 +260,7 @@ class TestTaskDependencies:
     async def test_get_task_dependencies_empty(self, available_task_ids):
         """Test getting dependencies for task with no dependencies"""
         task_list = list(available_task_ids)
-        dependencies = await kanban_dependency_service.get_task_dependencies(
-            task_list[0]
-        )
+        dependencies = await kanban_dependency_service.get_task_dependencies(task_list[0])
 
         assert isinstance(dependencies, list)
         # May be empty or have dependencies from other tests
@@ -298,14 +276,10 @@ class TestTaskDependencies:
             depends_on_task_id=task_list[1],
             dependency_type=DependencyType.FINISH_TO_START,
         )
-        created_dep = await kanban_dependency_service.create_dependency(
-            dep_data, available_task_ids
-        )
+        created_dep = await kanban_dependency_service.create_dependency(dep_data, available_task_ids)
 
         # Get dependencies for task[0]
-        dependencies = await kanban_dependency_service.get_task_dependencies(
-            task_list[0]
-        )
+        dependencies = await kanban_dependency_service.get_task_dependencies(task_list[0])
 
         assert len(dependencies) >= 1
         dep_ids = [d.depends_on_task_id for d in dependencies]
@@ -323,14 +297,10 @@ class TestTaskDependencies:
                 depends_on_task_id=task_list[i],
                 dependency_type=DependencyType.FINISH_TO_START,
             )
-            await kanban_dependency_service.create_dependency(
-                dep_data, available_task_ids
-            )
+            await kanban_dependency_service.create_dependency(dep_data, available_task_ids)
 
         # Get all dependencies
-        dependencies = await kanban_dependency_service.get_task_dependencies(
-            task_list[0]
-        )
+        dependencies = await kanban_dependency_service.get_task_dependencies(task_list[0])
 
         assert len(dependencies) >= 3
 
@@ -375,9 +345,7 @@ class TestTaskDependencies:
                 depends_on_task_id=task_list[0],
                 dependency_type=DependencyType.FINISH_TO_START,
             )
-            await kanban_dependency_service.create_dependency(
-                dep_data, available_task_ids
-            )
+            await kanban_dependency_service.create_dependency(dep_data, available_task_ids)
 
         # Get all dependents
         dependents = await kanban_dependency_service.get_task_dependents(task_list[0])
@@ -398,9 +366,7 @@ class TestTaskDependencies:
         await kanban_dependency_service.create_dependency(dep_data, available_task_ids)
 
         # Get dependency graph
-        graph = await kanban_dependency_service.get_dependency_graph(
-            task_list[0], depth=3
-        )
+        graph = await kanban_dependency_service.get_dependency_graph(task_list[0], depth=3)
 
         assert isinstance(graph, DependencyGraph)
         assert isinstance(graph.nodes, list)
@@ -420,19 +386,13 @@ class TestTaskDependencies:
                 depends_on_task_id=task_list[i + 1],
                 dependency_type=DependencyType.FINISH_TO_START,
             )
-            await kanban_dependency_service.create_dependency(
-                dep_data, available_task_ids
-            )
+            await kanban_dependency_service.create_dependency(dep_data, available_task_ids)
 
         # Get graph with depth=1 (should only get task[0] and task[1])
-        graph_depth1 = await kanban_dependency_service.get_dependency_graph(
-            task_list[0], depth=1
-        )
+        graph_depth1 = await kanban_dependency_service.get_dependency_graph(task_list[0], depth=1)
 
         # Get graph with depth=3 (should get all 4 tasks)
-        graph_depth3 = await kanban_dependency_service.get_dependency_graph(
-            task_list[0], depth=3
-        )
+        graph_depth3 = await kanban_dependency_service.get_dependency_graph(task_list[0], depth=3)
 
         # Depth 3 should have more nodes than depth 1
         assert len(graph_depth3.nodes) >= len(graph_depth1.nodes)
@@ -451,9 +411,7 @@ class TestTaskDependencies:
         await kanban_dependency_service.create_dependency(dep_data, available_task_ids)
 
         # Get dependency graph
-        graph = await kanban_dependency_service.get_dependency_graph(
-            task_list[0], depth=3
-        )
+        graph = await kanban_dependency_service.get_dependency_graph(task_list[0], depth=3)
 
         # Verify nodes have task metadata
         for node in graph.nodes:
@@ -476,9 +434,7 @@ class TestTaskDependencies:
             assert isinstance(node.is_blocked, bool)
 
     @pytest.mark.asyncio
-    async def test_get_dependency_graph_is_blocked_calculation(
-        self, available_task_ids
-    ):
+    async def test_get_dependency_graph_is_blocked_calculation(self, available_task_ids):
         """Test dependency graph correctly calculates is_blocked status"""
         task_list = list(available_task_ids)
 
@@ -492,9 +448,7 @@ class TestTaskDependencies:
         await kanban_dependency_service.create_dependency(dep_data, available_task_ids)
 
         # Get dependency graph
-        graph = await kanban_dependency_service.get_dependency_graph(
-            task_list[0], depth=3
-        )
+        graph = await kanban_dependency_service.get_dependency_graph(task_list[0], depth=3)
 
         # Find task[0] node
         task0_node = next((n for n in graph.nodes if n.task_id == task_list[0]), None)
@@ -601,20 +555,14 @@ class TestDAGOperations:
         for i in range(4):
             dep = DependencyCreate(
                 task_id=task_list[i],
-                depends_on_task_id=task_list[
-                    (i + 1) % 4
-                ],  # % 4 creates cycle: task[3] -> task[0]
+                depends_on_task_id=task_list[(i + 1) % 4],  # % 4 creates cycle: task[3] -> task[0]
                 dependency_type=DependencyType.FINISH_TO_START,
             )
             if i < 3:  # Create first 3 dependencies (A->B, B->C, C->D)
-                await kanban_dependency_service.create_dependency(
-                    dep, available_task_ids
-                )
+                await kanban_dependency_service.create_dependency(dep, available_task_ids)
             else:  # 4th dependency (D->A) should fail with CircularDependencyError
                 with pytest.raises(CircularDependencyError):
-                    await kanban_dependency_service.create_dependency(
-                        dep, available_task_ids
-                    )
+                    await kanban_dependency_service.create_dependency(dep, available_task_ids)
 
     @pytest.mark.asyncio
     async def test_get_statistics_basic(self, available_task_ids):
@@ -705,9 +653,7 @@ class TestDAGOperations:
             depends_on_task_id=task_list[1],
             dependency_type=DependencyType.FINISH_TO_START,
         )
-        created_dep = await kanban_dependency_service.create_dependency(
-            dep, available_task_ids
-        )
+        created_dep = await kanban_dependency_service.create_dependency(dep, available_task_ids)
 
         # Get topological sort
         result1 = await kanban_dependency_service.topological_sort(available_task_ids)
@@ -739,9 +685,7 @@ class TestEmergencyOverride:
             overridden_by="project_owner_user",
         )
 
-        dependency = await kanban_dependency_service.emergency_override(
-            override_request
-        )
+        dependency = await kanban_dependency_service.emergency_override(override_request)
 
         assert dependency.status == DependencyStatus.OVERRIDDEN
         assert dependency.updated_at is not None
@@ -826,9 +770,7 @@ class TestEmergencyOverride:
 
         # Should have 2 audit entries for this dependency
         audit_log = await kanban_dependency_service.get_audit_log(limit=100)
-        dependency_audits = [
-            a for a in audit_log if a.dependency_id == created_dependency.id
-        ]
+        dependency_audits = [a for a in audit_log if a.dependency_id == created_dependency.id]
         assert len(dependency_audits) >= 2
 
     @pytest.mark.asyncio
@@ -891,9 +833,7 @@ class TestPerformanceEdgeCases:
             await kanban_dependency_service.create_dependency(dep, available_task_ids)
 
         # Get all dependencies for task[0]
-        dependencies = await kanban_dependency_service.get_task_dependencies(
-            task_list[0]
-        )
+        dependencies = await kanban_dependency_service.get_task_dependencies(task_list[0])
 
         # Should have at least 3 dependencies
         assert len(dependencies) >= 3
@@ -938,9 +878,7 @@ class TestPerformanceEdgeCases:
             depends_on_task_id=task_list[1],
             dependency_type=DependencyType.FINISH_TO_START,
         )
-        created_dep = await kanban_dependency_service.create_dependency(
-            dep, available_task_ids
-        )
+        created_dep = await kanban_dependency_service.create_dependency(dep, available_task_ids)
 
         # Override it (status becomes OVERRIDDEN)
         override = EmergencyOverride(
@@ -951,12 +889,8 @@ class TestPerformanceEdgeCases:
         await kanban_dependency_service.emergency_override(override)
 
         # Get task dependencies (should exclude OVERRIDDEN)
-        dependencies = await kanban_dependency_service.get_task_dependencies(
-            task_list[0]
-        )
+        dependencies = await kanban_dependency_service.get_task_dependencies(task_list[0])
 
         # Should not include the overridden dependency
-        overridden_deps = [
-            d for d in dependencies if d.status == DependencyStatus.OVERRIDDEN
-        ]
+        overridden_deps = [d for d in dependencies if d.status == DependencyStatus.OVERRIDDEN]
         assert len(overridden_deps) == 0

@@ -98,6 +98,15 @@ apiClient.interceptors.response.use(
       return apiClient.request(config);
     }
 
+    // Fallback to mock on network errors (no response means backend is unavailable)
+    if (!USE_REAL_DB && !error.response) {
+      console.warn('[API] Backend unavailable, falling back to mock data');
+      return Promise.reject({
+        ...error,
+        useMockFallback: true,
+      });
+    }
+
     return Promise.reject(error);
   }
 );

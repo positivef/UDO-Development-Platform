@@ -23,17 +23,15 @@ export default function UncertaintyPage() {
   const [isAcking, setIsAcking] = useState(false)
   const [showContextModal, setShowContextModal] = useState(false)
 
-  // WebSocket connection (currently disabled until backend endpoint is ready)
-  const [wsEnabled, setWsEnabled] = useState(false)
+  // WebSocket connection for real-time uncertainty updates
+  const [wsEnabled, setWsEnabled] = useState(true)
   const { connect, disconnect, isConnected } = useUncertaintyWebSocket({
     autoConnect: wsEnabled,
   })
   const wsStatus = useWsStatus()
 
   useEffect(() => {
-    // WebSocket will be enabled when backend endpoint is ready
-    // For now, it's disabled to prevent connection errors
-    // TODO: Enable when /ws/uncertainty endpoint is implemented
+    // WebSocket is now enabled - /ws/uncertainty endpoint is implemented
   }, [])
 
   const handleRefresh = () => {

@@ -48,6 +48,7 @@ Usage:
 """
 
 import logging
+import os
 import time
 import re
 from typing import Dict, Any, Optional, List
@@ -60,6 +61,7 @@ logger = logging.getLogger(__name__)
 @dataclass
 class ResolutionResult:
     """Result of error resolution attempt"""
+
     success: bool
     solution: Optional[str]
     tier: int  # 1, 2, or 3
@@ -100,13 +102,13 @@ class UnifiedErrorResolver:
         # Statistics tracking
         self.statistics = {
             "total": 0,
-            "tier1": 0,              # Obsidian hits
-            "tier2": 0,              # Context7 hits (total)
-            "tier2_auto": 0,         # AUTO-APPLIED (HIGH confidence)
-            "tier2_confirmed": 0,    # User confirmed (MEDIUM confidence)
-            "tier3": 0,              # User intervention
+            "tier1": 0,  # Obsidian hits
+            "tier2": 0,  # Context7 hits (total)
+            "tier2_auto": 0,  # AUTO-APPLIED (HIGH confidence)
+            "tier2_confirmed": 0,  # User confirmed (MEDIUM confidence)
+            "tier3": 0,  # User intervention
             "automation_rate": 0.0,  # (tier1 + tier2_auto) / total
-            "time_saved_minutes": 0.0
+            "time_saved_minutes": 0.0,
         }
 
         # Circuit breaker for safety
@@ -114,7 +116,7 @@ class UnifiedErrorResolver:
             "state": "CLOSED",  # CLOSED, OPEN, HALF_OPEN
             "consecutive_failures": 0,
             "failure_threshold": 3,
-            "last_failure_time": None
+            "last_failure_time": None,
         }
 
         # Safety blacklist (never auto-apply)
@@ -125,14 +127,14 @@ class UnifiedErrorResolver:
             r"DELETE\s+FROM",
             r"payment",
             r"AUTH_SECRET",
-            r"database\s+drop"
+            r"database\s+drop",
         ]
 
         # Confidence thresholds
         self.confidence_thresholds = {
-            "HIGH": 0.95,    # Auto-apply
+            "HIGH": 0.95,  # Auto-apply
             "MEDIUM": 0.70,  # User confirmation
-            "LOW": 0.00      # User intervention
+            "LOW": 0.00,  # User intervention
         }
 
         logger.info(f"UnifiedErrorResolver initialized: vault={self.vault_path}, context7={enable_context7}")
@@ -195,7 +197,9 @@ class UnifiedErrorResolver:
                         self._update_automation_rate()
 
                         elapsed_ms = (time.time() - start_time) * 1000
-                        logger.info(f"✅ TIER 2 AUTO: Context7 HIGH confidence ({tier2_result.confidence:.0%}) in {elapsed_ms:.1f}ms")
+                        logger.info(
+                            f"✅ TIER 2 AUTO: Context7 HIGH confidence ({tier2_result.confidence:.0%}) in {elapsed_ms:.1f}ms"
+                        )
 
                         return tier2_result.solution
                     else:
@@ -223,12 +227,7 @@ class UnifiedErrorResolver:
 
         return None
 
-    def save_user_solution(
-        self,
-        error_msg: str,
-        solution: str,
-        context: Optional[Dict[str, Any]] = None
-    ):
+    def save_user_solution(self, error_msg: str, solution: str, context: Optional[Dict[str, Any]] = None):
         """
         Save user-provided solution to Obsidian for future Tier 1 hits
 
@@ -297,7 +296,7 @@ tags: [debug, user-solution, {error_type.lower()}]
 """
 
             # Write to file
-            with open(target_file, 'w', encoding='utf-8') as f:
+            with open(target_file, "w", encoding="utf-8") as f:
                 f.write(content)
 
             logger.info(f"💾 User solution saved to Obsidian: {target_file.name}")
@@ -327,7 +326,7 @@ tags: [debug, user-solution, {error_type.lower()}]
                 "solution": result_obj.solution,
                 "confidence": result_obj.confidence,
                 "search_time_ms": result_obj.search_time_ms,
-                "token_usage": result_obj.token_usage
+                "token_usage": result_obj.token_usage,
             }
 
             if result["found"]:
@@ -339,7 +338,7 @@ tags: [debug, user-solution, {error_type.lower()}]
                     search_time_ms=result["search_time_ms"],
                     token_usage=result["token_usage"],
                     auto_applied=True,
-                    requires_confirmation=False
+                    requires_confirmation=False,
                 )
             else:
                 return ResolutionResult(
@@ -350,15 +349,20 @@ tags: [debug, user-solution, {error_type.lower()}]
                     search_time_ms=result["search_time_ms"],
                     token_usage=result["token_usage"],
                     auto_applied=False,
-                    requires_confirmation=False
+                    requires_confirmation=False,
                 )
 
         except Exception as e:
             logger.error(f"Tier 1 search failed: {e}")
             return ResolutionResult(
-                success=False, solution=None, tier=1, confidence=0.0,
-                search_time_ms=0, token_usage=0,
-                auto_applied=False, requires_confirmation=False
+                success=False,
+                solution=None,
+                tier=1,
+                confidence=0.0,
+                search_time_ms=0,
+                token_usage=0,
+                auto_applied=False,
+                requires_confirmation=False,
             )
 
     def _tier2_context7_query(self, error_msg: str, context: Dict) -> ResolutionResult:
@@ -395,21 +399,33 @@ tags: [debug, user-solution, {error_type.lower()}]
                     search_time_ms=50,  # Simulated (actual would use Context7 MCP)
                     token_usage=500,
                     auto_applied=confidence >= self.confidence_thresholds["HIGH"],
-                    requires_confirmation=self.confidence_thresholds["MEDIUM"] <= confidence < self.confidence_thresholds["HIGH"]
+                    requires_confirmation=self.confidence_thresholds["MEDIUM"]
+                    <= confidence
+                    < self.confidence_thresholds["HIGH"],
                 )
             else:
                 return ResolutionResult(
-                    success=False, solution=None, tier=2, confidence=0.0,
-                    search_time_ms=50, token_usage=500,
-                    auto_applied=False, requires_confirmation=False
+                    success=False,
+                    solution=None,
+                    tier=2,
+                    confidence=0.0,
+                    search_time_ms=50,
+                    token_usage=500,
+                    auto_applied=False,
+                    requires_confirmation=False,
                 )
 
         except Exception as e:
             logger.error(f"Tier 2 query failed: {e}")
             return ResolutionResult(
-                success=False, solution=None, tier=2, confidence=0.0,
-                search_time_ms=0, token_usage=0,
-                auto_applied=False, requires_confirmation=False
+                success=False,
+                solution=None,
+                tier=2,
+                confidence=0.0,
+                search_time_ms=0,
+                token_usage=0,
+                auto_applied=False,
+                requires_confirmation=False,
             )
 
     def _calculate_confidence(self, error_msg: str, error_type: str, keywords: List[str]) -> float:
@@ -442,7 +458,7 @@ tags: [debug, user-solution, {error_type.lower()}]
             confidence += 0.20
 
         # Clear error message (has specific module/file name)
-        if re.search(r"'[^']+'" , error_msg):
+        if re.search(r"'[^']+'", error_msg):
             confidence += 0.15
 
         # Multiple keywords
@@ -466,13 +482,13 @@ tags: [debug, user-solution, {error_type.lower()}]
             # Pattern 1: "No module named 'X'"
             module_match = re.search(r"[Nn]o module named ['\"]([^'\"]+)['\"]", error_msg)
             if module_match:
-                module_name = module_match.group(1).split('.')[0]  # Extract base package
+                module_name = module_match.group(1).split(".")[0]  # Extract base package
                 return f"pip install {module_name}"
 
             # Pattern 2: "cannot import name 'X' from 'pandas'"
             import_from_match = re.search(r"from ['\"]([^'\"]+)['\"]", error_msg)
             if import_from_match:
-                module_name = import_from_match.group(1).split('.')[0]
+                module_name = import_from_match.group(1).split(".")[0]
                 return f"pip install {module_name}"
 
         # PermissionError
@@ -580,9 +596,16 @@ tags: [debug, user-solution, {error_type.lower()}]
         """Extract error type from error message"""
         # Common Python exceptions
         error_types = [
-            "ModuleNotFoundError", "ImportError", "PermissionError",
-            "FileNotFoundError", "UnicodeDecodeError", "AssertionError",
-            "ValueError", "TypeError", "KeyError", "AttributeError"
+            "ModuleNotFoundError",
+            "ImportError",
+            "PermissionError",
+            "FileNotFoundError",
+            "UnicodeDecodeError",
+            "AssertionError",
+            "ValueError",
+            "TypeError",
+            "KeyError",
+            "AttributeError",
         ]
 
         for error_type in error_types:
@@ -595,7 +618,7 @@ tags: [debug, user-solution, {error_type.lower()}]
             return f"HTTP{http_match.group(1)}"
 
         # Default: first word before colon
-        parts = error_msg.split(':')
+        parts = error_msg.split(":")
         if len(parts) > 1:
             return parts[0].strip()
 
@@ -609,28 +632,28 @@ tags: [debug, user-solution, {error_type.lower()}]
             "PermissionError": "permission",
             "FileNotFoundError": "file-not-found",
             "UnicodeDecodeError": "encoding",
-            "AssertionError": "test-failure"
+            "AssertionError": "test-failure",
         }
 
         return categories.get(error_type, "general")
 
     def _extract_keywords(self, error_msg: str) -> List[str]:
         """Extract search keywords from error message"""
-        stop_words = {'the', 'a', 'an', 'in', 'on', 'at', 'to', 'for', 'of', 'and', 'or', 'but', 'no', 'not'}
+        stop_words = {"the", "a", "an", "in", "on", "at", "to", "for", "of", "and", "or", "but", "no", "not"}
 
-        words = re.findall(r'\b\w+\b', error_msg.lower())
+        words = re.findall(r"\b\w+\b", error_msg.lower())
         keywords = [w for w in words if w not in stop_words and len(w) > 3]
 
         return keywords[:5]  # Top 5
 
     def _auto_detect_vault_path(self) -> str:
         """Auto-detect Obsidian vault path"""
-        default_path = r"C:\Users\user\Documents\Obsidian Vault"
+        # Priority 1: Environment variable
+        env_path = os.getenv("OBSIDIAN_VAULT_PATH")
+        if env_path and Path(env_path).exists():
+            return env_path
 
-        if Path(default_path).exists():
-            return default_path
-
-        # Fallback to user Documents
+        # Priority 2: User home fallback
         return str(Path.home() / "Documents" / "Obsidian Vault")
 
     def get_statistics(self) -> Dict[str, Any]:
@@ -638,7 +661,7 @@ tags: [debug, user-solution, {error_type.lower()}]
         return {
             **self.statistics,
             "circuit_breaker_state": self.circuit_breaker["state"],
-            "circuit_breaker_failures": self.circuit_breaker["consecutive_failures"]
+            "circuit_breaker_failures": self.circuit_breaker["consecutive_failures"],
         }
 
     def reset_statistics(self):
@@ -651,14 +674,14 @@ tags: [debug, user-solution, {error_type.lower()}]
             "tier2_confirmed": 0,
             "tier3": 0,
             "automation_rate": 0.0,
-            "time_saved_minutes": 0.0
+            "time_saved_minutes": 0.0,
         }
 
         self.circuit_breaker = {
             "state": "CLOSED",
             "consecutive_failures": 0,
             "failure_threshold": 3,
-            "last_failure_time": None
+            "last_failure_time": None,
         }
 
 
@@ -717,8 +740,7 @@ if __name__ == "__main__":
     # Test 1: ModuleNotFoundError (should hit Tier 2 first time)
     print("Test 1: ModuleNotFoundError (Tier 2 expected)")
     solution = resolver.resolve_error(
-        "ModuleNotFoundError: No module named 'pandas'",
-        context={"tool": "Python", "file": "analyzer.py"}
+        "ModuleNotFoundError: No module named 'pandas'", context={"tool": "Python", "file": "analyzer.py"}
     )
     print(f"Solution: {solution}")
     print(f"Stats: {resolver.get_statistics()}")
@@ -727,7 +749,7 @@ if __name__ == "__main__":
     print("\nTest 2: PermissionError (Tier 2 expected)")
     solution = resolver.resolve_error(
         "PermissionError: [Errno 13] Permission denied: '/path/to/file.py'",
-        context={"tool": "Read", "file": "/path/to/file.py"}
+        context={"tool": "Read", "file": "/path/to/file.py"},
     )
     print(f"Solution: {solution}")
     print(f"Stats: {resolver.get_statistics()}")
@@ -735,8 +757,7 @@ if __name__ == "__main__":
     # Test 3: Unknown error (Tier 3 expected)
     print("\nTest 3: Unknown error (Tier 3 expected)")
     solution = resolver.resolve_error(
-        "CustomBusinessError: Payment processing failed",
-        context={"tool": "API", "endpoint": "/payment"}
+        "CustomBusinessError: Payment processing failed", context={"tool": "API", "endpoint": "/payment"}
     )
     print(f"Solution: {solution}")
     print(f"Stats: {resolver.get_statistics()}")

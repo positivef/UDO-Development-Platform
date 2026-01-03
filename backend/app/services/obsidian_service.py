@@ -5,6 +5,7 @@ Integrates with Obsidian vault for knowledge management, auto-sync, and error re
 Implements 3-Tier Error Resolution (Tier 1: Obsidian past solutions).
 """
 
+import os
 import re
 import json
 import logging
@@ -72,12 +73,21 @@ class ObsidianService:
         Returns:
             Path to Obsidian vault or None
         """
-        # Common Obsidian vault locations
+        # Priority 1: Environment variable (REQUIRED for production)
+        env_path = os.getenv("OBSIDIAN_VAULT_PATH")
+        if env_path:
+            path = Path(env_path)
+            if path.exists():
+                logger.info(f"Using OBSIDIAN_VAULT_PATH: {path}")
+                return path
+            else:
+                logger.warning(f"OBSIDIAN_VAULT_PATH set but path not found: {env_path}")
+
+        # Priority 2: Common locations (development fallback only)
         common_paths = [
-            Path(r"C:\Users\user\Documents\Obsidian Vault"),
             Path.home() / "Documents" / "Obsidian Vault",
             Path.home() / "Obsidian Vault",
-            Path.cwd() / "Obsidian Vault"
+            Path.cwd() / "Obsidian Vault",
         ]
 
         for path in common_paths:
@@ -113,11 +123,7 @@ class ObsidianService:
 
         try:
             # Add event to pending queue
-            event = {
-                "type": event_type,
-                "data": data,
-                "timestamp": datetime.now()
-            }
+            event = {"type": event_type, "data": data, "timestamp": datetime.now()}
 
             async with self._flush_lock:
                 self.pending_events.append(event)
@@ -201,18 +207,18 @@ class ObsidianService:
             success = await self.create_daily_note(title, content)
 
             # Track in history
-            self.sync_history.append({
-                "event_type": "batch_sync" if len(events) > 1 else events[0]["type"],
-                "events_count": len(events),
-                "timestamp": datetime.now().isoformat(),
-                "title": title,
-                "success": success
-            })
+            self.sync_history.append(
+                {
+                    "event_type": "batch_sync" if len(events) > 1 else events[0]["type"],
+                    "events_count": len(events),
+                    "timestamp": datetime.now().isoformat(),
+                    "title": title,
+                    "success": success,
+                }
+            )
 
             if success:
-                logger.info(
-                    f"Successfully flushed {len(events)} event(s) to Obsidian: {title}"
-                )
+                logger.info(f"Successfully flushed {len(events)} event(s) to Obsidian: {title}")
             else:
                 logger.warning(f"Failed to flush {len(events)} event(s)")
 
@@ -271,10 +277,7 @@ class ObsidianService:
             content_parts.append(event_content.get("content", ""))
             content_parts.append("")
 
-        return {
-            "frontmatter": frontmatter,
-            "content": "\n".join(content_parts)
-        }
+        return {"frontmatter": frontmatter, "content": "\n".join(content_parts)}
 
     async def force_flush(self) -> int:
         """
@@ -317,24 +320,18 @@ class ObsidianService:
 
             if success:
                 # Track sync history
-                self.sync_history.append({
-                    "event_type": event_type,
-                    "timestamp": datetime.now().isoformat(),
-                    "title": title,
-                    "success": True
-                })
+                self.sync_history.append(
+                    {"event_type": event_type, "timestamp": datetime.now().isoformat(), "title": title, "success": True}
+                )
                 logger.info(f"Auto-synced {event_type} to Obsidian: {title}")
 
             return success
 
         except Exception as e:
             logger.error(f"Auto-sync failed: {e}", exc_info=True)
-            self.sync_history.append({
-                "event_type": event_type,
-                "timestamp": datetime.now().isoformat(),
-                "error": str(e),
-                "success": False
-            })
+            self.sync_history.append(
+                {"event_type": event_type, "timestamp": datetime.now().isoformat(), "error": str(e), "success": False}
+            )
             return False
 
     def _generate_event_title(self, event_type: str, data: Dict[str, Any]) -> str:
@@ -417,10 +414,7 @@ class ObsidianService:
                 content_parts.append(f"- {key}: {value}")
             content_parts.append("")
 
-        return {
-            "frontmatter": frontmatter,
-            "content": "\n".join(content_parts)
-        }
+        return {"frontmatter": frontmatter, "content": "\n".join(content_parts)}
 
     async def create_daily_note(self, title: str, content: Dict[str, Any]) -> bool:
         """
@@ -444,7 +438,7 @@ class ObsidianService:
             date_dir.mkdir(parents=True, exist_ok=True)
 
             # Generate filename (sanitize title)
-            safe_title = re.sub(r'[<>:"/\\|?*]', '-', title)
+            safe_title = re.sub(r'[<>:"/\\|?*]', "-", title)
             filename = f"{safe_title}.md"
             filepath = date_dir / filename
 
@@ -579,14 +573,16 @@ class ObsidianService:
                                 # Parse frontmatter
                                 frontmatter = self._parse_frontmatter(content)
 
-                                results.append({
-                                    "filepath": str(note_file.relative_to(self.vault_path)),
-                                    "title": note_file.stem,
-                                    "date": frontmatter.get("date", ""),
-                                    "event_type": frontmatter.get("event_type", ""),
-                                    "excerpt": excerpt,
-                                    "relevance_score": content_lower.count(query_lower)
-                                })
+                                results.append(
+                                    {
+                                        "filepath": str(note_file.relative_to(self.vault_path)),
+                                        "title": note_file.stem,
+                                        "date": frontmatter.get("date", ""),
+                                        "event_type": frontmatter.get("event_type", ""),
+                                        "excerpt": excerpt,
+                                        "relevance_score": content_lower.count(query_lower),
+                                    }
+                                )
 
                                 if len(results) >= max_results:
                                     break
@@ -621,24 +617,19 @@ class ObsidianService:
         frontmatter = {}
 
         # Match frontmatter between --- markers
-        match = re.match(r'^---\n(.*?)\n---', content, re.DOTALL)
+        match = re.match(r"^---\n(.*?)\n---", content, re.DOTALL)
         if match:
             yaml_content = match.group(1)
 
             # Simple YAML parsing (key: value)
-            for line in yaml_content.split('\n'):
-                if ':' in line:
-                    key, value = line.split(':', 1)
+            for line in yaml_content.split("\n"):
+                if ":" in line:
+                    key, value = line.split(":", 1)
                     frontmatter[key.strip()] = value.strip()
 
         return frontmatter
 
-    async def save_error_resolution(
-        self,
-        error: str,
-        solution: str,
-        context: Optional[Dict[str, Any]] = None
-    ) -> bool:
+    async def save_error_resolution(self, error: str, solution: str, context: Optional[Dict[str, Any]] = None) -> bool:
         """
         Save error resolution for future 3-Tier Resolution reuse
 
@@ -688,25 +679,25 @@ class ObsidianService:
         """
         # Common error patterns
         patterns = [
-            (r'ModuleNotFoundError', 'ModuleNotFoundError'),
-            (r'ImportError', 'ImportError'),
-            (r'PermissionError|Permission denied', 'PermissionError'),
-            (r'FileNotFoundError|No such file', 'FileNotFoundError'),
-            (r'401|Unauthorized', '401-Unauthorized'),
-            (r'403|Forbidden', '403-Forbidden'),
-            (r'404|Not Found', '404-NotFound'),
-            (r'500|Internal Server Error', '500-ServerError'),
-            (r'TypeError', 'TypeError'),
-            (r'ValueError', 'ValueError'),
-            (r'AttributeError', 'AttributeError'),
-            (r'KeyError', 'KeyError'),
+            (r"ModuleNotFoundError", "ModuleNotFoundError"),
+            (r"ImportError", "ImportError"),
+            (r"PermissionError|Permission denied", "PermissionError"),
+            (r"FileNotFoundError|No such file", "FileNotFoundError"),
+            (r"401|Unauthorized", "401-Unauthorized"),
+            (r"403|Forbidden", "403-Forbidden"),
+            (r"404|Not Found", "404-NotFound"),
+            (r"500|Internal Server Error", "500-ServerError"),
+            (r"TypeError", "TypeError"),
+            (r"ValueError", "ValueError"),
+            (r"AttributeError", "AttributeError"),
+            (r"KeyError", "KeyError"),
         ]
 
         for pattern, error_type in patterns:
             if re.search(pattern, error, re.IGNORECASE):
                 return error_type
 
-        return 'UnknownError'
+        return "UnknownError"
 
     async def get_recent_notes(self, days: int = 7) -> List[Dict[str, Any]]:
         """
@@ -744,15 +735,17 @@ class ObsidianService:
                             content = note_file.read_text(encoding="utf-8")
                             frontmatter = self._parse_frontmatter(content)
 
-                            recent_notes.append({
-                                "filepath": str(note_file.relative_to(self.vault_path)),
-                                "title": note_file.stem,
-                                "date": frontmatter.get("date", ""),
-                                "time": frontmatter.get("time", ""),
-                                "event_type": frontmatter.get("event_type", ""),
-                                "project": frontmatter.get("project", ""),
-                                "tags": frontmatter.get("tags", ""),
-                            })
+                            recent_notes.append(
+                                {
+                                    "filepath": str(note_file.relative_to(self.vault_path)),
+                                    "title": note_file.stem,
+                                    "date": frontmatter.get("date", ""),
+                                    "time": frontmatter.get("time", ""),
+                                    "event_type": frontmatter.get("event_type", ""),
+                                    "project": frontmatter.get("project", ""),
+                                    "tags": frontmatter.get("tags", ""),
+                                }
+                            )
 
                         except Exception as e:
                             logger.debug(f"Error reading note {note_file}: {e}")
@@ -796,20 +789,13 @@ class ObsidianService:
                     content = filepath.read_text(encoding="utf-8")
 
                     # Extract solution section
-                    solution_match = re.search(
-                        r'## Solution\s*```(.*?)```',
-                        content,
-                        re.DOTALL
-                    )
+                    solution_match = re.search(r"## Solution\s*```(.*?)```", content, re.DOTALL)
 
                     if solution_match:
                         solution = solution_match.group(1).strip()
 
                         elapsed = (datetime.now() - start_time).total_seconds() * 1000
-                        logger.info(
-                            f"Tier 1 resolution found in {elapsed:.1f}ms: "
-                            f"{best_match['title']}"
-                        )
+                        logger.info(f"Tier 1 resolution found in {elapsed:.1f}ms: " f"{best_match['title']}")
 
                         return solution
 
@@ -843,9 +829,7 @@ class ObsidianService:
         # Token optimization estimate (assumes 100 tokens per sync saved per batched event)
         batching_syncs = sum(1 for s in self.sync_history if s.get("events_count", 1) > 1)
         tokens_saved_estimate = sum(
-            (s.get("events_count", 1) - 1) * 100
-            for s in self.sync_history
-            if s.get("events_count", 1) > 1
+            (s.get("events_count", 1) - 1) * 100 for s in self.sync_history if s.get("events_count", 1) > 1
         )
 
         return {
@@ -870,4 +854,4 @@ class ObsidianService:
 obsidian_service = ObsidianService()
 
 # Export
-__all__ = ['ObsidianService', 'obsidian_service']
+__all__ = ["ObsidianService", "obsidian_service"]

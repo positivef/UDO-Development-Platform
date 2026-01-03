@@ -33,6 +33,7 @@ import { PhaseProgress } from "./phase-progress"
 import { AICollaboration } from "./ai-collaboration"
 import { ControlPanel } from "./control-panel"
 import { ProjectTierStatus } from "./project-tier-status"
+import { RLKnowledgeCard } from "./rl-knowledge-card"
 
 // Lazy load heavy chart components
 const UncertaintyMap = lazy(() => import("./uncertainty-map").then(m => ({ default: m.UncertaintyMap })))
@@ -439,6 +440,7 @@ export function Dashboard() {
             currentPhase={metrics?.current_phase || "ideation"}
             onPhaseChange={setSelectedPhase}
           />
+          <RLKnowledgeCard />
         </div>
 
         {/* Middle Column */}

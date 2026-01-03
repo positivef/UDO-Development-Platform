@@ -1,4 +1,4 @@
-Last Updated: 2025-12-26 00:46
+Last Updated: 2026-01-01 18:26
 # CLAUDE.md
 
 This file provides guidance to Claude Code (claude.ai/code) when working with code in this repository.
@@ -10,9 +10,9 @@ This file provides guidance to Claude Code (claude.ai/code) when working with co
 ### 📌 Claude Code 핵심 요약
 
 ```yaml
-현재 상태 (2025-12-25 기준):
-  Backend: 100% ✅ → 496/496 tests passing
-  Frontend: 70% ✅ → Kanban UI + Governance UI (interactive) + E2E tests
+현재 상태 (2026-01-01 기준):
+  Backend: 100% ✅ → 707/707 tests passing
+  Frontend: 95% ✅ → Kanban UI + Governance UI + Uncertainty/Confidence WebSocket + E2E tests
   CI/CD: 100% ✅ → GitHub Actions workflows deployed (3 workflows)
   Feature Flags: 100% ✅ → Tier 1 rollback ready (<10s)
   Database: 100% ✅ → Kanban schema (7 tables) migrated + Service DI fixed
@@ -27,6 +27,11 @@ This file provides guidance to Claude Code (claude.ai/code) when working with co
     - Frontend UI (ProjectTierStatus 컴포넌트)
     - CLI Tool (udo.bat + cli/udo.py)
     - E2E 검증 완료 (Tier 1 → Tier 2 업그레이드)
+  ✅ 2026-01-01: Uncertainty/Confidence WebSocket Implementation
+    - /ws/uncertainty 실시간 엔드포인트
+    - /ws/confidence/{phase} Phase별 실시간 엔드포인트
+    - UncertaintyConnectionManager, ConfidenceConnectionManager
+    - Frontend WebSocket 활성화 (wsEnabled: true)
   ✅ 2025-12-25: Phase 5 - Governance Dashboard Enhancement
     - 7 API endpoints (/rules, /validate, /templates, /apply, /config, /auto-fix, /timeline)
     - Interactive UI (template apply buttons, rule detail modals, auto-fix button)
@@ -34,13 +39,45 @@ This file provides guidance to Claude Code (claude.ai/code) when working with co
     - Path fixes (get_project_root: 2→3 levels, validate_system_rules.py location)
     - Error handling + loading states + success/error toast notifications
     - Dynamic port allocation (start-backend.bat + port_finder.py)
-  ✅ Test Status: 496/496 backend, 170/198 E2E (85.9% passing)
+  ✅ Test Status: 707/707 backend, 170/198 E2E (85.9% passing)
 
 다음 단계:
   1. ✅ Governance Dashboard Enhancement (완료 - 2025-12-25)
   2. ⏳ Conduct 5 User Testing Sessions
   3. 🚀 Production Deployment (when ready)
 ```
+
+### 🚀 Session Start Protocol (MANDATORY)
+
+**CRITICAL**: Run this at the START of EVERY new session to check for scheduled tasks:
+
+```bash
+python scripts/session_start.py
+```
+
+**What it does**:
+- ✅ Checks Obsidian vault for scheduled tasks (`_System/Tasks/scheduled.md`)
+- ✅ Alerts about overdue tasks (🚨 P0 priority)
+- ✅ Shows tasks due this week (📌 P1 priority)
+- ✅ Lists upcoming tasks (next 2 weeks)
+- ✅ Integrates with 3-Tier Search telemetry
+
+**Exit codes**:
+- `0`: No critical tasks or just upcoming tasks
+- `1`: Tasks due this week
+- `2`: Overdue tasks (urgent action needed)
+
+**Manual check**:
+```bash
+# Detailed view
+python scripts/check_scheduled_tasks.py --verbose
+
+# JSON output
+python scripts/check_scheduled_tasks.py --json
+```
+
+**Adding new scheduled tasks**:
+Edit `C:/Users/user/Documents/Obsidian Vault/_System/Tasks/scheduled.md` following the template format.
 
 ### 📚 세션 문서 (AI Generated - claudedocs/)
 
@@ -96,20 +133,22 @@ HANDOFF.md에서 최신 작업 로그, 완료 문서, 분석 문서 등을 확�
 
 ```yaml
 MVP Task (P0) - Status:
-  1. ⏳ Uncertainty UI 기본 (3일)
+  1. ✅ Uncertainty UI 기본 (3일) - COMPLETE (2026-01-01)
      파일: web-dashboard/app/uncertainty/page.tsx
+     WebSocket: /ws/uncertainty 엔드포인트 구현 완료
 
-  2. ⏳ Confidence Dashboard 기본 (2일)
+  2. ✅ Confidence Dashboard 기본 (2일) - COMPLETE (2026-01-01)
      파일: web-dashboard/app/confidence/page.tsx
+     WebSocket: /ws/confidence/{phase} 엔드포인트 구현 완료
 
   3. ✅ CI Pipeline (1일) - COMPLETE
      파일: .github/workflows/backend-ci.yml, frontend-ci.yml
      커밋: 3d37e1d (2025-12-16)
 
 MVP 성공 기준:
-  - ⏳ 예측 화면 표시
+  - ✅ 예측 화면 표시 (Uncertainty/Confidence WebSocket 실시간 연동)
   - ✅ CI 자동 실행 (GitHub Actions deployed)
-  - ✅ 테스트 통과율 95%+ (496/496 = 100%)
+  - ✅ 테스트 통과율 95%+ (707/707 = 100%)
 ```
 
 ### 검증 완료
@@ -664,7 +703,7 @@ scripts/
 
 **Phase**: Week 8 COMPLETE - All AI tasks delivered (100%)
 **Completion**: 4/4 AI days complete, 1 user action pending (User Testing sessions)
-**Backend Tests**: ✅ 496/496 passing (100%)
+**Backend Tests**: ✅ 707/707 passing (100%)
 **E2E Tests**: ✅ 18/18 passing (100%)
 **CI/CD**: ✅ 3 GitHub Actions workflows deployed (pr-tests, frontend-ci, nightly-tests)
 **Production Ready**: ✅ 7 files created, 2,870+ lines of documentation
@@ -796,7 +835,7 @@ scripts/
    - test_kanban_tasks.py: 46/46
    - test_kanban_dependencies.py + projects + contexts: 76/76
    - test_kanban_ai.py + archive: 33/33
-5. ✅ **전체 백엔드 테스트 100% 통과**: 496/496 테스트 성공 (165.81초)
+5. ✅ **전체 백엔드 테스트 100% 통과**: 707/707 테스트 성공 (165.81초)
 6. ✅ **성능 최적화 확인**: 인덱스 전략으로 <50ms 쿼리 목표 달성 준비
 
 **Week 2 Day 4 - Context Operations** (Previous)
@@ -1006,7 +1045,7 @@ scripts/
 - Performance measurement with Lighthouse CI
 
 **Current Environment**:
-- Backend: ✅ Running on port 8000 (496/496 tests passing)
+- Backend: ✅ Running on port 8000 (707/707 tests passing)
 - Frontend: ✅ Next.js dev/build mode ready
 - Database: ✅ PostgreSQL with 7 Kanban tables
 - CI/CD: ✅ 3 GitHub Actions workflows deployed

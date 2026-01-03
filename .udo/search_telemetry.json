@@ -1,0 +1,13 @@
+{
+  "total_searches": 3,
+  "tier1_hits": 0,
+  "tier2_hits": 0,
+  "tier3_hits": 3,
+  "misses": 0,
+  "tier1_total_ms": 0.0,
+  "tier2_total_ms": 0.0,
+  "tier3_total_ms": 3102.686882019043,
+  "last_updated": "2026-01-01 17:06:34",
+  "scheduled_checks": 10,
+  "tasks_found": 2
+}

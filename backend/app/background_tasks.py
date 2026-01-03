@@ -109,8 +109,8 @@ class BackgroundSyncTask:
                 cwd=str(self.project_root),
                 capture_output=True,
                 text=True,
-                encoding='utf-8',
-                errors='replace'
+                encoding="utf-8",
+                errors="replace",
             )
 
             # If output is not empty, there are changes
@@ -133,15 +133,18 @@ class BackgroundSyncTask:
                 from app.services.obsidian_service import ObsidianService
 
                 obsidian_service = ObsidianService()
-                await obsidian_service.sync_event("periodic_backup", {
-                    "timestamp": datetime.now().isoformat(),
-                    "type": "auto_backup",
-                    "sync_interval": f"{self.sync_interval_hours}h",
-                    "message": "자동 백업 (컨텍스트 유실 방지)"
-                })
+                await obsidian_service.sync_event(
+                    "periodic_backup",
+                    {
+                        "timestamp": datetime.now().isoformat(),
+                        "type": "auto_backup",
+                        "sync_interval": f"{self.sync_interval_hours}h",
+                        "message": "자동 백업 (컨텍스트 유실 방지)",
+                    },
+                )
 
                 # Flush immediately (don't wait for debouncing)
-                await obsidian_service.flush_pending_events()
+                await obsidian_service.force_flush()
 
                 logger.info("📝 Temporary devlog created via ObsidianService")
 
@@ -159,10 +162,11 @@ class BackgroundSyncTask:
             "running": self.running,
             "sync_interval_hours": self.sync_interval_hours,
             "last_sync": self.last_sync.isoformat() if self.last_sync else None,
-            "next_sync_in_seconds": self.sync_interval_seconds - (
-                (datetime.now() - self.last_sync).total_seconds()
-                if self.last_sync else 0
-            ) if self.last_sync else self.sync_interval_seconds
+            "next_sync_in_seconds": (
+                self.sync_interval_seconds - ((datetime.now() - self.last_sync).total_seconds() if self.last_sync else 0)
+                if self.last_sync
+                else self.sync_interval_seconds
+            ),
         }
 
 

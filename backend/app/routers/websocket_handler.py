@@ -17,8 +17,7 @@ from uuid import UUID
 
 from app.services.redis_client import RedisKeys, get_redis_client
 from app.services.session_manager import SessionManager, get_session_manager
-from fastapi import (APIRouter, Depends, Query, WebSocket, WebSocketDisconnect,
-                     status)
+from fastapi import APIRouter, Depends, Query, WebSocket, WebSocketDisconnect, status
 from starlette.websockets import WebSocketState
 
 logger = logging.getLogger(__name__)
@@ -39,9 +38,7 @@ class ConnectionManager:
         # Lock for thread-safe operations
         self._lock = asyncio.Lock()
 
-    async def connect(
-        self, websocket: WebSocket, session_id: str, project_id: Optional[str] = None
-    ):
+    async def connect(self, websocket: WebSocket, session_id: str, project_id: Optional[str] = None):
         """Accept and register new WebSocket connection"""
         await websocket.accept()
 
@@ -67,9 +64,7 @@ class ConnectionManager:
 
         logger.info(f"WebSocket disconnected: session={session_id}")
 
-    async def send_personal_message(
-        self, message: Dict[str, Any], session_id: str
-    ) -> bool:
+    async def send_personal_message(self, message: Dict[str, Any], session_id: str) -> bool:
         """Send message to specific session"""
         websocket = self.active_connections.get(session_id)
         if websocket:
@@ -95,9 +90,7 @@ class ConnectionManager:
             if session_id != exclude_session:
                 await self.send_personal_message(message, session_id)
 
-    async def broadcast_to_all(
-        self, message: Dict[str, Any], exclude_session: Optional[str] = None
-    ):
+    async def broadcast_to_all(self, message: Dict[str, Any], exclude_session: Optional[str] = None):
         """Broadcast message to all connected sessions"""
         sessions = list(self.active_connections.keys())
 
@@ -112,9 +105,7 @@ connection_manager = ConnectionManager()
 
 # Root WebSocket endpoint (for simple client connections)
 @router.websocket("")
-async def websocket_root(
-    websocket: WebSocket, session_manager: SessionManager = Depends(get_session_manager)
-):
+async def websocket_root(websocket: WebSocket, session_manager: SessionManager = Depends(get_session_manager)):
     """
     Root WebSocket endpoint for dashboard connections
     Automatically generates session ID if not provided
@@ -151,9 +142,7 @@ async def websocket_root(
 
                 # Simple echo back for heartbeat/ping
                 if data.get("type") == "ping":
-                    await websocket.send_json(
-                        {"type": "pong", "timestamp": datetime.now().isoformat()}
-                    )
+                    await websocket.send_json({"type": "pong", "timestamp": datetime.now().isoformat()})
         except WebSocketDisconnect:
             pass
         except Exception as e:
@@ -192,9 +181,7 @@ async def websocket_endpoint(
         try:
             redis_client = await get_redis_client()
         except Exception as e:
-            logger.warning(
-                "Redis unavailable for WebSocket session %s: %s", session_id, e
-            )
+            logger.warning("Redis unavailable for WebSocket session %s: %s", session_id, e)
             redis_client = None
 
         if redis_client:
@@ -240,9 +227,7 @@ async def websocket_endpoint(
             try:
                 while True:
                     data = await websocket.receive_json()
-                    await process_websocket_message(
-                        data, session_id, project_id, session_manager
-                    )
+                    await process_websocket_message(data, session_id, project_id, session_manager)
             except WebSocketDisconnect:
                 pass
             except Exception as e:
@@ -269,9 +254,7 @@ async def websocket_endpoint(
             try:
                 while True:
                     await asyncio.sleep(30)
-                    await websocket.send_json(
-                        {"type": "heartbeat", "timestamp": datetime.now().isoformat()}
-                    )
+                    await websocket.send_json({"type": "heartbeat", "timestamp": datetime.now().isoformat()})
 
                     # Update session heartbeat in Redis
                     if redis_client:
@@ -335,9 +318,7 @@ async def process_websocket_message(
         lock_type = data.get("lock_type", "file")
 
         # Try to acquire lock
-        lock = await session_manager.acquire_lock(
-            session_id=session_id, resource_id=resource_id, lock_type=lock_type
-        )
+        lock = await session_manager.acquire_lock(session_id=session_id, resource_id=resource_id, lock_type=lock_type)
 
         if lock:
             # Notify all sessions about lock acquisition
@@ -368,9 +349,7 @@ async def process_websocket_message(
         # Handle lock release
         resource_id = data.get("resource_id")
 
-        success = await session_manager.release_lock(
-            session_id=session_id, resource_id=resource_id
-        )
+        success = await session_manager.release_lock(session_id=session_id, resource_id=resource_id)
 
         if success:
             # Notify all sessions about lock release
@@ -495,11 +474,265 @@ async def get_active_sessions(
 
 
 @router.get("/conflicts/{project_id}")
-async def get_conflicts(
-    project_id: str, session_manager: SessionManager = Depends(get_session_manager)
-):
+async def get_conflicts(project_id: str, session_manager: SessionManager = Depends(get_session_manager)):
     """Get all conflicts for a project"""
     redis_client = await get_redis_client()
     conflicts = await redis_client.get_project_conflicts(project_id)
 
     return {"project_id": project_id, "conflicts": conflicts, "count": len(conflicts)}
+
+
+# ============================================================================
+# Uncertainty WebSocket Endpoint
+# ============================================================================
+
+
+class UncertaintyConnectionManager:
+    """Manages WebSocket connections for uncertainty updates"""
+
+    def __init__(self):
+        self.active_connections: Dict[str, WebSocket] = {}
+        self._lock = asyncio.Lock()
+
+    async def connect(self, websocket: WebSocket, session_id: str):
+        await websocket.accept()
+        async with self._lock:
+            self.active_connections[session_id] = websocket
+        logger.info(f"Uncertainty WebSocket connected: {session_id}")
+
+    async def disconnect(self, session_id: str):
+        async with self._lock:
+            if session_id in self.active_connections:
+                del self.active_connections[session_id]
+        logger.info(f"Uncertainty WebSocket disconnected: {session_id}")
+
+    async def broadcast(self, message: Dict[str, Any]):
+        """Broadcast uncertainty update to all connected clients"""
+        disconnected = []
+        for session_id, ws in self.active_connections.items():
+            try:
+                if ws.application_state == WebSocketState.CONNECTED:
+                    await ws.send_json(message)
+            except Exception as e:
+                logger.error(f"Failed to send to {session_id}: {e}")
+                disconnected.append(session_id)
+
+        for sid in disconnected:
+            await self.disconnect(sid)
+
+
+uncertainty_manager = UncertaintyConnectionManager()
+
+
+@router.websocket("/uncertainty")
+async def websocket_uncertainty(
+    websocket: WebSocket,
+    session_id: str = Query(default=None, description="Session ID"),
+    project_id: str = Query(default=None, description="Project ID"),
+):
+    """
+    WebSocket endpoint for real-time uncertainty updates.
+
+    Messages sent:
+    - connection_established: Initial connection confirmation
+    - uncertainty_update: When uncertainty state changes
+    - pong: Response to ping heartbeat
+    """
+    if not session_id:
+        session_id = f"uncertainty-{datetime.now().timestamp()}"
+
+    try:
+        await uncertainty_manager.connect(websocket, session_id)
+
+        # Send initial connection confirmation
+        await websocket.send_json(
+            {
+                "type": "connection_established",
+                "session_id": session_id,
+                "project_id": project_id,
+                "timestamp": datetime.now().isoformat(),
+            }
+        )
+
+        # Handle incoming messages (mainly ping/pong)
+        while True:
+            try:
+                data = await websocket.receive_json()
+
+                if data.get("type") == "ping":
+                    await websocket.send_json({"type": "pong", "timestamp": datetime.now().isoformat()})
+                elif data.get("type") == "request_update":
+                    # Client requests current uncertainty state
+                    # Trigger fetch from uncertainty service
+                    try:
+                        from app.routers.uncertainty import get_uncertainty_status
+
+                        # Send current state
+                        await websocket.send_json(
+                            {
+                                "type": "uncertainty_update",
+                                "data": None,  # Client should use REST API for full data
+                                "message": "Use GET /api/uncertainty/status for full data",
+                                "timestamp": datetime.now().isoformat(),
+                            }
+                        )
+                    except Exception as e:
+                        logger.error(f"Failed to get uncertainty status: {e}")
+
+            except WebSocketDisconnect:
+                break
+            except Exception as e:
+                logger.error(f"Uncertainty WebSocket message error: {e}")
+                break
+
+    except Exception as e:
+        logger.error(f"Uncertainty WebSocket error: {e}")
+
+    finally:
+        await uncertainty_manager.disconnect(session_id)
+
+
+# ============================================================================
+# Confidence WebSocket Endpoint
+# ============================================================================
+
+
+class ConfidenceConnectionManager:
+    """Manages WebSocket connections for confidence updates per phase"""
+
+    def __init__(self):
+        # Map: phase -> {session_id -> WebSocket}
+        self.phase_connections: Dict[str, Dict[str, WebSocket]] = {}
+        self._lock = asyncio.Lock()
+
+    async def connect(self, websocket: WebSocket, phase: str, session_id: str):
+        await websocket.accept()
+        async with self._lock:
+            if phase not in self.phase_connections:
+                self.phase_connections[phase] = {}
+            self.phase_connections[phase][session_id] = websocket
+        logger.info(f"Confidence WebSocket connected: {session_id} (phase: {phase})")
+
+    async def disconnect(self, phase: str, session_id: str):
+        async with self._lock:
+            if phase in self.phase_connections:
+                if session_id in self.phase_connections[phase]:
+                    del self.phase_connections[phase][session_id]
+        logger.info(f"Confidence WebSocket disconnected: {session_id} (phase: {phase})")
+
+    async def broadcast_to_phase(self, phase: str, message: Dict[str, Any]):
+        """Broadcast confidence update to all clients subscribed to a phase"""
+        if phase not in self.phase_connections:
+            return
+
+        disconnected = []
+        for session_id, ws in self.phase_connections[phase].items():
+            try:
+                if ws.application_state == WebSocketState.CONNECTED:
+                    await ws.send_json(message)
+            except Exception as e:
+                logger.error(f"Failed to send to {session_id}: {e}")
+                disconnected.append(session_id)
+
+        for sid in disconnected:
+            await self.disconnect(phase, sid)
+
+
+confidence_manager = ConfidenceConnectionManager()
+
+
+@router.websocket("/confidence/{phase}")
+async def websocket_confidence(
+    websocket: WebSocket,
+    phase: str,
+):
+    """
+    WebSocket endpoint for real-time confidence updates for a specific phase.
+
+    Path params:
+    - phase: Development phase (ideation, design, mvp, implementation, testing)
+
+    Messages sent:
+    - connection_established: Initial connection confirmation
+    - confidence_updated: When confidence score changes
+    - threshold_crossed: When confidence crosses phase threshold
+    - decision_changed: When GO/NO_GO decision changes
+    - pong: Response to ping heartbeat
+    """
+    valid_phases = ["ideation", "design", "mvp", "implementation", "testing"]
+    if phase not in valid_phases:
+        await websocket.close(code=4000, reason=f"Invalid phase: {phase}")
+        return
+
+    session_id = f"confidence-{phase}-{datetime.now().timestamp()}"
+
+    try:
+        await confidence_manager.connect(websocket, phase, session_id)
+
+        # Send initial connection confirmation
+        await websocket.send_json(
+            {
+                "type": "connection_established",
+                "session_id": session_id,
+                "phase": phase,
+                "timestamp": datetime.now().isoformat(),
+            }
+        )
+
+        # Handle incoming messages
+        while True:
+            try:
+                data = await websocket.receive_json()
+
+                if data.get("type") == "ping":
+                    await websocket.send_json({"type": "pong", "timestamp": datetime.now().isoformat()})
+                elif data.get("type") == "request_recalculation":
+                    # Client requests confidence recalculation
+                    # This would trigger the confidence service to recalculate
+                    await websocket.send_json(
+                        {
+                            "type": "recalculation_requested",
+                            "phase": phase,
+                            "message": "Recalculation triggered. Updates will be broadcast.",
+                            "timestamp": datetime.now().isoformat(),
+                        }
+                    )
+                elif data.get("type") == "subscribe_phase":
+                    # Client wants to switch phase subscription
+                    new_phase = data.get("phase")
+                    if new_phase in valid_phases and new_phase != phase:
+                        await confidence_manager.disconnect(phase, session_id)
+                        await confidence_manager.connect(websocket, new_phase, session_id)
+                        await websocket.send_json(
+                            {
+                                "type": "subscription_changed",
+                                "old_phase": phase,
+                                "new_phase": new_phase,
+                                "timestamp": datetime.now().isoformat(),
+                            }
+                        )
+
+            except WebSocketDisconnect:
+                break
+            except Exception as e:
+                logger.error(f"Confidence WebSocket message error: {e}")
+                break
+
+    except Exception as e:
+        logger.error(f"Confidence WebSocket error: {e}")
+
+    finally:
+        await confidence_manager.disconnect(phase, session_id)
+
+
+# Helper functions to broadcast updates from other parts of the application
+async def broadcast_uncertainty_update(data: Dict[str, Any]):
+    """Call this when uncertainty state changes to notify all connected clients"""
+    await uncertainty_manager.broadcast({"type": "uncertainty_update", "data": data, "timestamp": datetime.now().isoformat()})
+
+
+async def broadcast_confidence_update(phase: str, data: Dict[str, Any]):
+    """Call this when confidence changes to notify clients subscribed to that phase"""
+    await confidence_manager.broadcast_to_phase(
+        phase, {"type": "confidence_updated", **data, "timestamp": datetime.now().isoformat()}
+    )

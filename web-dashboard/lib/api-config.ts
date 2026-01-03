@@ -1,12 +1,13 @@
 /**
  * API Configuration - Single Source of Truth
- * 
+ *
  * All components should import API_URL and WS_URL from this file
  * to ensure consistent backend URL usage across the frontend.
  */
 
 // Backend URL - read from environment or use default
-export const API_URL = process.env.NEXT_PUBLIC_API_URL || "http://localhost:8000";
+// TEMPORARY FIX: Hardcode port 8001 until env variable loading is fixed
+export const API_URL = process.env.NEXT_PUBLIC_API_URL || "http://localhost:8001";
 
 // WebSocket URL - derived from API_URL
 export const WS_URL = (() => {
@@ -15,7 +16,7 @@ export const WS_URL = (() => {
     url.protocol = url.protocol === "https:" ? "wss:" : "ws:";
     return url.origin;
   } catch {
-    return "ws://localhost:8000";
+    return "ws://localhost:8001";
   }
 })();
 
