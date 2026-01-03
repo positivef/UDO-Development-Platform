@@ -699,6 +699,20 @@ class FlagDetector:
 
     def detect_uncertainty(self) -> bool:
         """불확실성 감지: 미확정 사항, 리스크"""
+        # v3.6: AI 메타인지 데이터가 있으면 불확실성 섹션 활성화
+        ai_meta = load_ai_metacognition()
+        if ai_meta and any(
+            ai_meta.get(key)
+            for key in [
+                "least_confident",
+                "simplifications",
+                "opinion_changers",
+                "areas_to_improve",
+                "blockers",
+            ]
+        ):
+            return True
+
         # 실제 TODO/FIXME 주석 확인
         if extract_real_comments(self.diff, "TODO"):
             return True
@@ -1359,15 +1373,27 @@ class SectionGenerator:
                     extracted_solutions.append(sol[:80])
 
             # 2. 커밋 메시지에서 해결책 패턴 자동 추출 (v3.5)
+            # v3.6: Co-Authored-By 오탐 방지 - "by" 패턴 제거
             fix_patterns = {
                 r"fix(?:ed|es)?[:\s]+(.+?)(?:\n|$)": "버그 수정",
                 r"resolve[ds]?[:\s]+(.+?)(?:\n|$)": "이슈 해결",
                 r"(?:수정|고침|해결)[:\s]+(.+?)(?:\n|$)": "문제 해결",
-                r"by[:\s]+(.+?)(?:\n|$)": "해결 방법",
+                # "by" 패턴은 Co-Authored-By 오탐이 많아 제거 (2026-01-03)
             }
+            # Co-Authored-By, Signed-off-by 등 제외 필터
+            exclude_patterns = [
+                r"co-authored-by",
+                r"signed-off-by",
+                r"reviewed-by",
+                r"acked-by",
+                r"noreply@",
+            ]
             for pattern, prefix in fix_patterns.items():
                 matches = re.findall(pattern, self.message, re.I)
                 for match in matches[:2]:
+                    # 제외 패턴 확인
+                    if any(re.search(exc, match, re.I) for exc in exclude_patterns):
+                        continue
                     if len(match) > 5:
                         extracted_solutions.append(f"{prefix}: {match[:60]}")
 
@@ -3258,6 +3284,17 @@ def main():
     parser.add_argument("--weekly", action="store_true", help="Generate weekly summary instead of daily log")
     parser.add_argument("--week-offset", type=int, default=0, help="Week offset for weekly summary (0=current, -1=last week)")
     args = parser.parse_args()
+
+    # v3.6: AI 메타인지 자동 생성 (커밋 직후, 동기화 전)
+    try:
+        from save_session_metacognition import save_current_session
+
+        save_current_session(auto_analyze=True)
+        logger.info("✅ AI 메타인지 자동 생성 완료")
+    except ImportError:
+        logger.debug("save_session_metacognition 모듈 없음 - 스킵")
+    except Exception as e:
+        logger.warning(f"AI 메타인지 생성 실패: {e}")
 
     # Repo root 찾기
     repo_root = Path(__file__).resolve().parents[1]
