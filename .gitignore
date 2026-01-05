@@ -87,6 +87,18 @@ test-results/
 test_*.json
 !tests/*.json
 
+# Temporary test scripts (root level only)
+/test_websocket_cleanup.py
+/test_udo_webapp.py
+/test_udo_webapp_ascii.py
+/check_db_schema.py
+/check_kanban_tables.py
+/test-context.zip
+/test-context/
+tasks_verification.json
+temp_tasks.json
+udo_tasks.json
+
 # Secrets folder content
 secrets/*
 !secrets/README.md
