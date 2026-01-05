@@ -9,11 +9,13 @@
  * - Decision change alerts (GO/NO_GO)
  * - Auto-reconnection with exponential backoff
  * - React Query cache invalidation
+ * - JWT token authentication
  */
 
 import { useEffect, useCallback, useRef } from 'react';
 import { useQueryClient } from '@tanstack/react-query';
 import { useToast } from '@/hooks/use-toast';
+import { getAuthToken, isDevelopmentMode } from '@/lib/auth/token-utils';
 
 type ConnectionStatus = 'connecting' | 'connected' | 'disconnected' | 'error';
 
@@ -51,6 +53,7 @@ export function useConfidenceWebSocket({
   const reconnectTimeoutRef = useRef<NodeJS.Timeout | null>(null);
   const reconnectAttempts = useRef(0);
   const isConnectingRef = useRef(false);
+  const isMountedRef = useRef(true); // Track if component is mounted
 
   // Store callbacks in refs to prevent connect from being recreated
   const onStatusChangeRef = useRef(onStatusChange);
@@ -77,9 +80,20 @@ export function useConfidenceWebSocket({
       isConnectingRef.current = true;
       const protocol = window.location.protocol === 'https:' ? 'wss:' : 'ws:';
       const wsPort = process.env.NEXT_PUBLIC_WS_PORT || '8000';
-      const wsUrl = `${protocol}//${window.location.hostname}:${wsPort}/ws/confidence/${phase}`;
 
-      console.log(`[ConfidenceWS] Connecting to ${wsUrl}`);
+      // Build URL with authentication token
+      const token = getAuthToken();
+      let wsUrl = `${protocol}//${window.location.hostname}:${wsPort}/ws/confidence/${phase}`;
+
+      // Add token as query parameter if available
+      if (token) {
+        wsUrl += `?token=${encodeURIComponent(token)}`;
+      } else if (!isDevelopmentMode()) {
+        // In production, require authentication
+        console.warn('[ConfidenceWS] No auth token available, connection may fail');
+      }
+
+      console.log(`[ConfidenceWS] Connecting to ${wsUrl.replace(/token=.*/, 'token=***')}`);
       const ws = new WebSocket(wsUrl);
       wsRef.current = ws;
 
@@ -151,6 +165,10 @@ export function useConfidenceWebSocket({
       };
 
       ws.onerror = (error) => {
+        // Don't log if component is unmounted
+        if (!isMountedRef.current) {
+          return;
+        }
         console.error('[ConfidenceWS] Error:', error);
         isConnectingRef.current = false;
         if (onStatusChangeRef.current) {
@@ -158,16 +176,21 @@ export function useConfidenceWebSocket({
         }
       };
 
-      ws.onclose = () => {
-        console.log('[ConfidenceWS] Disconnected');
+      ws.onclose = (event) => {
+        // Don't log or reconnect if component is unmounted
+        if (!isMountedRef.current) {
+          return;
+        }
+
+        console.log(`[ConfidenceWS] Disconnected (code: ${event.code})`);
         isConnectingRef.current = false;
         if (onStatusChangeRef.current) {
           onStatusChangeRef.current('disconnected');
         }
 
-        // Only reconnect if enabled
-        if (!enabled) {
-          console.log('[ConfidenceWS] Reconnection disabled');
+        // Only reconnect if enabled, not normal closure, and still mounted
+        if (!enabled || event.code === 1000) {
+          console.log('[ConfidenceWS] Reconnection disabled or normal closure');
           return;
         }
 
@@ -175,12 +198,16 @@ export function useConfidenceWebSocket({
         const delay = Math.min(1000 * Math.pow(2, reconnectAttempts.current), 30000);
         reconnectAttempts.current += 1;
 
-        if (reconnectAttempts.current <= 10) {
+        if (reconnectAttempts.current <= 10 && isMountedRef.current) {
           console.log(`[ConfidenceWS] Reconnecting in ${delay}ms (attempt ${reconnectAttempts.current})`);
           if (onStatusChangeRef.current) {
             onStatusChangeRef.current('connecting');
           }
-          reconnectTimeoutRef.current = setTimeout(connect, delay);
+          reconnectTimeoutRef.current = setTimeout(() => {
+            if (isMountedRef.current) {
+              connect();
+            }
+          }, delay);
         }
       };
 
@@ -191,6 +218,8 @@ export function useConfidenceWebSocket({
   }, [phase, enabled, toast, queryClient]);
 
   useEffect(() => {
+    isMountedRef.current = true;
+
     if (!enabled) {
       console.log('[ConfidenceWS] WebSocket disabled');
       return;
@@ -199,11 +228,16 @@ export function useConfidenceWebSocket({
     connect();
 
     return () => {
+      isMountedRef.current = false;
       if (reconnectTimeoutRef.current) {
         clearTimeout(reconnectTimeoutRef.current);
       }
       if (wsRef.current) {
-        wsRef.current.close();
+        // Use code 1000 for normal closure to prevent error logs
+        if (wsRef.current.readyState === WebSocket.OPEN ||
+            wsRef.current.readyState === WebSocket.CONNECTING) {
+          wsRef.current.close(1000, 'Component unmounted');
+        }
       }
       isConnectingRef.current = false;
     };

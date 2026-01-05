@@ -2,6 +2,7 @@
 
 import { useEffect, useCallback, useRef } from 'react';
 import { useToast } from '@/hooks/use-toast';
+import { getAuthToken, isDevelopmentMode } from '@/lib/auth/token-utils';
 import type { ConnectionStatus } from '@/lib/websocket/kanban-client';
 
 interface WebSocketMessage {
@@ -39,6 +40,7 @@ export function useKanbanWebSocket({
   const reconnectTimeoutRef = useRef<NodeJS.Timeout | null>(null);
   const reconnectAttempts = useRef(0);
   const isConnectingRef = useRef(false);
+  const isMountedRef = useRef(true); // Track if component is mounted
 
   // Store callbacks in refs to prevent connect from being recreated
   const onStatusChangeRef = useRef(onStatusChange);
@@ -71,8 +73,20 @@ export function useKanbanWebSocket({
       const defaultProjectId = projectId || 'default';
       // Use environment variable or default to 8000 (backend API port)
       const wsPort = process.env.NEXT_PUBLIC_WS_PORT || '8000';
-      const wsUrl = `${protocol}//${window.location.hostname}:${wsPort}/ws/kanban/projects/${defaultProjectId}`;
 
+      // Build URL with authentication token
+      const token = getAuthToken();
+      let wsUrl = `${protocol}//${window.location.hostname}:${wsPort}/ws/kanban/projects/${defaultProjectId}`;
+
+      // Add token as query parameter if available
+      if (token) {
+        wsUrl += `?token=${encodeURIComponent(token)}`;
+      } else if (!isDevelopmentMode()) {
+        // In production, require authentication
+        console.warn('[KanbanWS] No auth token available, connection may fail');
+      }
+
+      console.log(`[KanbanWS] Connecting to ${wsUrl.replace(/token=.*/, 'token=***')}`);
       const ws = new WebSocket(wsUrl);
       wsRef.current = ws;
 
@@ -183,6 +197,10 @@ export function useKanbanWebSocket({
       };
 
       ws.onerror = (error) => {
+        // Don't log if component is unmounted
+        if (!isMountedRef.current) {
+          return;
+        }
         console.error('[KanbanWS] Error:', error);
         isConnectingRef.current = false;
         if (onStatusChangeRef.current) {
@@ -190,16 +208,21 @@ export function useKanbanWebSocket({
         }
       };
 
-      ws.onclose = () => {
-        console.log('[KanbanWS] Disconnected');
+      ws.onclose = (event) => {
+        // Don't log or reconnect if component is unmounted
+        if (!isMountedRef.current) {
+          return;
+        }
+
+        console.log(`[KanbanWS] Disconnected (code: ${event.code})`);
         isConnectingRef.current = false;
         if (onStatusChangeRef.current) {
           onStatusChangeRef.current('disconnected');
         }
 
-        // Only reconnect if enabled
-        if (!enabled) {
-          console.log('[KanbanWS] Reconnection disabled');
+        // Only reconnect if enabled, not normal closure, and still mounted
+        if (!enabled || event.code === 1000) {
+          console.log('[KanbanWS] Reconnection disabled or normal closure');
           return;
         }
 
@@ -207,12 +230,16 @@ export function useKanbanWebSocket({
         const delay = Math.min(1000 * Math.pow(2, reconnectAttempts.current), 30000);
         reconnectAttempts.current += 1;
 
-        if (reconnectAttempts.current <= 10) {
+        if (reconnectAttempts.current <= 10 && isMountedRef.current) {
           console.log(`[KanbanWS] Reconnecting in ${delay}ms (attempt ${reconnectAttempts.current})`);
           if (onStatusChangeRef.current) {
             onStatusChangeRef.current('connecting');
           }
-          reconnectTimeoutRef.current = setTimeout(connect, delay);
+          reconnectTimeoutRef.current = setTimeout(() => {
+            if (isMountedRef.current) {
+              connect();
+            }
+          }, delay);
         }
       };
 
@@ -223,6 +250,8 @@ export function useKanbanWebSocket({
   }, [projectId, enabled, toast]);
 
   useEffect(() => {
+    isMountedRef.current = true;
+
     if (!enabled) {
       console.log('[KanbanWS] WebSocket disabled');
       return;
@@ -231,11 +260,16 @@ export function useKanbanWebSocket({
     connect();
 
     return () => {
+      isMountedRef.current = false;
       if (reconnectTimeoutRef.current) {
         clearTimeout(reconnectTimeoutRef.current);
       }
       if (wsRef.current) {
-        wsRef.current.close();
+        // Use code 1000 for normal closure to prevent error logs
+        if (wsRef.current.readyState === WebSocket.OPEN ||
+            wsRef.current.readyState === WebSocket.CONNECTING) {
+          wsRef.current.close(1000, 'Component unmounted');
+        }
       }
       isConnectingRef.current = false;
     };
