@@ -290,10 +290,12 @@ export default function ConfidencePage() {
             </CardHeader>
             <CardContent>
               <div className="space-y-4">
-                {phases.map((phase) => {
+                {phases.map((phase, index) => {
                   const isActive = phase.value === selectedPhase
-                  const score = isActive ? confidenceScore * 100 : phase.threshold - 5 + Math.random() * 20
-                  const meets = score >= phase.threshold
+                  // Use stable calculation instead of Math.random() to prevent hydration mismatch
+                  // Non-active phases show a placeholder based on their threshold
+                  const score = isActive ? confidenceScore * 100 : 0
+                  const meets = isActive ? score >= phase.threshold : false
 
                   return (
                     <div key={phase.value} className="space-y-2">
@@ -306,7 +308,9 @@ export default function ConfidencePage() {
                         </span>
                         <span className={cn(
                           "font-medium",
-                          meets ? "text-green-400" : "text-red-400"
+                          isActive
+                            ? (meets ? "text-green-400" : "text-red-400")
+                            : "text-gray-400"
                         )}>
                           {isActive ? Math.round(score) : "-"}% / {phase.threshold}%
                         </span>

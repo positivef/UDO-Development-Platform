@@ -11,7 +11,7 @@
  * - Backend API integration
  */
 
-import { useState, useCallback, useMemo } from 'react'
+import { useState, useCallback, useMemo, useId } from 'react'
 import {
   DndContext,
   DragOverlay,
@@ -77,6 +77,10 @@ export function KanbanBoard({
   // Q4: Context Briefing state for double-click auto-load
   const [isContextBriefingOpen, setIsContextBriefingOpen] = useState(false)
   const [contextBriefingTask, setContextBriefingTask] = useState<KanbanTask | null>(null)
+
+  // Stable ID for DndContext to prevent hydration mismatch
+  // React.useId() generates consistent IDs between server and client
+  const dndContextId = useId()
 
   // Configure drag sensors (memoized to prevent re-creation)
   const pointerSensorConfig = useMemo(() => ({
@@ -182,6 +186,7 @@ export function KanbanBoard({
   return (
     <>
       <DndContext
+        id={dndContextId}
         sensors={sensors}
         collisionDetection={closestCorners}
         onDragStart={handleDragStart}

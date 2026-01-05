@@ -5,6 +5,7 @@ Week 2 Day 3-4: 12 API endpoints for task management.
 Implements Q1-Q8 decisions with RBAC protection.
 """
 
+import logging
 from typing import Optional
 from uuid import UUID
 
@@ -34,12 +35,18 @@ from app.routers.kanban_websocket import kanban_manager
 from app.services.kanban_task_service import KanbanTaskService, MockKanbanTaskService
 from backend.async_database import async_db
 
+# Module-level logger
+logger = logging.getLogger(__name__)
+
 router = APIRouter(prefix="/api/kanban/tasks", tags=["Kanban Tasks"])
 
 
 # ============================================================================
 # Dependency Injection
 # ============================================================================
+
+# Global mock service instance (singleton pattern to preserve data across requests)
+_mock_service_instance: Optional[MockKanbanTaskService] = None
 
 
 def get_kanban_service():
@@ -54,21 +61,23 @@ def get_kanban_service():
     Returns:
         KanbanTaskService or MockKanbanTaskService: Service instance
     """
-    import logging
-    import sys
+    global _mock_service_instance
 
-    logger = logging.getLogger(__name__)
-    # Identity logs for debugging
-    logger.debug(f"[IDENTITY] async_database module id: {id(sys.modules.get('backend.async_database'))}")
-    logger.debug(f"[IDENTITY] async_db object id: {id(async_db)}")
-    logger.debug(f"[IDENTITY] async_db._initialized: {async_db._initialized}")
+    # Try to get database pool
+    # This will raise RuntimeError if not initialized
     try:
         db_pool = async_db.get_pool()
-        logger.debug(f"[DEBUG] Database pool obtained: {db_pool}")
+        logger.info("[KANBAN] Using real KanbanTaskService with database pool")
         return KanbanTaskService(db_pool=db_pool)
-    except RuntimeError:
-        logger.exception("[KANBAN] Database not available, using MockKanbanTaskService")
-        return MockKanbanTaskService()
+    except RuntimeError as e:
+        logger.error(f"[KANBAN] Database not available: {e}. Using MockKanbanTaskService")
+        # Use singleton instance to preserve data across requests
+        if _mock_service_instance is None:
+            _mock_service_instance = MockKanbanTaskService()
+            logger.info("[KANBAN] Created new MockKanbanTaskService singleton")
+        else:
+            logger.info("[KANBAN] Using existing MockKanbanTaskService singleton")
+        return _mock_service_instance
 
 
 # ============================================================================
@@ -118,6 +127,16 @@ async def create_task(
     **Q2**: Supports AI-suggested tasks with confidence score.
     **WebSocket**: Broadcasts task_created event to all connected clients.
     """
+    # DIAGNOSTIC: Print to stderr for immediate visibility
+    import sys
+
+    service_type = type(service).__name__
+    is_mock = isinstance(service, MockKanbanTaskService)
+    print("\n[DIAGNOSTIC] create_task endpoint called", file=sys.stderr)
+    print(f"[DIAGNOSTIC] Service type: {service_type}", file=sys.stderr)
+    print(f"[DIAGNOSTIC] Is MockKanbanTaskService: {is_mock}", file=sys.stderr)
+    print(f"[DIAGNOSTIC] Service instance: {service}\n", file=sys.stderr)
+
     try:
         task = await service.create_task(task_data)
 

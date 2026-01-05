@@ -840,8 +840,7 @@ async def startup_event():
             logger.warning(f"[WARN] SessionManager initialization failed: {e}")
 
     # Initialize async database and project context service
-    # FORCE MOCK: Temporarily disable DB to fix 503
-    if False:  # ASYNC_DB_AVAILABLE:
+    if ASYNC_DB_AVAILABLE:
         try:
             await initialize_async_database()
             logger.info("[OK] Async database initialized")

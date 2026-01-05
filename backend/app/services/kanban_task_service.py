@@ -74,43 +74,46 @@ class KanbanTaskService:
             Created task
         """
         async with self.db_pool.acquire() as conn:
-            query = """
-                INSERT INTO kanban.tasks (
-                    title, description, phase_id, phase_name,
-                    status, priority, completeness,
-                    estimated_hours, actual_hours,
-                    ai_suggested, ai_confidence
+            # Start explicit transaction
+            async with conn.transaction():
+                query = """
+                    INSERT INTO kanban.tasks (
+                        title, description, phase_id, phase_name,
+                        status, priority, completeness,
+                        estimated_hours, actual_hours,
+                        ai_suggested, ai_confidence
+                    )
+                    VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9, $10, $11)
+                    RETURNING
+                        task_id, title, description, phase_id, phase_name,
+                        status, priority, completeness,
+                        estimated_hours, actual_hours,
+                        ai_suggested, ai_confidence, approved_by, approval_timestamp,
+                        quality_gate_passed, quality_score,
+                        constitutional_compliant, COALESCE(violated_articles, '{}') as violated_articles,
+                        user_confirmed, confirmed_by, confirmed_at,
+                        created_at, updated_at, completed_at, archived_at
+                """
+
+                row = await conn.fetchrow(
+                    query,
+                    task_data.title,
+                    task_data.description,
+                    task_data.phase_id,
+                    task_data.phase_name,
+                    task_data.status if task_data.status else "pending",
+                    task_data.priority if task_data.priority else "medium",
+                    task_data.completeness,
+                    task_data.estimated_hours,
+                    task_data.actual_hours,
+                    task_data.ai_suggested,
+                    task_data.ai_confidence,
                 )
-                VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9, $10, $11)
-                RETURNING
-                    task_id, title, description, phase_id, phase_name,
-                    status, priority, completeness,
-                    estimated_hours, actual_hours,
-                    ai_suggested, ai_confidence, approved_by, approval_timestamp,
-                    quality_gate_passed, quality_score,
-                    constitutional_compliant, COALESCE(violated_articles, '{}') as violated_articles,
-                    user_confirmed, confirmed_by, confirmed_at,
-                    created_at, updated_at, completed_at, archived_at
-            """
 
-            row = await conn.fetchrow(
-                query,
-                task_data.title,
-                task_data.description,
-                task_data.phase_id,
-                task_data.phase_name,
-                task_data.status if task_data.status else "pending",
-                task_data.priority if task_data.priority else "medium",
-                task_data.completeness,
-                task_data.estimated_hours,
-                task_data.actual_hours,
-                task_data.ai_suggested,
-                task_data.ai_confidence,
-            )
-
-            task = Task(**dict(row))
-            logger.info(f"Created task: {task.task_id} - {task.title}")
-            return task
+                task = Task(**dict(row))
+                logger.info(f"Created task: {task.task_id} - {task.title}")
+                # Transaction will auto-commit when context exits
+                return task
 
     async def get_task(self, task_id: UUID) -> Task:
         """
