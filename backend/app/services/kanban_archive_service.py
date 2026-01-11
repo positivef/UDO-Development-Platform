@@ -17,7 +17,10 @@ import sys
 import time
 from datetime import UTC, datetime
 from pathlib import Path
-from typing import Any, Dict, List, Optional
+from typing import TYPE_CHECKING, Any, Dict, List, Optional
+
+if TYPE_CHECKING:
+    from app.services.kanban_task_service import KanbanTaskService
 from uuid import UUID
 
 # Add scripts to path for knowledge extraction
@@ -189,12 +192,17 @@ class KanbanArchiveService:
         """Reset archive data for testing isolation."""
         self.archives.clear()
 
-    async def archive_task(self, request: ArchiveTaskRequest) -> ArchiveTaskResponse:
+    async def archive_task(
+        self,
+        request: ArchiveTaskRequest,
+        task_service: Optional["KanbanTaskService"] = None,
+    ) -> ArchiveTaskResponse:
         """
         Archive a completed task with AI summarization and Obsidian sync.
 
         Args:
             request: Archive task request
+            task_service: Optional task service for fetching tasks (uses DI from router)
 
         Returns:
             ArchiveTaskResponse with summary and sync status
@@ -205,7 +213,7 @@ class KanbanArchiveService:
         start_time = time.time()
 
         # 1. Validate task exists and can be archived
-        task = await self._validate_task_archivable(request.task_id)
+        task = await self._validate_task_archivable(request.task_id, task_service)
 
         # 2. Generate AI summary if requested
         ai_summary = None
@@ -273,10 +281,33 @@ class KanbanArchiveService:
             roi_metrics=roi_metrics,
         )
 
-    async def _validate_task_archivable(self, task_id: UUID) -> Task:
+    async def _validate_task_archivable(
+        self,
+        task_id: UUID,
+        task_service: Optional["KanbanTaskService"] = None,
+    ) -> Task:
         """Validate that task exists and can be archived"""
-        # Use singleton task service (mock for tests, DB for production)
-        task = await kanban_task_service.get_task(task_id)
+        # FIX: Ensure we use database service, not mock
+        service = task_service
+        if service is None or not hasattr(service, "db_pool") or service.db_pool is None:
+            # Try to get DB service directly
+            try:
+                from backend.async_database import async_db
+                from app.services.kanban_task_service import KanbanTaskService
+
+                db_pool = async_db.get_pool()
+                service = KanbanTaskService(db_pool=db_pool)
+                logger.info(f"[ARCHIVE_SVC] Created new KanbanTaskService with DB pool")
+            except RuntimeError as e:
+                logger.warning(f"[ARCHIVE_SVC] DB not available: {e}, falling back to mock")
+                service = kanban_task_service
+
+        logger.info(f"[ARCHIVE_SVC] Validating task {task_id}")
+        logger.info(f"[ARCHIVE_SVC] task_service provided: {task_service is not None}")
+        logger.info(f"[ARCHIVE_SVC] Using service type: {type(service).__name__}")
+        logger.info(f"[ARCHIVE_SVC] Service has db_pool: {hasattr(service, 'db_pool')}")
+        task = await service.get_task(task_id)
+        logger.info(f"[ARCHIVE_SVC] Task found: {task.title if task else 'None'}")
 
         # Check if task is completed
         if task.status not in [TaskStatus.COMPLETED, TaskStatus.DONE_END]:
@@ -417,16 +448,20 @@ Generate a comprehensive summary with key learnings, technical insights, and rec
 
     def _calculate_roi_metrics(self, task: Task) -> ROIMetrics:
         """Calculate ROI metrics for archived task"""
-        # Time efficiency
-        estimated = task.estimated_hours
-        actual = task.actual_hours if task.actual_hours > 0 else estimated
+        # Time efficiency (handle None values)
+        estimated = task.estimated_hours or 0.0
+        actual = task.actual_hours if task.actual_hours and task.actual_hours > 0 else estimated
+        if actual == 0:
+            actual = 1.0  # Prevent division by zero
         time_saved = estimated - actual
         efficiency = (estimated / actual * 100) if actual > 0 else 100.0
 
-        # Quality metrics
-        quality_score = getattr(task, "quality_score", 80)
+        # Quality metrics (handle None values with defaults)
+        quality_score = getattr(task, "quality_score", None)
+        if quality_score is None:
+            quality_score = 0  # Default to 0 if not set
         constitutional_compliant = getattr(task, "constitutional_compliant", True)
-        violated_articles = getattr(task, "violated_articles", [])
+        violated_articles = getattr(task, "violated_articles", []) or []
 
         # AI metrics
         ai_suggested = getattr(task, "ai_suggested", False)
@@ -829,21 +864,21 @@ schema_version: "1.0"
 **Task ID**: `{entry.task_id}`
 **Archived**: {entry.archived_at.strftime("%Y-%m-%d %H:%M")}
 
-## [*] 배운 점
+## 배운 점
 
 """
         for learning in entry.key_learnings:
             note += f"- {learning}\n"
 
         note += """
-## [*] 기술 인사이트
+## 기술 인사이트
 
 """
         for insight in entry.technical_insights:
             note += f"- {insight}\n"
 
         note += f"""
-## [*] ROI 메트릭
+## ROI 메트릭
 
 | 지표 | 값 |
 |------|-----|
@@ -854,7 +889,7 @@ schema_version: "1.0"
 | 품질 점수 | {roi_metrics.quality_score}/100 |
 | 규정 준수 | {"Pass" if roi_metrics.constitutional_compliance else "Fail"} |
 
-## [*] 관련 문서
+## 관련 문서
 
 - [[Kanban Archive MOC]]
 - [[{entry.phase_name.capitalize()} Phase]]

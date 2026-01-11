@@ -310,7 +310,7 @@ class KanbanTaskService:
                 # Set completed_at if status is COMPLETED
                 if task_update.status == TaskStatus.COMPLETED:
                     set_clauses.append(f"completed_at = ${param_count}")
-                    params.append(datetime.now(UTC))
+                    params.append(datetime.now(UTC).replace(tzinfo=None))
                     param_count += 1
 
             if task_update.priority is not None:
@@ -329,7 +329,7 @@ class KanbanTaskService:
                     params.append("completed")
                     param_count += 1
                     set_clauses.append(f"completed_at = ${param_count}")
-                    params.append(datetime.now(UTC))
+                    params.append(datetime.now(UTC).replace(tzinfo=None))
                     param_count += 1
 
             if task_update.estimated_hours is not None:
@@ -349,7 +349,7 @@ class KanbanTaskService:
 
             # Always update updated_at
             set_clauses.append(f"updated_at = ${param_count}")
-            params.append(datetime.now(UTC))
+            params.append(datetime.now(UTC).replace(tzinfo=None))
             param_count += 1
 
             # Add task_id as last parameter
@@ -439,7 +439,7 @@ class KanbanTaskService:
                 query,
                 phase_request.new_phase_id,
                 phase_request.new_phase_name,
-                datetime.now(UTC),
+                datetime.now(UTC).replace(tzinfo=None),
                 task_id,
             )
 
@@ -556,7 +556,9 @@ class KanbanTaskService:
                     created_at, updated_at, completed_at, archived_at
             """
 
-            row = await conn.fetchrow(query, priority_request.new_priority.value, datetime.now(UTC), task_id)
+            row = await conn.fetchrow(
+                query, priority_request.new_priority.value, datetime.now(UTC).replace(tzinfo=None), task_id
+            )
 
             if not row:
                 raise TaskNotFoundError(task_id)
@@ -599,7 +601,9 @@ class KanbanTaskService:
                         user_confirmed, confirmed_by, confirmed_at,
                         created_at, updated_at, completed_at, archived_at
                 """
-                row = await conn.fetchrow(query, completeness_request.completeness, datetime.now(UTC), task_id)
+                row = await conn.fetchrow(
+                    query, completeness_request.completeness, datetime.now(UTC).replace(tzinfo=None), task_id
+                )
             else:
                 query = """
                     UPDATE kanban.tasks
@@ -617,7 +621,9 @@ class KanbanTaskService:
                         user_confirmed, confirmed_by, confirmed_at,
                         created_at, updated_at, completed_at, archived_at
                 """
-                row = await conn.fetchrow(query, completeness_request.completeness, datetime.now(UTC), task_id)
+                row = await conn.fetchrow(
+                    query, completeness_request.completeness, datetime.now(UTC).replace(tzinfo=None), task_id
+                )
 
             if not row:
                 raise TaskNotFoundError(task_id)
@@ -690,7 +696,7 @@ class KanbanTaskService:
                 quality_score,
                 len(violated_articles) == 0,
                 violated_articles,
-                datetime.now(UTC),
+                datetime.now(UTC).replace(tzinfo=None),
                 task_id,
             )
 
@@ -779,7 +785,9 @@ class KanbanTaskService:
                     updated_at = $1
                 WHERE task_id = $2
             """
-            await conn.execute(query, datetime.now(UTC), task_id)
+            # Use naive UTC datetime for asyncpg compatibility with 'timestamp without time zone' columns
+            now_utc = datetime.now(UTC).replace(tzinfo=None)
+            await conn.execute(query, now_utc, task_id)
 
         # Create archive object
         archive = TaskArchive(
