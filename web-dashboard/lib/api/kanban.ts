@@ -7,7 +7,7 @@
 
 import type { KanbanTask, TaskStatus, Priority, Phase } from '@/lib/types/kanban'
 
-const API_BASE_URL = process.env.NEXT_PUBLIC_API_URL || 'http://localhost:8000'
+const API_BASE_URL = process.env.NEXT_PUBLIC_API_URL || 'http://localhost:8005'
 const KANBAN_API = `${API_BASE_URL}/api/kanban`
 
 // Error handling helper
@@ -297,14 +297,57 @@ export async function checkQualityGate(id: string): Promise<{
 
 /**
  * Archive completed task (Q6: Done-End archiving)
- * POST /api/kanban/tasks/{id}/archive
+ * POST /api/kanban/archive
  */
-export async function archiveTask(id: string): Promise<{
+export interface ArchiveTaskRequest {
+  task_id: string
+  archived_by: string
+  generate_ai_summary?: boolean
+  sync_to_obsidian?: boolean
+  reason?: string
+}
+
+export interface ArchiveTaskResponse {
+  task_id: string
+  success: boolean
   message: string
-  archived_task: KanbanTask
-}> {
-  return apiFetch(`/tasks/${id}/archive`, {
+  archived_at: string
+  ai_summary_generated: boolean
+  ai_summary?: {
+    content: string
+    key_learnings: string[]
+    technical_insights: string[]
+    recommendations: string[]
+  } | null
+  obsidian_synced: boolean
+  obsidian_note_path?: string | null
+  roi_metrics?: {
+    time_saved_hours: number
+    efficiency_score: number
+    quality_score: number
+  } | null
+}
+
+export async function archiveTask(
+  id: string,
+  options?: {
+    archived_by?: string
+    generate_ai_summary?: boolean
+    sync_to_obsidian?: boolean
+    reason?: string
+  }
+): Promise<ArchiveTaskResponse> {
+  const request: ArchiveTaskRequest = {
+    task_id: id,
+    archived_by: options?.archived_by || 'user', // Default to 'user' if not provided
+    generate_ai_summary: options?.generate_ai_summary ?? true,
+    sync_to_obsidian: options?.sync_to_obsidian ?? true,
+    reason: options?.reason,
+  }
+
+  return apiFetch('/archive', {
     method: 'POST',
+    body: JSON.stringify(request),
   })
 }
 

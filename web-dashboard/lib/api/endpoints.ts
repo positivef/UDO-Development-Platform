@@ -78,7 +78,7 @@ export const API_ENDPOINTS = {
 
   // WebSocket
   WEBSOCKET: {
-    URL: process.env.NEXT_PUBLIC_WS_URL || 'ws://localhost:8000/ws',
+    URL: process.env.NEXT_PUBLIC_WS_URL || 'ws://localhost:8005/ws',
   },
 } as const;
 
