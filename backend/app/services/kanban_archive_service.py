@@ -297,7 +297,7 @@ class KanbanArchiveService:
 
                 db_pool = async_db.get_pool()
                 service = KanbanTaskService(db_pool=db_pool)
-                logger.info(f"[ARCHIVE_SVC] Created new KanbanTaskService with DB pool")
+                logger.info("[ARCHIVE_SVC] Created new KanbanTaskService with DB pool")
             except RuntimeError as e:
                 logger.warning(f"[ARCHIVE_SVC] DB not available: {e}, falling back to mock")
                 service = kanban_task_service
@@ -919,7 +919,9 @@ schema_version: "1.0"
             Action type string (feat, fix, docs, refactor, test, or archive)
         """
         title_lower = task.title.lower()
-        tags_lower = [t.lower() for t in (task.tags or [])]
+        # Safely get tags (Task model may not have tags attribute)
+        task_tags = getattr(task, "tags", None) or []
+        tags_lower = [t.lower() for t in task_tags]
 
         # Check title patterns (priority order)
         if any(kw in title_lower for kw in ["feat", "feature", "add", "implement", "create"]):
