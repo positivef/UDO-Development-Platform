@@ -78,7 +78,20 @@ export const API_ENDPOINTS = {
 
   // WebSocket
   WEBSOCKET: {
-    URL: process.env.NEXT_PUBLIC_WS_URL || 'ws://localhost:8005/ws',
+    URL: process.env.NEXT_PUBLIC_WS_URL || 'ws://localhost:8006/ws',
+  },
+
+  // RL Knowledge (Training-free GRPO - ArXiv 2510.08191)
+  RL: {
+    SUMMARY: '/api/rl/summary',
+    TOKEN_PRIOR_STATS: '/api/rl/token-prior/stats',
+    VALIDATE_DECISION: (decisionId: string) => `/api/rl/token-prior/validate/${decisionId}`,
+    PATTERNS: (domain: string) => `/api/rl/patterns/${domain}`,
+    CREATE_PATTERN: '/api/rl/pattern',
+    BEST_SOLUTION: '/api/rl/best-solution',
+    RECORD_ATTEMPT: '/api/rl/experiment/attempt',
+    EXPERIMENTS: '/api/rl/experiments',
+    EXPERIMENT: (problemId: string) => `/api/rl/experiment/${problemId}`,
   },
 } as const;
 
