@@ -83,6 +83,16 @@ repos:
 #   pre-commit install
 #   pre-commit install --hook-type pre-push
 
+  # Large Change Warning (테스트 없이 5+ 파일 변경 시 알림)
+  - repo: local
+    hooks:
+      - id: large-change-warning
+        name: Large Change Warning
+        entry: python scripts/check_large_change_without_tests.py
+        language: system
+        pass_filenames: false
+        always_run: true
+
   # Korean Text Preservation Check (CRITICAL - 한글 텍스트 보호)
   - repo: local
     hooks:
