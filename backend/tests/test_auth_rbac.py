@@ -25,8 +25,15 @@ def disable_dev_auth_bypass(monkeypatch):
     """
     테스트 중 dev auth bypass 비활성화.
     CRIT-01 보안 수정 후 테스트가 올바른 에러 동작을 검증하도록 함.
+
+    설정하는 환경 변수:
+    - ENVIRONMENT=test: 기본값 "development"를 오버라이드
+    - DISABLE_DEV_AUTH_BYPASS=true: decode_token_async에서 사용
+    - DISABLE_AUTH_IN_DEV=false: require_role에서 사용하는 두 번째 조건
     """
+    monkeypatch.setenv("ENVIRONMENT", "test")  # 기본값 "development" 오버라이드
     monkeypatch.setenv("DISABLE_DEV_AUTH_BYPASS", "true")
+    monkeypatch.setenv("DISABLE_AUTH_IN_DEV", "false")
 
 
 # ============================================================================
