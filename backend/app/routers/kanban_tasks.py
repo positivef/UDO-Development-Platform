@@ -32,7 +32,11 @@ from app.models.kanban_task import (
 
 # WebSocket support for real-time updates
 from app.routers.kanban_websocket import kanban_manager
-from app.services.kanban_task_service import KanbanTaskService, MockKanbanTaskService
+from app.services.kanban_task_service import (
+    KanbanTaskService,
+    MockKanbanTaskService,
+    kanban_task_service as shared_mock_service,
+)
 from backend.async_database import async_db
 
 # Module-level logger
@@ -45,39 +49,28 @@ router = APIRouter(prefix="/api/kanban/tasks", tags=["Kanban Tasks"])
 # Dependency Injection
 # ============================================================================
 
-# Global mock service instance (singleton pattern to preserve data across requests)
-_mock_service_instance: Optional[MockKanbanTaskService] = None
-
 
 def get_kanban_service():
     """
     Dependency for KanbanTaskService with database pool.
-    Falls back to MockKanbanTaskService when database is unavailable.
+    Falls back to shared MockKanbanTaskService when database is unavailable.
 
     [WARN] CRITICAL: Always provide mock fallback for services requiring database
     This allows E2E tests to run without PostgreSQL running
     See: docs/guides/ERROR_PREVENTION_GUIDE.md#service-fallback-pattern
 
+    IMPORTANT: Uses shared_mock_service singleton from kanban_task_service.py
+    to ensure consistency with kanban_archive_service.py
+
     Returns:
         KanbanTaskService or MockKanbanTaskService: Service instance
     """
-    global _mock_service_instance
-
-    # Try to get database pool
-    # This will raise RuntimeError if not initialized
     try:
         db_pool = async_db.get_pool()
-        logger.info("[KANBAN] Using real KanbanTaskService with database pool")
         return KanbanTaskService(db_pool=db_pool)
     except RuntimeError as e:
-        logger.error(f"[KANBAN] Database not available: {e}. Using MockKanbanTaskService")
-        # Use singleton instance to preserve data across requests
-        if _mock_service_instance is None:
-            _mock_service_instance = MockKanbanTaskService()
-            logger.info("[KANBAN] Created new MockKanbanTaskService singleton")
-        else:
-            logger.info("[KANBAN] Using existing MockKanbanTaskService singleton")
-        return _mock_service_instance
+        logger.warning(f"Database not available: {e}. Using MockKanbanTaskService")
+        return shared_mock_service
 
 
 # ============================================================================
@@ -695,6 +688,7 @@ async def archive_task(
     except HTTPException:
         raise  # Re-raise HTTP exceptions
     except Exception as e:
+        logger.error(f"Failed to archive task {task_id}: {e}")
         return error_response(
             code="ARCHIVE_FAILED",
             message=f"Failed to archive task: {str(e)}",

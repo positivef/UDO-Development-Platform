@@ -794,9 +794,9 @@ class KanbanTaskService:
             task_id=task_id,
             task_data=task,
             ai_summary=ai_summary,
-            archived_at=datetime.now(UTC),
+            archived_at=now_utc,
             archived_by=archive_request.archived_by,
-            obsidian_synced=False,  # Will be synced by obsidian_service
+            obsidian_synced=False,
         )
 
         logger.info(f"Archived task: {task_id}")
@@ -1189,15 +1189,18 @@ class MockKanbanTaskService:
                 f"Actual: {task.actual_hours}h."
             )
 
+        # Use naive UTC datetime for asyncpg compatibility (same as real service)
+        now_utc = datetime.now(UTC).replace(tzinfo=None)
+
         task.status = TaskStatus.DONE_END
-        task.archived_at = datetime.now(UTC)
-        task.updated_at = datetime.now(UTC)
+        task.archived_at = now_utc
+        task.updated_at = now_utc
 
         archive = TaskArchive(
             task_id=task_id,
             task_data=task,
             ai_summary=ai_summary,
-            archived_at=datetime.now(UTC),
+            archived_at=now_utc,
             archived_by=archive_request.archived_by,
             obsidian_synced=False,
         )
