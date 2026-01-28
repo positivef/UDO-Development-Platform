@@ -25,6 +25,10 @@ test.describe('Kanban Board - Week 1 Day 1 UI Implementation', () => {
   test.beforeEach(async ({ page }) => {
     consoleErrors.length = 0;
     await captureConsoleMessages(page);
+    // Set Korean locale in localStorage before navigating
+    await page.addInitScript(() => {
+      localStorage.setItem('locale', 'ko');
+    });
   });
 
   test('Kanban page (/kanban) should load without errors', async ({ page }) => {
@@ -40,12 +44,12 @@ test.describe('Kanban Board - Week 1 Day 1 UI Implementation', () => {
       fullPage: true,
     });
 
-    // Check for page title
-    const title = page.locator('h1:has-text("Kanban Board")');
+    // Check for page title (Korean locale)
+    const title = page.locator('h1:has-text("칸반 보드")');
     await expect(title).toBeVisible({ timeout: 10000 });
 
-    // Check for subtitle with UDO v2 reference
-    const subtitle = page.locator('text=Manage tasks across UDO v2');
+    // Check for subtitle with UDO v2 reference (Korean locale)
+    const subtitle = page.locator('text=UDO v2');
     await expect(subtitle).toBeVisible({ timeout: 10000 });
 
     // Filter out expected errors when backend is unavailable
@@ -79,11 +83,11 @@ test.describe('Kanban Board - Week 1 Day 1 UI Implementation', () => {
       // Loading may have already completed
     });
 
-    // Check for column headers
-    const todoColumn = page.locator('h2:has-text("To Do")');
-    const inProgressColumn = page.locator('h2:has-text("In Progress")');
-    const blockedColumn = page.locator('h2:has-text("Blocked")');
-    const doneColumn = page.locator('h2:has-text("Done")');
+    // Check for column headers (Korean locale)
+    const todoColumn = page.locator('h2:has-text("할 일")');
+    const inProgressColumn = page.locator('h2:has-text("진행 중")');
+    const blockedColumn = page.locator('h2:has-text("차단됨")');
+    const doneColumn = page.locator('h2:has-text("완료")');
 
     await expect(todoColumn).toBeVisible({ timeout: 10000 });
     await expect(inProgressColumn).toBeVisible({ timeout: 10000 });
@@ -212,17 +216,17 @@ test.describe('Kanban Board - Week 1 Day 1 UI Implementation', () => {
     // Wait for loading to complete
     await page.waitForSelector('text=Loading tasks...', { state: 'hidden', timeout: 15000 }).catch(() => {});
 
-    // Check for action buttons
-    const filterButton = page.locator('button:has-text("Filter")');
+    // Check for action buttons (Korean translations)
+    const filterButton = page.locator('button:has-text("필터")');
     await expect(filterButton).toBeVisible({ timeout: 10000 });
 
-    const importButton = page.locator('button:has-text("Import")');
+    const importButton = page.locator('button:has-text("가져오기")');
     await expect(importButton).toBeVisible();
 
-    const exportButton = page.locator('button:has-text("Export")');
+    const exportButton = page.locator('button:has-text("내보내기")');
     await expect(exportButton).toBeVisible();
 
-    const addTaskButton = page.locator('button:has-text("Add Task")');
+    const addTaskButton = page.locator('button:has-text("작업 추가")');
     await expect(addTaskButton).toBeVisible();
 
     console.log('✅ All action buttons present');
@@ -264,6 +268,13 @@ test.describe('Kanban Board - Week 1 Day 1 UI Implementation', () => {
 });
 
 test.describe('Kanban Navigation Integration', () => {
+  test.beforeEach(async ({ page }) => {
+    // Set Korean locale in localStorage before navigating
+    await page.addInitScript(() => {
+      localStorage.setItem('locale', 'ko');
+    });
+  });
+
   test('Navigation menu should include Kanban Board link', async ({ page }) => {
     await page.goto('/');
     await page.waitForLoadState('domcontentloaded');
@@ -287,8 +298,8 @@ test.describe('Kanban Navigation Integration', () => {
     await page.waitForURL('**/kanban');
     await page.waitForLoadState('domcontentloaded');
 
-    // Verify we're on the Kanban page
-    const title = page.locator('h1:has-text("Kanban Board")');
+    // Verify we're on the Kanban page (Korean locale)
+    const title = page.locator('h1:has-text("칸반 보드")');
     await expect(title).toBeVisible();
 
     console.log('✅ Navigation to Kanban page successful');
@@ -296,6 +307,13 @@ test.describe('Kanban Navigation Integration', () => {
 });
 
 test.describe('Kanban Board - Visual Regression', () => {
+  test.beforeEach(async ({ page }) => {
+    // Set Korean locale in localStorage before navigating
+    await page.addInitScript(() => {
+      localStorage.setItem('locale', 'ko');
+    });
+  });
+
   test('Full page screenshot for visual comparison', async ({ page }) => {
     await page.goto('/kanban');
     await page.waitForLoadState('domcontentloaded');
@@ -313,15 +331,20 @@ test.describe('Kanban Board - Visual Regression', () => {
     await page.goto('/kanban');
     await page.waitForLoadState('domcontentloaded');
 
-    // Take screenshots of individual columns
-    const columns = ['To Do', 'In Progress', 'Blocked', 'Done'];
+    // Take screenshots of individual columns (Korean locale)
+    const columns = [
+      { ko: '할 일', en: 'todo' },
+      { ko: '진행 중', en: 'in-progress' },
+      { ko: '차단됨', en: 'blocked' },
+      { ko: '완료', en: 'done' }
+    ];
 
-    for (const columnName of columns) {
-      const column = page.locator(`h2:has-text("${columnName}")`).locator('xpath=ancestor::div[contains(@class, "Card")]');
+    for (const column of columns) {
+      const columnElement = page.locator(`h2:has-text("${column.ko}")`).locator('xpath=ancestor::div[contains(@class, "Card")]');
 
-      if (await column.isVisible()) {
-        await column.screenshot({
-          path: `test-results/screenshots/kanban-column-${columnName.toLowerCase().replace(' ', '-')}.png`,
+      if (await columnElement.isVisible()) {
+        await columnElement.screenshot({
+          path: `test-results/screenshots/kanban-column-${column.en}.png`,
         });
       }
     }
@@ -336,6 +359,10 @@ test.describe('Kanban Board - Visual Regression', () => {
  */
 test.describe('Kanban Board - Q4 Context Briefing Double-Click', () => {
   test.beforeEach(async ({ page }) => {
+    // Set Korean locale in localStorage before navigating
+    await page.addInitScript(() => {
+      localStorage.setItem('locale', 'ko');
+    });
     await page.goto('/kanban');
     await page.waitForLoadState('domcontentloaded');
     // Wait for loading to complete
