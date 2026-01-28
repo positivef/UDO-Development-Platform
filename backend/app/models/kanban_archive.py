@@ -58,14 +58,14 @@ class ROIMetrics(BaseModel):
 
     task_id: UUID
 
-    # Time metrics
-    estimated_hours: float = Field(..., ge=0)
-    actual_hours: float = Field(..., ge=0)
-    time_saved_hours: float = Field(..., description="Time saved compared to baseline (can be negative)")
-    efficiency_percentage: float = Field(..., ge=0, le=200, description="Efficiency: (estimated / actual) * 100")
+    # Time metrics (defaults for tasks without estimates)
+    estimated_hours: float = Field(default=0.0, ge=0)
+    actual_hours: float = Field(default=0.0, ge=0)
+    time_saved_hours: float = Field(default=0.0, description="Time saved compared to baseline (can be negative)")
+    efficiency_percentage: float = Field(default=100.0, ge=0, le=200, description="Efficiency: (estimated / actual) * 100")
 
-    # Quality metrics
-    quality_score: int = Field(..., ge=0, le=100)
+    # Quality metrics (defaults for tasks without quality checks)
+    quality_score: int = Field(default=0, ge=0, le=100)
     constitutional_compliance: bool
     violated_articles: List[str] = Field(default_factory=list)
 

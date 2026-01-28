@@ -5,6 +5,7 @@ Week 3 Day 4-5: Archive View + AI Summarization.
 Implements Q6: Done-End archive with GPT-4o summarization and Obsidian sync.
 """
 
+import logging
 from typing import Optional
 from uuid import UUID
 
@@ -21,8 +22,43 @@ from app.models.kanban_archive import (
     TaskNotArchivableError,
 )
 from app.services.kanban_archive_service import kanban_archive_service
+from app.services.kanban_task_service import (
+    KanbanTaskService,
+    MockKanbanTaskService,
+    kanban_task_service as shared_mock_service,
+)
+from backend.async_database import async_db
+
+logger = logging.getLogger(__name__)
 
 router = APIRouter(prefix="/api/kanban/archive", tags=["Kanban Archive"])
+
+
+# ============================================================================
+# Dependency Injection for Task Service
+# ============================================================================
+
+
+def get_kanban_service_for_archive():
+    """
+    Dependency for KanbanTaskService in archive operations.
+    Uses same pattern as kanban_tasks.py for consistency.
+    """
+    import sys
+
+    print("[ARCHIVE-DEBUG] get_kanban_service_for_archive called", flush=True)
+    try:
+        db_pool = async_db.get_pool()
+        print(f"[ARCHIVE-DEBUG] Database pool obtained: {db_pool is not None}", flush=True)
+        logger.info(f"[ARCHIVE] Database pool obtained: {db_pool is not None}")
+        service = KanbanTaskService(db_pool=db_pool)
+        print(f"[ARCHIVE-DEBUG] Created KanbanTaskService: {type(service).__name__}", flush=True)
+        logger.info(f"[ARCHIVE] Created KanbanTaskService instance: {type(service).__name__}")
+        return service
+    except RuntimeError as e:
+        print(f"[ARCHIVE-DEBUG] Database not available: {e}", flush=True)
+        logger.warning(f"[ARCHIVE] Database not available: {e}. Using shared MockKanbanTaskService")
+        return shared_mock_service
 
 
 # ============================================================================
@@ -48,6 +84,38 @@ def error_response(code: str, message: str, status_code: int, details: dict = No
 
 
 # ============================================================================
+# DEBUG: Test Dependency Injection (BEFORE /{task_id} route)
+# ============================================================================
+
+
+@router.get("/test/di")
+async def debug_dependency_injection_first(
+    task_service: KanbanTaskService = Depends(get_kanban_service_for_archive),
+):
+    """Debug endpoint to test DI and task lookup"""
+    from uuid import UUID
+
+    task_id = UUID("de1a9f24-4ee2-420e-add1-ebafed339efe")
+
+    result = {
+        "task_service_type": type(task_service).__name__,
+        "has_db_pool": hasattr(task_service, "db_pool"),
+        "db_pool_not_none": task_service.db_pool is not None if hasattr(task_service, "db_pool") else False,
+    }
+
+    try:
+        task = await task_service.get_task(task_id)
+        result["task_found"] = True
+        result["task_title"] = task.title
+        result["task_status"] = str(task.status)
+    except Exception as e:
+        result["task_found"] = False
+        result["error"] = f"{type(e).__name__}: {e}"
+
+    return result
+
+
+# ============================================================================
 # 1. Archive Task (Q6: Done-End + AI Summarization)
 # ============================================================================
 
@@ -60,7 +128,11 @@ def error_response(code: str, message: str, status_code: int, details: dict = No
     summary="Archive completed task",
     description="Archive completed task with AI summarization and Obsidian sync (Q6: Done-End)",
 )
-async def archive_task(request: ArchiveTaskRequest, current_user: dict = Depends(get_current_user)):
+async def archive_task(
+    request: ArchiveTaskRequest,
+    current_user: dict = Depends(get_current_user),
+    task_service: KanbanTaskService = Depends(get_kanban_service_for_archive),
+):
     """
     Archive a completed Kanban task with AI summarization and knowledge extraction.
 
@@ -87,16 +159,26 @@ async def archive_task(request: ArchiveTaskRequest, current_user: dict = Depends
         409: Task already archived
         500: Archive operation failed
     """
+    print(f"[ARCHIVE-DEBUG] archive_task endpoint called with task_id={request.task_id}", flush=True)
     try:
         # Set archived_by from current user
         request.archived_by = current_user.get("username", current_user.get("email"))
 
-        # Archive task
-        response = await kanban_archive_service.archive_task(request)
+        print(f"[ARCHIVE-DEBUG] Processing archive request for task_id={request.task_id}", flush=True)
+        print(f"[ARCHIVE-DEBUG] task_service type: {type(task_service).__name__}", flush=True)
+        print(f"[ARCHIVE-DEBUG] task_service has db_pool: {hasattr(task_service, 'db_pool')}", flush=True)
+
+        logger.info(f"[ARCHIVE] Processing archive request for task_id={request.task_id}")
+        logger.info(f"[ARCHIVE] task_service type: {type(task_service).__name__}")
+        logger.info(f"[ARCHIVE] task_service has db_pool: {hasattr(task_service, 'db_pool')}")
+
+        # Archive task with injected task service for DB access
+        response = await kanban_archive_service.archive_task(request, task_service)
 
         return response
 
     except TaskNotArchivableError as e:
+        print(f"[ARCHIVE-DEBUG] TaskNotArchivableError: {e}", flush=True)
         return error_response(
             code="TASK_NOT_ARCHIVABLE",
             message=str(e),
@@ -104,6 +186,7 @@ async def archive_task(request: ArchiveTaskRequest, current_user: dict = Depends
             details={"task_id": str(request.task_id)},
         )
     except Exception as e:
+        print(f"[ARCHIVE-DEBUG] Exception caught: {type(e).__name__}: {e}", flush=True)
         return error_response(
             code="ARCHIVE_FAILED",
             message=f"Failed to archive task: {str(e)}",

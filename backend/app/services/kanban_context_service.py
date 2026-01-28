@@ -313,6 +313,8 @@ class KanbanContextService:
         Raises:
             ContextSizeLimitExceeded: If ZIP size > 50MB
             InvalidContextFiles: If ZIP is invalid or empty
+            ZipBombDetected: If ZIP bomb detected (P0-2)
+            VirusDetected: If virus detected (P0-2)
         """
         # Validate ZIP file size (50MB = 52,428,800 bytes)
         MAX_SIZE = 50 * 1024 * 1024
@@ -320,6 +322,9 @@ class KanbanContextService:
 
         if file_size > MAX_SIZE:
             raise ContextSizeLimitExceeded(f"ZIP file size {file_size} bytes exceeds 50MB limit")
+
+        # P0-2: Virus scan (ClamAV)
+        await self._scan_for_virus(contents, filename)
 
         # Extract file list from ZIP
         try:
@@ -333,6 +338,9 @@ class KanbanContextService:
 
                 # Extract file sizes for metadata
                 total_uncompressed_size = sum(info.file_size for info in zip_file.infolist() if not info.is_dir())
+
+                # P0-2: ZIP bomb detection
+                self._detect_zip_bomb(file_size, total_uncompressed_size, len(file_list), zip_file)
 
         except zipfile.BadZipFile:
             raise InvalidContextFiles("Invalid ZIP file format")
@@ -513,6 +521,125 @@ class KanbanContextService:
             Estimated size in bytes (100KB per file average)
         """
         return len(file_paths) * 100 * 1024
+
+    def _detect_zip_bomb(
+        self, compressed_size: int, uncompressed_size: int, file_count: int, zip_file: zipfile.ZipFile
+    ) -> None:
+        """
+        Detect ZIP bomb attacks (P0-2 Security).
+
+        ZIP bombs are malicious archives designed to crash or render useless the system reading it.
+        Detection criteria:
+        1. Compression ratio > 100:1 (highly suspicious)
+        2. File count > 10,000 (excessive files)
+        3. Uncompressed size > 1GB (resource exhaustion)
+        4. Deeply nested directories (> 10 levels)
+
+        Args:
+            compressed_size: ZIP file size in bytes
+            uncompressed_size: Total uncompressed size in bytes
+            file_count: Number of files in ZIP
+            zip_file: ZipFile object for additional checks
+
+        Raises:
+            ZipBombDetected: If any ZIP bomb indicators detected
+        """
+        from backend.app.models.kanban_context import ZipBombDetected
+
+        # Check 1: Compression ratio (> 100:1)
+        if uncompressed_size > 0:
+            compression_ratio = uncompressed_size / compressed_size
+            if compression_ratio > 100:
+                raise ZipBombDetected(
+                    f"Suspicious compression ratio: {compression_ratio:.1f}:1 "
+                    f"(compressed: {compressed_size / 1024 / 1024:.2f}MB, "
+                    f"uncompressed: {uncompressed_size / 1024 / 1024:.2f}MB)"
+                )
+
+        # Check 2: File count (> 10,000)
+        if file_count > 10000:
+            raise ZipBombDetected(f"Excessive file count: {file_count} files (limit: 10,000)")
+
+        # Check 3: Uncompressed size (> 1GB)
+        MAX_UNCOMPRESSED_SIZE = 1 * 1024 * 1024 * 1024  # 1GB
+        if uncompressed_size > MAX_UNCOMPRESSED_SIZE:
+            raise ZipBombDetected(
+                f"Excessive uncompressed size: {uncompressed_size / 1024 / 1024 / 1024:.2f}GB " f"(limit: 1GB)"
+            )
+
+        # Check 4: Deeply nested directories (> 10 levels)
+        for name in zip_file.namelist():
+            depth = name.count("/")
+            if depth > 10:
+                raise ZipBombDetected(f"Deeply nested path detected: {name} (depth: {depth}, limit: 10)")
+
+        logger.info(
+            f"ZIP bomb check passed: ratio={uncompressed_size/compressed_size:.1f}:1, "
+            f"files={file_count}, size={uncompressed_size/1024/1024:.2f}MB"
+        )
+
+    async def _scan_for_virus(self, contents: bytes, filename: str) -> None:
+        """
+        Scan file for viruses using ClamAV (P0-2 Security).
+
+        Uses pyclamd library to connect to ClamAV daemon.
+        In development, if ClamAV is not available, logs warning but allows upload.
+        In production, virus scan failure blocks upload.
+
+        Args:
+            contents: File contents as bytes
+            filename: Original filename for logging
+
+        Raises:
+            VirusDetected: If virus found in file
+        """
+        from backend.app.models.kanban_context import VirusDetected
+        import os
+
+        # Check if we're in development mode (allow bypassing ClamAV if not available)
+        is_dev = os.getenv("ENVIRONMENT", "development") == "development"
+
+        try:
+            import pyclamd
+
+            # Try to connect to ClamAV daemon
+            cd = pyclamd.ClamdUnixSocket() if os.name != "nt" else pyclamd.ClamdNetworkSocket()
+
+            # Ping to check if ClamAV is running
+            if not cd.ping():
+                if is_dev:
+                    logger.warning(f"ClamAV daemon not responding - SKIPPING virus scan in DEV mode " f"(file: {filename})")
+                    return
+                else:
+                    raise VirusDetected("Virus scanning service unavailable (production mode)")
+
+            # Scan the file contents
+            scan_result = cd.scan_stream(contents)
+
+            if scan_result:
+                # Virus detected - scan_result format: {stream: ('FOUND', 'Virus.Name')}
+                virus_info = scan_result.get("stream", ("UNKNOWN", "Unknown virus"))
+                virus_name = virus_info[1] if len(virus_info) > 1 else "Unknown"
+                raise VirusDetected(f"Virus detected in {filename}: {virus_name}")
+
+            logger.info(f"Virus scan passed: {filename} ({len(contents)} bytes)")
+
+        except ImportError:
+            # pyclamd not installed
+            if is_dev:
+                logger.warning(
+                    f"pyclamd not installed - SKIPPING virus scan in DEV mode "
+                    f"(file: {filename}). "
+                    "Install: pip install pyclamd"
+                )
+            else:
+                raise VirusDetected("Virus scanning library not available (production mode)")
+        except Exception as e:
+            # Other errors (connection failed, etc.)
+            if is_dev:
+                logger.warning(f"Virus scan failed in DEV mode: {e} - ALLOWING upload (file: {filename})")
+            else:
+                raise VirusDetected(f"Virus scan failed: {str(e)}")
 
 
 # ============================================================================

@@ -203,3 +203,15 @@ class InvalidContextFiles(Exception):
     """Raised when file list is invalid or empty"""
 
     pass
+
+
+class ZipBombDetected(Exception):
+    """Raised when ZIP bomb detected (suspicious compression ratio or file count)"""
+
+    pass
+
+
+class VirusDetected(Exception):
+    """Raised when virus detected in uploaded file"""
+
+    pass

@@ -21,6 +21,8 @@ from app.models.kanban_context import (
     ContextUploadResponse,
     InvalidContextFiles,
     TaskContext,
+    VirusDetected,
+    ZipBombDetected,
 )
 from app.services.kanban_context_service import kanban_context_service
 
@@ -259,13 +261,19 @@ async def upload_context_file(
     - File type must be application/zip or have .zip extension
     - File size must not exceed 52,428,800 bytes (50MB)
 
+    **Security (P0-2)**:
+    - ZIP bomb detection (compression ratio > 100:1, file count > 10,000, uncompressed size > 1GB)
+    - Virus scan using ClamAV (optional in development, required in production)
+
     Process:
     1. Validate file type (ZIP only)
     2. Validate file size (<50MB)
-    3. Read ZIP contents
-    4. Extract file list and sizes
-    5. Store ZIP and metadata
-    6. Return ZIP URL and metadata
+    3. P0-2: Virus scan (ClamAV)
+    4. Read ZIP contents
+    5. Extract file list and sizes
+    6. P0-2: ZIP bomb detection
+    7. Store ZIP and metadata
+    8. Return ZIP URL and metadata
     """
     # Validate file type
     if not file.filename.endswith(".zip") and file.content_type != "application/zip":
@@ -317,6 +325,24 @@ async def upload_context_file(
             message=str(e),
             status_code=status.HTTP_400_BAD_REQUEST,
             details={"task_id": str(task_id)},
+        )
+
+    except ZipBombDetected as e:
+        # P0-2: ZIP bomb detection
+        return error_response(
+            code="ZIP_BOMB_DETECTED",
+            message=str(e),
+            status_code=status.HTTP_400_BAD_REQUEST,
+            details={"task_id": str(task_id), "security_check": "zip_bomb_detection"},
+        )
+
+    except VirusDetected as e:
+        # P0-2: Virus scan
+        return error_response(
+            code="VIRUS_DETECTED",
+            message=str(e),
+            status_code=status.HTTP_400_BAD_REQUEST,
+            details={"task_id": str(task_id), "security_check": "virus_scan"},
         )
 
     except Exception as e:

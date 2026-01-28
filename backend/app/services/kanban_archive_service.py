@@ -15,7 +15,7 @@ import os
 import re
 import sys
 import time
-from datetime import UTC, datetime
+from datetime import UTC, datetime, timezone
 from pathlib import Path
 from typing import TYPE_CHECKING, Any, Dict, List, Optional
 
@@ -89,6 +89,13 @@ from app.models.kanban_archive import (  # noqa: E402
     ROIStatistics,
     TaskNotArchivableError,
 )
+
+
+def _get_utc_now_naive() -> datetime:
+    """Get current UTC time as a naive datetime (for DB compatibility)."""
+    return datetime.now(UTC).replace(tzinfo=None)
+
+
 from app.models.kanban_task import Task, TaskStatus  # noqa: E402
 from app.services.kanban_task_service import kanban_task_service  # noqa: E402
 from app.services.obsidian_service import ObsidianService  # noqa: E402
@@ -247,7 +254,7 @@ class KanbanArchiveService:
                 obsidian_error = str(e)
 
         # 5. Update task status to DONE_END
-        archived_at = datetime.now(UTC)
+        archived_at = _get_utc_now_naive()
         # TODO: In production, update task in database with archived_at timestamp
 
         # 6. Store in archive
@@ -497,7 +504,7 @@ Generate a comprehensive summary with key learnings, technical insights, and rec
                 task_id=task.task_id,
                 synced=True,  # Report as synced for test assertions
                 obsidian_note_path="[TEST_MODE - no file written]",
-                sync_timestamp=datetime.now(UTC),
+                sync_timestamp=_get_utc_now_naive(),
                 retry_count=0,
             )
 
@@ -510,6 +517,8 @@ Generate a comprehensive summary with key learnings, technical insights, and rec
 
         try:
             # Create knowledge entry
+            # Use naive UTC datetime for consistency
+            now_utc = _get_utc_now_naive()
             entry = ObsidianKnowledgeEntry(
                 task_id=task.task_id,
                 title=task.title,
@@ -525,14 +534,14 @@ Generate a comprehensive summary with key learnings, technical insights, and rec
                 ],
                 related_tasks=[],  # TODO: Link related tasks
                 created_at=task.created_at,
-                archived_at=datetime.now(UTC),
+                archived_at=now_utc,
             )
 
             # Generate Obsidian note content
             note_content = self._generate_obsidian_note(entry, roi_metrics)
 
             # Save to Obsidian vault in date-specific folder
-            now = datetime.now(UTC)
+            now = now_utc
             date_str = now.strftime("%Y-%m-%d")
 
             # Sanitize task title for filename (remove special characters)
@@ -565,7 +574,7 @@ Generate a comprehensive summary with key learnings, technical insights, and rec
                 task_id=task.task_id,
                 synced=True,
                 obsidian_note_path=str(note_path),
-                sync_timestamp=datetime.now(UTC),
+                sync_timestamp=now_utc,
                 retry_count=0,
             )
 
@@ -1006,6 +1015,7 @@ schema_version: "1.0"
     def _calculate_roi_statistics(self, archives: List[ArchivedTaskWithMetrics]) -> ROIStatistics:
         """Calculate aggregated ROI statistics"""
         if not archives:
+            now_utc = _get_utc_now_naive()
             return ROIStatistics(
                 total_tasks=0,
                 total_estimated_hours=0.0,
@@ -1017,8 +1027,8 @@ schema_version: "1.0"
                 ai_suggested_tasks=0,
                 constitutional_compliant_tasks=0,
                 constitutional_compliance_rate=0.0,
-                period_start=datetime.now(UTC),
-                period_end=datetime.now(UTC),
+                period_start=now_utc,
+                period_end=now_utc,
             )
 
         total_estimated = sum(a.roi_metrics.estimated_hours for a in archives if a.roi_metrics)
