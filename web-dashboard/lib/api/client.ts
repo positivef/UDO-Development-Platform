@@ -18,7 +18,7 @@ let failureCount = 0;
 const MAX_FAILURES = 3;
 
 export const apiClient = axios.create({
-  baseURL: process.env.NEXT_PUBLIC_API_URL || 'http://localhost:8005',
+  baseURL: process.env.NEXT_PUBLIC_API_URL || 'http://localhost:8006',
   timeout: 10000,
   headers: {
     'Content-Type': 'application/json',

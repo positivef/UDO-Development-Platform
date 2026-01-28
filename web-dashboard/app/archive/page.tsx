@@ -89,11 +89,11 @@ export default function ArchivePage() {
             </SelectTrigger>
             <SelectContent>
               <SelectItem value="all">{t('allPhases')}</SelectItem>
-              <SelectItem value="ideation">Ideation</SelectItem>
-              <SelectItem value="design">Design</SelectItem>
+              <SelectItem value="ideation">아이디어</SelectItem>
+              <SelectItem value="design">설계</SelectItem>
               <SelectItem value="mvp">MVP</SelectItem>
-              <SelectItem value="implementation">Implementation</SelectItem>
-              <SelectItem value="testing">Testing</SelectItem>
+              <SelectItem value="implementation">구현</SelectItem>
+              <SelectItem value="testing">테스트</SelectItem>
             </SelectContent>
           </Select>
         </div>

@@ -352,7 +352,7 @@ export function DependencyGraph({
             variant="outline"
             size="sm"
             onClick={handleZoomIn}
-            title="Zoom In"
+            title="확대"
             className="bg-white dark:bg-gray-800"
           >
             <ZoomIn className="h-4 w-4" />
@@ -361,7 +361,7 @@ export function DependencyGraph({
             variant="outline"
             size="sm"
             onClick={handleZoomOut}
-            title="Zoom Out"
+            title="축소"
             className="bg-white dark:bg-gray-800"
           >
             <ZoomOut className="h-4 w-4" />
@@ -370,7 +370,7 @@ export function DependencyGraph({
             variant="outline"
             size="sm"
             onClick={handleResetZoom}
-            title="Reset Zoom"
+            title="원래 크기"
             className="bg-white dark:bg-gray-800"
           >
             <Maximize2 className="h-4 w-4" />
@@ -379,41 +379,41 @@ export function DependencyGraph({
 
         {/* Graph Statistics */}
         <div className="absolute bottom-4 left-4 text-xs text-muted-foreground">
-          {nodeCount} nodes, {edgeCount} edges · Rendered in {renderTime}ms
+          작업 {nodeCount}개, 연결 {edgeCount}개 · 그리기 시간 {renderTime}ms
         </div>
       </div>
 
       {/* Legend */}
       <div className="space-y-2">
-        <h3 className="text-sm font-semibold">Legend</h3>
+        <h3 className="text-sm font-semibold">범례</h3>
         <div className="flex gap-6 text-sm">
           <div className="flex items-center gap-2">
             <div className="w-4 h-4 rounded-full bg-slate-400" />
-            <span>Pending</span>
+            <span>대기 중</span>
           </div>
           <div className="flex items-center gap-2">
             <div className="w-4 h-4 rounded-full bg-yellow-400" />
-            <span>In Progress</span>
+            <span>진행 중</span>
           </div>
           <div className="flex items-center gap-2">
             <div className="w-4 h-4 rounded-full bg-red-500" />
-            <span>Blocked</span>
+            <span>차단됨</span>
           </div>
           <div className="flex items-center gap-2">
             <div className="w-4 h-4 rounded-full bg-green-500" />
-            <span>Completed</span>
+            <span>완료</span>
           </div>
           <div className="flex items-center gap-2 ml-auto">
             <div className="w-8 h-0.5 bg-blue-500" />
-            <span>Dependency</span>
+            <span>의존 관계</span>
           </div>
           <div className="flex items-center gap-2">
             <div className="w-8 h-0.5 bg-red-500" />
-            <span>Hard Block</span>
+            <span>필수 차단</span>
           </div>
           <div className="flex items-center gap-2">
             <div className="w-8 h-0.5 bg-blue-500 opacity-50" />
-            <span>Soft Dependency</span>
+            <span>선택 의존</span>
           </div>
         </div>
       </div>
@@ -424,8 +424,7 @@ export function DependencyGraph({
           <AlertTriangle className="h-4 w-4" />
           <AlertDescription className="flex items-center justify-between">
             <span>
-              Task is blocked by dependencies. Emergency override available (Admin
-              only)
+              작업이 차단되었습니다. 긴급 해제 가능 (관리자 전용)
             </span>
             <Button
               variant="outline"
@@ -434,7 +433,7 @@ export function DependencyGraph({
               className="bg-yellow-500 hover:bg-yellow-600 text-white border-yellow-600"
             >
               <Zap className="h-3 w-3 mr-1" />
-              Emergency Override
+              긴급 해제
             </Button>
           </AlertDescription>
         </Alert>
@@ -443,8 +442,7 @@ export function DependencyGraph({
       {/* Instructions */}
       <div className="text-xs text-muted-foreground">
         <p>
-          <strong>Tip:</strong> Drag nodes to rearrange. Click a node to select it.
-          Purple border = current task, Yellow border = selected task.
+          <strong>도움말:</strong> 작업을 드래그해서 위치를 바꿀 수 있습니다. 클릭하면 선택됩니다. 보라색 테두리 = 현재 작업, 노란색 테두리 = 선택된 작업
         </p>
       </div>
     </div>

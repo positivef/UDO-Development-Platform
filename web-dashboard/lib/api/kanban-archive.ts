@@ -3,7 +3,7 @@
  */
 import type { Phase, Priority, TaskStatus } from '@/lib/types/kanban'
 
-const API_BASE_URL = process.env.NEXT_PUBLIC_API_URL || 'http://localhost:8005'
+const API_BASE_URL = process.env.NEXT_PUBLIC_API_URL || 'http://localhost:8006'
 const ARCHIVE_API = `${API_BASE_URL}/api/kanban/archive`
 
 export interface ArchivedTask {

@@ -78,10 +78,14 @@ export function useKanbanWebSocket({
       const token = getAuthToken();
       let wsUrl = `${protocol}//${window.location.hostname}:${wsPort}/ws/kanban/projects/${defaultProjectId}`;
 
-      // Add token as query parameter if available
+      // Add token as query parameter
       if (token) {
         wsUrl += `?token=${encodeURIComponent(token)}`;
-      } else if (!isDevelopmentMode()) {
+      } else if (isDevelopmentMode()) {
+        // In development mode, use dev-token for backend dev bypass
+        wsUrl += '?token=dev-token';
+        console.log('[KanbanWS] Development mode: using dev-token');
+      } else {
         // In production, require authentication
         console.warn('[KanbanWS] No auth token available, connection may fail');
       }

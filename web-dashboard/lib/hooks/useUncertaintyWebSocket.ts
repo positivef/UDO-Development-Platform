@@ -222,7 +222,9 @@ export function useUncertaintyWebSocket(config: WebSocketConfig = {}) {
         if (!isMountedRef.current) {
           return
         }
-        console.error('[UncertaintyWS] WebSocket error:', error)
+        console.error('[UncertaintyWS] WebSocket error event:', error)
+        console.error('[UncertaintyWS] WebSocket readyState:', ws.readyState)
+        console.error('[UncertaintyWS] WebSocket URL:', wsUrl.toString().replace(/token=.*?(&|$)/, 'token=***$1'))
         setWsError('WebSocket connection error')
         setWsConnected(false)
       }

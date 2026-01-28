@@ -7,7 +7,7 @@
 
 import type { KanbanTask, TaskStatus, Priority, Phase } from '@/lib/types/kanban'
 
-const API_BASE_URL = process.env.NEXT_PUBLIC_API_URL || 'http://localhost:8005'
+const API_BASE_URL = process.env.NEXT_PUBLIC_API_URL || 'http://localhost:8006'
 const KANBAN_API = `${API_BASE_URL}/api/kanban`
 
 // Error handling helper
@@ -337,15 +337,14 @@ export async function archiveTask(
     reason?: string
   }
 ): Promise<ArchiveTaskResponse> {
-  const request: ArchiveTaskRequest = {
-    task_id: id,
+  const request = {
     archived_by: options?.archived_by || 'user', // Default to 'user' if not provided
     generate_ai_summary: options?.generate_ai_summary ?? true,
     sync_to_obsidian: options?.sync_to_obsidian ?? true,
     reason: options?.reason,
   }
 
-  return apiFetch('/archive', {
+  return apiFetch(`/tasks/${id}/archive`, {
     method: 'POST',
     body: JSON.stringify(request),
   })

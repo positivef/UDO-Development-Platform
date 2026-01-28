@@ -13,6 +13,7 @@ import { QueryClient, QueryClientProvider } from "@tanstack/react-query"
 import { ReactQueryDevtools } from "@tanstack/react-query-devtools"
 import { useState } from "react"
 import { I18nProvider } from "@/i18n/I18nProvider"
+import { ServiceWorkerProvider } from "./ServiceWorkerProvider"
 
 function makeQueryClient() {
   return new QueryClient({
@@ -57,6 +58,7 @@ export function Providers({ children }: { children: React.ReactNode }) {
 
   return (
     <QueryClientProvider client={queryClient}>
+      <ServiceWorkerProvider />
       <I18nProvider>
         {children}
       </I18nProvider>

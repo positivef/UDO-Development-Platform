@@ -74,7 +74,7 @@ export default function CKTheoryPage() {
   const t = useTranslations('ckTheory')
   const tCommon = useTranslations('common')
   const [challenge, setChallenge] = useState("")
-  const [constraints, setConstraints] = useState<Record<string, unknown>>({})
+  const [constraints, setConstraints] = useState<string>("")
   const [result, setResult] = useState<CKTheoryResult | null>(null)
   const [showFeedbackForm, setShowFeedbackForm] = useState(false)
   const [selectedAlt, setSelectedAlt] = useState<string>("")
@@ -245,21 +245,15 @@ export default function CKTheoryPage() {
                     {t('constraintsLabel')}
                   </label>
                   <textarea
-                    value={JSON.stringify(constraints, null, 2)}
-                    onChange={(e) => {
-                      try {
-                        setConstraints(JSON.parse(e.target.value))
-                      } catch {
-                        // Invalid JSON, ignore
-                      }
-                    }}
+                    value={constraints}
+                    onChange={(e) => setConstraints(e.target.value)}
                     placeholder={t('constraintsPlaceholder')}
                     className={cn(
                       "w-full px-4 py-3 rounded-lg",
                       "bg-gray-900/50 border border-gray-700",
                       "text-white placeholder-gray-500",
                       "focus:outline-none focus:border-purple-500",
-                      "transition-colors resize-none font-mono text-sm"
+                      "transition-colors resize-none"
                     )}
                     rows={3}
                     disabled={generateMutation.isPending}

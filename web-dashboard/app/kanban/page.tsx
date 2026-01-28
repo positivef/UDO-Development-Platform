@@ -141,6 +141,11 @@ export default function KanbanPage() {
     }
   }, [])
 
+  // Helper to detect mock IDs (mock IDs start with '550e8400-')
+  const hasMockIds = (taskList: KanbanTask[]) => {
+    return taskList.some(t => t.id.startsWith('550e8400-'))
+  }
+
   // Initialize with mock data immediately, then update if API succeeds
   useEffect(() => {
     // Always start with mock data to avoid loading spinner blocking UI
@@ -150,12 +155,19 @@ export default function KanbanPage() {
     }
   }, []) // Run once on mount
 
-  // Handle API response - update to real data if available
+  // Handle API response - ALWAYS replace localStorage data when API succeeds
+  // This fixes the issue where cached mock IDs cause archive failures
   useEffect(() => {
     if (apiData?.tasks && apiData.tasks.length > 0) {
-      // Use API data
+      // Always use API data (force override localStorage cache)
+      // This ensures real DB IDs replace any cached mock IDs
       setTasks(apiData.tasks)
       setUseMockData(false)
+
+      // Clear stale localStorage if it had mock IDs
+      if (hasMockIds(tasks)) {
+        console.log('[Kanban] Replaced cached mock data with real API data')
+      }
     } else if (apiError || !isOnline) {
       // Keep using mock data on API error
       setUseMockData(true)

@@ -221,7 +221,7 @@ export function TaskDetailModal({
     if (!task.id || isDeleting) return
 
     const confirmed = confirm(
-      `Are you sure you want to delete "${task.title}"?\n\nThis action cannot be undone.`
+      `"${task.title}" 작업을 삭제하시겠습니까?\n\n이 작업은 되돌릴 수 없습니다.`
     )
 
     if (!confirmed) return
@@ -255,7 +255,7 @@ export function TaskDetailModal({
     if (!task.id || isArchiving) return
 
     const confirmed = confirm(
-      `Archive task "${task.title}"?\n\nArchived tasks can be restored later.`
+      `"${task.title}" 작업을 보관하시겠습니까?\n\n보관된 작업은 나중에 복구할 수 있습니다.`
     )
 
     if (!confirmed) return
@@ -263,16 +263,23 @@ export function TaskDetailModal({
     setIsArchiving(true)
 
     try {
-      await kanbanAPI.archiveTask(task.id)
-      deleteTask(task.id) // Remove from board (same as delete for UI purposes)
+      const response = await kanbanAPI.archiveTask(task.id)
 
-      // Broadcast to other users via WebSocket (Week 7 Task 6)
-      if (onBroadcastTaskArchived) {
-        onBroadcastTaskArchived(task.id)
+      if (response.success) {
+        deleteTask(task.id) // Remove from board (same as delete for UI purposes)
+
+        // Broadcast to other users via WebSocket (Week 7 Task 6)
+        if (onBroadcastTaskArchived) {
+          onBroadcastTaskArchived(task.id)
+        }
+
+        onClose()
+        console.log(`✅ Task ${task.id} archived successfully`)
+        console.log(`   AI Summary: ${response.ai_summary_generated ? 'Generated' : 'Skipped'}`)
+        console.log(`   Obsidian Sync: ${response.obsidian_synced ? 'Success' : 'Skipped'}`)
+      } else {
+        throw new Error(response.message || 'Archive failed')
       }
-
-      onClose()
-      console.log(`✅ Task ${task.id} archived successfully`)
     } catch (error) {
       console.error('Failed to archive task:', error)
       alert(
@@ -328,7 +335,7 @@ export function TaskDetailModal({
                   setFormData({ ...formData, title: e.target.value })
                 }
                 className="text-2xl font-bold"
-                placeholder="Task title"
+                placeholder="작업 제목"
               />
             ) : (
               <span>{task.title}</span>
@@ -356,10 +363,10 @@ export function TaskDetailModal({
 
         <Tabs defaultValue="details" className="mt-4">
           <TabsList className="grid w-full grid-cols-4">
-            <TabsTrigger value="details">Details</TabsTrigger>
+            <TabsTrigger value="details">상세</TabsTrigger>
             <TabsTrigger value="comments" className="flex items-center gap-1">
               <MessageSquare className="h-3 w-3" />
-              Comments
+              댓글
               {(formData.comments?.length || 0) > 0 && (
                 <Badge variant="secondary" className="ml-1 text-xs px-1.5 py-0">
                   {formData.comments?.length}
@@ -368,27 +375,27 @@ export function TaskDetailModal({
             </TabsTrigger>
             <TabsTrigger value="dependencies" className="flex items-center gap-1">
               <AlertTriangle className="h-3 w-3" />
-              Dependencies
+              작업 순서
               {((formData.dependencies?.length || 0) + (formData.blocked_by?.length || 0)) > 0 && (
                 <Badge variant="secondary" className="ml-1 text-xs px-1.5 py-0">
                   {(formData.dependencies?.length || 0) + (formData.blocked_by?.length || 0)}
                 </Badge>
               )}
             </TabsTrigger>
-            <TabsTrigger value="context">Context</TabsTrigger>
+            <TabsTrigger value="context">관련 파일</TabsTrigger>
           </TabsList>
 
           <TabsContent value="details" className="space-y-6 py-4">
           {/* Description */}
           <div>
-            <Label>Description</Label>
+            <Label>설명</Label>
             {isEditing ? (
               <Textarea
                 value={formData.description || ''}
                 onChange={(e) =>
                   setFormData({ ...formData, description: e.target.value })
                 }
-                placeholder="Task description..."
+                placeholder="작업 설명..."
                 rows={4}
                 className="mt-2"
               />
@@ -401,7 +408,7 @@ export function TaskDetailModal({
           <div>
             <Label className="flex items-center gap-2">
               <Tag className="h-4 w-4" />
-              Tags
+              태그
             </Label>
             <div className="mt-2 flex flex-wrap gap-2">
               {isEditing ? (
@@ -413,7 +420,7 @@ export function TaskDetailModal({
                       tags: e.target.value.split(',').map((t) => t.trim()),
                     })
                   }
-                  placeholder="tag1, tag2, tag3"
+                  placeholder="쉼표로 구분 (예: api, backend, frontend)"
                   className="flex-1"
                 />
               ) : task.tags && task.tags.length > 0 ? (
@@ -423,7 +430,7 @@ export function TaskDetailModal({
                   </Badge>
                 ))
               ) : (
-                <span className="text-sm text-muted-foreground">No tags</span>
+                <span className="text-sm text-muted-foreground">태그 없음</span>
               )}
             </div>
           </div>
@@ -431,7 +438,7 @@ export function TaskDetailModal({
           {/* Time Tracking */}
           <div className="grid grid-cols-2 gap-4">
             <div>
-              <Label>Estimated Hours</Label>
+              <Label>예상 시간</Label>
               {isEditing ? (
                 <Input
                   type="number"
@@ -443,13 +450,14 @@ export function TaskDetailModal({
                     })
                   }
                   className="mt-2"
+                  placeholder="예: 8"
                 />
               ) : (
-                <p className="mt-2">{task.estimated_hours || 0}h</p>
+                <p className="mt-2">{task.estimated_hours || 0}시간</p>
               )}
             </div>
             <div>
-              <Label>Actual Hours</Label>
+              <Label>실제 소요</Label>
               {isEditing ? (
                 <Input
                   type="number"
@@ -461,9 +469,10 @@ export function TaskDetailModal({
                     })
                   }
                   className="mt-2"
+                  placeholder="예: 6"
                 />
               ) : (
-                <p className="mt-2">{task.actual_hours || 0}h</p>
+                <p className="mt-2">{task.actual_hours || 0}시간</p>
               )}
             </div>
           </div>
@@ -472,7 +481,7 @@ export function TaskDetailModal({
           <div>
             <Label className="flex items-center gap-2">
               <Calendar className="h-4 w-4" />
-              Due Date
+              마감일
             </Label>
             {isEditing ? (
               <Input
@@ -502,18 +511,18 @@ export function TaskDetailModal({
                 {isOverdue(formData.due_date) && (
                   <Badge variant="destructive" className="text-xs">
                     <AlertTriangle className="h-3 w-3 mr-1" />
-                    Overdue
+                    기한 초과
                   </Badge>
                 )}
                 {isDueSoon(formData.due_date) && !isOverdue(formData.due_date) && (
                   <Badge variant="outline" className="text-xs bg-yellow-500/10 text-yellow-600 border-yellow-500/20">
                     <Clock className="h-3 w-3 mr-1" />
-                    Due Soon
+                    곧 마감
                   </Badge>
                 )}
               </div>
             ) : (
-              <p className="mt-2 text-sm text-muted-foreground">No due date set</p>
+              <p className="mt-2 text-sm text-muted-foreground">마감일 미설정</p>
             )}
           </div>
 
@@ -522,7 +531,7 @@ export function TaskDetailModal({
             <div>
               <Label className="flex items-center gap-2">
                 <AlertCircle className="h-4 w-4" />
-                Dependencies
+                이 작업 후 시작 가능
               </Label>
               <div className="mt-2 space-y-1">
                 {task.dependencies.map((dep) => (
@@ -539,7 +548,7 @@ export function TaskDetailModal({
             <div>
               <Label className="flex items-center gap-2 text-red-600">
                 <AlertCircle className="h-4 w-4" />
-                Blocked By
+                차단된 작업
               </Label>
               <div className="mt-2 space-y-1">
                 {task.blocked_by.map((blocker) => (
@@ -553,20 +562,20 @@ export function TaskDetailModal({
 
           {/* Context Notes */}
           <div>
-            <Label>Context Notes</Label>
+            <Label>상황 메모</Label>
             {isEditing ? (
               <Textarea
                 value={formData.context_notes || ''}
                 onChange={(e) =>
                   setFormData({ ...formData, context_notes: e.target.value })
                 }
-                placeholder="Additional context or notes..."
+                placeholder="추가 설명이나 메모..."
                 rows={3}
                 className="mt-2"
               />
             ) : (
               <p className="mt-2 text-sm text-muted-foreground">
-                {task.context_notes || 'No context notes'}
+                {task.context_notes || '메모 없음'}
               </p>
             )}
           </div>
@@ -576,11 +585,11 @@ export function TaskDetailModal({
             <div className="rounded-lg border border-purple-200 bg-purple-50 p-4">
               <div className="flex items-center gap-2 text-sm">
                 <span className="font-semibold text-purple-800">
-                  AI Suggested
+                  AI 제안
                 </span>
                 {task.ai_confidence && (
                   <Badge variant="secondary">
-                    {Math.round(task.ai_confidence * 100)}% confidence
+                    신뢰도 {Math.round(task.ai_confidence * 100)}%
                   </Badge>
                 )}
               </div>
@@ -595,13 +604,13 @@ export function TaskDetailModal({
               <div className="space-y-2">
                 <Label className="flex items-center gap-2">
                   <MessageSquare className="h-4 w-4" />
-                  Add Comment
+                  댓글 작성
                 </Label>
                 <div className="flex gap-2">
                   <Textarea
                     value={newComment}
                     onChange={(e) => setNewComment(e.target.value)}
-                    placeholder="Write a comment..."
+                    placeholder="댓글을 입력하세요..."
                     rows={2}
                     className="flex-1"
                     onKeyDown={(e) => {
@@ -623,7 +632,7 @@ export function TaskDetailModal({
                   </Button>
                 </div>
                 <p className="text-xs text-muted-foreground">
-                  Press Ctrl+Enter (Cmd+Enter on Mac) to send
+                  Ctrl+Enter(Mac: Cmd+Enter)로 작성
                 </p>
               </div>
 
@@ -631,8 +640,8 @@ export function TaskDetailModal({
               <div className="space-y-2">
                 <Label>
                   {(formData.comments?.length || 0) > 0
-                    ? `${formData.comments?.length} Comment${(formData.comments?.length || 0) > 1 ? 's' : ''}`
-                    : 'No comments yet'}
+                    ? `댓글 ${formData.comments?.length}개`
+                    : '아직 댓글이 없습니다'}
                 </Label>
                 {(formData.comments?.length || 0) > 0 && (
                   <ScrollArea className="h-[250px]">
@@ -697,18 +706,18 @@ export function TaskDetailModal({
           {isEditing ? (
             <>
               <Button variant="outline" onClick={handleCancel}>
-                Cancel
+                취소
               </Button>
               <Button onClick={handleSave} disabled={isSaving}>
                 {isSaving ? (
                   <>
                     <Clock className="mr-2 h-4 w-4 animate-spin" />
-                    Saving...
+                    저장 중...
                   </>
                 ) : (
                   <>
                     <Save className="mr-2 h-4 w-4" />
-                    Save
+                    저장
                   </>
                 )}
               </Button>
@@ -723,12 +732,12 @@ export function TaskDetailModal({
                 {isDeleting ? (
                   <>
                     <Clock className="mr-2 h-4 w-4 animate-spin" />
-                    Deleting...
+                    삭제 중...
                   </>
                 ) : (
                   <>
                     <Trash2 className="mr-2 h-4 w-4" />
-                    Delete
+                    삭제
                   </>
                 )}
               </Button>
@@ -740,19 +749,19 @@ export function TaskDetailModal({
                 {isArchiving ? (
                   <>
                     <Clock className="mr-2 h-4 w-4 animate-spin" />
-                    Archiving...
+                    보관 중...
                   </>
                 ) : (
                   <>
                     <Archive className="mr-2 h-4 w-4" />
-                    Archive
+                    보관
                   </>
                 )}
               </Button>
               <Button variant="outline" onClick={() => setIsEditing(true)}>
-                Edit
+                수정
               </Button>
-              <Button onClick={onClose}>Close</Button>
+              <Button onClick={onClose}>닫기</Button>
             </>
           )}
         </DialogFooter>

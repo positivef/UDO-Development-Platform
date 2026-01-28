@@ -7,7 +7,7 @@
 
 // Backend URL - read from environment or use default
 // Backend runs on port 8000 by default
-export const API_URL = process.env.NEXT_PUBLIC_API_URL || "http://localhost:8005";
+export const API_URL = process.env.NEXT_PUBLIC_API_URL || "http://localhost:8006";
 
 // WebSocket URL - derived from API_URL
 export const WS_URL = (() => {
@@ -16,7 +16,7 @@ export const WS_URL = (() => {
     url.protocol = url.protocol === "https:" ? "wss:" : "ws:";
     return url.origin;
   } catch {
-    return "ws://localhost:8005";
+    return "ws://localhost:8006";
   }
 })();
 

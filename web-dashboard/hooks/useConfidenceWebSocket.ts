@@ -78,22 +78,28 @@ export function useConfidenceWebSocket({
 
     try {
       isConnectingRef.current = true;
-      const protocol = window.location.protocol === 'https:' ? 'wss:' : 'ws:';
+
+      // Use environment variable or default to localhost in development
+      const isDev = isDevelopmentMode();
+      const wsHost = isDev ? 'localhost' : window.location.hostname;
       const wsPort = process.env.NEXT_PUBLIC_WS_PORT || '8000';
+      const protocol = window.location.protocol === 'https:' ? 'wss:' : 'ws:';
 
       // Build URL with authentication token
       const token = getAuthToken();
-      let wsUrl = `${protocol}//${window.location.hostname}:${wsPort}/ws/confidence/${phase}`;
+      let wsUrl = `${protocol}//${wsHost}:${wsPort}/ws/confidence/${phase}`;
 
       // Add token as query parameter if available
       if (token) {
         wsUrl += `?token=${encodeURIComponent(token)}`;
-      } else if (!isDevelopmentMode()) {
+      } else if (!isDev) {
         // In production, require authentication
         console.warn('[ConfidenceWS] No auth token available, connection may fail');
       }
 
       console.log(`[ConfidenceWS] Connecting to ${wsUrl.replace(/token=.*/, 'token=***')}`);
+      console.log(`[ConfidenceWS] Config: isDev=${isDev}, wsHost=${wsHost}, wsPort=${wsPort}, phase=${phase}`);
+
       const ws = new WebSocket(wsUrl);
       wsRef.current = ws;
 
@@ -169,7 +175,9 @@ export function useConfidenceWebSocket({
         if (!isMountedRef.current) {
           return;
         }
-        console.error('[ConfidenceWS] Error:', error);
+        console.error('[ConfidenceWS] WebSocket error event:', error);
+        console.error('[ConfidenceWS] WebSocket readyState:', ws.readyState);
+        console.error('[ConfidenceWS] WebSocket URL:', wsUrl.replace(/token=.*/, 'token=***'));
         isConnectingRef.current = false;
         if (onStatusChangeRef.current) {
           onStatusChangeRef.current('error');

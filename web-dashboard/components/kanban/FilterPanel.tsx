@@ -39,25 +39,25 @@ interface FilterPanelProps {
 }
 
 const PHASES: { value: Phase; label: string; color: string }[] = [
-  { value: 'ideation', label: 'Ideation', color: 'bg-purple-100 text-purple-700' },
-  { value: 'design', label: 'Design', color: 'bg-blue-100 text-blue-700' },
+  { value: 'ideation', label: '아이디어', color: 'bg-purple-100 text-purple-700' },
+  { value: 'design', label: '설계', color: 'bg-blue-100 text-blue-700' },
   { value: 'mvp', label: 'MVP', color: 'bg-cyan-100 text-cyan-700' },
-  { value: 'implementation', label: 'Implementation', color: 'bg-green-100 text-green-700' },
-  { value: 'testing', label: 'Testing', color: 'bg-orange-100 text-orange-700' },
+  { value: 'implementation', label: '구현', color: 'bg-green-100 text-green-700' },
+  { value: 'testing', label: '테스트', color: 'bg-orange-100 text-orange-700' },
 ]
 
 const STATUSES: { value: TaskStatus; label: string; color: string }[] = [
-  { value: 'pending', label: 'To Do', color: 'bg-slate-100 text-slate-700' },
-  { value: 'in_progress', label: 'In Progress', color: 'bg-yellow-100 text-yellow-700' },
-  { value: 'blocked', label: 'Blocked', color: 'bg-red-100 text-red-700' },
-  { value: 'completed', label: 'Done', color: 'bg-green-100 text-green-700' },
+  { value: 'pending', label: '할 일', color: 'bg-slate-100 text-slate-700' },
+  { value: 'in_progress', label: '진행 중', color: 'bg-yellow-100 text-yellow-700' },
+  { value: 'blocked', label: '차단됨', color: 'bg-red-100 text-red-700' },
+  { value: 'completed', label: '완료', color: 'bg-green-100 text-green-700' },
 ]
 
 const PRIORITIES: { value: Priority; label: string; color: string }[] = [
-  { value: 'low', label: 'Low', color: 'bg-blue-100 text-blue-600' },
-  { value: 'medium', label: 'Medium', color: 'bg-yellow-100 text-yellow-600' },
-  { value: 'high', label: 'High', color: 'bg-orange-100 text-orange-600' },
-  { value: 'critical', label: 'Critical', color: 'bg-red-100 text-red-600' },
+  { value: 'low', label: '낮음', color: 'bg-blue-100 text-blue-600' },
+  { value: 'medium', label: '보통', color: 'bg-yellow-100 text-yellow-600' },
+  { value: 'high', label: '높음', color: 'bg-orange-100 text-orange-600' },
+  { value: 'critical', label: '긴급', color: 'bg-red-100 text-red-600' },
 ]
 
 export function FilterPanel({ filters, onFiltersChange }: FilterPanelProps) {
@@ -105,7 +105,7 @@ export function FilterPanel({ filters, onFiltersChange }: FilterPanelProps) {
       <PopoverTrigger asChild>
         <Button variant="outline" size="sm" className="relative">
           <Filter className="h-4 w-4 mr-2" />
-          Filter
+          필터
           {activeFilterCount > 0 && (
             <Badge
               variant="secondary"
@@ -121,7 +121,7 @@ export function FilterPanel({ filters, onFiltersChange }: FilterPanelProps) {
         <div className="space-y-4">
           {/* Header */}
           <div className="flex items-center justify-between">
-            <h4 className="font-semibold text-sm">Filter Tasks</h4>
+            <h4 className="font-semibold text-sm">작업 필터</h4>
             {activeFilterCount > 0 && (
               <Button
                 variant="ghost"
@@ -130,7 +130,7 @@ export function FilterPanel({ filters, onFiltersChange }: FilterPanelProps) {
                 className="h-auto p-1 text-xs text-muted-foreground hover:text-foreground"
               >
                 <X className="h-3 w-3 mr-1" />
-                Clear all
+                전체 해제
               </Button>
             )}
           </div>
@@ -138,7 +138,7 @@ export function FilterPanel({ filters, onFiltersChange }: FilterPanelProps) {
           {/* Phase Filter */}
           <div className="space-y-2">
             <label className="text-xs font-medium text-muted-foreground uppercase tracking-wide">
-              Phase
+              단계
             </label>
             <div className="grid grid-cols-2 gap-2">
               {PHASES.map((phase) => (
@@ -161,7 +161,7 @@ export function FilterPanel({ filters, onFiltersChange }: FilterPanelProps) {
           {/* Status Filter */}
           <div className="space-y-2">
             <label className="text-xs font-medium text-muted-foreground uppercase tracking-wide">
-              Status
+              상태
             </label>
             <div className="grid grid-cols-2 gap-2">
               {STATUSES.map((status) => (
@@ -184,7 +184,7 @@ export function FilterPanel({ filters, onFiltersChange }: FilterPanelProps) {
           {/* Priority Filter */}
           <div className="space-y-2">
             <label className="text-xs font-medium text-muted-foreground uppercase tracking-wide">
-              Priority
+              우선순위
             </label>
             <div className="grid grid-cols-2 gap-2">
               {PRIORITIES.map((priority) => (
@@ -208,7 +208,7 @@ export function FilterPanel({ filters, onFiltersChange }: FilterPanelProps) {
           {activeFilterCount > 0 && (
             <div className="pt-2 border-t">
               <p className="text-xs text-muted-foreground">
-                {activeFilterCount} filter{activeFilterCount > 1 ? 's' : ''} active
+                필터 {activeFilterCount}개 적용 중
               </p>
             </div>
           )}

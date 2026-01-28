@@ -68,7 +68,7 @@ export function ContextManager({ taskId }: ContextManagerProps) {
       if (err instanceof KanbanContextAPIError) {
         setError(err.message)
       } else {
-        setError('Failed to load context metadata')
+        setError('관련 파일 메타데이터 로드 실패')
       }
     } finally {
       setIsLoading(false)
@@ -77,7 +77,7 @@ export function ContextManager({ taskId }: ContextManagerProps) {
 
   const handleDownload = async () => {
     if (!metadata?.zip_url) {
-      setError('No context ZIP available for download')
+      setError('다운로드할 ZIP 파일이 없습니다')
       return
     }
 
@@ -97,12 +97,12 @@ export function ContextManager({ taskId }: ContextManagerProps) {
       // Refresh metadata to show updated stats
       await loadMetadata()
 
-      setSuccess(`Context downloaded successfully (${loadTime}ms)`)
+      setSuccess(`파일 다운로드 완료 (${loadTime}ms)`)
     } catch (err) {
       if (err instanceof KanbanContextAPIError) {
         setError(err.message)
       } else {
-        setError('Failed to download context')
+        setError('파일 다운로드 실패')
       }
     } finally {
       setIsDownloading(false)
@@ -119,13 +119,13 @@ export function ContextManager({ taskId }: ContextManagerProps) {
   const validateFile = (file: File): string | null => {
     // Check file type
     if (!file.type.includes('zip') && !file.name.endsWith('.zip')) {
-      return 'Only ZIP files are supported'
+      return 'ZIP 파일만 지원됩니다'
     }
 
     // Check file size (50MB limit)
     const MAX_SIZE = 50 * 1024 * 1024
     if (file.size > MAX_SIZE) {
-      return `File size exceeds 50MB limit (Current: ${formatBytes(file.size)})`
+      return `파일 크기가 50MB를 초과합니다 (현재: ${formatBytes(file.size)})`
     }
 
     return null
@@ -211,7 +211,7 @@ export function ContextManager({ taskId }: ContextManagerProps) {
       await loadMetadata()
 
       setSuccess(
-        `Context uploaded successfully! ${response.file_count} files (${formatBytes(response.total_size_bytes)})`
+        `업로드 완료! 파일 ${response.file_count}개 (${formatBytes(response.total_size_bytes)})`
       )
       setSelectedFile(null)
 
@@ -225,7 +225,7 @@ export function ContextManager({ taskId }: ContextManagerProps) {
       if (err instanceof KanbanContextAPIError) {
         setError(err.message)
       } else {
-        setError('Failed to upload context')
+        setError('파일 업로드 실패')
       }
       setUploadProgress(0)
     } finally {
@@ -250,7 +250,7 @@ export function ContextManager({ taskId }: ContextManagerProps) {
       <div className="flex items-center justify-center py-12">
         <div className="flex flex-col items-center gap-2">
           <Loader2 className="h-6 w-6 animate-spin text-muted-foreground" />
-          <p className="text-sm text-muted-foreground">Loading context...</p>
+          <p className="text-sm text-muted-foreground">관련 파일 불러오는 중...</p>
         </div>
       </div>
     )
@@ -281,7 +281,7 @@ export function ContextManager({ taskId }: ContextManagerProps) {
             <div className="rounded-lg border p-4">
               <div className="flex items-center gap-2 text-sm text-muted-foreground mb-1">
                 <FileArchive className="h-4 w-4" />
-                Files
+                파일
               </div>
               <p className="text-2xl font-bold">{metadata.file_count}</p>
               <p className="text-xs text-muted-foreground mt-1">
@@ -292,36 +292,36 @@ export function ContextManager({ taskId }: ContextManagerProps) {
             <div className="rounded-lg border p-4">
               <div className="flex items-center gap-2 text-sm text-muted-foreground mb-1">
                 <Clock className="h-4 w-4" />
-                Load Stats
+                로드 통계
               </div>
               <p className="text-2xl font-bold">{metadata.load_count}</p>
               <p className="text-xs text-muted-foreground mt-1">
-                Avg: {metadata.avg_load_time_ms}ms
+                평균: {metadata.avg_load_time_ms}ms
               </p>
             </div>
           </div>
 
           {/* Metadata Details */}
           <div className="rounded-lg border p-4 space-y-2">
-            <h4 className="font-semibold text-sm">Context Details</h4>
+            <h4 className="font-semibold text-sm">관련 파일 정보</h4>
             <div className="grid grid-cols-2 gap-2 text-sm">
               <div>
-                <span className="text-muted-foreground">Created:</span>
+                <span className="text-muted-foreground">생성일:</span>
                 <p className="text-xs">{formatDate(metadata.created_at)}</p>
               </div>
               <div>
-                <span className="text-muted-foreground">Updated:</span>
+                <span className="text-muted-foreground">수정일:</span>
                 <p className="text-xs">{formatDate(metadata.updated_at)}</p>
               </div>
               {metadata.last_loaded_at && (
                 <div className="col-span-2">
-                  <span className="text-muted-foreground">Last Loaded:</span>
+                  <span className="text-muted-foreground">마지막 로드:</span>
                   <p className="text-xs">{formatDate(metadata.last_loaded_at)}</p>
                 </div>
               )}
               {metadata.checksum && (
                 <div className="col-span-2">
-                  <span className="text-muted-foreground">Checksum:</span>
+                  <span className="text-muted-foreground">체크섬:</span>
                   <p className="text-xs font-mono truncate">{metadata.checksum}</p>
                 </div>
               )}
@@ -339,12 +339,12 @@ export function ContextManager({ taskId }: ContextManagerProps) {
               {isDownloading ? (
                 <>
                   <Loader2 className="mr-2 h-4 w-4 animate-spin" />
-                  Downloading...
+                  다운로드 중...
                 </>
               ) : (
                 <>
                   <Download className="mr-2 h-4 w-4" />
-                  Download ZIP
+                  ZIP 다운로드
                 </>
               )}
             </Button>
@@ -375,17 +375,17 @@ export function ContextManager({ taskId }: ContextManagerProps) {
                   <UploadCloud className={`h-8 w-8 ${isDragging ? 'text-blue-500' : 'text-gray-400'}`} />
                   <div>
                     <p className="text-sm font-medium">
-                      {isDragging ? 'Drop file here' : 'Drag and drop your ZIP file'}
+                      {isDragging ? '파일을 여기에 놓으세요' : 'ZIP 파일을 드래그하여 놓으세요'}
                     </p>
                     <p className="text-xs text-muted-foreground mt-1">
-                      or{' '}
+                      또는{' '}
                       <button
                         type="button"
                         onClick={() => fileInputRef.current?.click()}
                         disabled={isUploading}
                         className="text-blue-500 hover:underline font-medium disabled:opacity-50"
                       >
-                        click to browse
+                        클릭하여 선택
                       </button>
                     </p>
                   </div>
@@ -402,7 +402,7 @@ export function ContextManager({ taskId }: ContextManagerProps) {
                     />
                   </div>
                   <p className="text-xs text-muted-foreground text-center">
-                    Uploading... {uploadProgress}%
+                    업로드 중... {uploadProgress}%
                   </p>
                 </div>
               )}
@@ -411,10 +411,10 @@ export function ContextManager({ taskId }: ContextManagerProps) {
               {selectedFile && (
                 <div className="rounded-lg bg-blue-50 p-3">
                   <p className="text-sm">
-                    <span className="font-medium">Selected:</span> {selectedFile.name}
+                    <span className="font-medium">선택됨:</span> {selectedFile.name}
                   </p>
                   <p className="text-xs text-muted-foreground">
-                    Size: {formatBytes(selectedFile.size)}
+                    크기: {formatBytes(selectedFile.size)}
                   </p>
                 </div>
               )}
@@ -429,19 +429,19 @@ export function ContextManager({ taskId }: ContextManagerProps) {
                   {isUploading ? (
                     <>
                       <Loader2 className="mr-2 h-4 w-4 animate-spin" />
-                      Uploading... {uploadProgress}%
+                      업로드 중... {uploadProgress}%
                     </>
                   ) : (
                     <>
                       <Upload className="mr-2 h-4 w-4" />
-                      Upload
+                      업로드
                     </>
                   )}
                 </Button>
               )}
 
               <p className="text-xs text-muted-foreground text-center">
-                ZIP file • Max 50MB
+                ZIP 파일 • 최대 50MB
               </p>
             </div>
           </div>
@@ -449,9 +449,9 @@ export function ContextManager({ taskId }: ContextManagerProps) {
       ) : (
         <div className="text-center py-12">
           <FileArchive className="h-12 w-12 mx-auto text-muted-foreground mb-4" />
-          <h3 className="text-lg font-semibold mb-2">No Context Available</h3>
+          <h3 className="text-lg font-semibold mb-2">관련 파일 없음</h3>
           <p className="text-sm text-muted-foreground mb-4">
-            Upload context files to get started
+            ZIP 파일을 업로드하여 시작하세요
           </p>
 
           {/* Upload Section for No Context */}
@@ -480,17 +480,17 @@ export function ContextManager({ taskId }: ContextManagerProps) {
                 <UploadCloud className={`h-8 w-8 ${isDragging ? 'text-blue-500' : 'text-gray-400'}`} />
                 <div>
                   <p className="text-sm font-medium">
-                    {isDragging ? 'Drop file here' : 'Drag and drop your ZIP file'}
+                    {isDragging ? '파일을 여기에 놓으세요' : 'ZIP 파일을 드래그하여 놓으세요'}
                   </p>
                   <p className="text-xs text-muted-foreground mt-1">
-                    or{' '}
+                    또는{' '}
                     <button
                       type="button"
                       onClick={() => fileInputRef.current?.click()}
                       disabled={isUploading}
                       className="text-blue-500 hover:underline font-medium disabled:opacity-50"
                     >
-                      click to browse
+                      클릭하여 선택
                     </button>
                   </p>
                 </div>
@@ -507,7 +507,7 @@ export function ContextManager({ taskId }: ContextManagerProps) {
                   />
                 </div>
                 <p className="text-xs text-muted-foreground text-center">
-                  Uploading... {uploadProgress}%
+                  업로드 중... {uploadProgress}%
                 </p>
               </div>
             )}
@@ -516,10 +516,10 @@ export function ContextManager({ taskId }: ContextManagerProps) {
             {selectedFile && (
               <div className="rounded-lg bg-blue-50 p-3">
                 <p className="text-sm">
-                  <span className="font-medium">Selected:</span> {selectedFile.name}
+                  <span className="font-medium">선택됨:</span> {selectedFile.name}
                 </p>
                 <p className="text-xs text-muted-foreground">
-                  Size: {formatBytes(selectedFile.size)}
+                  크기: {formatBytes(selectedFile.size)}
                 </p>
               </div>
             )}
@@ -534,19 +534,19 @@ export function ContextManager({ taskId }: ContextManagerProps) {
                 {isUploading ? (
                   <>
                     <Loader2 className="mr-2 h-4 w-4 animate-spin" />
-                    Uploading... {uploadProgress}%
+                    업로드 중... {uploadProgress}%
                   </>
                 ) : (
                   <>
                     <Upload className="mr-2 h-4 w-4" />
-                    Upload
+                    업로드
                   </>
                 )}
               </Button>
             )}
 
             <p className="text-xs text-muted-foreground text-center">
-              ZIP file • Max 50MB
+              ZIP 파일 • 최대 50MB
             </p>
           </div>
         </div>
@@ -555,8 +555,7 @@ export function ContextManager({ taskId }: ContextManagerProps) {
       {/* Q4 Info Banner */}
       <div className="rounded-lg bg-muted p-3 text-sm">
         <p className="text-muted-foreground">
-          <strong>Q4 Context Loading:</strong> Double-click a task card to auto-load context.
-          Single-click to view this panel.
+          <strong>작업 카드 더블클릭:</strong> 자동 로드, 싱글클릭: 이 패널 보기
         </p>
       </div>
     </div>

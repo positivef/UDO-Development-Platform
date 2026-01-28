@@ -76,11 +76,11 @@ interface AISuggestionModalProps {
 }
 
 const PHASES: { value: PhaseName; label: string; description: string }[] = [
-  { value: 'ideation', label: 'Ideation', description: 'Brainstorming and concept exploration' },
-  { value: 'design', label: 'Design', description: 'Architecture and technical design' },
-  { value: 'mvp', label: 'MVP', description: 'Minimum viable product development' },
-  { value: 'implementation', label: 'Implementation', description: 'Full feature implementation' },
-  { value: 'testing', label: 'Testing', description: 'Quality assurance and testing' },
+  { value: 'ideation', label: '아이디어', description: '브레인스토밍 및 컨셉 탐색' },
+  { value: 'design', label: '설계', description: '아키텍처 및 기술 설계' },
+  { value: 'mvp', label: 'MVP', description: '최소 기능 제품 개발' },
+  { value: 'implementation', label: '구현', description: '전체 기능 구현' },
+  { value: 'testing', label: '테스트', description: '품질 보증 및 테스트' },
 ]
 
 const priorityColors = {
@@ -145,12 +145,12 @@ export function AISuggestionModal({
 
   const handleGenerate = async () => {
     if (!context.trim()) {
-      setError('Please provide context for AI suggestions')
+      setError('AI 제안을 위한 상황 설명을 입력해주세요')
       return
     }
 
     if (rateLimit?.is_limited) {
-      setError(`Rate limit exceeded. Reset in ${formatResetTime(rateLimit.period_reset_at)}`)
+      setError(`일일 제한 초과. 초기화: ${formatResetTime(rateLimit.period_reset_at)}`)
       return
     }
 
@@ -183,11 +183,11 @@ export function AISuggestionModal({
     } catch (err) {
       if (err instanceof RateLimitError) {
         setRateLimit(err.status)
-        setError(`Rate limit exceeded. Reset in ${formatResetTime(err.status.period_reset_at)}`)
+        setError(`일일 제한 초과. 초기화: ${formatResetTime(err.status.period_reset_at)}`)
       } else if (err instanceof KanbanAIError) {
         setError(err.message)
       } else {
-        setError('Failed to generate suggestions. Please try again.')
+        setError('제안 생성에 실패했습니다. 다시 시도해주세요.')
       }
     } finally {
       setIsGenerating(false)
@@ -205,7 +205,7 @@ export function AISuggestionModal({
       })
 
       if (result.success) {
-        setSuccessMessage(`Task "${suggestion.title}" created successfully!`)
+        setSuccessMessage(`"${suggestion.title}" 작업이 생성되었습니다!`)
         // Remove approved suggestion from list
         setSuggestions((prev) => prev.filter((s) => s.suggestion_id !== suggestion.suggestion_id))
         onTaskCreated?.(result.task_id)
@@ -217,13 +217,13 @@ export function AISuggestionModal({
           }, 1500)
         }
       } else {
-        setError(result.message || 'Failed to approve suggestion')
+        setError(result.message || '제안 승인에 실패했습니다')
       }
     } catch (err) {
       if (err instanceof KanbanAIError) {
         setError(err.message)
       } else {
-        setError('Failed to approve suggestion. Please try again.')
+        setError('제안 승인에 실패했습니다. 다시 시도해주세요.')
       }
     } finally {
       setIsApproving(null)
@@ -254,14 +254,13 @@ export function AISuggestionModal({
         <DialogHeader>
           <DialogTitle className="flex items-center gap-2">
             <Sparkles className="h-5 w-5 text-purple-500" />
-            AI Task Suggestions
+            AI 작업 제안
             <Badge variant="outline" className="ml-2 bg-purple-500/10 text-purple-600 border-purple-500/20">
-              Q2: AI Hybrid
+              Q2: AI 하이브리드
             </Badge>
           </DialogTitle>
           <DialogDescription>
-            Get intelligent task suggestions powered by Claude. AI suggests tasks based on your context,
-            and you approve or modify them before creation.
+            Claude AI가 상황에 맞는 작업을 제안합니다. AI가 제안한 작업을 검토하고 승인하거나 수정할 수 있습니다.
           </DialogDescription>
         </DialogHeader>
 
@@ -271,7 +270,7 @@ export function AISuggestionModal({
             <div className="flex items-center justify-center p-3 rounded-lg text-sm bg-gray-50 dark:bg-gray-900/20 border border-gray-200 dark:border-gray-800">
               <div className="flex items-center gap-2">
                 <Loader2 className="h-4 w-4 animate-spin text-gray-500" />
-                <span className="text-gray-600 dark:text-gray-400">Loading rate limit status...</span>
+                <span className="text-gray-600 dark:text-gray-400">사용량 확인 중...</span>
               </div>
             </div>
           ) : rateLimit ? (
@@ -284,12 +283,12 @@ export function AISuggestionModal({
               <div className="flex items-center gap-2">
                 <Clock className={cn('h-4 w-4', rateLimit.is_limited ? 'text-red-500' : 'text-blue-500')} />
                 <span>
-                  {rateLimit.suggestions_remaining} / {rateLimit.limit_per_period} suggestions remaining
+                  제안 가능: {rateLimit.suggestions_remaining} / {rateLimit.limit_per_period}
                 </span>
               </div>
               {rateLimit.is_limited && (
                 <span className="text-red-600 dark:text-red-400">
-                  Reset in {formatResetTime(rateLimit.period_reset_at)}
+                  초기화: {formatResetTime(rateLimit.period_reset_at)}
                 </span>
               )}
             </div>
@@ -316,10 +315,10 @@ export function AISuggestionModal({
               {/* Phase Selection */}
               <div className="grid grid-cols-2 gap-4">
                 <div className="space-y-2">
-                  <Label>Development Phase</Label>
+                  <Label>개발 단계</Label>
                   <Select value={phase} onValueChange={(v) => setPhase(v as PhaseName)}>
                     <SelectTrigger>
-                      <SelectValue placeholder="Select phase" />
+                      <SelectValue placeholder="단계 선택" />
                     </SelectTrigger>
                     <SelectContent>
                       {PHASES.map((p) => (
@@ -335,7 +334,7 @@ export function AISuggestionModal({
                 </div>
 
                 <div className="space-y-2">
-                  <Label>Number of Suggestions</Label>
+                  <Label>제안 개수</Label>
                   <Select value={String(numSuggestions)} onValueChange={(v) => setNumSuggestions(Number(v))}>
                     <SelectTrigger>
                       <SelectValue />
@@ -343,7 +342,7 @@ export function AISuggestionModal({
                     <SelectContent>
                       {[1, 2, 3, 4, 5].map((n) => (
                         <SelectItem key={n} value={String(n)}>
-                          {n} suggestion{n > 1 ? 's' : ''}
+                          {n}개
                         </SelectItem>
                       ))}
                     </SelectContent>
@@ -355,18 +354,18 @@ export function AISuggestionModal({
               <div className="space-y-2">
                 <Label htmlFor="context" className="flex items-center gap-2">
                   <Brain className="h-4 w-4" />
-                  Context for AI
+                  AI에게 알려줄 상황
                 </Label>
                 <Textarea
                   id="context"
                   value={context}
                   onChange={(e) => setContext(e.target.value)}
-                  placeholder="Describe what you're working on, current challenges, or what kind of tasks you need..."
+                  placeholder="현재 진행 중인 작업, 어려운 점, 필요한 작업 종류 등을 설명해주세요..."
                   rows={4}
                   disabled={isGenerating}
                 />
                 <p className="text-xs text-muted-foreground">
-                  Provide detailed context for better suggestions. Include project goals, current state, and constraints.
+                  상세한 상황 설명을 제공하면 더 나은 제안을 받을 수 있습니다. 프로젝트 목표, 현재 상태, 제약사항을 포함해주세요.
                 </p>
               </div>
 
@@ -379,12 +378,12 @@ export function AISuggestionModal({
                 {isGenerating ? (
                   <>
                     <Loader2 className="mr-2 h-4 w-4 animate-spin" />
-                    Generating suggestions...
+                    제안 생성 중...
                   </>
                 ) : (
                   <>
                     <Sparkles className="mr-2 h-4 w-4" />
-                    Generate Suggestions
+                    제안 받기
                   </>
                 )}
               </Button>
@@ -397,11 +396,11 @@ export function AISuggestionModal({
               <div className="flex items-center justify-between">
                 <h3 className="font-medium flex items-center gap-2">
                   <Sparkles className="h-4 w-4 text-purple-500" />
-                  {suggestions.length} Suggestion{suggestions.length > 1 ? 's' : ''} Generated
+                  제안 {suggestions.length}개 생성됨
                 </h3>
                 {response && (
                   <span className="text-xs text-muted-foreground">
-                    Generated in {response.generation_time_ms}ms using {response.model_used}
+                    {response.model_used}로 {response.generation_time_ms}ms에 생성
                   </span>
                 )}
               </div>
@@ -452,12 +451,12 @@ export function AISuggestionModal({
                           {isExpanded ? (
                             <>
                               <ChevronUp className="h-3 w-3" />
-                              Show less
+                              간략히
                             </>
                           ) : (
                             <>
                               <ChevronDown className="h-3 w-3" />
-                              Show details
+                              상세히
                             </>
                           )}
                         </button>
@@ -467,20 +466,20 @@ export function AISuggestionModal({
                           <div className="mt-4 pt-4 border-t space-y-4">
                             {/* Reasoning */}
                             <div className="space-y-1">
-                              <Label className="text-xs text-muted-foreground">AI Reasoning</Label>
+                              <Label className="text-xs text-muted-foreground">AI 판단 근거</Label>
                               <p className="text-sm bg-muted/50 p-2 rounded">{suggestion.reasoning}</p>
                             </div>
 
                             {/* Metadata Grid */}
                             <div className="grid grid-cols-2 gap-4 text-sm">
                               <div>
-                                <Label className="text-xs text-muted-foreground">Phase</Label>
+                                <Label className="text-xs text-muted-foreground">단계</Label>
                                 <p className="capitalize">{suggestion.phase_name}</p>
                               </div>
                               {suggestion.estimated_hours && (
                                 <div>
-                                  <Label className="text-xs text-muted-foreground">Estimated Hours</Label>
-                                  <p>{suggestion.estimated_hours}h</p>
+                                  <Label className="text-xs text-muted-foreground">예상 시간</Label>
+                                  <p>{suggestion.estimated_hours}시간</p>
                                 </div>
                               )}
                             </div>
@@ -488,7 +487,7 @@ export function AISuggestionModal({
                             {/* Dependencies */}
                             {suggestion.suggested_dependencies.length > 0 && (
                               <div className="space-y-1">
-                                <Label className="text-xs text-muted-foreground">Suggested Dependencies</Label>
+                                <Label className="text-xs text-muted-foreground">권장 의존 관계</Label>
                                 <div className="flex flex-wrap gap-1">
                                   {suggestion.suggested_dependencies.map((dep, i) => (
                                     <Badge key={i} variant="secondary" className="text-xs">
@@ -503,7 +502,7 @@ export function AISuggestionModal({
                             <div className="space-y-1">
                               <Label className="text-xs text-muted-foreground flex items-center gap-1">
                                 <Shield className="h-3 w-3" />
-                                Constitutional Compliance (P1-P17)
+                                헌법 준수 (P1-P17)
                               </Label>
                               <div className="flex flex-wrap gap-1">
                                 {Object.entries(suggestion.constitutional_compliance).map(([key, value]) => (
@@ -536,12 +535,12 @@ export function AISuggestionModal({
                             {isApprovingThis ? (
                               <>
                                 <Loader2 className="mr-2 h-3 w-3 animate-spin" />
-                                Creating...
+                                생성 중...
                               </>
                             ) : (
                               <>
                                 <ThumbsUp className="mr-2 h-3 w-3" />
-                                Approve & Create
+                                승인하고 생성
                               </>
                             )}
                           </Button>
@@ -552,7 +551,7 @@ export function AISuggestionModal({
                             disabled={isApprovingThis}
                           >
                             <ThumbsDown className="mr-2 h-3 w-3" />
-                            Reject
+                            거부
                           </Button>
                         </div>
                       </Card>
@@ -568,7 +567,7 @@ export function AISuggestionModal({
                 className="w-full"
               >
                 <Edit3 className="mr-2 h-4 w-4" />
-                Generate New Suggestions
+                새 제안 받기
               </Button>
             </div>
           )}
@@ -577,7 +576,7 @@ export function AISuggestionModal({
         <DialogFooter>
           <Button variant="outline" onClick={handleClose}>
             <X className="mr-2 h-4 w-4" />
-            Close
+            닫기
           </Button>
         </DialogFooter>
       </DialogContent>

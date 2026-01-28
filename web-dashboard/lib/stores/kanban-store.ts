@@ -92,7 +92,7 @@ const mockTasks: KanbanTask[] = [
   {
     id: '550e8400-e29b-41d4-a716-446655440002',
     title: 'Design database schema',
-    description: 'Create PostgreSQL schema for user management',
+    description: 'Build PostgreSQL schema for user management',
     status: 'completed',
     phase: 'design',
     priority: 'high',
@@ -128,7 +128,7 @@ const mockTasks: KanbanTask[] = [
   {
     id: '550e8400-e29b-41d4-a716-446655440004',
     title: 'Write E2E tests',
-    description: 'Create Playwright tests for critical user flows',
+    description: 'Write Playwright tests for critical user flows',
     status: 'pending',
     phase: 'testing',
     priority: 'high',

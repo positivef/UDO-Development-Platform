@@ -118,7 +118,23 @@ export function KanbanBoard({
     if (!over || isUpdating) return
 
     const taskId = active.id as string
-    const newStatus = over.id as TaskStatus
+
+    // Valid column statuses - over.id could be either a column status or a task UUID
+    const validStatuses: TaskStatus[] = ['pending', 'in_progress', 'blocked', 'completed']
+
+    let newStatus: TaskStatus
+    if (validStatuses.includes(over.id as TaskStatus)) {
+      // Dropped directly onto a column
+      newStatus = over.id as TaskStatus
+    } else {
+      // Dropped onto another task card - find that task's column/status
+      const targetTask = allTasks.find((t) => t.id === over.id)
+      if (!targetTask) {
+        console.warn(`Could not find target task with id: ${over.id}`)
+        return
+      }
+      newStatus = targetTask.status
+    }
 
     // Find the original task to preserve state for rollback
     const originalTask = allTasks.find((task) => task.id === taskId)
@@ -148,14 +164,22 @@ export function KanbanBoard({
     } catch (error) {
       console.error('Failed to update task status:', error)
 
+      // Log detailed error information
+      if (error && typeof error === 'object' && 'statusCode' in error) {
+        console.error('Status Code:', (error as any).statusCode)
+        console.error('Error Response:', (error as any).response)
+      }
+
       // Rollback optimistic update
       moveTask(taskId, previousStatus)
 
       // Show error to user (TODO: Replace with toast notification in Week 3)
+      const errorMessage = error instanceof Error ? error.message : 'Unknown error'
+      const statusCode = (error && typeof error === 'object' && 'statusCode' in error)
+        ? ` (Status: ${(error as any).statusCode})`
+        : ''
       alert(
-        `Failed to move task: ${
-          error instanceof Error ? error.message : 'Unknown error'
-        }\n\nThe change has been reverted.`
+        `Failed to move task: ${errorMessage}${statusCode}\n\nThe change has been reverted.`
       )
     } finally {
       setIsUpdating(false)
