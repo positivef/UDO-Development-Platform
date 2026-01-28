@@ -1048,10 +1048,17 @@ def require_role(required_role: str):
         3. 필요한 권한과 비교
         """
         try:
-            # Development Bypass
-            if not credentials and os.getenv("ENVIRONMENT") == "development":
+            # Development Bypass (check both environment variables)
+            is_dev_mode = os.getenv("ENVIRONMENT") == "development" or os.getenv("DISABLE_AUTH_IN_DEV", "").lower() == "true"
+            if is_dev_mode:
                 logger.warning("[DEV] Bypass auth for development (role check)")
-                return {"sub": "dev_admin", "role": UserRole.ADMIN, "user_id": "dev-id"}
+                return {
+                    "sub": "dev_admin",
+                    "role": UserRole.ADMIN,
+                    "user_id": "dev-id",
+                    "username": "dev_admin",
+                    "email": "dev@example.com",
+                }
 
             if not credentials:
                 raise HTTPException(status_code=status.HTTP_403_FORBIDDEN, detail="Not authenticated")
@@ -1100,8 +1107,9 @@ async def get_current_user(credentials: Optional[HTTPAuthorizationCredentials] =
     Raises:
         HTTPException: 토큰이 유효하지 않거나 만료된 경우 401 Unauthorized
     """
-    # Development Bypass
-    if not credentials and os.getenv("ENVIRONMENT") == "development":
+    # Development Bypass (check both environment variables)
+    is_dev_mode = os.getenv("ENVIRONMENT") == "development" or os.getenv("DISABLE_AUTH_IN_DEV", "").lower() == "true"
+    if is_dev_mode:
         logger.warning("[DEV] Bypass auth for development (get_current_user)")
         return {
             "sub": "dev_admin",

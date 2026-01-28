@@ -5,7 +5,7 @@ Pydantic models for Concept-Knowledge Design Theory (design alternative generati
 """
 
 from pydantic import BaseModel, Field, field_validator, model_validator
-from typing import List, Dict, Optional, Any
+from typing import List, Dict, Optional, Any, Union
 from datetime import datetime
 
 
@@ -122,7 +122,9 @@ class CKTheoryRequest(BaseModel):
     """Request to generate design alternatives using C-K Theory"""
 
     challenge: str = Field(..., min_length=10, max_length=1000, description="Design challenge to explore")
-    constraints: Optional[Dict[str, Any]] = Field(None, description="Design constraints (budget, timeline, team size, etc.)")
+    constraints: Optional[Union[str, Dict[str, Any]]] = Field(
+        None, description="Design constraints (budget, timeline, team size, etc.)"
+    )
     project: Optional[str] = Field("UDO-Development-Platform", description="Project name")
 
     @field_validator("challenge")
@@ -143,26 +145,33 @@ class CKTheoryRequest(BaseModel):
     @field_validator("constraints")
     @classmethod
     def validate_constraints(cls, v):
-        """Validate constraint structure"""
-        if v is None:
+        """Validate and normalize constraint structure"""
+        if v is None or (isinstance(v, str) and not v.strip()):
             return {}
 
-        # Validate constraint keys
-        allowed_keys = {
-            "budget",
-            "team_size",
-            "timeline",
-            "complexity",
-            "security_requirement",
-            "performance_requirement",
-            "scalability_requirement",
-            "maintainability_requirement",
-        }
+        # If string, return as-is for service layer to parse
+        if isinstance(v, str):
+            return v.strip()
 
-        if invalid_keys := set(v.keys()) - allowed_keys:
-            raise ValueError(f"Invalid constraint keys: {invalid_keys}")
+        # If dict, validate constraint keys
+        if isinstance(v, dict):
+            allowed_keys = {
+                "budget",
+                "team_size",
+                "timeline",
+                "complexity",
+                "security_requirement",
+                "performance_requirement",
+                "scalability_requirement",
+                "maintainability_requirement",
+            }
 
-        return v
+            if invalid_keys := set(v.keys()) - allowed_keys:
+                raise ValueError(f"Invalid constraint keys: {invalid_keys}")
+
+            return v
+
+        return {}
 
     class Config:
         json_schema_extra = {
@@ -186,7 +195,7 @@ class CKTheoryResult(BaseModel):
     total_duration_ms: int = Field(..., ge=0, description="Total execution time")
     created_at: datetime = Field(default_factory=datetime.now)
     project: Optional[str] = Field("UDO-Development-Platform")
-    constraints: Optional[Dict[str, Any]] = Field(None, description="Applied design constraints")
+    constraints: Optional[Union[str, Dict[str, Any]]] = Field(None, description="Applied design constraints")
     obsidian_path: Optional[str] = Field(None, description="Path to saved Obsidian note")
     metadata: Dict[str, Any] = Field(default_factory=dict, description="Additional metadata")
 

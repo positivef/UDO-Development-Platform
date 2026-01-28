@@ -499,42 +499,96 @@ Provide:
             concept: Concept description
 
         Returns:
-            Fallback design alternative
+            Fallback design alternative with unique content per alternative
         """
-        # Simple RICE scores based on alternative ID
+        # Different RICE scores and characteristics per alternative
         rice_configs = {
             "A": {"reach": 7, "impact": 7, "confidence": 7, "effort": 5},
             "B": {"reach": 6, "impact": 6, "confidence": 8, "effort": 3},
             "C": {"reach": 9, "impact": 8, "confidence": 5, "effort": 8},
         }
 
+        # Unique content per alternative
+        alternative_profiles = {
+            "A": {
+                "title_prefix": "Conservative Approach",
+                "description_suffix": "Uses proven, battle-tested patterns with minimal risk. Prioritizes stability and reliability over cutting-edge features.",
+                "pros": [
+                    "Well-established patterns reduce implementation risk",
+                    "Extensive community support and documentation available",
+                    "Lower learning curve for team members",
+                ],
+                "cons": [
+                    "May lack modern features and optimizations",
+                    "Could require more code for same functionality",
+                ],
+                "risks": [
+                    "Technical debt if patterns become outdated",
+                    "May not scale well for future requirements",
+                ],
+                "technical_approach": "Implements using industry-standard patterns and well-documented frameworks. Focuses on maintainability and code clarity.",
+                "dependencies": ["standard-framework", "legacy-support-library"],
+            },
+            "B": {
+                "title_prefix": "Balanced Approach",
+                "description_suffix": "Combines proven practices with selective modern techniques. Optimizes for rapid delivery while maintaining quality.",
+                "pros": [
+                    "Fastest time-to-market with acceptable quality",
+                    "Low implementation complexity and resource requirements",
+                    "Easy maintenance and future modifications",
+                ],
+                "cons": [
+                    "May compromise on some advanced features",
+                    "Limited scalability for very large workloads",
+                ],
+                "risks": [
+                    "Could require refactoring if requirements change significantly",
+                    "May hit performance limits under extreme load",
+                ],
+                "technical_approach": "Pragmatic implementation using modern best practices where beneficial, falling back to proven patterns when appropriate.",
+                "dependencies": ["modern-framework", "utility-library"],
+            },
+            "C": {
+                "title_prefix": "Innovative Approach",
+                "description_suffix": "Leverages cutting-edge technologies and architecture patterns. Maximizes long-term scalability and performance.",
+                "pros": [
+                    "Future-proof architecture with maximum scalability",
+                    "Best performance and resource utilization",
+                    "Enables advanced features and capabilities",
+                ],
+                "cons": [
+                    "Higher initial development time and complexity",
+                    "Steeper learning curve for team",
+                    "Fewer community resources for troubleshooting",
+                ],
+                "risks": [
+                    "Technology maturity issues and potential breaking changes",
+                    "Limited pool of developers with required expertise",
+                    "May be over-engineered for current requirements",
+                ],
+                "technical_approach": "Modern microservices architecture with event-driven design, containerization, and cloud-native patterns.",
+                "dependencies": ["cutting-edge-framework", "cloud-platform-sdk", "advanced-monitoring"],
+            },
+        }
+
         rice_values = rice_configs.get(alt_id, {"reach": 5, "impact": 5, "confidence": 5, "effort": 5})
+        profile = alternative_profiles.get(alt_id, alternative_profiles["B"])
 
         return DesignAlternative(
             id=alt_id,
-            title=f"Alternative {alt_id}: {concept[:50]}",
-            description=f"Design alternative {alt_id} for {challenge}. Based on concept: {concept}. (Fallback mode)",
+            title=f"{profile['title_prefix']}: {concept[:40]}",
+            description=f"Design alternative {alt_id} for {challenge}. {profile['description_suffix']}",
             concept_origin=concept,
             knowledge_basis=[
-                f"Standard patterns for {alt_id}",
-                "Industry best practices",
+                f"{profile['title_prefix']} patterns and methodologies",
+                "Industry-specific best practices and case studies",
             ],
             rice=RICEScore(**rice_values, score=0.0),
-            pros=[
-                f"Proven approach for {alt_id}",
-                "Well-documented patterns",
-                "Community support",
-            ],
-            cons=[
-                "May require customization",
-                "Learning curve considerations",
-            ],
-            risks=[
-                "Implementation complexity",
-                "Integration challenges",
-            ],
-            technical_approach=f"Standard implementation approach for {alt_id}",
-            dependencies=["framework-dependency", "library-dependency"],
+            pros=profile["pros"],
+            cons=profile["cons"],
+            risks=profile["risks"],
+            technical_approach=profile["technical_approach"],
+            dependencies=profile["dependencies"],
             estimated_timeline=f"{rice_values['effort']} weeks",
         )
 

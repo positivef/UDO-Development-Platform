@@ -540,8 +540,11 @@ async def websocket_uncertainty(
     if not session_id:
         session_id = f"uncertainty-{datetime.now().timestamp()}"
 
+    logger.info(f"[UncertaintyWS] Connection attempt for session: {session_id}, project: {project_id}")
+
     try:
         await uncertainty_manager.connect(websocket, session_id)
+        logger.info(f"[UncertaintyWS] Connection established for session: {session_id}")
 
         # Send initial connection confirmation
         await websocket.send_json(
@@ -656,12 +659,16 @@ async def websocket_confidence(
     - decision_changed: When GO/NO_GO decision changes
     - pong: Response to ping heartbeat
     """
+    logger.info(f"[ConfidenceWS] Connection attempt for phase: {phase}")
+
     valid_phases = ["ideation", "design", "mvp", "implementation", "testing"]
     if phase not in valid_phases:
+        logger.warning(f"[ConfidenceWS] Invalid phase rejected: {phase}")
         await websocket.close(code=4000, reason=f"Invalid phase: {phase}")
         return
 
     session_id = f"confidence-{phase}-{datetime.now().timestamp()}"
+    logger.info(f"[ConfidenceWS] Accepting connection for session: {session_id}")
 
     try:
         await confidence_manager.connect(websocket, phase, session_id)
