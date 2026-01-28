@@ -24,7 +24,6 @@ from app.models.kanban_archive import (
 from app.services.kanban_archive_service import kanban_archive_service
 from app.services.kanban_task_service import (
     KanbanTaskService,
-    MockKanbanTaskService,
     kanban_task_service as shared_mock_service,
 )
 from backend.async_database import async_db
@@ -44,20 +43,11 @@ def get_kanban_service_for_archive():
     Dependency for KanbanTaskService in archive operations.
     Uses same pattern as kanban_tasks.py for consistency.
     """
-    import sys
-
-    print("[ARCHIVE-DEBUG] get_kanban_service_for_archive called", flush=True)
     try:
         db_pool = async_db.get_pool()
-        print(f"[ARCHIVE-DEBUG] Database pool obtained: {db_pool is not None}", flush=True)
-        logger.info(f"[ARCHIVE] Database pool obtained: {db_pool is not None}")
-        service = KanbanTaskService(db_pool=db_pool)
-        print(f"[ARCHIVE-DEBUG] Created KanbanTaskService: {type(service).__name__}", flush=True)
-        logger.info(f"[ARCHIVE] Created KanbanTaskService instance: {type(service).__name__}")
-        return service
+        return KanbanTaskService(db_pool=db_pool)
     except RuntimeError as e:
-        print(f"[ARCHIVE-DEBUG] Database not available: {e}", flush=True)
-        logger.warning(f"[ARCHIVE] Database not available: {e}. Using shared MockKanbanTaskService")
+        logger.warning(f"[ARCHIVE] Database not available: {e}. Using mock service")
         return shared_mock_service
 
 

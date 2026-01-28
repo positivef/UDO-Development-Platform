@@ -11,7 +11,6 @@ Tests:
 
 import io
 import zipfile
-from uuid import uuid4
 
 import pytest
 

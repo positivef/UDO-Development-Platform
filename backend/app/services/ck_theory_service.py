@@ -512,7 +512,10 @@ Provide:
         alternative_profiles = {
             "A": {
                 "title_prefix": "Conservative Approach",
-                "description_suffix": "Uses proven, battle-tested patterns with minimal risk. Prioritizes stability and reliability over cutting-edge features.",
+                "description_suffix": (
+                    "Uses proven, battle-tested patterns with minimal risk. "
+                    "Prioritizes stability and reliability over cutting-edge features."
+                ),
                 "pros": [
                     "Well-established patterns reduce implementation risk",
                     "Extensive community support and documentation available",
@@ -526,12 +529,18 @@ Provide:
                     "Technical debt if patterns become outdated",
                     "May not scale well for future requirements",
                 ],
-                "technical_approach": "Implements using industry-standard patterns and well-documented frameworks. Focuses on maintainability and code clarity.",
+                "technical_approach": (
+                    "Implements using industry-standard patterns and well-documented "
+                    "frameworks. Focuses on maintainability and code clarity."
+                ),
                 "dependencies": ["standard-framework", "legacy-support-library"],
             },
             "B": {
                 "title_prefix": "Balanced Approach",
-                "description_suffix": "Combines proven practices with selective modern techniques. Optimizes for rapid delivery while maintaining quality.",
+                "description_suffix": (
+                    "Combines proven practices with selective modern techniques. "
+                    "Optimizes for rapid delivery while maintaining quality."
+                ),
                 "pros": [
                     "Fastest time-to-market with acceptable quality",
                     "Low implementation complexity and resource requirements",
@@ -545,12 +554,18 @@ Provide:
                     "Could require refactoring if requirements change significantly",
                     "May hit performance limits under extreme load",
                 ],
-                "technical_approach": "Pragmatic implementation using modern best practices where beneficial, falling back to proven patterns when appropriate.",
+                "technical_approach": (
+                    "Pragmatic implementation using modern best practices where "
+                    "beneficial, falling back to proven patterns when appropriate."
+                ),
                 "dependencies": ["modern-framework", "utility-library"],
             },
             "C": {
                 "title_prefix": "Innovative Approach",
-                "description_suffix": "Leverages cutting-edge technologies and architecture patterns. Maximizes long-term scalability and performance.",
+                "description_suffix": (
+                    "Leverages cutting-edge technologies and architecture patterns. "
+                    "Maximizes long-term scalability and performance."
+                ),
                 "pros": [
                     "Future-proof architecture with maximum scalability",
                     "Best performance and resource utilization",
@@ -566,7 +581,10 @@ Provide:
                     "Limited pool of developers with required expertise",
                     "May be over-engineered for current requirements",
                 ],
-                "technical_approach": "Modern microservices architecture with event-driven design, containerization, and cloud-native patterns.",
+                "technical_approach": (
+                    "Modern microservices architecture with event-driven design, "
+                    "containerization, and cloud-native patterns."
+                ),
                 "dependencies": ["cutting-edge-framework", "cloud-platform-sdk", "advanced-monitoring"],
             },
         }

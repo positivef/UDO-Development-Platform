@@ -574,8 +574,8 @@ class KanbanContextService:
                 raise ZipBombDetected(f"Deeply nested path detected: {name} (depth: {depth}, limit: 10)")
 
         logger.info(
-            f"ZIP bomb check passed: ratio={uncompressed_size/compressed_size:.1f}:1, "
-            f"files={file_count}, size={uncompressed_size/1024/1024:.2f}MB"
+            f"ZIP bomb check passed: ratio={uncompressed_size / compressed_size:.1f}:1, "
+            f"files={file_count}, size={uncompressed_size / 1024 / 1024:.2f}MB"
         )
 
     async def _scan_for_virus(self, contents: bytes, filename: str) -> None:
