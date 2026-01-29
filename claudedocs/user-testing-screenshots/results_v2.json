@@ -1,0 +1,240 @@
+{
+  "test_date": "2026-01-29T18:21:39.823710",
+  "version": "v2",
+  "api_tests": [
+    {
+      "endpoint": "/docs",
+      "name": "Swagger UI",
+      "status": "pass",
+      "code": 200
+    },
+    {
+      "endpoint": "/api/health",
+      "name": "Health Check",
+      "status": "pass",
+      "code": 200
+    },
+    {
+      "endpoint": "/api/kanban/tasks",
+      "name": "Kanban Tasks",
+      "status": "pass",
+      "code": 200
+    },
+    {
+      "endpoint": "/api/time-tracking/roi",
+      "name": "Time Tracking ROI",
+      "status": "pass",
+      "code": 200
+    },
+    {
+      "endpoint": "/api/uncertainty/status",
+      "name": "Uncertainty Status",
+      "status": "pass",
+      "code": 200
+    }
+  ],
+  "scenarios": [
+    {
+      "name": "Kanban Board",
+      "steps": [
+        {
+          "name": "Kanban Board loads",
+          "status": "pass",
+          "load_time_ms": 2160
+        },
+        {
+          "name": "Headings visible",
+          "status": "pass",
+          "detail": "Found 16 (need 1+)"
+        },
+        {
+          "name": "Task cards visible",
+          "status": "pass",
+          "detail": "Found 26 (need 1+)"
+        },
+        {
+          "name": "Interactive buttons",
+          "status": "pass",
+          "detail": "Found 22 (need 3+)"
+        },
+        {
+          "name": "SVG/canvas elements",
+          "status": "pass",
+          "detail": "Found 47 (need 1+)"
+        },
+        {
+          "name": "No JS errors on reload",
+          "status": "pass",
+          "detail": "0 errors"
+        }
+      ],
+      "issues": [],
+      "score": 5.0,
+      "profile": "Junior Developer"
+    },
+    {
+      "name": "Navigation Coverage",
+      "profile": "Senior Developer",
+      "steps": [
+        {
+          "name": "Page /",
+          "status": "pass",
+          "load_time_ms": 2174
+        },
+        {
+          "name": "Page /kanban",
+          "status": "pass",
+          "load_time_ms": 2116
+        },
+        {
+          "name": "Page /uncertainty",
+          "status": "pass",
+          "load_time_ms": 1712
+        },
+        {
+          "name": "Page /confidence",
+          "status": "pass",
+          "load_time_ms": 2495
+        },
+        {
+          "name": "Page /quality",
+          "status": "fail"
+        },
+        {
+          "name": "Page /time-tracking",
+          "status": "fail"
+        },
+        {
+          "name": "Page /governance",
+          "status": "pass",
+          "load_time_ms": 5177
+        },
+        {
+          "name": "Page /ck-theory",
+          "status": "pass",
+          "load_time_ms": 2122
+        },
+        {
+          "name": "Page /gi-formula",
+          "status": "pass",
+          "load_time_ms": 1905
+        },
+        {
+          "name": "Page /archive",
+          "status": "pass",
+          "load_time_ms": 1548
+        }
+      ],
+      "issues": [],
+      "score": 4.0
+    },
+    {
+      "name": "Uncertainty Map",
+      "steps": [
+        {
+          "name": "Uncertainty Map loads",
+          "status": "pass",
+          "load_time_ms": 1507
+        },
+        {
+          "name": "Headings",
+          "status": "pass",
+          "detail": "Found 2 (need 1+)"
+        },
+        {
+          "name": "Charts/SVGs",
+          "status": "pass",
+          "detail": "Found 230 (need 1+)"
+        },
+        {
+          "name": "Data cards",
+          "status": "pass",
+          "detail": "Found 8 (need 1+)"
+        },
+        {
+          "name": "No JS errors on reload",
+          "status": "pass",
+          "detail": "0 errors"
+        }
+      ],
+      "issues": [],
+      "score": 5.0,
+      "profile": "Project Manager"
+    },
+    {
+      "name": "Confidence Dashboard",
+      "steps": [
+        {
+          "name": "Confidence Dashboard loads",
+          "status": "pass",
+          "load_time_ms": 1886
+        },
+        {
+          "name": "Headings",
+          "status": "pass",
+          "detail": "Found 2 (need 1+)"
+        },
+        {
+          "name": "Charts/visuals",
+          "status": "pass",
+          "detail": "Found 54 (need 1+)"
+        },
+        {
+          "name": "Interactive elements",
+          "status": "pass",
+          "detail": "Found 21 (need 1+)"
+        },
+        {
+          "name": "No JS errors on reload",
+          "status": "pass",
+          "detail": "0 errors"
+        }
+      ],
+      "issues": [],
+      "score": 5.0,
+      "profile": "DevOps Engineer"
+    },
+    {
+      "name": "Governance & Quality",
+      "profile": "Product Owner",
+      "steps": [
+        {
+          "name": "Governance loads",
+          "status": "pass",
+          "load_time_ms": 1349
+        },
+        {
+          "name": "Governance has content",
+          "status": "pass",
+          "detail": "14 elements"
+        },
+        {
+          "name": "Quality loads",
+          "status": "fail",
+          "error": "Timeout 15000ms exceeded."
+        },
+        {
+          "name": "Time Tracking loads",
+          "status": "fail",
+          "error": "Timeout 15000ms exceeded."
+        }
+      ],
+      "issues": [],
+      "score": 2.5
+    }
+  ],
+  "summary": {
+    "scenarios": 5,
+    "average_score": 4.3,
+    "target": 4.0,
+    "target_met": true,
+    "api_ok": 5,
+    "scores_by_scenario": {
+      "Kanban Board": 5.0,
+      "Navigation Coverage": 4.0,
+      "Uncertainty Map": 5.0,
+      "Confidence Dashboard": 5.0,
+      "Governance & Quality": 2.5
+    }
+  }
+}

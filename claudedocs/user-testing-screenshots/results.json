@@ -1,0 +1,213 @@
+{
+  "test_date": "2026-01-29T18:13:56.262697",
+  "platform": "UDO Development Platform v3.0",
+  "scenarios": [
+    {
+      "name": "Kanban Board Basics",
+      "profile": "Junior Developer",
+      "steps": [
+        {
+          "name": "Navigate to Kanban",
+          "status": "warn",
+          "load_time_ms": 16621,
+          "target_ms": 3000
+        },
+        {
+          "name": "Kanban columns visible",
+          "status": "fail",
+          "detail": "Found 1 columns"
+        },
+        {
+          "name": "Task cards visible",
+          "status": "pass",
+          "detail": "Found 11 task cards"
+        },
+        {
+          "name": "Create Task button exists",
+          "status": "warn",
+          "detail": "Found 0 create buttons"
+        },
+        {
+          "name": "Stats/footer section",
+          "status": "info",
+          "detail": "Found 0 stats elements"
+        },
+        {
+          "name": "No console errors",
+          "status": "pass",
+          "detail": "0 errors found"
+        }
+      ],
+      "score": 1.7,
+      "issues": []
+    },
+    {
+      "name": "Dashboard & Navigation",
+      "profile": "Senior Developer",
+      "steps": [
+        {
+          "name": "Main dashboard loads",
+          "status": "warn",
+          "load_time_ms": 9032
+        },
+        {
+          "name": "Page /Kanban loads",
+          "status": "pass"
+        },
+        {
+          "name": "Page /Uncertainty loads",
+          "status": "pass"
+        },
+        {
+          "name": "Page /Confidence loads",
+          "status": "pass"
+        },
+        {
+          "name": "Page /Quality loads",
+          "status": "fail"
+        },
+        {
+          "name": "Page /Time Tracking loads",
+          "status": "fail"
+        },
+        {
+          "name": "Page /Governance loads",
+          "status": "fail"
+        },
+        {
+          "name": "Page /C-K Theory loads",
+          "status": "fail"
+        },
+        {
+          "name": "Page /GI Formula loads",
+          "status": "fail"
+        },
+        {
+          "name": "Navigation coverage (3/8)",
+          "status": "warn"
+        }
+      ],
+      "score": 1.5,
+      "issues": []
+    },
+    {
+      "name": "Uncertainty Map",
+      "profile": "Project Manager",
+      "steps": [
+        {
+          "name": "Uncertainty page loads",
+          "status": "warn",
+          "load_time_ms": 30215
+        },
+        {
+          "name": "Page has headings",
+          "status": "pass",
+          "detail": "2 headings"
+        },
+        {
+          "name": "Visualizations present",
+          "status": "pass",
+          "detail": "231 chart elements"
+        },
+        {
+          "name": "Data cards/metrics",
+          "status": "pass",
+          "detail": "8 cards"
+        }
+      ],
+      "score": 3.8,
+      "issues": []
+    },
+    {
+      "name": "Confidence Dashboard",
+      "profile": "DevOps Engineer",
+      "steps": [
+        {
+          "name": "Confidence page loads",
+          "status": "pass",
+          "load_time_ms": 2142
+        },
+        {
+          "name": "Phase information visible",
+          "status": "warn",
+          "detail": "0 phase elements"
+        },
+        {
+          "name": "Confidence scores/progress",
+          "status": "warn",
+          "detail": "0 score elements"
+        },
+        {
+          "name": "Charts/visualizations",
+          "status": "pass",
+          "detail": "183 charts"
+        }
+      ],
+      "score": 2.5,
+      "issues": []
+    },
+    {
+      "name": "Scenario 5: Governance & Quality",
+      "error": "Timeout 30000ms exceeded.",
+      "score": 0
+    }
+  ],
+  "summary": {
+    "total_scenarios": 5,
+    "average_score": 1.9,
+    "target_score": 4.0,
+    "target_met": false,
+    "api_endpoints_ok": 5,
+    "api_endpoints_total": 8
+  },
+  "api_tests": [
+    {
+      "endpoint": "/docs",
+      "name": "Swagger UI",
+      "status": "pass",
+      "http_status": 200
+    },
+    {
+      "endpoint": "/api/health",
+      "name": "Health Check",
+      "status": "pass",
+      "http_status": 200
+    },
+    {
+      "endpoint": "/api/kanban/tasks",
+      "name": "Kanban Tasks",
+      "status": "pass",
+      "http_status": 200
+    },
+    {
+      "endpoint": "/api/kanban/archive/list",
+      "name": "Archive List",
+      "status": "fail",
+      "http_status": "HTTP Error 422: Unprocessable Content"
+    },
+    {
+      "endpoint": "/api/quality/metrics",
+      "name": "Quality Metrics",
+      "status": "fail",
+      "http_status": "HTTP Error 404: Not Found"
+    },
+    {
+      "endpoint": "/api/time-tracking/roi",
+      "name": "Time Tracking ROI",
+      "status": "pass",
+      "http_status": 200
+    },
+    {
+      "endpoint": "/api/uncertainty/status",
+      "name": "Uncertainty Status",
+      "status": "pass",
+      "http_status": 200
+    },
+    {
+      "endpoint": "/api/governance/status",
+      "name": "Governance Status",
+      "status": "fail",
+      "http_status": "HTTP Error 404: Not Found"
+    }
+  ]
+}
