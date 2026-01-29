@@ -15,7 +15,7 @@ import time
 from datetime import datetime
 from pathlib import Path
 
-from playwright.sync_api import sync_playwright, expect
+from playwright.sync_api import sync_playwright
 
 BASE_URL = "http://localhost:3000"
 BACKEND_URL = "http://localhost:8000"
@@ -168,7 +168,7 @@ def scenario_2_dashboard(page):
         try:
             page.goto(f"{BASE_URL}{path}", timeout=10000)
             page.wait_for_load_state("networkidle", timeout=10000)
-            status_code = 200  # If no error, it loaded
+
             is_ok = True
             working_pages += 1
         except Exception:
