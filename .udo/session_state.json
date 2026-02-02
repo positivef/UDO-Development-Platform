@@ -1,7 +1,7 @@
 {
   "active": true,
   "start_time": "2025-12-13T20:00:25.289964",
-  "last_checkpoint": "2026-01-03T23:35:29.944891",
+  "last_checkpoint": "2026-02-01T09:32:22.782270",
   "checkpoints": [
     {
       "time": "2025-12-13T20:13:48.769950",
@@ -422,6 +422,186 @@
       "notes": "Commit: fix: Resolve remaining flake8 lint errors (140 → 0",
       "git_status": "M .claude/settings.local.json\n M .udo/session_state.json",
       "recent_commits": "0f03c5a fix: Resolve remaining flake8 lint errors (140 → 0)\n03853c4 fix: Resolve 400+ flake8 lint errors and replace emoji with ASCII\n554ffcf feat(metacognition): add scripts category detection"
+    },
+    {
+      "time": "2026-01-03T23:36:11.974513",
+      "notes": "Commit: fix: Resolve remaining flake8 lint errors (140 → 0",
+      "git_status": "M .claude/settings.local.json",
+      "recent_commits": "92b1e1e fix: Resolve remaining flake8 lint errors (140 → 0)\n03853c4 fix: Resolve 400+ flake8 lint errors and replace emoji with ASCII\n554ffcf feat(metacognition): add scripts category detection"
+    },
+    {
+      "time": "2026-01-06T02:23:22.703479",
+      "notes": "Commit: fix(websocket): Implement JWT auth and graceful cl",
+      "git_status": "M .claude/settings.local.json\n M .udo/session_state.json\n M backend/app/routers/kanban_tasks.py\n M backend/app/services/kanban_task_service.py\n M backend/main.py\n M web-dashboard/app/confidence/page.tsx\n M web-dashboard/components/kanban/KanbanBoard.tsx\n M web-dashboard/lib/api-config.ts\n?? USER_TESTING_QUICKSTART.md\n?? check_db_schema.py\n?? check_kanban_tables.py\n?? docs/PRD_VS_IMPLEMENTATION_ANALYSIS.md\n?? screenshots/01_main_dashboard.png\n?? screenshots/02_kanban_board.png\n?? screenshots/03_uncertainty_map.png\n?? screenshots/04_confidence_dashboard.png\n?? screenshots/05_time_tracking.png\n?? screenshots/06_governance_dashboard.png\n?? scripts/seed_test_data.py\n?? start-testing-servers.bat\n?? stop-testing-servers.bat\n?? tasks_verification.json\n?? temp_tasks.json\n?? test-context.zip\n?? test-context/\n?? test_udo_webapp.py\n?? test_udo_webapp_ascii.py\n?? test_websocket_cleanup.py\n?? udo_tasks.json",
+      "recent_commits": "1bfbfd5 fix(websocket): Implement JWT auth and graceful cleanup for WebSocket connections\n92b1e1e fix: Resolve remaining flake8 lint errors (140 → 0)\n03853c4 fix: Resolve 400+ flake8 lint errors and replace emoji with ASCII"
+    },
+    {
+      "time": "2026-01-06T08:22:35.315778",
+      "notes": "Commit: fix: Backend Kanban improvements and frontend hydr",
+      "git_status": "M .claude/settings.local.json\n M .udo/session_state.json\n?? USER_TESTING_QUICKSTART.md\n?? check_db_schema.py\n?? check_kanban_tables.py\n?? docs/PRD_VS_IMPLEMENTATION_ANALYSIS.md\n?? screenshots/01_main_dashboard.png\n?? screenshots/02_kanban_board.png\n?? screenshots/03_uncertainty_map.png\n?? screenshots/04_confidence_dashboard.png\n?? screenshots/05_time_tracking.png\n?? screenshots/06_governance_dashboard.png\n?? scripts/seed_test_data.py\n?? start-testing-servers.bat\n?? stop-testing-servers.bat\n?? tasks_verification.json\n?? temp_tasks.json\n?? test-context.zip\n?? test-context/\n?? test_udo_webapp.py\n?? test_udo_webapp_ascii.py\n?? test_websocket_cleanup.py\n?? udo_tasks.json",
+      "recent_commits": "a29e650 fix: Backend Kanban improvements and frontend hydration fixes\n1bfbfd5 fix(websocket): Implement JWT auth and graceful cleanup for WebSocket connections\n92b1e1e fix: Resolve remaining flake8 lint errors (140 → 0)"
+    },
+    {
+      "time": "2026-01-06T08:23:52.338143",
+      "notes": "Commit: fix: Backend Kanban improvements and frontend hydr",
+      "git_status": "M .claude/settings.local.json\n M .udo/session_state.json\n?? USER_TESTING_QUICKSTART.md\n?? check_db_schema.py\n?? check_kanban_tables.py\n?? docs/PRD_VS_IMPLEMENTATION_ANALYSIS.md\n?? screenshots/01_main_dashboard.png\n?? screenshots/02_kanban_board.png\n?? screenshots/03_uncertainty_map.png\n?? screenshots/04_confidence_dashboard.png\n?? screenshots/05_time_tracking.png\n?? screenshots/06_governance_dashboard.png\n?? scripts/seed_test_data.py\n?? start-testing-servers.bat\n?? stop-testing-servers.bat\n?? tasks_verification.json\n?? temp_tasks.json\n?? test-context.zip\n?? test-context/\n?? test_udo_webapp.py\n?? test_udo_webapp_ascii.py\n?? test_websocket_cleanup.py\n?? udo_tasks.json",
+      "recent_commits": "1541120 fix: Backend Kanban improvements and frontend hydration fixes\n1bfbfd5 fix(websocket): Implement JWT auth and graceful cleanup for WebSocket connections\n92b1e1e fix: Resolve remaining flake8 lint errors (140 → 0)"
+    },
+    {
+      "time": "2026-01-06T08:27:10.369217",
+      "notes": "Commit: chore: Add temporary test files to .gitignore ||  goto :error",
+      "git_status": "M .claude/settings.local.json\n M .udo/session_state.json\n?? USER_TESTING_QUICKSTART.md\n?? docs/PRD_VS_IMPLEMENTATION_ANALYSIS.md\n?? screenshots/01_main_dashboard.png\n?? screenshots/02_kanban_board.png\n?? screenshots/03_uncertainty_map.png\n?? screenshots/04_confidence_dashboard.png\n?? screenshots/05_time_tracking.png\n?? screenshots/06_governance_dashboard.png\n?? scripts/seed_test_data.py\n?? start-testing-servers.bat\n?? stop-testing-servers.bat",
+      "recent_commits": "62f3618 chore: Add temporary test files to .gitignore\n1541120 fix: Backend Kanban improvements and frontend hydration fixes\n1bfbfd5 fix(websocket): Implement JWT auth and graceful cleanup for WebSocket connections"
+    },
+    {
+      "time": "2026-01-06T08:30:59.086140",
+      "notes": "Commit: docs: Add User Testing documentation and automatio",
+      "git_status": "M .claude/settings.local.json\n M .udo/session_state.json",
+      "recent_commits": "13df2a5 docs: Add User Testing documentation and automation scripts\n62f3618 chore: Add temporary test files to .gitignore\n1541120 fix: Backend Kanban improvements and frontend hydration fixes"
+    },
+    {
+      "time": "2026-01-06T08:32:22.950006",
+      "notes": "Commit: docs: Add User Testing documentation and automatio",
+      "git_status": "M .claude/settings.local.json\n M .udo/session_state.json",
+      "recent_commits": "2eedb93 docs: Add User Testing documentation and automation scripts\n62f3618 chore: Add temporary test files to .gitignore\n1541120 fix: Backend Kanban improvements and frontend hydration fixes"
+    },
+    {
+      "time": "2026-01-06T09:16:41.154885",
+      "notes": "Commit: docs: Add User Testing readiness assessment report",
+      "git_status": "M .claude/settings.local.json\n M .udo/session_state.json",
+      "recent_commits": "f8de178 docs: Add User Testing readiness assessment report\n2eedb93 docs: Add User Testing documentation and automation scripts\n62f3618 chore: Add temporary test files to .gitignore"
+    },
+    {
+      "time": "2026-01-07T00:01:03.666768",
+      "notes": "Commit: docs: Add comprehensive E2E test execution report ||  goto :error",
+      "git_status": "M .claude/settings.local.json\n M .udo/session_state.json",
+      "recent_commits": "69c441e docs: Add comprehensive E2E test execution report\nf8de178 docs: Add User Testing readiness assessment report\n2eedb93 docs: Add User Testing documentation and automation scripts"
+    },
+    {
+      "time": "2026-01-12T04:59:08.244239",
+      "notes": "Commit: fix(frontend): Change API fallback port from 8000 ",
+      "git_status": "M .claude/settings.local.json\n M .udo/session_state.json\n M backend/app/core/security.py\n M backend/app/models/ck_theory.py\n M backend/app/models/kanban_archive.py\n M backend/app/models/kanban_context.py\n M backend/app/routers/kanban_archive.py\n M backend/app/routers/kanban_context.py\n M backend/app/routers/kanban_tasks.py\n M backend/app/routers/websocket_handler.py\n M backend/app/services/ck_theory_service.py\n M backend/app/services/kanban_archive_service.py\n M backend/app/services/kanban_context_service.py\n M backend/app/services/kanban_task_service.py\n M backend/requirements.txt\n M web-dashboard/app/archive/page.tsx\n M web-dashboard/app/ck-theory/page.tsx\n M web-dashboard/components/ErrorBoundary.tsx\n M web-dashboard/components/kanban/AISuggestionModal.tsx\n M web-dashboard/components/kanban/ContextManager.tsx\n M web-dashboard/components/kanban/DependencyGraph.tsx\n M web-dashboard/components/kanban/FilterPanel.tsx\n M web-dashboard/components/kanban/KanbanBoard.tsx\n M web-dashboard/components/kanban/TaskDetailModal.tsx\n M web-dashboard/components/providers.tsx\n M web-dashboard/hooks/useConfidenceWebSocket.ts\n M web-dashboard/lib/hooks/useUncertaintyWebSocket.ts\n M web-dashboard/lib/stores/kanban-store.ts\n M web-dashboard/lib/websocket/kanban-client.ts\n M web-dashboard/messages/en.json\n M web-dashboard/messages/ko.json\n M web-dashboard/tests/e2e/kanban-ui.spec.ts\n?? USER_TESTING_AI_SIMULATION_REPORT.md\n?? backend/tests/test_context_upload_security.py\n?? docs/AI_SIMULATION_NEXT_STEPS.md\n?? docs/AI_SIMULATION_POST_P0_REPORT.md\n?? docs/CK_THEORY_BUG_FIX_STATUS.md\n?? docs/CK_THEORY_USER_GUIDE.md\n?? docs/INTL_ERROR_C-K_THEORY_FIX_COMPLETE.md\n?? docs/INTL_ERROR_FIX_COMPLETE.md\n?? docs/P0_COMPLETION_SUMMARY.md\n?? docs/SESSION_2026-01-07_04-23_INTL_ERROR_RESOLUTION.md\n?? docs/WEBSOCKET_E2E_TEST_RESULTS.md\n?? docs/WEBSOCKET_ERROR_INVESTIGATION.md\n?? web-dashboard/components/NetworkStatus.tsx\n?? web-dashboard/components/ServiceWorkerProvider.tsx\n?? web-dashboard/lib/hooks/useKanbanWebSocket.ts\n?? web-dashboard/lib/utils/\n?? web-dashboard/public/service-worker.js\n?? web-dashboard/tests/e2e/drag-drop-validation.spec.ts\n?? web-dashboard/tests/e2e/websocket-connections.spec.ts",
+      "recent_commits": "4a90bb9 fix(frontend): Change API fallback port from 8000 to 8005\n69c441e docs: Add comprehensive E2E test execution report\nf8de178 docs: Add User Testing readiness assessment report"
+    },
+    {
+      "time": "2026-01-12T05:01:40.026220",
+      "notes": "Commit: fix(backend): Datetime timezone + ROIMetrics None ",
+      "git_status": "M .claude/settings.local.json\n M .udo/session_state.json\n M backend/app/core/security.py\n M backend/app/models/ck_theory.py\n M backend/app/models/kanban_archive.py\n M backend/app/models/kanban_context.py\n M backend/app/routers/kanban_archive.py\n M backend/app/routers/kanban_context.py\n M backend/app/routers/kanban_tasks.py\n M backend/app/routers/websocket_handler.py\n M backend/app/services/ck_theory_service.py\n M backend/app/services/kanban_context_service.py\n M backend/requirements.txt\n M web-dashboard/app/archive/page.tsx\n M web-dashboard/app/ck-theory/page.tsx\n M web-dashboard/components/ErrorBoundary.tsx\n M web-dashboard/components/kanban/AISuggestionModal.tsx\n M web-dashboard/components/kanban/ContextManager.tsx\n M web-dashboard/components/kanban/DependencyGraph.tsx\n M web-dashboard/components/kanban/FilterPanel.tsx\n M web-dashboard/components/kanban/KanbanBoard.tsx\n M web-dashboard/components/kanban/TaskDetailModal.tsx\n M web-dashboard/components/providers.tsx\n M web-dashboard/hooks/useConfidenceWebSocket.ts\n M web-dashboard/lib/hooks/useUncertaintyWebSocket.ts\n M web-dashboard/lib/stores/kanban-store.ts\n M web-dashboard/lib/websocket/kanban-client.ts\n M web-dashboard/messages/en.json\n M web-dashboard/messages/ko.json\n M web-dashboard/tests/e2e/kanban-ui.spec.ts\n?? USER_TESTING_AI_SIMULATION_REPORT.md\n?? backend/tests/test_context_upload_security.py\n?? docs/AI_SIMULATION_NEXT_STEPS.md\n?? docs/AI_SIMULATION_POST_P0_REPORT.md\n?? docs/CK_THEORY_BUG_FIX_STATUS.md\n?? docs/CK_THEORY_USER_GUIDE.md\n?? docs/INTL_ERROR_C-K_THEORY_FIX_COMPLETE.md\n?? docs/INTL_ERROR_FIX_COMPLETE.md\n?? docs/P0_COMPLETION_SUMMARY.md\n?? docs/SESSION_2026-01-07_04-23_INTL_ERROR_RESOLUTION.md\n?? docs/WEBSOCKET_E2E_TEST_RESULTS.md\n?? docs/WEBSOCKET_ERROR_INVESTIGATION.md\n?? temp_archive_original.py\n?? web-dashboard/components/NetworkStatus.tsx\n?? web-dashboard/components/ServiceWorkerProvider.tsx\n?? web-dashboard/lib/hooks/useKanbanWebSocket.ts\n?? web-dashboard/lib/utils/\n?? web-dashboard/public/service-worker.js\n?? web-dashboard/tests/e2e/drag-drop-validation.spec.ts\n?? web-dashboard/tests/e2e/websocket-connections.spec.ts",
+      "recent_commits": "19c92e8 fix(backend): Datetime timezone + ROIMetrics None handling\n4a90bb9 fix(frontend): Change API fallback port from 8000 to 8005\n69c441e docs: Add comprehensive E2E test execution report"
+    },
+    {
+      "time": "2026-01-18T14:53:48.961231",
+      "notes": "Commit: docs: Add UDO + VibeCoding integration guide and s",
+      "git_status": "M .claude/settings.local.json\n M .udo/search_telemetry.json\n M .udo/session_state.json\n M backend/.env.example\n M backend/app/core/security.py\n M backend/app/models/ck_theory.py\n M backend/app/models/kanban_archive.py\n M backend/app/models/kanban_context.py\n M backend/app/routers/kanban_archive.py\n M backend/app/routers/kanban_context.py\n M backend/app/routers/kanban_tasks.py\n M backend/app/routers/websocket_handler.py\n M backend/app/services/ck_theory_service.py\n M backend/app/services/kanban_archive_service.py\n M backend/app/services/kanban_context_service.py\n M backend/requirements.txt\n M docs/PRDs/PRODUCT_REQUIREMENTS_DOCUMENT.md\n M web-dashboard/app/archive/page.tsx\n M web-dashboard/app/ck-theory/page.tsx\n M web-dashboard/app/globals.css\n M web-dashboard/app/kanban/page.tsx\n M web-dashboard/app/layout.tsx\n M web-dashboard/components/ErrorBoundary.tsx\n M web-dashboard/components/Navigation.tsx\n M web-dashboard/components/kanban/AISuggestionModal.tsx\n M web-dashboard/components/kanban/ContextManager.tsx\n M web-dashboard/components/kanban/DependencyGraph.tsx\n M web-dashboard/components/kanban/FilterPanel.tsx\n M web-dashboard/components/kanban/KanbanBoard.tsx\n M web-dashboard/components/kanban/TaskDetailModal.tsx\n M web-dashboard/components/providers.tsx\n M web-dashboard/hooks/useConfidenceWebSocket.ts\n M web-dashboard/lib/api-config.ts\n M web-dashboard/lib/api/client.ts\n M web-dashboard/lib/api/endpoints.ts\n M web-dashboard/lib/api/kanban-archive.ts\n M web-dashboard/lib/api/kanban.ts\n M web-dashboard/lib/hooks/useUncertaintyWebSocket.ts\n M web-dashboard/lib/stores/kanban-store.ts\n M web-dashboard/lib/websocket/kanban-client.ts\n M web-dashboard/messages/en.json\n M web-dashboard/messages/ko.json\n M web-dashboard/tests/e2e/kanban-ui.spec.ts\n?? USER_TESTING_AI_SIMULATION_REPORT.md\n?? backend/tests/test_context_upload_security.py\n?? docs/AI_SIMULATION_NEXT_STEPS.md\n?? docs/AI_SIMULATION_POST_P0_REPORT.md\n?? docs/CK_THEORY_BUG_FIX_STATUS.md\n?? docs/CK_THEORY_USER_GUIDE.md\n?? docs/INTL_ERROR_C-K_THEORY_FIX_COMPLETE.md\n?? docs/INTL_ERROR_FIX_COMPLETE.md\n?? docs/P0_COMPLETION_SUMMARY.md\n?? docs/PERFORMANCE_AUDIT_2026-01.md\n?? docs/PRDs/PRD_ADDENDUM_2026-01.md\n?? docs/SECURITY_AUDIT_REPORT_2026-01.md\n?? docs/SESSION_2026-01-07_04-23_INTL_ERROR_RESOLUTION.md\n?? docs/WEBSOCKET_E2E_TEST_RESULTS.md\n?? docs/WEBSOCKET_ERROR_INVESTIGATION.md\n?? lighthouse-report-kanban.json\n?? lighthouse-report-main.json\n?? temp_archive_original.py\n?? web-dashboard/components/NetworkStatus.tsx\n?? web-dashboard/components/ServiceWorkerProvider.tsx\n?? web-dashboard/lib/hooks/useKanbanWebSocket.ts\n?? web-dashboard/lib/utils/\n?? web-dashboard/lighthouse-prod-kanban.json\n?? web-dashboard/lighthouse-prod-main.json\n?? web-dashboard/public/service-worker.js\n?? web-dashboard/tests/e2e/drag-drop-validation.spec.ts\n?? web-dashboard/tests/e2e/mobile-responsive.spec.ts\n?? web-dashboard/tests/e2e/websocket-connections.spec.ts",
+      "recent_commits": "721133b docs: Add UDO + VibeCoding integration guide and simple hook\n19c92e8 fix(backend): Datetime timezone + ROIMetrics None handling\n4a90bb9 fix(frontend): Change API fallback port from 8000 to 8005"
+    },
+    {
+      "time": "2026-01-18T21:52:29.153555",
+      "notes": "Commit: feat(frontend): RL Knowledge Dashboard - Training-",
+      "git_status": "M .claude/settings.local.json\n M .udo/search_telemetry.json\n M .udo/session_state.json\n M backend/.env.example\n M backend/app/core/security.py\n M backend/app/models/ck_theory.py\n M backend/app/models/kanban_archive.py\n M backend/app/models/kanban_context.py\n M backend/app/routers/kanban_archive.py\n M backend/app/routers/kanban_context.py\n M backend/app/routers/kanban_tasks.py\n M backend/app/routers/websocket_handler.py\n M backend/app/services/ck_theory_service.py\n M backend/app/services/kanban_archive_service.py\n M backend/app/services/kanban_context_service.py\n M backend/requirements.txt\n M docs/PRDs/PRODUCT_REQUIREMENTS_DOCUMENT.md\n M web-dashboard/app/archive/page.tsx\n M web-dashboard/app/ck-theory/page.tsx\n M web-dashboard/app/globals.css\n M web-dashboard/app/kanban/page.tsx\n M web-dashboard/app/layout.tsx\n M web-dashboard/components/ErrorBoundary.tsx\n M web-dashboard/components/kanban/AISuggestionModal.tsx\n M web-dashboard/components/kanban/ContextManager.tsx\n M web-dashboard/components/kanban/DependencyGraph.tsx\n M web-dashboard/components/kanban/FilterPanel.tsx\n M web-dashboard/components/kanban/KanbanBoard.tsx\n M web-dashboard/components/kanban/TaskDetailModal.tsx\n M web-dashboard/components/providers.tsx\n M web-dashboard/hooks/useConfidenceWebSocket.ts\n M web-dashboard/lib/api-config.ts\n M web-dashboard/lib/api/client.ts\n M web-dashboard/lib/api/kanban-archive.ts\n M web-dashboard/lib/api/kanban.ts\n M web-dashboard/lib/hooks/useUncertaintyWebSocket.ts\n M web-dashboard/lib/stores/kanban-store.ts\n M web-dashboard/lib/websocket/kanban-client.ts\n M web-dashboard/messages/en.json\n M web-dashboard/messages/ko.json\n M web-dashboard/tests/e2e/kanban-ui.spec.ts\n?? USER_TESTING_AI_SIMULATION_REPORT.md\n?? backend/tests/test_context_upload_security.py\n?? docs/AI_SIMULATION_NEXT_STEPS.md\n?? docs/AI_SIMULATION_POST_P0_REPORT.md\n?? docs/CK_THEORY_BUG_FIX_STATUS.md\n?? docs/CK_THEORY_USER_GUIDE.md\n?? docs/INTL_ERROR_C-K_THEORY_FIX_COMPLETE.md\n?? docs/INTL_ERROR_FIX_COMPLETE.md\n?? docs/P0_COMPLETION_SUMMARY.md\n?? docs/PERFORMANCE_AUDIT_2026-01.md\n?? docs/PRDs/PRD_ADDENDUM_2026-01.md\n?? docs/SECURITY_AUDIT_REPORT_2026-01.md\n?? docs/SESSION_2026-01-07_04-23_INTL_ERROR_RESOLUTION.md\n?? docs/WEBSOCKET_E2E_TEST_RESULTS.md\n?? docs/WEBSOCKET_ERROR_INVESTIGATION.md\n?? lighthouse-report-kanban.json\n?? lighthouse-report-main.json\n?? temp_archive_original.py\n?? web-dashboard/components/NetworkStatus.tsx\n?? web-dashboard/components/ServiceWorkerProvider.tsx\n?? web-dashboard/lib/hooks/useKanbanWebSocket.ts\n?? web-dashboard/lib/utils/\n?? web-dashboard/lighthouse-prod-kanban.json\n?? web-dashboard/lighthouse-prod-main.json\n?? web-dashboard/public/service-worker.js\n?? web-dashboard/tests/e2e/drag-drop-validation.spec.ts\n?? web-dashboard/tests/e2e/mobile-responsive.spec.ts\n?? web-dashboard/tests/e2e/websocket-connections.spec.ts",
+      "recent_commits": "0e3928f feat(frontend): RL Knowledge Dashboard - Training-free GRPO integration\n721133b docs: Add UDO + VibeCoding integration guide and simple hook\n19c92e8 fix(backend): Datetime timezone + ROIMetrics None handling"
+    },
+    {
+      "time": "2026-01-19T00:14:26.371335",
+      "notes": "Commit: fix(lint): Remove unused f-string prefix in kanban",
+      "git_status": "M .claude/settings.local.json\n M .udo/search_telemetry.json\n M .udo/session_state.json\n M backend/.env.example\n M backend/app/core/security.py\n M backend/app/models/ck_theory.py\n M backend/app/models/kanban_archive.py\n M backend/app/models/kanban_context.py\n M backend/app/routers/kanban_archive.py\n M backend/app/routers/kanban_context.py\n M backend/app/routers/kanban_tasks.py\n M backend/app/routers/websocket_handler.py\n M backend/app/services/ck_theory_service.py\n M backend/app/services/kanban_context_service.py\n M backend/requirements.txt\n M docs/PRDs/PRODUCT_REQUIREMENTS_DOCUMENT.md\n M web-dashboard/app/archive/page.tsx\n M web-dashboard/app/ck-theory/page.tsx\n M web-dashboard/app/globals.css\n M web-dashboard/app/kanban/page.tsx\n M web-dashboard/app/layout.tsx\n M web-dashboard/components/ErrorBoundary.tsx\n M web-dashboard/components/kanban/AISuggestionModal.tsx\n M web-dashboard/components/kanban/ContextManager.tsx\n M web-dashboard/components/kanban/DependencyGraph.tsx\n M web-dashboard/components/kanban/FilterPanel.tsx\n M web-dashboard/components/kanban/KanbanBoard.tsx\n M web-dashboard/components/kanban/TaskDetailModal.tsx\n M web-dashboard/components/providers.tsx\n M web-dashboard/hooks/useConfidenceWebSocket.ts\n M web-dashboard/lib/api-config.ts\n M web-dashboard/lib/api/client.ts\n M web-dashboard/lib/api/kanban-archive.ts\n M web-dashboard/lib/api/kanban.ts\n M web-dashboard/lib/hooks/useUncertaintyWebSocket.ts\n M web-dashboard/lib/stores/kanban-store.ts\n M web-dashboard/lib/websocket/kanban-client.ts\n M web-dashboard/messages/en.json\n M web-dashboard/messages/ko.json\n M web-dashboard/tests/e2e/kanban-ui.spec.ts\n?? USER_TESTING_AI_SIMULATION_REPORT.md\n?? backend/tests/test_context_upload_security.py\n?? docs/AI_SIMULATION_NEXT_STEPS.md\n?? docs/AI_SIMULATION_POST_P0_REPORT.md\n?? docs/CK_THEORY_BUG_FIX_STATUS.md\n?? docs/CK_THEORY_USER_GUIDE.md\n?? docs/INTL_ERROR_C-K_THEORY_FIX_COMPLETE.md\n?? docs/INTL_ERROR_FIX_COMPLETE.md\n?? docs/P0_COMPLETION_SUMMARY.md\n?? docs/PERFORMANCE_AUDIT_2026-01.md\n?? docs/PRDs/PRD_ADDENDUM_2026-01.md\n?? docs/SECURITY_AUDIT_REPORT_2026-01.md\n?? docs/SESSION_2026-01-07_04-23_INTL_ERROR_RESOLUTION.md\n?? docs/WEBSOCKET_E2E_TEST_RESULTS.md\n?? docs/WEBSOCKET_ERROR_INVESTIGATION.md\n?? lighthouse-report-kanban.json\n?? lighthouse-report-main.json\n?? temp_archive_original.py\n?? web-dashboard/components/NetworkStatus.tsx\n?? web-dashboard/components/ServiceWorkerProvider.tsx\n?? web-dashboard/lib/hooks/useKanbanWebSocket.ts\n?? web-dashboard/lib/utils/\n?? web-dashboard/lighthouse-prod-kanban.json\n?? web-dashboard/lighthouse-prod-main.json\n?? web-dashboard/public/service-worker.js\n?? web-dashboard/tests/e2e/drag-drop-validation.spec.ts\n?? web-dashboard/tests/e2e/mobile-responsive.spec.ts\n?? web-dashboard/tests/e2e/websocket-connections.spec.ts",
+      "recent_commits": "bc0a807 fix(lint): Remove unused f-string prefix in kanban_archive_service.py\n0e3928f feat(frontend): RL Knowledge Dashboard - Training-free GRPO integration\n721133b docs: Add UDO + VibeCoding integration guide and simple hook"
+    },
+    {
+      "time": "2026-01-25T04:37:40.859580",
+      "notes": "Commit: fix(test): RBAC test fixture env variables alignme",
+      "git_status": "M .claude/settings.local.json\n M .udo/search_telemetry.json\n M .udo/session_state.json\n M backend/.env.example\n M backend/app/core/security.py\n M backend/app/models/ck_theory.py\n M backend/app/models/kanban_archive.py\n M backend/app/models/kanban_context.py\n M backend/app/routers/kanban_archive.py\n M backend/app/routers/kanban_context.py\n M backend/app/routers/kanban_tasks.py\n M backend/app/routers/websocket_handler.py\n M backend/app/services/ck_theory_service.py\n M backend/app/services/kanban_archive_service.py\n M backend/app/services/kanban_context_service.py\n M backend/app/services/kanban_task_service.py\n M backend/requirements.txt\n M docs/PRDs/PRODUCT_REQUIREMENTS_DOCUMENT.md\n M web-dashboard/app/archive/page.tsx\n M web-dashboard/app/ck-theory/page.tsx\n M web-dashboard/app/globals.css\n M web-dashboard/app/kanban/page.tsx\n M web-dashboard/app/layout.tsx\n M web-dashboard/components/ErrorBoundary.tsx\n M web-dashboard/components/kanban/AISuggestionModal.tsx\n M web-dashboard/components/kanban/ContextManager.tsx\n M web-dashboard/components/kanban/DependencyGraph.tsx\n M web-dashboard/components/kanban/FilterPanel.tsx\n M web-dashboard/components/kanban/KanbanBoard.tsx\n M web-dashboard/components/kanban/TaskDetailModal.tsx\n M web-dashboard/components/providers.tsx\n M web-dashboard/hooks/useConfidenceWebSocket.ts\n M web-dashboard/hooks/useKanbanWebSocket.ts\n M web-dashboard/lib/api-config.ts\n M web-dashboard/lib/api/client.ts\n M web-dashboard/lib/api/kanban-archive.ts\n M web-dashboard/lib/api/kanban.ts\n M web-dashboard/lib/hooks/useUncertaintyWebSocket.ts\n M web-dashboard/lib/stores/kanban-store.ts\n M web-dashboard/lib/websocket/kanban-client.ts\n M web-dashboard/messages/en.json\n M web-dashboard/messages/ko.json\n M web-dashboard/tests/e2e/kanban-ui.spec.ts\n?? USER_TESTING_AI_SIMULATION_REPORT.md\n?? backend/tests/test_context_upload_security.py\n?? docs/AI_SIMULATION_NEXT_STEPS.md\n?? docs/AI_SIMULATION_POST_P0_REPORT.md\n?? docs/CK_THEORY_BUG_FIX_STATUS.md\n?? docs/CK_THEORY_USER_GUIDE.md\n?? docs/INTL_ERROR_C-K_THEORY_FIX_COMPLETE.md\n?? docs/INTL_ERROR_FIX_COMPLETE.md\n?? docs/P0_COMPLETION_SUMMARY.md\n?? docs/PERFORMANCE_AUDIT_2026-01.md\n?? docs/PRDs/PRD_ADDENDUM_2026-01.md\n?? docs/SECURITY_AUDIT_REPORT_2026-01.md\n?? docs/SESSION_2026-01-07_04-23_INTL_ERROR_RESOLUTION.md\n?? docs/WEBSOCKET_E2E_TEST_RESULTS.md\n?? docs/WEBSOCKET_ERROR_INVESTIGATION.md\n?? launcher/\n?? lighthouse-report-kanban.json\n?? lighthouse-report-main.json\n?? temp_archive_original.py\n?? tmp_tasks.json\n?? web-dashboard/components/NetworkStatus.tsx\n?? web-dashboard/components/ServiceWorkerProvider.tsx\n?? web-dashboard/lib/hooks/useKanbanWebSocket.ts\n?? web-dashboard/lib/utils/\n?? web-dashboard/lighthouse-prod-kanban.json\n?? web-dashboard/lighthouse-prod-main.json\n?? web-dashboard/public/service-worker.js\n?? web-dashboard/tests/e2e/drag-drop-validation.spec.ts\n?? web-dashboard/tests/e2e/mobile-responsive.spec.ts\n?? web-dashboard/tests/e2e/websocket-connections.spec.ts",
+      "recent_commits": "30b1bb9 fix(test): RBAC test fixture env variables alignment\nbc0a807 fix(lint): Remove unused f-string prefix in kanban_archive_service.py\n0e3928f feat(frontend): RL Knowledge Dashboard - Training-free GRPO integration"
+    },
+    {
+      "time": "2026-01-26T21:07:12.887198",
+      "notes": "Commit: fix(kanban): Use naive datetime for asyncpg + shar",
+      "git_status": "M .claude/settings.local.json\n M .udo/search_telemetry.json\n M .udo/session_state.json\n M backend/.env.example\n M backend/app/core/security.py\n M backend/app/models/ck_theory.py\n M backend/app/models/kanban_archive.py\n M backend/app/models/kanban_context.py\n M backend/app/routers/kanban_archive.py\n M backend/app/routers/kanban_context.py\n M backend/app/routers/websocket_handler.py\n M backend/app/services/ck_theory_service.py\n M backend/app/services/kanban_archive_service.py\n M backend/app/services/kanban_context_service.py\n M backend/requirements.txt\n M docs/PRDs/PRODUCT_REQUIREMENTS_DOCUMENT.md\n M web-dashboard/app/archive/page.tsx\n M web-dashboard/app/ck-theory/page.tsx\n M web-dashboard/app/globals.css\n M web-dashboard/app/kanban/page.tsx\n M web-dashboard/app/layout.tsx\n M web-dashboard/components/ErrorBoundary.tsx\n M web-dashboard/components/kanban/AISuggestionModal.tsx\n M web-dashboard/components/kanban/ContextManager.tsx\n M web-dashboard/components/kanban/DependencyGraph.tsx\n M web-dashboard/components/kanban/FilterPanel.tsx\n M web-dashboard/components/kanban/KanbanBoard.tsx\n M web-dashboard/components/kanban/TaskDetailModal.tsx\n M web-dashboard/components/providers.tsx\n M web-dashboard/hooks/useConfidenceWebSocket.ts\n M web-dashboard/hooks/useKanbanWebSocket.ts\n M web-dashboard/lib/api-config.ts\n M web-dashboard/lib/api/client.ts\n M web-dashboard/lib/api/kanban-archive.ts\n M web-dashboard/lib/api/kanban.ts\n M web-dashboard/lib/hooks/useUncertaintyWebSocket.ts\n M web-dashboard/lib/stores/kanban-store.ts\n M web-dashboard/lib/websocket/kanban-client.ts\n M web-dashboard/messages/en.json\n M web-dashboard/messages/ko.json\n M web-dashboard/tests/e2e/kanban-ui.spec.ts\n?? USER_TESTING_AI_SIMULATION_REPORT.md\n?? backend/tests/test_context_upload_security.py\n?? docs/AI_SIMULATION_NEXT_STEPS.md\n?? docs/AI_SIMULATION_POST_P0_REPORT.md\n?? docs/CK_THEORY_BUG_FIX_STATUS.md\n?? docs/CK_THEORY_USER_GUIDE.md\n?? docs/INTL_ERROR_C-K_THEORY_FIX_COMPLETE.md\n?? docs/INTL_ERROR_FIX_COMPLETE.md\n?? docs/P0_COMPLETION_SUMMARY.md\n?? docs/PERFORMANCE_AUDIT_2026-01.md\n?? docs/PRDs/PRD_ADDENDUM_2026-01.md\n?? docs/SECURITY_AUDIT_REPORT_2026-01.md\n?? docs/SESSION_2026-01-07_04-23_INTL_ERROR_RESOLUTION.md\n?? docs/WEBSOCKET_E2E_TEST_RESULTS.md\n?? docs/WEBSOCKET_ERROR_INVESTIGATION.md\n?? launcher/\n?? lighthouse-report-kanban.json\n?? lighthouse-report-main.json\n?? temp_archive_original.py\n?? tmp_tasks.json\n?? web-dashboard/components/NetworkStatus.tsx\n?? web-dashboard/components/ServiceWorkerProvider.tsx\n?? web-dashboard/lib/hooks/useKanbanWebSocket.ts\n?? web-dashboard/lib/utils/\n?? web-dashboard/lighthouse-prod-kanban.json\n?? web-dashboard/lighthouse-prod-main.json\n?? web-dashboard/public/service-worker.js\n?? web-dashboard/tests/e2e/drag-drop-validation.spec.ts\n?? web-dashboard/tests/e2e/mobile-responsive.spec.ts\n?? web-dashboard/tests/e2e/websocket-connections.spec.ts",
+      "recent_commits": "68b99c5 fix(kanban): Use naive datetime for asyncpg + shared mock service\n30b1bb9 fix(test): RBAC test fixture env variables alignment\nbc0a807 fix(lint): Remove unused f-string prefix in kanban_archive_service.py"
+    },
+    {
+      "time": "2026-01-29T00:20:04.132417",
+      "notes": "Commit: fix(kanban): Add ROI model defaults and naive date",
+      "git_status": "M .claude/settings.local.json\n M .udo/search_telemetry.json\n M .udo/session_state.json\n M backend/.env.example\n M backend/app/core/security.py\n M backend/app/models/ck_theory.py\n M backend/app/routers/websocket_handler.py\n M backend/app/services/ck_theory_service.py\n M backend/requirements.txt\n M docs/PRDs/PRODUCT_REQUIREMENTS_DOCUMENT.md\n M web-dashboard/app/archive/page.tsx\n M web-dashboard/app/ck-theory/page.tsx\n M web-dashboard/app/globals.css\n M web-dashboard/app/kanban/page.tsx\n M web-dashboard/app/layout.tsx\n M web-dashboard/components/ErrorBoundary.tsx\n M web-dashboard/components/kanban/AISuggestionModal.tsx\n M web-dashboard/components/kanban/ContextManager.tsx\n M web-dashboard/components/kanban/DependencyGraph.tsx\n M web-dashboard/components/kanban/FilterPanel.tsx\n M web-dashboard/components/kanban/KanbanBoard.tsx\n M web-dashboard/components/kanban/TaskDetailModal.tsx\n M web-dashboard/components/providers.tsx\n M web-dashboard/hooks/useConfidenceWebSocket.ts\n M web-dashboard/hooks/useKanbanWebSocket.ts\n M web-dashboard/lib/api-config.ts\n M web-dashboard/lib/api/client.ts\n M web-dashboard/lib/api/kanban-archive.ts\n M web-dashboard/lib/api/kanban.ts\n M web-dashboard/lib/hooks/useUncertaintyWebSocket.ts\n M web-dashboard/lib/stores/kanban-store.ts\n M web-dashboard/lib/websocket/kanban-client.ts\n M web-dashboard/messages/en.json\n M web-dashboard/messages/ko.json\n M web-dashboard/tests/e2e/kanban-ui.spec.ts\n?? USER_TESTING_AI_SIMULATION_REPORT.md\n?? backend/tests/test_context_upload_security.py\n?? docs/AI_SIMULATION_NEXT_STEPS.md\n?? docs/AI_SIMULATION_POST_P0_REPORT.md\n?? docs/CK_THEORY_BUG_FIX_STATUS.md\n?? docs/CK_THEORY_USER_GUIDE.md\n?? docs/INTL_ERROR_C-K_THEORY_FIX_COMPLETE.md\n?? docs/INTL_ERROR_FIX_COMPLETE.md\n?? docs/P0_COMPLETION_SUMMARY.md\n?? docs/PERFORMANCE_AUDIT_2026-01.md\n?? docs/PRDs/PRD_ADDENDUM_2026-01.md\n?? docs/SECURITY_AUDIT_REPORT_2026-01.md\n?? docs/SESSION_2026-01-07_04-23_INTL_ERROR_RESOLUTION.md\n?? docs/WEBSOCKET_E2E_TEST_RESULTS.md\n?? docs/WEBSOCKET_ERROR_INVESTIGATION.md\n?? launcher/\n?? web-dashboard/components/NetworkStatus.tsx\n?? web-dashboard/components/ServiceWorkerProvider.tsx\n?? web-dashboard/lib/hooks/useKanbanWebSocket.ts\n?? web-dashboard/lib/utils/\n?? web-dashboard/public/service-worker.js\n?? web-dashboard/tests/e2e/drag-drop-validation.spec.ts\n?? web-dashboard/tests/e2e/mobile-responsive.spec.ts\n?? web-dashboard/tests/e2e/websocket-connections.spec.ts",
+      "recent_commits": "5a4e07d fix(kanban): Add ROI model defaults and naive datetime for asyncpg\n68b99c5 fix(kanban): Use naive datetime for asyncpg + shared mock service\n30b1bb9 fix(test): RBAC test fixture env variables alignment"
+    },
+    {
+      "time": "2026-01-29T00:21:30.653571",
+      "notes": "Commit: feat(backend): Enhance security, CK theory, and We",
+      "git_status": "M .claude/settings.local.json\n M .udo/search_telemetry.json\n M .udo/session_state.json\n M docs/PRDs/PRODUCT_REQUIREMENTS_DOCUMENT.md\n M web-dashboard/app/archive/page.tsx\n M web-dashboard/app/ck-theory/page.tsx\n M web-dashboard/app/globals.css\n M web-dashboard/app/kanban/page.tsx\n M web-dashboard/app/layout.tsx\n M web-dashboard/components/ErrorBoundary.tsx\n M web-dashboard/components/kanban/AISuggestionModal.tsx\n M web-dashboard/components/kanban/ContextManager.tsx\n M web-dashboard/components/kanban/DependencyGraph.tsx\n M web-dashboard/components/kanban/FilterPanel.tsx\n M web-dashboard/components/kanban/KanbanBoard.tsx\n M web-dashboard/components/kanban/TaskDetailModal.tsx\n M web-dashboard/components/providers.tsx\n M web-dashboard/hooks/useConfidenceWebSocket.ts\n M web-dashboard/hooks/useKanbanWebSocket.ts\n M web-dashboard/lib/api-config.ts\n M web-dashboard/lib/api/client.ts\n M web-dashboard/lib/api/kanban-archive.ts\n M web-dashboard/lib/api/kanban.ts\n M web-dashboard/lib/hooks/useUncertaintyWebSocket.ts\n M web-dashboard/lib/stores/kanban-store.ts\n M web-dashboard/lib/websocket/kanban-client.ts\n M web-dashboard/messages/en.json\n M web-dashboard/messages/ko.json\n M web-dashboard/tests/e2e/kanban-ui.spec.ts\n?? USER_TESTING_AI_SIMULATION_REPORT.md\n?? backend/tests/test_context_upload_security.py\n?? docs/AI_SIMULATION_NEXT_STEPS.md\n?? docs/AI_SIMULATION_POST_P0_REPORT.md\n?? docs/CK_THEORY_BUG_FIX_STATUS.md\n?? docs/CK_THEORY_USER_GUIDE.md\n?? docs/INTL_ERROR_C-K_THEORY_FIX_COMPLETE.md\n?? docs/INTL_ERROR_FIX_COMPLETE.md\n?? docs/P0_COMPLETION_SUMMARY.md\n?? docs/PERFORMANCE_AUDIT_2026-01.md\n?? docs/PRDs/PRD_ADDENDUM_2026-01.md\n?? docs/SECURITY_AUDIT_REPORT_2026-01.md\n?? docs/SESSION_2026-01-07_04-23_INTL_ERROR_RESOLUTION.md\n?? docs/WEBSOCKET_E2E_TEST_RESULTS.md\n?? docs/WEBSOCKET_ERROR_INVESTIGATION.md\n?? launcher/\n?? web-dashboard/components/NetworkStatus.tsx\n?? web-dashboard/components/ServiceWorkerProvider.tsx\n?? web-dashboard/lib/hooks/useKanbanWebSocket.ts\n?? web-dashboard/lib/utils/\n?? web-dashboard/public/service-worker.js\n?? web-dashboard/tests/e2e/drag-drop-validation.spec.ts\n?? web-dashboard/tests/e2e/mobile-responsive.spec.ts\n?? web-dashboard/tests/e2e/websocket-connections.spec.ts",
+      "recent_commits": "19e8b61 feat(backend): Enhance security, CK theory, and WebSocket handlers\n5a4e07d fix(kanban): Add ROI model defaults and naive datetime for asyncpg\n68b99c5 fix(kanban): Use naive datetime for asyncpg + shared mock service"
+    },
+    {
+      "time": "2026-01-29T00:22:13.315124",
+      "notes": "Commit: feat(frontend): Enhance Kanban UI, WebSocket stabi",
+      "git_status": "M .claude/settings.local.json\n M .udo/search_telemetry.json\n M .udo/session_state.json\n M docs/PRDs/PRODUCT_REQUIREMENTS_DOCUMENT.md\n M web-dashboard/tests/e2e/kanban-ui.spec.ts\n?? USER_TESTING_AI_SIMULATION_REPORT.md\n?? backend/tests/test_context_upload_security.py\n?? docs/AI_SIMULATION_NEXT_STEPS.md\n?? docs/AI_SIMULATION_POST_P0_REPORT.md\n?? docs/CK_THEORY_BUG_FIX_STATUS.md\n?? docs/CK_THEORY_USER_GUIDE.md\n?? docs/INTL_ERROR_C-K_THEORY_FIX_COMPLETE.md\n?? docs/INTL_ERROR_FIX_COMPLETE.md\n?? docs/P0_COMPLETION_SUMMARY.md\n?? docs/PERFORMANCE_AUDIT_2026-01.md\n?? docs/PRDs/PRD_ADDENDUM_2026-01.md\n?? docs/SECURITY_AUDIT_REPORT_2026-01.md\n?? docs/SESSION_2026-01-07_04-23_INTL_ERROR_RESOLUTION.md\n?? docs/WEBSOCKET_E2E_TEST_RESULTS.md\n?? docs/WEBSOCKET_ERROR_INVESTIGATION.md\n?? launcher/\n?? web-dashboard/public/service-worker.js\n?? web-dashboard/tests/e2e/drag-drop-validation.spec.ts\n?? web-dashboard/tests/e2e/mobile-responsive.spec.ts\n?? web-dashboard/tests/e2e/websocket-connections.spec.ts",
+      "recent_commits": "b259ea2 feat(frontend): Enhance Kanban UI, WebSocket stability, and i18n\n19e8b61 feat(backend): Enhance security, CK theory, and WebSocket handlers\n5a4e07d fix(kanban): Add ROI model defaults and naive datetime for asyncpg"
+    },
+    {
+      "time": "2026-01-29T00:22:58.032401",
+      "notes": "Commit: test(e2e): Add comprehensive E2E and security test",
+      "git_status": "M .claude/settings.local.json\n M .udo/search_telemetry.json\n M .udo/session_state.json\n M docs/PRDs/PRODUCT_REQUIREMENTS_DOCUMENT.md\n?? USER_TESTING_AI_SIMULATION_REPORT.md\n?? docs/AI_SIMULATION_NEXT_STEPS.md\n?? docs/AI_SIMULATION_POST_P0_REPORT.md\n?? docs/CK_THEORY_BUG_FIX_STATUS.md\n?? docs/CK_THEORY_USER_GUIDE.md\n?? docs/INTL_ERROR_C-K_THEORY_FIX_COMPLETE.md\n?? docs/INTL_ERROR_FIX_COMPLETE.md\n?? docs/P0_COMPLETION_SUMMARY.md\n?? docs/PERFORMANCE_AUDIT_2026-01.md\n?? docs/PRDs/PRD_ADDENDUM_2026-01.md\n?? docs/SECURITY_AUDIT_REPORT_2026-01.md\n?? docs/SESSION_2026-01-07_04-23_INTL_ERROR_RESOLUTION.md\n?? docs/WEBSOCKET_E2E_TEST_RESULTS.md\n?? docs/WEBSOCKET_ERROR_INVESTIGATION.md\n?? launcher/",
+      "recent_commits": "05b86d8 test(e2e): Add comprehensive E2E and security tests\nb259ea2 feat(frontend): Enhance Kanban UI, WebSocket stability, and i18n\n19e8b61 feat(backend): Enhance security, CK theory, and WebSocket handlers"
+    },
+    {
+      "time": "2026-01-29T00:23:53.153539",
+      "notes": "Commit: docs: Add audit reports, guides, and P0 completion",
+      "git_status": "M .claude/settings.local.json\n M .udo/search_telemetry.json\n M .udo/session_state.json\n?? USER_TESTING_AI_SIMULATION_REPORT.md\n?? docs/INTL_ERROR_C-K_THEORY_FIX_COMPLETE.md\n?? docs/INTL_ERROR_FIX_COMPLETE.md\n?? docs/SESSION_2026-01-07_04-23_INTL_ERROR_RESOLUTION.md\n?? docs/WEBSOCKET_E2E_TEST_RESULTS.md\n?? docs/WEBSOCKET_ERROR_INVESTIGATION.md\n?? launcher/",
+      "recent_commits": "bafaa8f docs: Add audit reports, guides, and P0 completion summary\n05b86d8 test(e2e): Add comprehensive E2E and security tests\nb259ea2 feat(frontend): Enhance Kanban UI, WebSocket stability, and i18n"
+    },
+    {
+      "time": "2026-01-29T00:24:14.340988",
+      "notes": "Commit: docs: Add session reports and error resolution doc",
+      "git_status": "M .claude/settings.local.json\n M .udo/search_telemetry.json\n M .udo/session_state.json\n?? launcher/",
+      "recent_commits": "5cf1c84 docs: Add session reports and error resolution documentation\nbafaa8f docs: Add audit reports, guides, and P0 completion summary\n05b86d8 test(e2e): Add comprehensive E2E and security tests"
+    },
+    {
+      "time": "2026-01-29T00:25:17.828312",
+      "notes": "Commit: feat(launcher): Add UDO launcher scripts and confi",
+      "git_status": "M .claude/settings.local.json\n M .udo/search_telemetry.json\n M .udo/session_state.json",
+      "recent_commits": "1093f82 feat(launcher): Add UDO launcher scripts and configuration\n5cf1c84 docs: Add session reports and error resolution documentation\nbafaa8f docs: Add audit reports, guides, and P0 completion summary"
+    },
+    {
+      "time": "2026-01-29T00:52:08.366853",
+      "notes": "Commit: fix(lint): Remove unused imports and fix line leng",
+      "git_status": "M .claude/settings.local.json\n M .udo/search_telemetry.json\n M .udo/session_state.json",
+      "recent_commits": "7d46d53 fix(lint): Remove unused imports and fix line length issues\n1093f82 feat(launcher): Add UDO launcher scripts and configuration\n5cf1c84 docs: Add session reports and error resolution documentation"
+    },
+    {
+      "time": "2026-01-29T18:53:18.897200",
+      "notes": "Commit: test: Add AI-simulated user testing scripts and re",
+      "git_status": "M .claude/settings.local.json\n M .udo/search_telemetry.json\n M .udo/session_state.json\n?? launcher/AI_PROMPT_GUIDE.md\n?? launcher/PRACTICAL_GUIDE.md",
+      "recent_commits": "4eff630 test: Add AI-simulated user testing scripts and results\n7d46d53 fix(lint): Remove unused imports and fix line length issues\n1093f82 feat(launcher): Add UDO launcher scripts and configuration"
+    },
+    {
+      "time": "2026-01-29T18:55:28.610838",
+      "notes": "Commit: fix(lint): Remove unused import and variable in us",
+      "git_status": "M .claude/settings.local.json\n M .udo/search_telemetry.json\n M .udo/session_state.json\n?? launcher/AI_PROMPT_GUIDE.md\n?? launcher/PRACTICAL_GUIDE.md",
+      "recent_commits": "d06e927 fix(lint): Remove unused import and variable in user_testing_simulation\n4eff630 test: Add AI-simulated user testing scripts and results\n7d46d53 fix(lint): Remove unused imports and fix line length issues"
+    },
+    {
+      "time": "2026-01-29T19:07:05.079353",
+      "notes": "Commit: feat(production): Add deployment infrastructure an",
+      "git_status": "M .claude/settings.local.json\n M .udo/search_telemetry.json\n M .udo/session_state.json\n?? launcher/AI_PROMPT_GUIDE.md\n?? launcher/PRACTICAL_GUIDE.md",
+      "recent_commits": "acd3b99 feat(production): Add deployment infrastructure and documentation\nd06e927 fix(lint): Remove unused import and variable in user_testing_simulation\n4eff630 test: Add AI-simulated user testing scripts and results"
+    },
+    {
+      "time": "2026-01-30T06:27:33.820935",
+      "notes": "Commit: docs: Update CLAUDE.md to 2026-01-29 and add launc",
+      "git_status": "M .claude/settings.local.json\n M .udo/search_telemetry.json\n M .udo/session_state.json\n M claude.md",
+      "recent_commits": "caf1f46 docs: Update CLAUDE.md to 2026-01-29 and add launcher guides\nacd3b99 feat(production): Add deployment infrastructure and documentation\nd06e927 fix(lint): Remove unused import and variable in user_testing_simulation"
+    },
+    {
+      "time": "2026-01-31T22:21:07.571178",
+      "notes": "Commit: fix: Fix Docker build issues for production images",
+      "git_status": "M .claude/settings.local.json\n M .udo/search_telemetry.json\n M .udo/session_state.json\n M claude.md\n?? launcher/tools/",
+      "recent_commits": "c9fec81 fix: Fix Docker build issues for production images\ncaf1f46 docs: Update CLAUDE.md to 2026-01-29 and add launcher guides\nacd3b99 feat(production): Add deployment infrastructure and documentation"
+    },
+    {
+      "time": "2026-02-01T09:32:22.553502",
+      "notes": "Commit: fix: Resolve docker-compose prod deployment issues",
+      "git_status": "M .claude/settings.local.json\n M .udo/search_telemetry.json\n M .udo/session_state.json\n M claude.md\n?? launcher/tools/",
+      "recent_commits": "1680c18 fix: Resolve docker-compose prod deployment issues\nc9fec81 fix: Fix Docker build issues for production images\ncaf1f46 docs: Update CLAUDE.md to 2026-01-29 and add launcher guides"
     }
   ],
   "files_modified": [],
@@ -442,49 +622,26 @@
   },
   "learning_progress_updated": "2025-12-30T04:16:16.077271",
   "ai_metacognition": {
-    "least_confident": [
-      {
-        "item": "대규모 변경 (85개 파일)",
-        "confidence": 40,
-        "expected_effect": "전체 통합 테스트로 안정성 확보"
-      }
-    ],
-    "simplifications": [
-      {
-        "item": "테스트 커버리지 충분",
-        "validity": 65,
-        "expected_effect": "엣지 케이스 검증 필요"
-      }
-    ],
+    "least_confident": [],
+    "simplifications": [],
     "opinion_changers": [
       {
         "item": "설정 변경이 다른 환경에 영향?",
         "change_prob": 45,
         "expected_effect": "환경별 테스트로 검증"
-      },
-      {
-        "item": "스크립트 변경이 CI/CD 또는 자동화에 영향?",
-        "change_prob": 40,
-        "expected_effect": "파이프라인 테스트로 검증"
       }
     ],
     "areas_to_improve": [
       {
-        "item": "백엔드 변경 (51개)",
+        "item": "백엔드 변경 (1개)",
         "completeness": 75,
-        "urgency": "high",
+        "urgency": "medium",
         "expected_effect": "API 안정성 검증"
-      },
-      {
-        "item": "스크립트 변경 (26개)",
-        "completeness": 70,
-        "urgency": "high",
-        "expected_effect": "자동화 스크립트 동작 검증"
       }
     ],
     "blockers": [],
-    "updated_at": "2026-01-03T23:35:33.239460",
+    "updated_at": "2026-02-01T09:32:26.203681",
     "auto_generated": true
   },
-  "ai_metacognition_updated": "2026-01-03T23:35:33.336098"
+  "ai_metacognition_updated": "2026-02-01T09:32:26.315004"
 }
