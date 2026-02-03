@@ -4,15 +4,19 @@ import { useState, useEffect } from "react";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
-import { 
-  CheckCircle2, 
-  XCircle, 
-  AlertTriangle, 
-  Shield, 
-  FileCode, 
+import {
+  CheckCircle2,
+  XCircle,
+  AlertTriangle,
+  Shield,
+  FileCode,
   LayoutTemplate,
-  RefreshCw
+  RefreshCw,
+  Loader2,
 } from "lucide-react";
+import { toast } from "sonner";
+import TimelineTracker from "./timeline-tracker";
+import ComplianceReport from "./compliance-report";
 
 // ============================================
 // Types
@@ -55,13 +59,17 @@ interface GovernanceConfig {
 const API_BASE = process.env.NEXT_PUBLIC_API_URL || "http://localhost:8000";
 
 async function fetchRules(): Promise<string[]> {
-  const res = await fetch(`${API_BASE}/api/governance/rules`);
+  const res = await fetch(`${API_BASE}/api/governance/rules`, {
+    signal: AbortSignal.timeout(5000),
+  });
   if (!res.ok) throw new Error("Failed to fetch rules");
   return res.json();
 }
 
 async function fetchTemplates(): Promise<{ templates: GovernanceTemplate[]; total: number }> {
-  const res = await fetch(`${API_BASE}/api/governance/templates`);
+  const res = await fetch(`${API_BASE}/api/governance/templates`, {
+    signal: AbortSignal.timeout(5000),
+  });
   if (!res.ok) throw new Error("Failed to fetch templates");
   return res.json();
 }
@@ -71,13 +79,16 @@ async function validateRules(): Promise<ValidationResult> {
     method: "POST",
     headers: { "Content-Type": "application/json" },
     body: JSON.stringify({ project_path: "." }),
+    signal: AbortSignal.timeout(30000),
   });
   if (!res.ok) throw new Error("Validation failed");
   return res.json();
 }
 
 async function fetchConfig(): Promise<GovernanceConfig> {
-  const res = await fetch(`${API_BASE}/api/governance/config`);
+  const res = await fetch(`${API_BASE}/api/governance/config`, {
+    signal: AbortSignal.timeout(5000),
+  });
   if (!res.ok) throw new Error("Failed to fetch config");
   return res.json();
 }
@@ -86,11 +97,12 @@ async function applyTemplate(templateName: string): Promise<{ success: boolean; 
   const res = await fetch(`${API_BASE}/api/governance/apply`, {
     method: "POST",
     headers: { "Content-Type": "application/json" },
-    body: JSON.stringify({ 
-      project_path: ".", 
+    body: JSON.stringify({
+      project_path: ".",
       template_name: templateName,
-      overwrite: false 
+      overwrite: false,
     }),
+    signal: AbortSignal.timeout(10000),
   });
   if (!res.ok) throw new Error("Failed to apply template");
   return res.json();
@@ -101,6 +113,7 @@ async function runAutoFix(fixType: string = "lint"): Promise<{ success: boolean;
     method: "POST",
     headers: { "Content-Type": "application/json" },
     body: JSON.stringify({ fix_type: fixType }),
+    signal: AbortSignal.timeout(30000),
   });
   if (!res.ok) throw new Error("Auto-fix failed");
   return res.json();
@@ -110,7 +123,7 @@ async function runAutoFix(fixType: string = "lint"): Promise<{ success: boolean;
 // Components
 // ============================================
 
-function RuleCard({ rule, index, onClick }: { rule: string; index: number; onClick?: () => void }) {
+function RuleCard({ rule, onClick }: { rule: string; onClick?: () => void }) {
   const icons: Record<string, React.ReactNode> = {
     obsidian_sync: <FileCode className="h-4 w-4" />,
     git_workflow: <Shield className="h-4 w-4" />,
@@ -132,7 +145,15 @@ function RuleCard({ rule, index, onClick }: { rule: string; index: number; onCli
   );
 }
 
-function TemplateCard({ template, onApply }: { template: GovernanceTemplate; onApply: (name: string) => void }) {
+function TemplateCard({
+  template,
+  onApply,
+  applying,
+}: {
+  template: GovernanceTemplate;
+  onApply: (name: string) => void;
+  applying: boolean;
+}) {
   const sizeColors: Record<string, string> = {
     minimal: "bg-green-100 text-green-800 dark:bg-green-900 dark:text-green-200",
     standard: "bg-blue-100 text-blue-800 dark:bg-blue-900 dark:text-blue-200",
@@ -151,7 +172,7 @@ function TemplateCard({ template, onApply }: { template: GovernanceTemplate; onA
       </CardHeader>
       <CardContent>
         <p className="text-sm text-muted-foreground mb-3">{template.description}</p>
-        
+
         <div className="flex gap-2 mb-3">
           {template.strict_mode && (
             <Badge variant="outline" className="text-xs">
@@ -178,25 +199,34 @@ function TemplateCard({ template, onApply }: { template: GovernanceTemplate; onA
           )}
         </div>
 
-        <Button 
-          className="w-full mt-4" 
+        <Button
+          className="w-full mt-4"
           variant={template.exists ? "default" : "outline"}
-          disabled={!template.exists}
+          disabled={!template.exists || applying}
           onClick={() => onApply(template.name)}
         >
-          {template.exists ? "Apply Template" : "Template Missing"}
+          {applying ? (
+            <>
+              <Loader2 className="h-4 w-4 mr-2 animate-spin" />
+              Applying...
+            </>
+          ) : template.exists ? (
+            "Apply Template"
+          ) : (
+            "Template Missing"
+          )}
         </Button>
       </CardContent>
     </Card>
   );
 }
 
-function ValidationStatus({ result }: { result: ValidationResult | null; loading: boolean }) {
+function ValidationStatus({ result }: { result: ValidationResult | null }) {
   if (!result) return null;
 
   const StatusIcon = result.passed ? CheckCircle2 : XCircle;
-  const statusColor = result.passed 
-    ? "text-green-600 dark:text-green-400" 
+  const statusColor = result.passed
+    ? "text-green-600 dark:text-green-400"
     : "text-red-600 dark:text-red-400";
 
   return (
@@ -222,7 +252,9 @@ function ValidationStatus({ result }: { result: ValidationResult | null; loading
         <div className="text-sm">
           <span className="font-medium">Pass Rate: </span>
           <span className={result.passed ? "text-green-600" : "text-amber-600"}>
-            {((result.passed_rules / result.total_rules) * 100).toFixed(1)}%
+            {result.total_rules > 0
+              ? ((result.passed_rules / result.total_rules) * 100).toFixed(1)
+              : 0}%
           </span>
         </div>
 
@@ -243,10 +275,9 @@ export default function GovernanceDashboard() {
   const [config, setConfig] = useState<GovernanceConfig | null>(null);
   const [loading, setLoading] = useState(true);
   const [validating, setValidating] = useState(false);
-  const [error, setError] = useState<string | null>(null);
   const [selectedRule, setSelectedRule] = useState<string | null>(null);
-  const [applyingTemplate, setApplyingTemplate] = useState(false);
-  const [successMessage, setSuccessMessage] = useState<string | null>(null);
+  const [applyingTemplate, setApplyingTemplate] = useState<string | null>(null);
+  const [autoFixing, setAutoFixing] = useState(false);
 
   useEffect(() => {
     loadData();
@@ -254,7 +285,6 @@ export default function GovernanceDashboard() {
 
   async function loadData() {
     setLoading(true);
-    setError(null);
     try {
       const [rulesData, templatesData, configData] = await Promise.all([
         fetchRules().catch(() => []),
@@ -264,8 +294,8 @@ export default function GovernanceDashboard() {
       setRules(rulesData);
       setTemplates(templatesData.templates);
       setConfig(configData);
-    } catch (err) {
-      setError("Failed to load governance data. Make sure the API server is running.");
+    } catch {
+      toast.error("Failed to load governance data. Make sure the API server is running.");
     } finally {
       setLoading(false);
     }
@@ -273,52 +303,50 @@ export default function GovernanceDashboard() {
 
   async function runValidation() {
     setValidating(true);
-    setError(null);
     try {
       const result = await validateRules();
       setValidation(result);
-      setSuccessMessage("Validation completed successfully!");
-      setTimeout(() => setSuccessMessage(null), 3000);
-    } catch (err) {
-      setError("Validation failed. Check if validate_system_rules.py exists.");
+      if (result.passed) {
+        toast.success(`Validation passed! ${result.passed_rules}/${result.total_rules} rules OK.`);
+      } else {
+        toast.warning(`Validation: ${result.failed_rules} rule(s) failed. ${result.critical_failures} critical.`);
+      }
+    } catch {
+      toast.error("Validation failed. Check if validate_system_rules.py exists.");
     } finally {
       setValidating(false);
     }
   }
 
   async function handleApplyTemplate(templateName: string) {
-    setApplyingTemplate(true);
-    setError(null);
+    setApplyingTemplate(templateName);
     try {
-      const result = await applyTemplate(templateName);
-      setSuccessMessage(`Template "${templateName}" applied successfully!`);
-      setTimeout(() => setSuccessMessage(null), 3000);
-      await loadData(); // Reload config
-    } catch (err) {
-      setError(`Failed to apply template "${templateName}". ${err}`);
+      await applyTemplate(templateName);
+      toast.success(`Template "${templateName}" applied successfully!`);
+      await loadData();
+    } catch {
+      toast.error(`Failed to apply template "${templateName}".`);
     } finally {
-      setApplyingTemplate(false);
+      setApplyingTemplate(null);
     }
   }
 
   async function handleAutoFix() {
-    setValidating(true);
-    setError(null);
+    setAutoFixing(true);
     try {
       const result = await runAutoFix("lint");
-      setSuccessMessage(`Auto-fix completed: ${result.details}`);
-      setTimeout(() => setSuccessMessage(null), 3000);
-    } catch (err) {
-      setError("Auto-fix failed. Make sure Black and isort are installed.");
+      toast.success(`Auto-fix completed: ${result.details}`);
+    } catch {
+      toast.error("Auto-fix failed. Make sure Black and isort are installed.");
     } finally {
-      setValidating(false);
+      setAutoFixing(false);
     }
   }
 
   if (loading) {
     return (
       <div className="flex items-center justify-center min-h-[400px]">
-        <RefreshCw className="h-8 w-8 animate-spin text-muted-foreground" />
+        <Loader2 className="h-8 w-8 animate-spin text-muted-foreground" />
       </div>
     );
   }
@@ -339,51 +367,46 @@ export default function GovernanceDashboard() {
         </Button>
       </div>
 
-      {error && (
-        <div className="bg-amber-50 dark:bg-amber-900/20 text-amber-800 dark:text-amber-200 p-4 rounded-lg flex items-center gap-2">
-          <AlertTriangle className="h-5 w-5" />
-          {error}
-        </div>
-      )}
+      {/* Overview Row: Config + Timeline + Compliance */}
+      <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
+        {/* Project Config */}
+        {config && (
+          <Card>
+            <CardHeader className="pb-2">
+              <CardTitle className="text-sm flex items-center gap-2">
+                <Shield className="h-4 w-4" />
+                Project Configuration
+              </CardTitle>
+            </CardHeader>
+            <CardContent>
+              <div className="grid grid-cols-2 gap-3">
+                <div>
+                  <p className="text-xs text-muted-foreground">Project</p>
+                  <p className="font-medium text-sm">{config.project_name}</p>
+                </div>
+                <div>
+                  <p className="text-xs text-muted-foreground">Type</p>
+                  <p className="font-medium text-sm capitalize">{config.project_type}</p>
+                </div>
+                <div>
+                  <p className="text-xs text-muted-foreground">Size</p>
+                  <Badge variant="outline" className="text-xs">{config.size}</Badge>
+                </div>
+                <div>
+                  <p className="text-xs text-muted-foreground">Version</p>
+                  <p className="font-medium text-sm">{config.version}</p>
+                </div>
+              </div>
+            </CardContent>
+          </Card>
+        )}
 
-      {successMessage && (
-        <div className="bg-green-50 dark:bg-green-900/20 text-green-800 dark:text-green-200 p-4 rounded-lg flex items-center gap-2">
-          <CheckCircle2 className="h-5 w-5" />
-          {successMessage}
-        </div>
-      )}
+        {/* Timeline Tracker */}
+        <TimelineTracker />
 
-      {/* Project Config */}
-      {config && (
-        <Card>
-          <CardHeader className="pb-2">
-            <CardTitle className="text-lg flex items-center gap-2">
-              <Shield className="h-5 w-5" />
-              Project Configuration
-            </CardTitle>
-          </CardHeader>
-          <CardContent>
-            <div className="grid grid-cols-2 md:grid-cols-4 gap-4">
-              <div>
-                <p className="text-xs text-muted-foreground">Project</p>
-                <p className="font-medium">{config.project_name}</p>
-              </div>
-              <div>
-                <p className="text-xs text-muted-foreground">Type</p>
-                <p className="font-medium capitalize">{config.project_type}</p>
-              </div>
-              <div>
-                <p className="text-xs text-muted-foreground">Size</p>
-                <Badge variant="outline">{config.size}</Badge>
-              </div>
-              <div>
-                <p className="text-xs text-muted-foreground">Version</p>
-                <p className="font-medium">{config.version}</p>
-              </div>
-            </div>
-          </CardContent>
-        </Card>
-      )}
+        {/* Compliance Report */}
+        <ComplianceReport />
+      </div>
 
       {/* Validation Section */}
       <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
@@ -399,14 +422,14 @@ export default function GovernanceDashboard() {
               Validate project against all governance rules.
             </p>
             <div className="space-y-2">
-              <Button 
-                onClick={runValidation} 
-                disabled={validating}
+              <Button
+                onClick={runValidation}
+                disabled={validating || autoFixing}
                 className="w-full"
               >
                 {validating ? (
                   <>
-                    <RefreshCw className="h-4 w-4 mr-2 animate-spin" />
+                    <Loader2 className="h-4 w-4 mr-2 animate-spin" />
                     Validating...
                   </>
                 ) : (
@@ -416,20 +439,29 @@ export default function GovernanceDashboard() {
                   </>
                 )}
               </Button>
-              <Button 
-                onClick={handleAutoFix} 
-                disabled={validating}
+              <Button
+                onClick={handleAutoFix}
+                disabled={validating || autoFixing}
                 variant="outline"
                 className="w-full"
               >
-                <CheckCircle2 className="h-4 w-4 mr-2" />
-                Auto-Fix (Lint)
+                {autoFixing ? (
+                  <>
+                    <Loader2 className="h-4 w-4 mr-2 animate-spin" />
+                    Fixing...
+                  </>
+                ) : (
+                  <>
+                    <CheckCircle2 className="h-4 w-4 mr-2" />
+                    Auto-Fix (Lint)
+                  </>
+                )}
               </Button>
             </div>
           </CardContent>
         </Card>
 
-        {validation && <ValidationStatus result={validation} loading={validating} />}
+        {validation && <ValidationStatus result={validation} />}
       </div>
 
       {/* Available Rules */}
@@ -443,20 +475,21 @@ export default function GovernanceDashboard() {
         <CardContent>
           <div className="grid grid-cols-2 md:grid-cols-4 gap-2">
             {rules.map((rule, i) => (
-              <RuleCard 
-                key={rule} 
-                rule={rule} 
-                index={i} 
-                onClick={() => setSelectedRule(rule)}
+              <RuleCard
+                key={rule}
+                rule={rule}
+                onClick={() => setSelectedRule(selectedRule === rule ? null : rule)}
               />
             ))}
           </div>
-          
+
           {selectedRule && (
             <div className="mt-4 p-4 bg-blue-50 dark:bg-blue-900/20 rounded-lg">
               <div className="flex justify-between items-start mb-2">
                 <h4 className="font-medium capitalize">{selectedRule.replace(/_/g, " ")}</h4>
-                <Button size="sm" variant="ghost" onClick={() => setSelectedRule(null)}>✕</Button>
+                <Button size="sm" variant="ghost" onClick={() => setSelectedRule(null)}>
+                  <XCircle className="h-4 w-4" />
+                </Button>
               </div>
               <p className="text-sm text-muted-foreground">
                 {selectedRule === "obsidian_sync" && "Ensures Obsidian vault synchronization and documentation consistency."}
@@ -480,10 +513,11 @@ export default function GovernanceDashboard() {
         </h2>
         <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
           {templates.map((template) => (
-            <TemplateCard 
-              key={template.name} 
-              template={template} 
+            <TemplateCard
+              key={template.name}
+              template={template}
               onApply={handleApplyTemplate}
+              applying={applyingTemplate === template.name}
             />
           ))}
         </div>

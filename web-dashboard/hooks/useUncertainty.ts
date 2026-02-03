@@ -13,5 +13,7 @@ export function useUncertainty() {
         queryFn: fetchUncertaintyStatus,
         refetchInterval: 30000, // Refresh every 30 seconds
         staleTime: 10000,
+        retry: 1,
+        retryDelay: 1000,
     });
 }

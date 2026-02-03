@@ -48,7 +48,7 @@ export default function QualityPage() {
         </motion.div>
 
         {/* Quality Metrics Component */}
-        <QualityMetrics apiUrl="http://localhost:8000/api/quality-metrics" />
+        <QualityMetrics apiUrl={`${process.env.NEXT_PUBLIC_API_URL || "http://localhost:8000"}/api/quality-metrics`} />
 
         {/* Info Section */}
         <motion.div
